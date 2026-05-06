@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudyFlow AI</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="panel panel-left">
+        <h1>StudyFlow AI</h1>
+        <p class="muted">Fluxo adaptativo de estudo</p>
+        <button id="start-session-button">Start Session</button>
+        <div class="help-card">
+          <strong>Como usar</strong>
+          <p>Inicie uma sessão, leia o resumo, responda às questões e acompanhe a adaptação do estudo.</p>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="panel-title">
+          <h2>Conteúdo</h2>
+        </div>
+        <section id="content-area" class="content-area">
+          <div class="placeholder">
+            Clique em <strong>Start Session</strong> para iniciar uma sessão de estudo.
+          </div>
+        </section>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="panel-title">
+          <h2>Sessão</h2>
+        </div>
+        <section class="session-meta">
+          <div class="meta-row">
+            <span class="label">Session ID</span>
+            <span id="session-id" class="value">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="label">Tópico atual</span>
+            <span id="current-topic" class="value">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="label">Progresso</span>
+            <span id="progress-counter" class="value">0 blocos</span>
+          </div>
+          <div class="meta-row">
+            <span class="label">Status</span>
+            <span id="session-status" class="value">Aguardando início</span>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

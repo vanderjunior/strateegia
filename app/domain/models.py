@@ -1,0 +1,210 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Self
+from uuid import uuid4
+
+from pydantic import BaseModel, Field
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class BoardStyle(str, Enum):
+    FGV = "fgv"
+    CEBRASPE = "cebraspe"
+
+
+class ErrorType(str, Enum):
+    KNOWLEDGE_GAP = "knowledge_gap"
+    INTERPRETATION = "interpretation"
+    DISTRACTION = "distraction"
+    CONCEPT_CONFUSION = "concept_confusion"
+    MEMORIZATION = "memorization"
+
+
+class StudyStrategy(str, Enum):
+    QUESTIONS = "questions"
+    THEORY_REVIEW = "theory_review"
+    MIXED = "mixed"
+    QUICK_REVIEW = "quick_review"
+
+
+class StudyBlock(BaseModel):
+    type: str
+    topic_id: str
+    quantity: int | None = None
+    depth: str | None = None
+
+
+class StudySession(BaseModel):
+    session_id: str
+    entries: list["LearningPlanEntry"] = Field(default_factory=list)
+    current_entry_index: int = 0
+    current_block_index: int = 0
+    current_question_index: int = 0
+    completed: bool = False
+
+
+class Topic(BaseModel):
+    id: str
+    title: str
+    content: str
+    key_points: list[str] = Field(default_factory=list)
+    trap_points: list[str] = Field(default_factory=list)
+    relevance_score: float = 0.0
+    source_pages: list[int] = Field(default_factory=list)
+
+
+class TopicSummary(BaseModel):
+    topic_id: str
+    title: str
+    structured_summary: str
+    key_points: list[str] = Field(default_factory=list)
+    trap_points: list[str] = Field(default_factory=list)
+
+
+class GeneratedQuestion(BaseModel):
+    id: str
+    document_id: str
+    topic_id: str
+    style: str
+    stem: str
+    options: list[str]
+    correct_answer: str
+    explanation: str
+    difficulty_level: int = 1
+    similarity_group: str | None = None
+
+
+class Document(BaseModel):
+    id: str
+    title: str
+    source_filename: str
+    board: BoardStyle
+    exam_context: str
+    source_excerpt: str
+    topics: list[Topic] = Field(default_factory=list)
+    summaries: list[TopicSummary] = Field(default_factory=list)
+    questions: list[GeneratedQuestion] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        title: str,
+        source_filename: str,
+        board: BoardStyle,
+        exam_context: str,
+        source_excerpt: str,
+        topics: list[Topic],
+        summaries: list[TopicSummary],
+        questions: list[GeneratedQuestion],
+    ) -> Self:
+        return cls(
+            id=str(uuid4()),
+            title=title,
+            source_filename=source_filename,
+            board=board,
+            exam_context=exam_context,
+            source_excerpt=source_excerpt,
+            topics=topics,
+            summaries=summaries,
+            questions=questions,
+        )
+
+
+class AnswerSubmission(BaseModel):
+    question_id: str
+    document_id: str
+    topic_id: str
+    selected_answer: str
+    is_correct: bool
+    error_type: str | ErrorType | None = None
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class TopicLearningState(BaseModel):
+    topic_id: str
+    attempts: int = 0
+    correct_attempts: int = 0
+    incorrect_attempts: int = 0
+    total_questions: int = 0
+    correct_answers: int = 0
+    recent_errors: int = 0
+    error_distribution: dict[str, int] = Field(
+        default_factory=lambda: {
+            "conceptual": 0,
+            "attention": 0,
+            "interpretation": 0,
+            "memory": 0,
+        }
+    )
+    streak_correct: int = 0
+    current_difficulty: int = 1
+    first_seen_at: datetime | None = None
+    last_seen_at: datetime | None = None
+    last_correct_at: datetime | None = None
+    last_error_at: datetime | None = None
+    last_error_type: str | ErrorType | None = None
+
+
+class ItemState(BaseModel):
+    question_id: str
+    topic_id: str
+    seen_count: int = 0
+    correct_count: int = 0
+    incorrect_count: int = 0
+    difficulty_level: int = 1
+    last_seen_at: datetime | None = None
+    last_result: str | None = None
+    similarity_group: str | None = None
+    last_error_type: str | ErrorType | None = None
+
+
+class LearningPlanEntry(BaseModel):
+    document_id: str
+    document_title: str
+    topic_id: str
+    topic_title: str
+    question_ids: list[str] = Field(default_factory=list)
+    priority_score: float
+    recommended_difficulty: int = 1
+    reasons: list[str] = Field(default_factory=list)
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
+    item_reasons: dict[str, list[str]] = Field(default_factory=dict)
+    performance_data: dict[str, object] = Field(default_factory=dict)
+    dominant_error_type: str | None = None
+    study_strategy: str | None = None
+    study_blocks: list[StudyBlock] = Field(default_factory=list)
+
+
+class LearningPlan(BaseModel):
+    title: str
+    generated_at: datetime = Field(default_factory=utc_now)
+    entries: list[LearningPlanEntry] = Field(default_factory=list)
+
+
+class ReviewPayload(BaseModel):
+    title: str
+    documents_considered: list[str]
+    summaries: list[str]
+    questions: list[GeneratedQuestion]
+
+
+class BlockReview(BaseModel):
+    title: str
+    document_ids: list[str]
+    summaries: list[str]
+    questions: list[GeneratedQuestion]
+
+
+class ProgressState(BaseModel):
+    total_errors: int = 0
+    weak_topics: dict[str, int] = Field(default_factory=dict)
+    error_buckets: dict[ErrorType, int] = Field(default_factory=dict)
+    topic_learning_states: dict[str, TopicLearningState] = Field(default_factory=dict)
+    item_states: dict[str, ItemState] = Field(default_factory=dict)
