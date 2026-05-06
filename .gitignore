@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+venv/
+.env/
+
+# Mac
+.DS_Store
+
+# Data (muito importante no seu caso)
+data/*.json
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
