@@ -13,7 +13,9 @@ from app.domain.models import (
 )
 from app.repositories.json_store import JsonStudyRepository
 from app.services.learning_engine import (
+    aggregate_topic_priority,
     build_study_blocks,
+    compute_microtopic_priority,
     LearningDecisionEngine,
     compute_dynamic_priority,
     get_dominant_error_type,
@@ -198,6 +200,70 @@ def test_compute_dynamic_priority_handles_missing_fields_safely():
 
     assert isinstance(priority, float)
     assert priority >= 0.0
+
+
+def test_compute_microtopic_priority_prioritizes_weak_microtopics():
+    weak_microtopic = {
+        "total_questions": 6,
+        "correct_answers": 1,
+        "recent_errors": 2,
+        "error_distribution": {"conceptual": 2},
+    }
+    strong_microtopic = {
+        "total_questions": 6,
+        "correct_answers": 5,
+        "recent_errors": 0,
+        "error_distribution": {"conceptual": 0},
+    }
+
+    assert compute_microtopic_priority(weak_microtopic) > compute_microtopic_priority(strong_microtopic)
+
+
+def test_aggregate_topic_priority_reflects_mixed_strong_and_weak_microtopics():
+    topic_priority = 0.8
+    microtopic_scores = [1.5, 0.2, 0.1]
+
+    aggregated = aggregate_topic_priority(topic_priority, microtopic_scores)
+
+    assert aggregated > topic_priority
+
+
+def test_aggregate_topic_priority_handles_missing_microtopics():
+    assert aggregate_topic_priority(0.7, []) == 0.7
+
+
+def test_aggregate_topic_priority_reduces_pressure_for_mastered_microtopics():
+    topic_priority = 0.8
+
+    aggregated = aggregate_topic_priority(topic_priority, [0.05, 0.08, 0.1])
+
+    assert aggregated < topic_priority
+    assert aggregated >= topic_priority * 0.75
+
+
+def test_aggregate_topic_priority_keeps_sparse_microtopic_signal_bounded():
+    topic_priority = 0.8
+
+    aggregated = aggregate_topic_priority(topic_priority, [2.4])
+
+    assert aggregated > topic_priority
+    assert aggregated <= topic_priority * 1.15
+
+
+def test_aggregate_topic_priority_prevents_one_extreme_microtopic_from_dominating():
+    topic_priority = 0.8
+
+    aggregated = aggregate_topic_priority(topic_priority, [6.0, 0.05, 0.02, 0.01])
+
+    assert aggregated <= topic_priority * 1.25
+
+
+def test_aggregate_topic_priority_balanced_microtopics_remain_stable():
+    topic_priority = 0.8
+
+    aggregated = aggregate_topic_priority(topic_priority, [0.75, 0.8, 0.82])
+
+    assert abs(aggregated - topic_priority) < 0.08
 
 
 def test_repository_stores_error_classification_distribution(tmp_path):
@@ -526,6 +592,169 @@ def test_learning_engine_prioritizes_errored_topic_over_only_recent_position(tmp
     assert plan.entries
     assert plan.entries[0].topic_id == "topic-old"
     assert any("erro" in reason.lower() for reason in plan.entries[0].reasons)
+
+
+def test_learning_engine_uses_weak_microtopics_to_break_topic_level_ties(tmp_path):
+    repository = JsonStudyRepository(tmp_path / "study_data.json")
+    now = datetime(2026, 4, 24, 16, 0, tzinfo=timezone.utc)
+
+    topic_a = build_document(
+        title="Tema A",
+        topic_id="topic-a",
+        question_id="q-a",
+        created_at=now - timedelta(days=1),
+    )
+    topic_b = build_document(
+        title="Tema B",
+        topic_id="topic-b",
+        question_id="q-b",
+        created_at=now - timedelta(days=1),
+    )
+    repository.save_document(topic_a)
+    repository.save_document(topic_b)
+
+    for index, question_id in enumerate(["q-a", "q-a", "q-a", "q-a-2"]):
+        repository.record_answer(
+            AnswerSubmission(
+                question_id=question_id,
+                document_id=topic_a.id,
+                topic_id="topic-a",
+                microtopic_id="topic-a:weak" if index < 2 else "topic-a:stable",
+                selected_answer="B" if index < 2 else "A",
+                is_correct=index >= 2,
+                error_type=ErrorType.CONCEPT_CONFUSION if index < 2 else None,
+                created_at=now - timedelta(hours=4 - index),
+            )
+        )
+
+    for index, question_id in enumerate(["q-b", "q-b", "q-b-2", "q-b-2"]):
+        repository.record_answer(
+            AnswerSubmission(
+                question_id=question_id,
+                document_id=topic_b.id,
+                topic_id="topic-b",
+                microtopic_id="topic-b:m1" if index < 2 else "topic-b:m2",
+                selected_answer="B" if index % 2 == 0 else "A",
+                is_correct=index % 2 == 1,
+                error_type=ErrorType.CONCEPT_CONFUSION if index % 2 == 0 else None,
+                created_at=now - timedelta(hours=4 - index),
+            )
+        )
+
+    plan = LearningDecisionEngine(repository, now_provider=lambda: now).build_review_plan(
+        title="Empate por topico",
+        max_questions=4,
+    )
+
+    assert plan.entries[0].topic_id == "topic-a"
+    assert (
+        plan.entries[0].score_breakdown["microtopic_adjusted_priority"]
+        > plan.entries[1].score_breakdown["microtopic_adjusted_priority"]
+    )
+
+
+def test_learning_engine_preserves_base_priority_when_microtopic_data_is_missing(tmp_path):
+    repository = JsonStudyRepository(tmp_path / "study_data.json")
+    now = datetime(2026, 4, 24, 16, 30, tzinfo=timezone.utc)
+    document = build_document(
+        title="Tema Sem Micro",
+        topic_id="topic-no-micro",
+        question_id="q-1",
+        created_at=now - timedelta(hours=2),
+    )
+    repository.save_document(document)
+
+    plan = LearningDecisionEngine(repository, now_provider=lambda: now).build_review_plan(
+        title="Sem microdados",
+        max_questions=2,
+    )
+
+    entry = plan.entries[0]
+
+    assert entry.score_breakdown["microtopic_adjustment"] == 0.0
+    assert entry.score_breakdown["dynamic_priority"] == entry.score_breakdown["topic_dynamic_priority"]
+
+
+def test_learning_engine_extreme_single_microtopic_does_not_overturn_stronger_base_topic(tmp_path):
+    repository = JsonStudyRepository(tmp_path / "study_data.json")
+    now = datetime(2026, 4, 24, 17, 0, tzinfo=timezone.utc)
+
+    stronger_base = build_document(
+        title="Base Forte",
+        topic_id="topic-strong-base",
+        question_id="q-strong",
+        created_at=now - timedelta(days=2),
+    )
+    weaker_base = build_document(
+        title="Base Media",
+        topic_id="topic-medium-base",
+        question_id="q-medium",
+        created_at=now - timedelta(days=1),
+    )
+    repository.save_document(stronger_base)
+    repository.save_document(weaker_base)
+
+    for offset in range(3):
+        repository.record_answer(
+            AnswerSubmission(
+                question_id="q-strong",
+                document_id=stronger_base.id,
+                topic_id="topic-strong-base",
+                microtopic_id="topic-strong-base:balanced",
+                selected_answer="B",
+                is_correct=False,
+                error_type=ErrorType.INTERPRETATION,
+                created_at=now - timedelta(hours=offset + 1),
+            )
+        )
+
+    repository.record_answer(
+        AnswerSubmission(
+            question_id="q-medium",
+            document_id=weaker_base.id,
+            topic_id="topic-medium-base",
+            microtopic_id="topic-medium-base:extreme",
+            selected_answer="B",
+            is_correct=False,
+            error_type=ErrorType.CONCEPT_CONFUSION,
+            created_at=now - timedelta(hours=1),
+        )
+    )
+    repository.record_answer(
+        AnswerSubmission(
+            question_id="q-medium-2",
+            document_id=weaker_base.id,
+            topic_id="topic-medium-base",
+            microtopic_id="topic-medium-base:recovered",
+            selected_answer="A",
+            is_correct=True,
+            error_type=None,
+            created_at=now - timedelta(minutes=20),
+        )
+    )
+    repository.record_answer(
+        AnswerSubmission(
+            question_id="q-medium-3",
+            document_id=weaker_base.id,
+            topic_id="topic-medium-base",
+            microtopic_id="topic-medium-base:extreme",
+            selected_answer="B",
+            is_correct=False,
+            error_type=ErrorType.CONCEPT_CONFUSION,
+            created_at=now - timedelta(minutes=5),
+        )
+    )
+
+    plan = LearningDecisionEngine(repository, now_provider=lambda: now).build_review_plan(
+        title="Oscilacao controlada",
+        max_questions=4,
+    )
+
+    assert plan.entries[0].topic_id == "topic-strong-base"
+    assert (
+        plan.entries[1].score_breakdown["microtopic_adjusted_priority"]
+        <= plan.entries[1].score_breakdown["topic_dynamic_priority"] * 1.25
+    )
 
 
 def test_learning_engine_applies_repetition_penalty_and_prefers_less_seen_item(tmp_path):

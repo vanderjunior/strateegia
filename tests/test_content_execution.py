@@ -10,6 +10,7 @@ from app.domain.models import (
     LearningPlanEntry,
     StudyBlock,
     Topic,
+    TopicNode,
 )
 from app.repositories.json_store import JsonStudyRepository
 from app.services.content_execution import execute_learning_plan, execute_study_block
@@ -78,6 +79,27 @@ def build_document(*, title: str, topic_id: str, question_id: str, created_at: d
     return document
 
 
+def build_topic_node(*, title: str, content: str) -> TopicNode:
+    return TopicNode(title=title, level=2, content=content, children=[])
+
+
+def build_microtopic_performance(**overrides):
+    base = {
+        "total_questions": 0,
+        "correct_answers": 0,
+        "recent_errors": 0,
+        "error_distribution": {
+            "conceptual": 0,
+            "attention": 0,
+            "interpretation": 0,
+            "memory": 0,
+        },
+        "last_seen_at": None,
+    }
+    base.update(overrides)
+    return base
+
+
 def test_execute_study_block_summary_respects_depth():
     light = execute_study_block(StudyBlock(type="summary", topic_id="imunidades", depth="light"))
     medium = execute_study_block(StudyBlock(type="summary", topic_id="imunidades", depth="medium"))
@@ -90,6 +112,33 @@ def test_execute_study_block_summary_respects_depth():
     assert "exemplo" in deep["content"].lower()
 
 
+def test_execute_study_block_summary_uses_microtopics():
+    topic_node = build_topic_node(
+        title="Luzes de Navegacao",
+        content=(
+            "Conceito: luzes de navegacao identificam situacoes e posicoes da embarcacao.\n\n"
+            "Excecao: embarcacoes de pequeno porte podem cumprir sinalizacao reduzida.\n\n"
+            "Aplicacao: em prova, compare luzes de alcançado e de bordo."
+        ),
+    )
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="luzes-de-navegacao",
+            depth="deep",
+            topic_node=topic_node,
+        )
+    )
+
+    assert payload["type"] == "summary"
+    assert "excecao" in payload["content"].lower()
+    assert "aplicacao" in payload["content"].lower()
+    assert "sinalizacao reduzida" in payload["content"].lower()
+    assert payload["selected_microtopics"]
+    assert payload["review_intensity"] == "deep"
+
+
 def test_execute_study_block_questions_respects_quantity():
     payload = execute_study_block(StudyBlock(type="questions", topic_id="lancamento", quantity=3))
 
@@ -98,25 +147,355 @@ def test_execute_study_block_questions_respects_quantity():
     assert len(payload["questions"]) == 3
 
 
+def test_execute_study_block_questions_use_microtopics():
+    topic_node = build_topic_node(
+        title="RIPAM",
+        content=(
+            "Conceito: as regras disciplinam manobras e luzes.\n\n"
+            "Excecao: a regra nao se aplica do mesmo modo em situacoes especiais.\n\n"
+            "Observacao: a banca explora termos absolutos."
+        ),
+    )
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="ripam",
+            quantity=2,
+            topic_node=topic_node,
+        )
+    )
+
+    statements = " ".join(question["statement"] for question in payload["questions"]).lower()
+    explanations = " ".join(question["explanation"] for question in payload["questions"]).lower()
+
+    assert "excecao" in statements or "observacao" in statements
+    assert "manobras e luzes" in explanations or "termos absolutos" in explanations
+    assert payload["selected_microtopics"]
+
+
 def test_execute_study_block_question_format_is_correct():
     payload = execute_study_block(StudyBlock(type="questions", topic_id="competencia", quantity=2))
 
     assert payload["questions"]
     for question in payload["questions"]:
-        assert set(question) == {"statement", "answer", "explanation"}
+        assert set(question) == {"statement", "answer", "explanation", "microtopic_id"}
         assert isinstance(question["statement"], str)
         assert isinstance(question["answer"], bool)
         assert isinstance(question["explanation"], str)
+        assert isinstance(question["microtopic_id"], str)
+
+
+def test_execute_study_block_exposes_adaptive_debug_metadata():
+    topic_node = build_topic_node(
+        title="Balizas",
+        content=(
+            "Conceito: sinalizam canal seguro.\n\n"
+            "Excecao: em area especial, a interpretacao pode mudar.\n\n"
+            "Observacao: a banca explora diferencas sutis."
+        ),
+    )
+
+    payload = execute_study_block(
+        StudyBlock(type="summary", topic_id="balizas", depth="medium", topic_node=topic_node)
+    )
+
+    assert set(payload).issuperset(
+        {
+            "type",
+            "topic_id",
+            "content",
+            "selected_microtopics",
+            "resurfaced_microtopics",
+            "weak_microtopics",
+            "review_intensity",
+            "adaptive_reasoning",
+        }
+    )
+
+
+def test_execute_study_block_difficulty_weighting_affects_selection():
+    topic_node = build_topic_node(
+        title="Luzes",
+        content=(
+            "Conceito: as luzes identificam a embarcacao.\n\n"
+            "Excecao: rebocadores pequenos podem exibir combinacoes reduzidas."
+        ),
+    )
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="luzes",
+            quantity=1,
+            topic_node=topic_node,
+        )
+    )
+
+    question = payload["questions"][0]
+    combined_text = f'{question["statement"]} {question["explanation"]}'.lower()
+
+    assert "excecao" in combined_text
+    assert "combinacoes reduzidas" in combined_text
+    assert question["microtopic_id"]
+
+
+def test_execute_study_block_prioritizes_weak_microtopics_but_keeps_resurfacing():
+    topic_node = build_topic_node(
+        title="Luzes",
+        content=(
+            "Conceito: identifica a embarcacao.\n\n"
+            "Excecao: rebocadores pequenos exibem combinacoes reduzidas.\n\n"
+            "Observacao: termos absolutos tendem a induzir erro."
+        ),
+    )
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="luzes",
+            depth="deep",
+            topic_node=topic_node,
+            microtopic_performance={
+                "micro-fake-conceito": build_microtopic_performance(),
+            },
+        )
+    )
+
+    assert payload["selected_microtopics"]
+    assert any(item["title"] == "Excecao" for item in payload["selected_microtopics"])
+
+
+def test_execute_study_block_mastered_microtopics_periodically_resurface():
+    topic_node = build_topic_node(
+        title="RIPAM",
+        content=(
+            "Conceito: manobras e prioridades de passagem.\n\n"
+            "Excecao: situacoes especiais alteram a regra.\n\n"
+            "Aplicacao: compare navio a vela e embarcacao a motor."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="ripam", depth="deep", topic_node=topic_node)
+    )
+    microtopic_ids = {item["title"]: item["id"] for item in probe["selected_microtopics"]}
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="ripam",
+            depth="medium",
+            topic_node=topic_node,
+            microtopic_performance={
+                microtopic_ids["Conceito"]: build_microtopic_performance(
+                    total_questions=5,
+                    correct_answers=5,
+                    recent_errors=0,
+                    last_seen_at="2026-04-01T10:00:00+00:00",
+                ),
+                microtopic_ids["Excecao"]: build_microtopic_performance(
+                    total_questions=4,
+                    correct_answers=2,
+                    recent_errors=1,
+                    error_distribution={"conceptual": 1},
+                    last_seen_at="2026-05-10T10:00:00+00:00",
+                ),
+            },
+        )
+    )
+
+    assert payload["resurfaced_microtopics"]
+    resurfaced_titles = {item["title"] for item in payload["resurfaced_microtopics"]}
+    assert "Conceito" in resurfaced_titles
+
+
+def test_execute_study_block_cumulative_review_balances_weak_and_mastered_questions():
+    topic_node = build_topic_node(
+        title="Sinalizacao",
+        content=(
+            "Conceito: boias laterais delimitam canal.\n\n"
+            "Excecao: marcas especiais fogem ao padrao lateral.\n\n"
+            "Observacao: cores e top marks confundem candidatos."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="sinalizacao", depth="deep", topic_node=topic_node)
+    )
+    ids = {item["title"]: item["id"] for item in probe["selected_microtopics"]}
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="sinalizacao",
+            quantity=3,
+            topic_node=topic_node,
+            microtopic_performance={
+                ids["Conceito"]: build_microtopic_performance(
+                    total_questions=6,
+                    correct_answers=6,
+                    recent_errors=0,
+                    last_seen_at="2026-04-15T10:00:00+00:00",
+                ),
+                ids["Excecao"]: build_microtopic_performance(
+                    total_questions=4,
+                    correct_answers=1,
+                    recent_errors=2,
+                    error_distribution={"conceptual": 2},
+                    last_seen_at="2026-05-11T09:00:00+00:00",
+                ),
+            },
+        )
+    )
+
+    microtopic_ids = [question["microtopic_id"] for question in payload["questions"]]
+    assert ids["Excecao"] in microtopic_ids
+    assert ids["Conceito"] in microtopic_ids
+
+
+def test_execute_study_block_layered_review_intensity_changes_selection_pressure():
+    topic_node = build_topic_node(
+        title="Boreste e Bombordo",
+        content=(
+            "Conceito: lados da embarcacao.\n\n"
+            "Excecao: referencias em manobras podem confundir.\n\n"
+            "Observacao: a prova troca referencial do observador."
+        ),
+    )
+
+    deep_payload = execute_study_block(
+        StudyBlock(type="summary", topic_id="bordos", depth="deep", topic_node=topic_node)
+    )
+    light_payload = execute_study_block(
+        StudyBlock(type="summary", topic_id="bordos", depth="light", topic_node=topic_node)
+    )
+
+    assert deep_payload["review_intensity"] == "deep"
+    assert light_payload["review_intensity"] == "light"
+    assert len(deep_payload["selected_microtopics"]) > len(light_payload["selected_microtopics"])
+
+
+def test_execute_study_block_selection_is_deterministic_with_balanced_distribution():
+    topic_node = build_topic_node(
+        title="Apitos",
+        content=(
+            "Conceito: sinais sonoros informam manobras.\n\n"
+            "Regra: apitos curtos e longos possuem significados tecnicos.\n\n"
+            "Aplicacao: compare ultrapassagem e cruzamento."
+        ),
+    )
+    block = StudyBlock(type="questions", topic_id="apitos", quantity=3, topic_node=topic_node)
+
+    first = execute_study_block(block)
+    second = execute_study_block(block)
+
+    assert first["selected_microtopics"] == second["selected_microtopics"]
+    assert first["questions"] == second["questions"]
+
+
+def test_execute_study_block_does_not_overfocus_only_on_recent_errors():
+    topic_node = build_topic_node(
+        title="Prioridades",
+        content=(
+            "Conceito: prioridade de passagem segue criterios normativos.\n\n"
+            "Excecao: capacidade de manobra altera a preferencia.\n\n"
+            "Aplicacao: compare pesca, vela e motor."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="prioridades", depth="deep", topic_node=topic_node)
+    )
+    ids = {item["title"]: item["id"] for item in probe["selected_microtopics"]}
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="prioridades",
+            quantity=3,
+            topic_node=topic_node,
+            microtopic_performance={
+                ids["Excecao"]: build_microtopic_performance(
+                    total_questions=3,
+                    correct_answers=0,
+                    recent_errors=3,
+                    error_distribution={"conceptual": 3},
+                    last_seen_at="2026-05-11T09:30:00+00:00",
+                ),
+                ids["Conceito"]: build_microtopic_performance(
+                    total_questions=6,
+                    correct_answers=6,
+                    recent_errors=0,
+                    last_seen_at="2026-03-01T09:30:00+00:00",
+                ),
+            },
+        )
+    )
+
+    selected_ids = {item["id"] for item in payload["selected_microtopics"]}
+    assert ids["Excecao"] in selected_ids
+    assert ids["Conceito"] in selected_ids
+
+
+def test_execute_study_block_falls_back_when_no_microtopics_exist():
+    payload = execute_study_block(StudyBlock(type="summary", topic_id="imunidades", depth="medium"))
+
+    assert payload["type"] == "summary"
+    assert payload["content"]
+    assert "imunidades" in payload["content"].lower()
+
+
+def test_execute_study_block_questions_fall_back_with_stable_microtopic_id():
+    payload = execute_study_block(StudyBlock(type="questions", topic_id="imunidades", quantity=1))
+
+    assert payload["questions"][0]["microtopic_id"] == "fallback-imunidades"
+
+
+def test_execute_study_block_tolerates_malformed_topic_content():
+    topic_node = build_topic_node(
+        title="Balizamento",
+        content="### sinalizacao\n- item solto\n\nConceito sem dois pontos\n\n1. regra incompleta",
+    )
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="balizamento",
+            quantity=2,
+            topic_node=topic_node,
+        )
+    )
+
+    assert len(payload["questions"]) == 2
+    assert payload["selected_microtopics"]
+
+
+def test_execute_study_block_is_deterministic_for_same_microtopics():
+    topic_node = build_topic_node(
+        title="Farolete",
+        content=(
+            "Conceito: indica sinalizacao principal.\n\n"
+            "Observacao: em prova, atencao a termos absolutos."
+        ),
+    )
+
+    block = StudyBlock(type="summary", topic_id="farolete", depth="deep", topic_node=topic_node)
+
+    first = execute_study_block(block)
+    second = execute_study_block(block)
+
+    assert first == second
 
 
 def test_execute_learning_plan_builds_structured_session():
+    topic_node = build_topic_node(
+        title="Obrigacao Tributaria",
+        content=(
+            "Conceito: nasce com a ocorrencia do fato gerador.\n\n"
+            "Excecao: a acessoria pode subsistir sem obrigacao principal exigivel."
+        ),
+    )
     plan_entries = [
         build_entry(
             topic_id="obrigacao",
             priority_score=0.8,
             study_blocks=[
-                StudyBlock(type="summary", topic_id="obrigacao", depth="deep"),
-                StudyBlock(type="questions", topic_id="obrigacao", quantity=2),
+                StudyBlock(type="summary", topic_id="obrigacao", depth="deep", topic_node=topic_node),
+                StudyBlock(type="questions", topic_id="obrigacao", quantity=2, topic_node=topic_node),
             ],
         )
     ]
@@ -126,6 +505,9 @@ def test_execute_learning_plan_builds_structured_session():
     assert len(session) == 2
     assert session[0]["type"] == "summary"
     assert session[1]["type"] == "questions"
+    assert "excecao" in session[0]["content"].lower()
+    assert "obrigacao principal" in session[1]["questions"][0]["explanation"].lower()
+    assert session[1]["questions"][0]["microtopic_id"]
 
 
 def test_execute_learning_plan_handles_empty_and_invalid_blocks():
@@ -167,3 +549,32 @@ def test_full_plan_executes_into_real_content(tmp_path):
     assert executed
     assert any(block["type"] == "summary" for block in executed)
     assert any(block["type"] == "questions" for block in executed)
+
+
+def test_execute_learning_plan_with_microtopics_keeps_existing_block_contract():
+    topic_node = build_topic_node(
+        title="NORMAM",
+        content=(
+            "Conceito: a norma orienta a inspeção naval.\n\n"
+            "Observacao: a prova cobra excecoes e limites operacionais."
+        ),
+    )
+    entry = build_entry(
+        topic_id="normam",
+        priority_score=0.9,
+        study_blocks=[
+            StudyBlock(type="summary", topic_id="normam", depth="medium", topic_node=topic_node),
+            StudyBlock(type="questions", topic_id="normam", quantity=1, topic_node=topic_node),
+        ],
+    )
+
+    session = execute_learning_plan([entry])
+
+    assert len(session) == 2
+    assert session[0]["type"] == "summary"
+    assert session[1]["type"] == "questions"
+    assert "observacao" in session[0]["content"].lower() or "conceito" in session[0]["content"].lower()
+    assert (
+        "norma orienta" in session[1]["questions"][0]["explanation"].lower()
+        or "limites operacionais" in session[1]["questions"][0]["explanation"].lower()
+    )

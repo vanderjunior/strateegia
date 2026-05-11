@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
-from app.domain.models import BoardStyle, Document, GeneratedQuestion, StudyStrategy, Topic
+from app.domain.models import AnswerSubmission, BoardStyle, Document, GeneratedQuestion, StudyStrategy, Topic
 from app.main import create_app
 from app.repositories.json_store import JsonStudyRepository
 from app.services.content_execution import execute_learning_plan
@@ -71,6 +71,7 @@ def test_submit_answer_records_correct_flow(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": True,
             "correct_answer": True,
         },
@@ -78,12 +79,16 @@ def test_submit_answer_records_correct_flow(tmp_path):
 
     progress = repository.load_progress()
     topic_state = progress.topic_learning_states["topic-1"]
+    microtopic_state = progress.microtopic_performance["micro-1"]
 
     assert response.status_code == 200
     assert response.json() == {"correct": True, "message": "Answer recorded"}
     assert topic_state.total_questions == 1
     assert topic_state.correct_answers == 1
     assert topic_state.recent_errors == 0
+    assert microtopic_state.total_questions == 1
+    assert microtopic_state.correct_answers == 1
+    assert microtopic_state.recent_errors == 0
 
 
 def test_submit_answer_records_incorrect_flow_with_error_type(tmp_path):
@@ -102,6 +107,7 @@ def test_submit_answer_records_incorrect_flow_with_error_type(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": False,
             "correct_answer": True,
             "error_type": "conceptual",
@@ -110,6 +116,7 @@ def test_submit_answer_records_incorrect_flow_with_error_type(tmp_path):
 
     progress = repository.load_progress()
     topic_state = progress.topic_learning_states["topic-1"]
+    microtopic_state = progress.microtopic_performance["micro-1"]
 
     assert response.status_code == 200
     assert response.json()["correct"] is False
@@ -117,6 +124,10 @@ def test_submit_answer_records_incorrect_flow_with_error_type(tmp_path):
     assert topic_state.correct_answers == 0
     assert topic_state.recent_errors == 1
     assert topic_state.error_distribution["conceptual"] == 1
+    assert microtopic_state.total_questions == 1
+    assert microtopic_state.correct_answers == 0
+    assert microtopic_state.recent_errors == 1
+    assert microtopic_state.error_distribution["conceptual"] == 1
 
 
 def test_submit_answer_rejects_incorrect_flow_without_error_type(tmp_path):
@@ -135,6 +146,7 @@ def test_submit_answer_rejects_incorrect_flow_without_error_type(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": False,
             "correct_answer": True,
         },
@@ -161,6 +173,7 @@ def test_submit_answer_persists_multiple_submissions_correctly(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": False,
             "correct_answer": True,
             "error_type": "interpretation",
@@ -171,6 +184,7 @@ def test_submit_answer_persists_multiple_submissions_correctly(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": True,
             "correct_answer": True,
         },
@@ -180,6 +194,7 @@ def test_submit_answer_persists_multiple_submissions_correctly(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": False,
             "correct_answer": True,
             "error_type": "interpretation",
@@ -188,11 +203,16 @@ def test_submit_answer_persists_multiple_submissions_correctly(tmp_path):
 
     progress = repository.load_progress()
     topic_state = progress.topic_learning_states["topic-1"]
+    microtopic_state = progress.microtopic_performance["micro-1"]
 
     assert topic_state.total_questions == 3
     assert topic_state.correct_answers == 1
     assert topic_state.recent_errors == 1
     assert topic_state.error_distribution["interpretation"] == 2
+    assert microtopic_state.total_questions == 3
+    assert microtopic_state.correct_answers == 1
+    assert microtopic_state.recent_errors == 1
+    assert microtopic_state.error_distribution["interpretation"] == 2
 
 
 def test_submit_answer_response_structure_is_stable(tmp_path):
@@ -211,6 +231,7 @@ def test_submit_answer_response_structure_is_stable(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": True,
             "correct_answer": True,
         },
@@ -245,6 +266,7 @@ def test_full_feedback_loop_updates_priority_and_strategy(tmp_path):
         json={
             "topic_id": "topic-1",
             "question_id": "q-1",
+            "microtopic_id": "micro-1",
             "user_answer": False,
             "correct_answer": True,
             "error_type": "conceptual",
@@ -258,3 +280,60 @@ def test_full_feedback_loop_updates_priority_and_strategy(tmp_path):
     assert updated_entry.score_breakdown["dynamic_priority"] > initial_entry.score_breakdown["dynamic_priority"]
     assert updated_entry.dominant_error_type == "conceptual"
     assert updated_entry.study_strategy == StudyStrategy.THEORY_REVIEW
+
+
+def test_repository_loads_old_json_without_microtopic_performance(tmp_path):
+    repository_path = tmp_path / "study_data.json"
+    repository_path.write_text(
+        """
+        {
+          "documents": [],
+          "answers": [],
+          "progress": {
+            "total_errors": 0,
+            "weak_topics": {},
+            "error_buckets": {},
+            "topic_learning_states": {},
+            "item_states": {}
+          }
+        }
+        """.strip(),
+        encoding="utf-8",
+    )
+
+    repository = JsonStudyRepository(repository_path)
+    progress = repository.load_progress()
+
+    assert progress.microtopic_performance == {}
+
+
+def test_repository_tracks_microtopics_independently_from_topics(tmp_path):
+    repository = JsonStudyRepository(tmp_path / "study_data.json")
+    now = datetime(2026, 5, 5, 13, 0, tzinfo=timezone.utc)
+
+    repository.register_answer(
+        topic_id="topic-1",
+        question_id="q-1",
+        microtopic_id="micro-a",
+        is_correct=False,
+        error_type="memory",
+    )
+    repository.record_answer(
+        AnswerSubmission(
+            question_id="q-2",
+            document_id="doc-1",
+            topic_id="topic-1",
+            microtopic_id="micro-b",
+            selected_answer="C",
+            is_correct=True,
+            created_at=now,
+        )
+    )
+
+    progress = repository.load_progress()
+
+    assert progress.topic_learning_states["topic-1"].total_questions == 2
+    assert progress.microtopic_performance["micro-a"].total_questions == 1
+    assert progress.microtopic_performance["micro-a"].recent_errors == 1
+    assert progress.microtopic_performance["micro-b"].total_questions == 1
+    assert progress.microtopic_performance["micro-b"].correct_answers == 1

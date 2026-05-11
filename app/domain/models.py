@@ -37,6 +37,8 @@ class StudyBlock(BaseModel):
     topic_id: str
     quantity: int | None = None
     depth: str | None = None
+    topic_node: TopicNode | None = None
+    microtopic_performance: dict[str, dict[str, object]] = Field(default_factory=dict)
 
 
 class StudySession(BaseModel):
@@ -46,6 +48,27 @@ class StudySession(BaseModel):
     current_block_index: int = 0
     current_question_index: int = 0
     completed: bool = False
+
+
+class TopicNode(BaseModel):
+    title: str
+    level: int
+    content: str
+    children: list["TopicNode"] = Field(default_factory=list)
+
+
+class StudyContent(BaseModel):
+    source_path: str
+    title: str
+    topics: list[TopicNode] = Field(default_factory=list)
+
+
+class MicroTopic(BaseModel):
+    id: str
+    title: str
+    content: str
+    source_topic_title: str
+    difficulty_weight: float = 1.0
 
 
 class Topic(BaseModel):
@@ -70,6 +93,7 @@ class GeneratedQuestion(BaseModel):
     id: str
     document_id: str
     topic_id: str
+    microtopic_id: str | None = None
     style: str
     stem: str
     options: list[str]
@@ -121,6 +145,7 @@ class AnswerSubmission(BaseModel):
     question_id: str
     document_id: str
     topic_id: str
+    microtopic_id: str | None = None
     selected_answer: str
     is_correct: bool
     error_type: str | ErrorType | None = None
@@ -163,6 +188,22 @@ class ItemState(BaseModel):
     last_result: str | None = None
     similarity_group: str | None = None
     last_error_type: str | ErrorType | None = None
+
+
+class MicroTopicPerformance(BaseModel):
+    topic_id: str | None = None
+    total_questions: int = 0
+    correct_answers: int = 0
+    recent_errors: int = 0
+    error_distribution: dict[str, int] = Field(
+        default_factory=lambda: {
+            "conceptual": 0,
+            "attention": 0,
+            "interpretation": 0,
+            "memory": 0,
+        }
+    )
+    last_seen_at: datetime | None = None
 
 
 class LearningPlanEntry(BaseModel):
@@ -208,3 +249,4 @@ class ProgressState(BaseModel):
     error_buckets: dict[ErrorType, int] = Field(default_factory=dict)
     topic_learning_states: dict[str, TopicLearningState] = Field(default_factory=dict)
     item_states: dict[str, ItemState] = Field(default_factory=dict)
+    microtopic_performance: dict[str, MicroTopicPerformance] = Field(default_factory=dict)

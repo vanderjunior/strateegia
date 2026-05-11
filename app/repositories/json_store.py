@@ -8,6 +8,7 @@ from app.domain.models import (
     Document,
     ErrorType,
     ItemState,
+    MicroTopicPerformance,
     ProgressState,
     TopicLearningState,
     utc_now,
@@ -25,13 +26,14 @@ class JsonStudyRepository:
                     "answers": [],
                     "progress": {
                         "total_errors": 0,
-                        "weak_topics": {},
-                        "error_buckets": {},
-                        "topic_learning_states": {},
-                        "item_states": {},
-                    },
-                }
-            )
+                    "weak_topics": {},
+                    "error_buckets": {},
+                    "topic_learning_states": {},
+                    "item_states": {},
+                    "microtopic_performance": {},
+                },
+            }
+        )
 
     def _read(self) -> dict:
         return json.loads(self.path.read_text(encoding="utf-8"))
@@ -52,6 +54,15 @@ class JsonStudyRepository:
 
     def _normalize_topic_state(self, topic_id: str, state: dict | None = None) -> dict:
         normalized = TopicLearningState(topic_id=topic_id).model_dump(mode="json")
+        if state:
+            normalized.update(state)
+        distribution = dict(self._default_error_distribution())
+        distribution.update(normalized.get("error_distribution", {}) or {})
+        normalized["error_distribution"] = distribution
+        return normalized
+
+    def _normalize_microtopic_state(self, state: dict | None = None) -> dict:
+        normalized = MicroTopicPerformance().model_dump(mode="json")
         if state:
             normalized.update(state)
         distribution = dict(self._default_error_distribution())
@@ -119,6 +130,7 @@ class JsonStudyRepository:
         *,
         topic_id: str,
         question_id: str,
+        microtopic_id: str | None = None,
         is_correct: bool,
         error_type: str | ErrorType | None = None,
     ) -> None:
@@ -133,6 +145,7 @@ class JsonStudyRepository:
                 question_id=question_id,
                 document_id=document_id,
                 topic_id=topic_id,
+                microtopic_id=microtopic_id,
                 selected_answer="true" if is_correct else "false",
                 is_correct=is_correct,
                 error_type=error_type,
@@ -146,6 +159,7 @@ class JsonStudyRepository:
         progress = payload["progress"]
         topic_states = progress.setdefault("topic_learning_states", {})
         item_states = progress.setdefault("item_states", {})
+        microtopic_states = progress.setdefault("microtopic_performance", {})
         topic_state = self._normalize_topic_state(
             submission.topic_id, topic_states.get(submission.topic_id)
         )
@@ -153,6 +167,12 @@ class JsonStudyRepository:
             question_id=submission.question_id,
             topic_id=submission.topic_id,
         ).model_dump(mode="json")
+        microtopic_state = None
+        if submission.microtopic_id:
+            microtopic_state = self._normalize_microtopic_state(
+                microtopic_states.get(submission.microtopic_id)
+            )
+            microtopic_state["topic_id"] = submission.topic_id
 
         topic_state["attempts"] += 1
         topic_state["total_questions"] = topic_state.get("total_questions", 0) + 1
@@ -161,6 +181,9 @@ class JsonStudyRepository:
         topic_state["last_seen_at"] = submission.created_at.isoformat()
         item_state["seen_count"] += 1
         item_state["last_seen_at"] = submission.created_at.isoformat()
+        if microtopic_state is not None:
+            microtopic_state["total_questions"] = microtopic_state.get("total_questions", 0) + 1
+            microtopic_state["last_seen_at"] = submission.created_at.isoformat()
 
         if not submission.is_correct:
             progress["total_errors"] += 1
@@ -187,6 +210,13 @@ class JsonStudyRepository:
             item_state["last_error_type"] = (
                 submission.error_type.value if isinstance(submission.error_type, ErrorType) else submission.error_type
             )
+            if microtopic_state is not None:
+                microtopic_state["recent_errors"] = microtopic_state.get("recent_errors", 0) + 1
+                normalized_error_type = self._normalize_error_type(submission.error_type)
+                if normalized_error_type:
+                    distribution = microtopic_state.get("error_distribution") or self._default_error_distribution()
+                    distribution[normalized_error_type] = distribution.get(normalized_error_type, 0) + 1
+                    microtopic_state["error_distribution"] = distribution
             bucket_key = self._legacy_error_bucket_key(submission.error_type)
             if bucket_key:
                 progress["error_buckets"][bucket_key] = (
@@ -210,9 +240,16 @@ class JsonStudyRepository:
             item_state["difficulty_level"] = min(
                 4, 1 + item_state["correct_count"] // 2
             )
+            if microtopic_state is not None:
+                microtopic_state["correct_answers"] = microtopic_state.get("correct_answers", 0) + 1
+                microtopic_state["recent_errors"] = max(
+                    0, microtopic_state.get("recent_errors", 0) - 1
+                )
 
         topic_states[submission.topic_id] = topic_state
         item_states[submission.question_id] = item_state
+        if submission.microtopic_id and microtopic_state is not None:
+            microtopic_states[submission.microtopic_id] = microtopic_state
         self._write(payload)
 
     def load_progress(self) -> ProgressState:
@@ -230,10 +267,17 @@ class JsonStudyRepository:
             question_id: ItemState.model_validate(state)
             for question_id, state in payload.get("item_states", {}).items()
         }
+        microtopic_performance = {
+            microtopic_id: MicroTopicPerformance.model_validate(
+                self._normalize_microtopic_state(state)
+            )
+            for microtopic_id, state in payload.get("microtopic_performance", {}).items()
+        }
         return ProgressState(
             total_errors=payload["total_errors"],
             weak_topics=payload["weak_topics"],
             error_buckets=bucket_map,
             topic_learning_states=topic_states,
             item_states=item_states,
+            microtopic_performance=microtopic_performance,
         )

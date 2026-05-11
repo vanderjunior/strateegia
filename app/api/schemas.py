@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class AnswerSubmission(BaseModel):
     topic_id: str
     question_id: str
+    microtopic_id: str | None = None
     user_answer: bool
     correct_answer: bool
     error_type: str | None = None

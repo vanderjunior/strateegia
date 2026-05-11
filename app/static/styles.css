@@ -7,7 +7,10 @@
   --primary: #1f5eff;
   --primary-dark: #1849c7;
   --success: #0f8b4c;
+  --success-soft: #e8f7ef;
   --danger: #b42318;
+  --danger-soft: #fdecea;
+  --info-soft: #edf3ff;
 }
 
 * {
@@ -64,6 +67,11 @@ button:hover {
   background: var(--primary-dark);
 }
 
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .secondary-button {
   margin-top: 12px;
   background: #ececec;
@@ -96,12 +104,42 @@ button:hover {
 .help-card,
 .block-card,
 .feedback-card,
-.session-meta {
+.session-meta,
+.completion-card {
   margin-top: 18px;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: #fafafa;
+}
+
+.loading-indicator {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--info-soft);
+  color: var(--primary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.error-banner {
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid rgba(180, 35, 24, 0.18);
+}
+
+.hidden {
+  display: none;
+}
+
+.block-progress {
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .placeholder {
@@ -139,6 +177,13 @@ button:hover {
   flex: 1;
 }
 
+.error-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
 .meta-row {
   display: flex;
   flex-direction: column;
@@ -151,8 +196,41 @@ button:hover {
   font-weight: 600;
 }
 
+.feedback-card {
+  border-width: 2px;
+}
+
+.feedback-success {
+  background: var(--success-soft);
+  border-color: rgba(15, 139, 76, 0.25);
+}
+
+.feedback-error {
+  background: var(--danger-soft);
+  border-color: rgba(180, 35, 24, 0.22);
+}
+
+.feedback-status {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.session-stats {
+  display: flex;
+  gap: 12px;
+  margin: 14px 0 18px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 @media (max-width: 960px) {
   .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .error-type-grid {
     grid-template-columns: 1fr;
   }
 }

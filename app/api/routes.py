@@ -46,6 +46,7 @@ def _record_feedback_answer(
     repository.register_answer(
         topic_id=submission.topic_id,
         question_id=submission.question_id,
+        microtopic_id=submission.microtopic_id,
         is_correct=is_correct,
         error_type=submission.error_type if not is_correct else None,
     )
@@ -163,6 +164,7 @@ def submit_session_answer(
         FeedbackAnswerSubmission(
             topic_id=current_block["topic_id"],
             question_id=submission.question_id,
+            microtopic_id=current_block.get("microtopic_id"),
             user_answer=submission.user_answer,
             correct_answer=submission.correct_answer,
             error_type=submission.error_type,

@@ -22,6 +22,12 @@ ERROR_TYPE_WEIGHTS = {
     "attention": 0.3,
 }
 
+MICROTOPIC_PRIORITY_WEIGHT = 0.25
+MICROTOPIC_SCORE_CAP = 1.5
+MICROTOPIC_TOP_SCORES = 3
+MICROTOPIC_FULL_WEIGHT_MIN_COUNT = 2
+MICROTOPIC_MAX_RELATIVE_DELTA = 0.25
+
 
 def get_dominant_error_type(performance_data) -> str | None:
     distribution = dict(performance_data.get("error_distribution", {}) or {})
@@ -52,6 +58,56 @@ def compute_dynamic_priority(topic_data: dict) -> float:
     return float(priority)
 
 
+def compute_microtopic_priority(microtopic_data: dict) -> float:
+    total_questions = int(microtopic_data.get("total_questions", 0) or 0)
+    correct_answers = int(microtopic_data.get("correct_answers", 0) or 0)
+    recent_errors = int(microtopic_data.get("recent_errors", 0) or 0)
+    error_distribution = dict(microtopic_data.get("error_distribution", {}) or {})
+
+    accuracy = correct_answers / max(total_questions, 1)
+    weighted_errors = sum(
+        int(error_distribution.get(error_type, 0) or 0) * weight
+        for error_type, weight in ERROR_TYPE_WEIGHTS.items()
+    )
+    priority = (
+        (1 - accuracy) * 0.6
+        + (recent_errors * 0.3)
+        + (weighted_errors * 0.1)
+        + (0.1 if total_questions == 0 else 0.0)
+    )
+    return float(priority)
+
+
+def aggregate_topic_priority(topic_priority: float, microtopic_scores: list[float]) -> float:
+    if not microtopic_scores:
+        return float(topic_priority)
+
+    ordered_scores = sorted(
+        min(float(score), MICROTOPIC_SCORE_CAP)
+        for score in microtopic_scores
+        if score >= 0.0
+    )
+    if not ordered_scores:
+        return float(topic_priority)
+
+    strongest_scores = ordered_scores[-MICROTOPIC_TOP_SCORES:]
+    strongest_score = strongest_scores[-1]
+    average_score = sum(strongest_scores) / len(strongest_scores)
+    microtopic_signal = strongest_score * 0.6 + average_score * 0.4
+    sample_weight = min(
+        len(strongest_scores) / MICROTOPIC_FULL_WEIGHT_MIN_COUNT,
+        1.0,
+    )
+    effective_weight = MICROTOPIC_PRIORITY_WEIGHT * sample_weight
+    blended_priority = (
+        topic_priority * (1 - effective_weight)
+        + microtopic_signal * effective_weight
+    )
+    lower_bound = topic_priority * (1 - MICROTOPIC_MAX_RELATIVE_DELTA)
+    upper_bound = topic_priority * (1 + MICROTOPIC_MAX_RELATIVE_DELTA)
+    return float(min(max(blended_priority, lower_bound), upper_bound))
+
+
 def resolve_study_strategy(entry: LearningPlanEntry) -> StudyStrategy:
     error_type = entry.dominant_error_type
     if error_type == "conceptual":
@@ -76,6 +132,7 @@ def _priority_intensity(priority_score: float) -> str:
 def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
     strategy = entry.study_strategy or StudyStrategy.MIXED
     intensity = _priority_intensity(entry.priority_score)
+    microtopic_performance = dict(entry.performance_data.get("microtopic_performance", {}) or {})
 
     summary_depth = {
         "high": "deep",
@@ -90,24 +147,59 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
 
     if strategy == StudyStrategy.THEORY_REVIEW:
         return [
-            StudyBlock(type="summary", topic_id=entry.topic_id, depth=summary_depth),
-            StudyBlock(type="questions", topic_id=entry.topic_id, quantity=question_quantity),
+            StudyBlock(
+                type="summary",
+                topic_id=entry.topic_id,
+                depth=summary_depth,
+                microtopic_performance=microtopic_performance,
+            ),
+            StudyBlock(
+                type="questions",
+                topic_id=entry.topic_id,
+                quantity=question_quantity,
+                microtopic_performance=microtopic_performance,
+            ),
         ]
     if strategy == StudyStrategy.QUESTIONS:
         return [
-            StudyBlock(type="questions", topic_id=entry.topic_id, quantity=question_quantity),
+            StudyBlock(
+                type="questions",
+                topic_id=entry.topic_id,
+                quantity=question_quantity,
+                microtopic_performance=microtopic_performance,
+            ),
         ]
     if strategy == StudyStrategy.QUICK_REVIEW:
         if intensity == "light":
             return [
-                StudyBlock(type="summary", topic_id=entry.topic_id, depth="light"),
+                StudyBlock(
+                    type="summary",
+                    topic_id=entry.topic_id,
+                    depth="light",
+                    microtopic_performance=microtopic_performance,
+                ),
             ]
         return [
-            StudyBlock(type="questions", topic_id=entry.topic_id, quantity=question_quantity),
+            StudyBlock(
+                type="questions",
+                topic_id=entry.topic_id,
+                quantity=question_quantity,
+                microtopic_performance=microtopic_performance,
+            ),
         ]
     return [
-        StudyBlock(type="summary", topic_id=entry.topic_id, depth="light"),
-        StudyBlock(type="questions", topic_id=entry.topic_id, quantity=question_quantity),
+        StudyBlock(
+            type="summary",
+            topic_id=entry.topic_id,
+            depth="light",
+            microtopic_performance=microtopic_performance,
+        ),
+        StudyBlock(
+            type="questions",
+            topic_id=entry.topic_id,
+            quantity=question_quantity,
+            microtopic_performance=microtopic_performance,
+        ),
     ]
 
 
@@ -183,6 +275,14 @@ class LearningDecisionEngine:
                                 else None
                             ),
                         },
+                        "microtopic_performance": [
+                            {
+                                "id": microtopic_id,
+                                **state.model_dump(mode="json"),
+                            }
+                            for microtopic_id, state in progress.microtopic_performance.items()
+                            if state.topic_id == topic.id
+                        ],
                     }
                 )
 
@@ -214,9 +314,15 @@ class LearningDecisionEngine:
             return []
 
         resolved_raw_scores = [
-            compute_dynamic_priority(candidate["performance_data"])
-            if candidate.get("performance_data")
-            else candidate["raw_priority"]
+            aggregate_topic_priority(
+                compute_dynamic_priority(candidate["performance_data"])
+                if candidate.get("performance_data")
+                else candidate["raw_priority"],
+                [
+                    compute_microtopic_priority(microtopic_data)
+                    for microtopic_data in candidate.get("microtopic_performance", [])
+                ],
+            )
             for candidate in topic_candidates
         ]
         min_score = min(resolved_raw_scores)
@@ -224,11 +330,30 @@ class LearningDecisionEngine:
 
         ranked_entries: list[LearningPlanEntry] = []
         for candidate, resolved_raw_priority in zip(topic_candidates, resolved_raw_scores, strict=False):
+            topic_dynamic_priority = (
+                compute_dynamic_priority(candidate["performance_data"])
+                if candidate.get("performance_data")
+                else candidate["raw_priority"]
+            )
+            microtopic_scores = [
+                compute_microtopic_priority(microtopic_data)
+                for microtopic_data in candidate.get("microtopic_performance", [])
+            ]
             normalized_priority = self._normalize_score(
                 resolved_raw_priority, min_score, max_score
             )
             score_breakdown = dict(candidate["score_breakdown"])
             score_breakdown["static_priority"] = round(candidate["raw_priority"], 4)
+            score_breakdown["topic_dynamic_priority"] = round(topic_dynamic_priority, 4)
+            score_breakdown["microtopic_adjusted_priority"] = round(resolved_raw_priority, 4)
+            score_breakdown["microtopic_adjustment"] = round(
+                resolved_raw_priority - topic_dynamic_priority, 4
+            )
+            score_breakdown["microtopic_count"] = len(microtopic_scores)
+            score_breakdown["microtopic_signal"] = round(
+                (sum(microtopic_scores) / len(microtopic_scores)) if microtopic_scores else 0.0,
+                4,
+            )
             score_breakdown["dynamic_priority"] = round(resolved_raw_priority, 4)
             score_breakdown["raw_priority"] = round(resolved_raw_priority, 4)
             score_breakdown["normalized_priority"] = normalized_priority
@@ -249,7 +374,15 @@ class LearningDecisionEngine:
                         reasons=candidate["reasons"],
                         score_breakdown=score_breakdown,
                         item_reasons=item_reasons,
-                        performance_data=candidate.get("performance_data", {}),
+                        performance_data={
+                            **candidate.get("performance_data", {}),
+                            "microtopic_performance": {
+                                microtopic_data.get("id", f"micro-{index}"): microtopic_data
+                                for index, microtopic_data in enumerate(
+                                    candidate.get("microtopic_performance", [])
+                                )
+                            },
+                        },
                         dominant_error_type=get_dominant_error_type(
                             candidate.get("performance_data", {})
                         ),

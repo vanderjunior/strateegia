@@ -105,6 +105,7 @@ class SessionManager:
                                 block_index=block_index,
                                 question_index=question_index,
                             ),
+                            "microtopic_id": question.get("microtopic_id"),
                             "statement": question["statement"],
                             "correct_answer": question["answer"],
                             "explanation": question["explanation"],
