@@ -337,3 +337,83 @@ def test_repository_tracks_microtopics_independently_from_topics(tmp_path):
     assert progress.microtopic_performance["micro-a"].recent_errors == 1
     assert progress.microtopic_performance["micro-b"].total_questions == 1
     assert progress.microtopic_performance["micro-b"].correct_answers == 1
+
+
+def test_microtopic_temporal_persistence_updates_feedback_timestamps_and_streaks(tmp_path):
+    client, repository = create_client(tmp_path)
+    now = datetime(2026, 5, 5, 13, 30, tzinfo=timezone.utc)
+    document = build_document(
+        title="Balizamento",
+        topic_id="topic-1",
+        question_id="q-1",
+        created_at=now - timedelta(days=1),
+    )
+    repository.save_document(document)
+
+    client.post(
+        "/api/answers/submit",
+        json={
+            "topic_id": "topic-1",
+            "question_id": "q-1",
+            "microtopic_id": "micro-time",
+            "user_answer": False,
+            "correct_answer": True,
+            "error_type": "conceptual",
+        },
+    )
+    client.post(
+        "/api/answers/submit",
+        json={
+            "topic_id": "topic-1",
+            "question_id": "q-1",
+            "microtopic_id": "micro-time",
+            "user_answer": True,
+            "correct_answer": True,
+        },
+    )
+
+    microtopic = repository.load_progress().microtopic_performance["micro-time"]
+
+    assert microtopic.last_reviewed_at is not None
+    assert microtopic.last_correct_at is not None
+    assert microtopic.last_incorrect_at is not None
+    assert microtopic.consecutive_correct == 1
+    assert microtopic.consecutive_incorrect == 0
+
+
+def test_repository_loads_old_microtopic_json_without_temporal_fields(tmp_path):
+    repository_path = tmp_path / "study_data.json"
+    repository_path.write_text(
+        """
+        {
+          "documents": [],
+          "answers": [],
+          "progress": {
+            "total_errors": 0,
+            "weak_topics": {},
+            "error_buckets": {},
+            "topic_learning_states": {},
+            "item_states": {},
+            "microtopic_performance": {
+              "micro-old": {
+                "topic_id": "topic-1",
+                "total_questions": 2,
+                "correct_answers": 1,
+                "recent_errors": 1,
+                "error_distribution": {
+                  "conceptual": 1
+                }
+              }
+            }
+          }
+        }
+        """.strip(),
+        encoding="utf-8",
+    )
+
+    repository = JsonStudyRepository(repository_path)
+    microtopic = repository.load_progress().microtopic_performance["micro-old"]
+
+    assert microtopic.last_reviewed_at is None
+    assert microtopic.consecutive_correct == 0
+    assert microtopic.consecutive_incorrect == 0

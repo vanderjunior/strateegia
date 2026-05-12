@@ -204,6 +204,11 @@ class MicroTopicPerformance(BaseModel):
         }
     )
     last_seen_at: datetime | None = None
+    last_reviewed_at: datetime | None = None
+    last_correct_at: datetime | None = None
+    last_incorrect_at: datetime | None = None
+    consecutive_correct: int = 0
+    consecutive_incorrect: int = 0
 
 
 class LearningPlanEntry(BaseModel):
@@ -211,6 +216,7 @@ class LearningPlanEntry(BaseModel):
     document_title: str
     topic_id: str
     topic_title: str
+    topic_content: str | None = None
     question_ids: list[str] = Field(default_factory=list)
     priority_score: float
     recommended_difficulty: int = 1

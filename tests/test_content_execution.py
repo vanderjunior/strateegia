@@ -307,6 +307,75 @@ def test_execute_study_block_mastered_microtopics_periodically_resurface():
     assert "Conceito" in resurfaced_titles
 
 
+def test_execute_study_block_temporal_inactivity_resurfaces_old_microtopic():
+    topic_node = build_topic_node(
+        title="Aparelhos Sonoros",
+        content=(
+            "Conceito: sinais curtos indicam manobras objetivas.\n\n"
+            "Aplicacao: compare cruzamento e ultrapassagem."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="aparelhos", depth="deep", topic_node=topic_node)
+    )
+    ids = {item["title"]: item["id"] for item in probe["selected_microtopics"]}
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="aparelhos",
+            quantity=2,
+            topic_node=topic_node,
+            microtopic_performance={
+                ids["Conceito"]: build_microtopic_performance(
+                    total_questions=6,
+                    correct_answers=6,
+                    recent_errors=0,
+                    last_reviewed_at="2026-01-01T10:00:00+00:00",
+                    last_correct_at="2026-01-01T10:00:00+00:00",
+                    consecutive_correct=4,
+                )
+            },
+        )
+    )
+
+    assert any(item["title"] == "Conceito" for item in payload["resurfaced_microtopics"])
+
+
+def test_execute_study_block_consecutive_success_stabilizes_repetition_pressure():
+    topic_node = build_topic_node(
+        title="Marcas Cardeais",
+        content=(
+            "Conceito: indicam quadrantes de perigo.\n\n"
+            "Excecao: top marks exigem leitura precisa."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="cardeais", depth="deep", topic_node=topic_node)
+    )
+    ids = {item["title"]: item["id"] for item in probe["selected_microtopics"]}
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="cardeais",
+            quantity=2,
+            topic_node=topic_node,
+            microtopic_performance={
+                ids["Excecao"]: build_microtopic_performance(
+                    total_questions=7,
+                    correct_answers=7,
+                    recent_errors=0,
+                    last_reviewed_at="2026-05-10T10:00:00+00:00",
+                    last_correct_at="2026-05-10T10:00:00+00:00",
+                    consecutive_correct=5,
+                )
+            },
+        )
+    )
+
+    weak_titles = {item["title"] for item in payload["weak_microtopics"]}
+    assert "Excecao" not in weak_titles
+
+
 def test_execute_study_block_cumulative_review_balances_weak_and_mastered_questions():
     topic_node = build_topic_node(
         title="Sinalizacao",

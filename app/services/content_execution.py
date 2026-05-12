@@ -188,21 +188,29 @@ def _build_microtopic_profile(
     total_questions = int(performance["total_questions"])
     correct_answers = int(performance["correct_answers"])
     recent_errors = int(performance["recent_errors"])
+    consecutive_correct = int(performance["consecutive_correct"])
+    consecutive_incorrect = int(performance["consecutive_incorrect"])
     accuracy = correct_answers / max(total_questions, 1)
     weakness_signal = min(
         compute_microtopic_priority(performance) / MICROTOPIC_PRIORITY_CAP,
         1.0,
     )
-    resurfacing_signal = _resurfacing_signal(performance["last_seen_at"])
+    resurfacing_signal = _resurfacing_signal(
+        performance["last_reviewed_at"] or performance["last_seen_at"]
+    )
     difficulty_signal = min(max(microtopic.difficulty_weight - 1.0, 0.0) / 0.4, 1.0)
     mastered = total_questions >= 3 and accuracy >= 0.75 and recent_errors == 0
     cumulative_signal = max(resurfacing_signal, 0.35 if mastered else 0.15)
+    temporal_reinforcement = min(consecutive_incorrect * 0.12, 0.3)
+    stabilization_discount = min(consecutive_correct * 0.05, 0.2)
 
     selection_score = (
         weakness_signal * weights["weakness"]
         + resurfacing_signal * weights["resurfacing"]
         + difficulty_signal * weights["difficulty"]
         + cumulative_signal * weights["cumulative"]
+        + temporal_reinforcement
+        - stabilization_discount
     )
     if mastered and review_stage == "light":
         selection_score += 0.08
@@ -214,7 +222,7 @@ def _build_microtopic_profile(
         "resurfacing_signal": round(resurfacing_signal, 6),
         "difficulty_weight": microtopic.difficulty_weight,
         "is_mastered": mastered,
-        "is_weak": recent_errors > 0 or weakness_signal >= 0.6,
+        "is_weak": recent_errors > 0 or weakness_signal >= 0.6 or consecutive_incorrect >= 2,
         "is_resurfaced": mastered and resurfacing_signal >= 0.5,
         "position": 0,
     }
@@ -382,6 +390,11 @@ def _normalize_microtopic_performance(raw_performance: dict[str, object] | None)
             "memory": 0,
         },
         "last_seen_at": None,
+        "last_reviewed_at": None,
+        "last_correct_at": None,
+        "last_incorrect_at": None,
+        "consecutive_correct": 0,
+        "consecutive_incorrect": 0,
     }
     if not raw_performance:
         return performance
@@ -393,6 +406,11 @@ def _normalize_microtopic_performance(raw_performance: dict[str, object] | None)
     distribution.update(raw_performance.get("error_distribution", {}) or {})
     performance["error_distribution"] = distribution
     performance["last_seen_at"] = raw_performance.get("last_seen_at")
+    performance["last_reviewed_at"] = raw_performance.get("last_reviewed_at")
+    performance["last_correct_at"] = raw_performance.get("last_correct_at")
+    performance["last_incorrect_at"] = raw_performance.get("last_incorrect_at")
+    performance["consecutive_correct"] = int(raw_performance.get("consecutive_correct", 0) or 0)
+    performance["consecutive_incorrect"] = int(raw_performance.get("consecutive_incorrect", 0) or 0)
     return performance
 
 

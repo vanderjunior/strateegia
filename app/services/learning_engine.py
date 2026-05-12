@@ -10,6 +10,7 @@ from app.domain.models import (
     LearningPlanEntry,
     StudyBlock,
     StudyStrategy,
+    TopicNode,
     TopicLearningState,
     utc_now,
 )
@@ -141,6 +142,11 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
         "medium": "medium",
     }.get(intensity, "light")
     microtopic_performance = dict(entry.performance_data.get("microtopic_performance", {}) or {})
+    topic_node = (
+        TopicNode(title=entry.topic_title, level=2, content=entry.topic_content or "", children=[])
+        if entry.topic_content
+        else None
+    )
 
     summary_depth = {
         "deep": "deep",
@@ -159,12 +165,14 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 type="summary",
                 topic_id=entry.topic_id,
                 depth=summary_depth,
+                topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
             ),
             StudyBlock(
                 type="questions",
                 topic_id=entry.topic_id,
                 quantity=question_quantity,
+                topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
             ),
         ]
@@ -174,6 +182,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 type="questions",
                 topic_id=entry.topic_id,
                 quantity=question_quantity,
+                topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
             ),
         ]
@@ -184,6 +193,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                     type="summary",
                     topic_id=entry.topic_id,
                     depth="light",
+                    topic_node=topic_node,
                     microtopic_performance=microtopic_performance,
                 ),
             ]
@@ -192,6 +202,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 type="questions",
                 topic_id=entry.topic_id,
                 quantity=question_quantity,
+                topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
             ),
         ]
@@ -200,12 +211,14 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
             type="summary",
             topic_id=entry.topic_id,
             depth="light",
+            topic_node=topic_node,
             microtopic_performance=microtopic_performance,
         ),
         StudyBlock(
             type="questions",
             topic_id=entry.topic_id,
             quantity=question_quantity,
+            topic_node=topic_node,
             microtopic_performance=microtopic_performance,
         ),
     ]
@@ -410,6 +423,7 @@ class LearningDecisionEngine:
                         document_title=candidate["document"].title,
                         topic_id=candidate["topic"].id,
                         topic_title=candidate["topic"].title,
+                        topic_content=candidate["topic"].content,
                         question_ids=[question["id"] for question in candidate["question_candidates"]],
                         priority_score=normalized_priority,
                     recommended_difficulty=candidate["recommended_difficulty"],

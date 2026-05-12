@@ -184,6 +184,7 @@ class JsonStudyRepository:
         if microtopic_state is not None:
             microtopic_state["total_questions"] = microtopic_state.get("total_questions", 0) + 1
             microtopic_state["last_seen_at"] = submission.created_at.isoformat()
+            microtopic_state["last_reviewed_at"] = submission.created_at.isoformat()
 
         if not submission.is_correct:
             progress["total_errors"] += 1
@@ -212,6 +213,11 @@ class JsonStudyRepository:
             )
             if microtopic_state is not None:
                 microtopic_state["recent_errors"] = microtopic_state.get("recent_errors", 0) + 1
+                microtopic_state["last_incorrect_at"] = submission.created_at.isoformat()
+                microtopic_state["consecutive_incorrect"] = (
+                    microtopic_state.get("consecutive_incorrect", 0) + 1
+                )
+                microtopic_state["consecutive_correct"] = 0
                 normalized_error_type = self._normalize_error_type(submission.error_type)
                 if normalized_error_type:
                     distribution = microtopic_state.get("error_distribution") or self._default_error_distribution()
@@ -245,6 +251,11 @@ class JsonStudyRepository:
                 microtopic_state["recent_errors"] = max(
                     0, microtopic_state.get("recent_errors", 0) - 1
                 )
+                microtopic_state["last_correct_at"] = submission.created_at.isoformat()
+                microtopic_state["consecutive_correct"] = (
+                    microtopic_state.get("consecutive_correct", 0) + 1
+                )
+                microtopic_state["consecutive_incorrect"] = 0
 
         topic_states[submission.topic_id] = topic_state
         item_states[submission.question_id] = item_state

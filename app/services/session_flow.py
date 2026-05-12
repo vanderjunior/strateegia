@@ -79,14 +79,17 @@ class SessionManager:
         session.completed = False
 
     def _build_runtime_blocks(self, entries: list[LearningPlanEntry]) -> list[dict]:
-        runtime_blocks: list[dict] = []
+        topic_bundles: list[dict[str, object]] = []
         for entry_index, entry in enumerate(entries):
+            summaries: list[dict] = []
+            question_blocks: list[dict] = []
             for block_index, block in enumerate(entry.study_blocks):
                 executed = execute_study_block(block)
                 if executed["type"] == "summary":
-                    runtime_blocks.append(
+                    summaries.append(
                         {
                             **executed,
+                            "topic_title": entry.topic_title,
                             "_entry_index": entry_index,
                             "_block_index": block_index,
                             "_question_index": 0,
@@ -94,12 +97,13 @@ class SessionManager:
                     )
                     continue
 
-                questions = executed.get("questions", [])
-                for question_index, question in enumerate(questions):
-                    runtime_blocks.append(
+                executed_questions = executed.get("questions", [])
+                for question_index, question in enumerate(executed_questions):
+                    question_blocks.append(
                         {
                             "type": "question",
                             "topic_id": entry.topic_id,
+                            "topic_title": entry.topic_title,
                             "question_id": self._runtime_question_id(
                                 entry,
                                 block_index=block_index,
@@ -114,6 +118,31 @@ class SessionManager:
                             "_question_index": question_index,
                         }
                     )
+            topic_bundles.append(
+                {
+                    "summaries": summaries,
+                    "questions": question_blocks,
+                }
+            )
+        return self._interleave_runtime_blocks(topic_bundles)
+
+    def _interleave_runtime_blocks(self, topic_bundles: list[dict[str, object]]) -> list[dict]:
+        runtime_blocks: list[dict] = []
+        question_queues: list[list[dict]] = []
+
+        for bundle in topic_bundles:
+            summaries = list(bundle["summaries"])
+            questions = list(bundle["questions"])
+            runtime_blocks.extend(summaries)
+            if questions:
+                runtime_blocks.append(questions.pop(0))
+            question_queues.append(questions)
+
+        while any(question_queues):
+            for queue in question_queues:
+                if queue:
+                    runtime_blocks.append(queue.pop(0))
+
         return runtime_blocks
 
     def _runtime_question_id(

@@ -237,3 +237,89 @@ def test_session_invalid_session_id_returns_404(tmp_path):
 
     assert current.status_code == 404
     assert answer.status_code == 404
+
+
+def test_session_hybrid_flow_interleaves_question_microtopics_across_topics_deterministically(tmp_path):
+    client, repository = create_client(tmp_path)
+    now = datetime(2026, 5, 5, 17, 0, tzinfo=timezone.utc)
+    repository.save_document(
+        build_document(
+            title="RIPAM",
+            topic_id="topic-ripam",
+            question_id="q-ripam",
+            created_at=now - timedelta(days=2),
+        )
+    )
+    repository.save_document(
+        build_document(
+            title="NORMAM",
+            topic_id="topic-normam",
+            question_id="q-normam",
+            created_at=now - timedelta(days=1),
+        )
+    )
+
+    started = client.post("/api/session/start", json={"title": "Sessao", "max_questions": 4}).json()
+    sequence = [started["first_block"]]
+    next_payload = client.post(f"/api/session/{started['session_id']}/answer").json()
+    sequence.append(next_payload["next_block"])
+
+    while True:
+        current = sequence[-1]
+        if current["type"] != "question":
+            next_payload = client.post(f"/api/session/{started['session_id']}/answer").json()
+        else:
+            next_payload = answer_current_question(client, started["session_id"], current, correct=True).json()
+        if next_payload.get("completed"):
+            break
+        sequence.append(next_payload["next_block"])
+
+    question_blocks = [block for block in sequence if block["type"] == "question"]
+
+    assert sequence[0]["type"] == "summary"
+    assert question_blocks[0]["topic_id"] != question_blocks[1]["topic_id"]
+    assert all(block.get("microtopic_id") for block in question_blocks)
+
+
+def test_session_keeps_summary_before_first_question_of_each_topic(tmp_path):
+    client, repository = create_client(tmp_path)
+    now = datetime(2026, 5, 5, 17, 30, tzinfo=timezone.utc)
+    repository.save_document(
+        build_document(
+            title="Sinais Sonoros",
+            topic_id="topic-sinais",
+            question_id="q-sinais",
+            created_at=now - timedelta(days=2),
+        )
+    )
+    repository.save_document(
+        build_document(
+            title="Luzes",
+            topic_id="topic-luzes",
+            question_id="q-luzes",
+            created_at=now - timedelta(days=1),
+        )
+    )
+
+    started = client.post("/api/session/start", json={"title": "Sessao", "max_questions": 4}).json()
+    blocks = [started["first_block"]]
+    while True:
+        current = blocks[-1]
+        if current["type"] == "summary":
+            payload = client.post(f"/api/session/{started['session_id']}/answer").json()
+        else:
+            payload = answer_current_question(client, started["session_id"], current, correct=True).json()
+        if payload.get("completed"):
+            break
+        blocks.append(payload["next_block"])
+
+    first_summary_index = {}
+    first_question_index = {}
+    for index, block in enumerate(blocks):
+        if block["type"] == "summary":
+            first_summary_index.setdefault(block["topic_id"], index)
+        if block["type"] == "question":
+            first_question_index.setdefault(block["topic_id"], index)
+
+    for topic_id, question_index in first_question_index.items():
+        assert first_summary_index[topic_id] < question_index
