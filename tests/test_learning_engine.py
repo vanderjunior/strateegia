@@ -546,6 +546,29 @@ def test_build_study_blocks_priority_changes_intensity():
     assert low_blocks[1].quantity == 2
 
 
+def test_build_study_blocks_uses_curriculum_review_intensity_when_present():
+    active = build_plan_entry(
+        topic_id="active",
+        raw_priority=0.3,
+        normalized_priority=0.3,
+        study_strategy=StudyStrategy.THEORY_REVIEW,
+    ).model_copy(update={"curriculum_role": "active", "review_intensity": "deep"})
+    cumulative = build_plan_entry(
+        topic_id="cumulative",
+        raw_priority=0.9,
+        normalized_priority=0.9,
+        study_strategy=StudyStrategy.MIXED,
+    ).model_copy(update={"curriculum_role": "cumulative", "review_intensity": "light"})
+
+    active_blocks = build_study_blocks(active)
+    cumulative_blocks = build_study_blocks(cumulative)
+
+    assert active_blocks[0].depth == "deep"
+    assert active_blocks[1].quantity == 5
+    assert cumulative_blocks[0].depth == "light"
+    assert cumulative_blocks[1].quantity == 2
+
+
 def test_learning_engine_prioritizes_errored_topic_over_only_recent_position(tmp_path):
     repository = JsonStudyRepository(tmp_path / "study_data.json")
     now = datetime(2026, 4, 24, 15, 0, tzinfo=timezone.utc)
@@ -592,6 +615,87 @@ def test_learning_engine_prioritizes_errored_topic_over_only_recent_position(tmp
     assert plan.entries
     assert plan.entries[0].topic_id == "topic-old"
     assert any("erro" in reason.lower() for reason in plan.entries[0].reasons)
+
+
+def test_learning_engine_assigns_curriculum_role_and_intensity_by_recency(tmp_path):
+    repository = JsonStudyRepository(tmp_path / "study_data.json")
+    now = datetime(2026, 4, 24, 15, 30, tzinfo=timezone.utc)
+
+    documents = [
+        build_document(
+            title=f"Tema {index}",
+            topic_id=f"topic-{index}",
+            question_id=f"q-{index}",
+            created_at=now - timedelta(days=5 - index),
+        )
+        for index in range(6)
+    ]
+    for document in documents:
+        repository.save_document(document)
+
+    plan = LearningDecisionEngine(repository, now_provider=lambda: now).build_review_plan(
+        title="Curriculo",
+        max_questions=6,
+    )
+
+    by_topic = {entry.topic_id: entry for entry in plan.entries}
+
+    assert by_topic["topic-5"].curriculum_role == "active"
+    assert by_topic["topic-5"].review_intensity == "deep"
+    assert by_topic["topic-1"].curriculum_role == "cumulative"
+    assert by_topic["topic-1"].review_intensity == "light"
+
+
+def test_learning_engine_reintensifies_weak_cumulative_topics_without_breaking_curriculum(tmp_path):
+    repository = JsonStudyRepository(tmp_path / "study_data.json")
+    now = datetime(2026, 4, 24, 16, 0, tzinfo=timezone.utc)
+
+    documents = [
+        build_document(
+            title=f"Tema {index}",
+            topic_id=f"topic-{index}",
+            question_id=f"q-{index}",
+            created_at=now - timedelta(days=5 - index),
+        )
+        for index in range(6)
+    ]
+    for document in documents:
+        repository.save_document(document)
+
+    repository.record_answer(
+        AnswerSubmission(
+            question_id="q-1",
+            document_id=documents[1].id,
+            topic_id="topic-1",
+            microtopic_id="topic-1:weak",
+            selected_answer="B",
+            is_correct=False,
+            error_type=ErrorType.CONCEPT_CONFUSION,
+            created_at=now - timedelta(hours=2),
+        )
+    )
+    repository.record_answer(
+        AnswerSubmission(
+            question_id="q-1",
+            document_id=documents[1].id,
+            topic_id="topic-1",
+            microtopic_id="topic-1:weak",
+            selected_answer="B",
+            is_correct=False,
+            error_type=ErrorType.CONCEPT_CONFUSION,
+            created_at=now - timedelta(hours=1),
+        )
+    )
+
+    plan = LearningDecisionEngine(repository, now_provider=lambda: now).build_review_plan(
+        title="Curriculo adaptativo",
+        max_questions=6,
+    )
+
+    topic_entry = next(entry for entry in plan.entries if entry.topic_id == "topic-1")
+
+    assert topic_entry.curriculum_role == "cumulative"
+    assert topic_entry.review_intensity in {"medium", "deep"}
 
 
 def test_learning_engine_uses_weak_microtopics_to_break_topic_level_ties(tmp_path):
@@ -672,7 +776,14 @@ def test_learning_engine_preserves_base_priority_when_microtopic_data_is_missing
     entry = plan.entries[0]
 
     assert entry.score_breakdown["microtopic_adjustment"] == 0.0
-    assert entry.score_breakdown["dynamic_priority"] == entry.score_breakdown["topic_dynamic_priority"]
+    assert (
+        entry.score_breakdown["dynamic_priority"]
+        == round(
+            entry.score_breakdown["topic_dynamic_priority"]
+            + entry.score_breakdown["curriculum_adjustment"],
+            4,
+        )
+    )
 
 
 def test_learning_engine_extreme_single_microtopic_does_not_overturn_stronger_base_topic(tmp_path):

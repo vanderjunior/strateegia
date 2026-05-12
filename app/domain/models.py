@@ -219,6 +219,8 @@ class LearningPlanEntry(BaseModel):
     item_reasons: dict[str, list[str]] = Field(default_factory=dict)
     performance_data: dict[str, object] = Field(default_factory=dict)
     dominant_error_type: str | None = None
+    curriculum_role: str | None = None
+    review_intensity: str | None = None
     study_strategy: str | None = None
     study_blocks: list[StudyBlock] = Field(default_factory=list)
 
@@ -227,6 +229,24 @@ class LearningPlan(BaseModel):
     title: str
     generated_at: datetime = Field(default_factory=utc_now)
     entries: list[LearningPlanEntry] = Field(default_factory=list)
+
+
+class CurriculumWindow(BaseModel):
+    role: str
+    topic_ids: list[str] = Field(default_factory=list)
+
+
+class CurriculumPhase(BaseModel):
+    phase_number: int
+    active_window: CurriculumWindow
+    cumulative_window: CurriculumWindow
+
+
+class CurriculumProgress(BaseModel):
+    total_topics: int
+    active_window_size: int
+    active_topic_ids: list[str] = Field(default_factory=list)
+    cumulative_topic_ids: list[str] = Field(default_factory=list)
 
 
 class ReviewPayload(BaseModel):

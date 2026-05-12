@@ -13,6 +13,7 @@ from app.domain.models import (
     TopicLearningState,
     utc_now,
 )
+from app.services.curriculum_scheduler import CurriculumScheduler
 
 
 ERROR_TYPE_WEIGHTS = {
@@ -131,19 +132,26 @@ def _priority_intensity(priority_score: float) -> str:
 
 def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
     strategy = entry.study_strategy or StudyStrategy.MIXED
-    intensity = _priority_intensity(entry.priority_score)
-    microtopic_performance = dict(entry.performance_data.get("microtopic_performance", {}) or {})
-
-    summary_depth = {
+    intensity = entry.review_intensity or _priority_intensity(entry.priority_score)
+    normalized_intensity = {
         "high": "deep",
         "normal": "medium",
         "light": "light",
-    }[intensity]
+        "deep": "deep",
+        "medium": "medium",
+    }.get(intensity, "light")
+    microtopic_performance = dict(entry.performance_data.get("microtopic_performance", {}) or {})
+
+    summary_depth = {
+        "deep": "deep",
+        "medium": "medium",
+        "light": "light",
+    }[normalized_intensity]
     question_quantity = {
-        "high": 5,
-        "normal": 4,
+        "deep": 5,
+        "medium": 4,
         "light": 2,
-    }[intensity]
+    }[normalized_intensity]
 
     if strategy == StudyStrategy.THEORY_REVIEW:
         return [
@@ -170,7 +178,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
             ),
         ]
     if strategy == StudyStrategy.QUICK_REVIEW:
-        if intensity == "light":
+        if normalized_intensity == "light":
             return [
                 StudyBlock(
                     type="summary",
@@ -286,6 +294,7 @@ class LearningDecisionEngine:
                     }
                 )
 
+        self._apply_curriculum_schedule(topic_candidates)
         ranked_entries = self._build_ranked_entries(topic_candidates, now)
         ranked_entries.sort(
             key=lambda entry: (entry.priority_score, entry.recommended_difficulty),
@@ -309,27 +318,32 @@ class LearningDecisionEngine:
             "study_blocks": build_study_blocks(enriched_entry),
         }
 
+    def _apply_curriculum_schedule(self, topic_candidates: list[dict]) -> None:
+        scheduler = CurriculumScheduler()
+        snapshots = [
+            {
+                "topic_id": candidate["topic"].id,
+                "created_at": candidate["document"].created_at,
+                "performance_data": candidate.get("performance_data", {}),
+                "dominant_error_type": get_dominant_error_type(candidate.get("performance_data", {})),
+            }
+            for candidate in topic_candidates
+        ]
+        assignments = scheduler.schedule(snapshots)
+        for candidate in topic_candidates:
+            assignment = assignments.get(candidate["topic"].id, {})
+            candidate["curriculum_role"] = assignment.get("curriculum_role")
+            candidate["review_intensity"] = assignment.get("review_intensity")
+            candidate["curriculum_adjustment"] = assignment.get("priority_adjustment", 0.0)
+            candidate["curriculum_reasoning"] = assignment.get("curriculum_reasoning", [])
+
     def _build_ranked_entries(self, topic_candidates: list[dict], now: datetime) -> list[LearningPlanEntry]:
         if not topic_candidates:
             return []
 
-        resolved_raw_scores = [
-            aggregate_topic_priority(
-                compute_dynamic_priority(candidate["performance_data"])
-                if candidate.get("performance_data")
-                else candidate["raw_priority"],
-                [
-                    compute_microtopic_priority(microtopic_data)
-                    for microtopic_data in candidate.get("microtopic_performance", [])
-                ],
-            )
-            for candidate in topic_candidates
-        ]
-        min_score = min(resolved_raw_scores)
-        max_score = max(resolved_raw_scores)
-
-        ranked_entries: list[LearningPlanEntry] = []
-        for candidate, resolved_raw_priority in zip(topic_candidates, resolved_raw_scores, strict=False):
+        scored_candidates: list[dict[str, object]] = []
+        resolved_raw_scores: list[float] = []
+        for candidate in topic_candidates:
             topic_dynamic_priority = (
                 compute_dynamic_priority(candidate["performance_data"])
                 if candidate.get("performance_data")
@@ -339,20 +353,48 @@ class LearningDecisionEngine:
                 compute_microtopic_priority(microtopic_data)
                 for microtopic_data in candidate.get("microtopic_performance", [])
             ]
+            microtopic_adjusted_priority = aggregate_topic_priority(
+                topic_dynamic_priority,
+                microtopic_scores,
+            )
+            final_priority = microtopic_adjusted_priority + float(
+                candidate.get("curriculum_adjustment", 0.0) or 0.0
+            )
+            scored_candidates.append(
+                {
+                    "topic_dynamic_priority": topic_dynamic_priority,
+                    "microtopic_scores": microtopic_scores,
+                    "microtopic_adjusted_priority": microtopic_adjusted_priority,
+                    "final_priority": final_priority,
+                }
+            )
+            resolved_raw_scores.append(final_priority)
+        min_score = min(resolved_raw_scores)
+        max_score = max(resolved_raw_scores)
+
+        ranked_entries: list[LearningPlanEntry] = []
+        for candidate, scoring in zip(topic_candidates, scored_candidates, strict=False):
+            resolved_raw_priority = scoring["final_priority"]
+            topic_dynamic_priority = scoring["topic_dynamic_priority"]
+            microtopic_scores = scoring["microtopic_scores"]
+            microtopic_adjusted_priority = scoring["microtopic_adjusted_priority"]
             normalized_priority = self._normalize_score(
                 resolved_raw_priority, min_score, max_score
             )
             score_breakdown = dict(candidate["score_breakdown"])
             score_breakdown["static_priority"] = round(candidate["raw_priority"], 4)
             score_breakdown["topic_dynamic_priority"] = round(topic_dynamic_priority, 4)
-            score_breakdown["microtopic_adjusted_priority"] = round(resolved_raw_priority, 4)
+            score_breakdown["microtopic_adjusted_priority"] = round(microtopic_adjusted_priority, 4)
             score_breakdown["microtopic_adjustment"] = round(
-                resolved_raw_priority - topic_dynamic_priority, 4
+                microtopic_adjusted_priority - topic_dynamic_priority, 4
             )
             score_breakdown["microtopic_count"] = len(microtopic_scores)
             score_breakdown["microtopic_signal"] = round(
                 (sum(microtopic_scores) / len(microtopic_scores)) if microtopic_scores else 0.0,
                 4,
+            )
+            score_breakdown["curriculum_adjustment"] = round(
+                float(candidate.get("curriculum_adjustment", 0.0) or 0.0), 4
             )
             score_breakdown["dynamic_priority"] = round(resolved_raw_priority, 4)
             score_breakdown["raw_priority"] = round(resolved_raw_priority, 4)
@@ -371,7 +413,7 @@ class LearningDecisionEngine:
                         question_ids=[question["id"] for question in candidate["question_candidates"]],
                         priority_score=normalized_priority,
                     recommended_difficulty=candidate["recommended_difficulty"],
-                        reasons=candidate["reasons"],
+                        reasons=candidate["reasons"] + candidate.get("curriculum_reasoning", []),
                         score_breakdown=score_breakdown,
                         item_reasons=item_reasons,
                         performance_data={
@@ -386,6 +428,8 @@ class LearningDecisionEngine:
                         dominant_error_type=get_dominant_error_type(
                             candidate.get("performance_data", {})
                         ),
+                        curriculum_role=candidate.get("curriculum_role"),
+                        review_intensity=candidate.get("review_intensity"),
                     )
             )
         return ranked_entries
