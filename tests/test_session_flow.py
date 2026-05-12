@@ -159,6 +159,30 @@ def test_session_answer_submission_updates_progress_and_advances(tmp_path):
     assert progress.topic_learning_states["topic-1"].error_distribution["conceptual"] == 1
 
 
+def test_session_blocks_expose_pedagogical_metadata(tmp_path):
+    client, repository = create_client(tmp_path)
+    now = datetime(2026, 5, 5, 15, 45, tzinfo=timezone.utc)
+    repository.save_document(
+        build_document(
+            title="Canal Restrito",
+            topic_id="topic-1",
+            question_id="q-1",
+            created_at=now - timedelta(days=2),
+        )
+    )
+
+    started = start_basic_session(client)
+    summary_block = started["first_block"]
+    question_block = client.post(f"/api/session/{started['session_id']}/answer").json()["next_block"]
+
+    assert "pedagogical_mode" in summary_block
+    assert "intervention_reason" in summary_block
+    assert "explanation_depth" in summary_block
+    assert "retrieval_intensity" in summary_block
+    assert "pedagogical_mode" in question_block
+    assert "intervention_reason" in question_block
+
+
 def test_session_completion_returns_completed_true(tmp_path):
     client, repository = create_client(tmp_path)
     now = datetime(2026, 5, 5, 16, 0, tzinfo=timezone.utc)

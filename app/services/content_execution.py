@@ -6,6 +6,7 @@ from math import ceil
 from app.domain.models import LearningPlanEntry, MicroTopic, StudyBlock, TopicNode
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.microtopic_extractor import MicroTopicExtractor
+from app.services.pedagogical_adapter import resolve_pedagogical_profile
 
 
 REVIEW_STAGE_WEIGHTS = {
@@ -42,8 +43,11 @@ def execute_study_block(block: StudyBlock) -> dict:
         review_stage,
         limit=_resolve_selection_limit(block, review_stage),
         fallback_topic_id=block.topic_id,
+        selected_microtopic_ids=block.selected_microtopic_ids,
     )
     selected_microtopics = selection["selected_microtopics"]
+    pedagogical_profile = _resolve_pedagogical_profile(block, selection)
+    pedagogical_metadata = _pedagogical_metadata(pedagogical_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -51,16 +55,28 @@ def execute_study_block(block: StudyBlock) -> dict:
             "type": "summary",
             "topic_id": block.topic_id,
             "depth": depth,
-            "content": _generate_summary_content(topic_name, depth, selected_microtopics),
+            "content": _generate_summary_content(
+                topic_name,
+                depth,
+                selected_microtopics,
+                pedagogical_profile,
+            ),
             **_selection_metadata(selection),
+            **pedagogical_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
         return {
             "type": "questions",
             "topic_id": block.topic_id,
-            "questions": _generate_questions(topic_name, selected_microtopics, quantity),
+            "questions": _generate_questions(
+                topic_name,
+                selected_microtopics,
+                quantity,
+                pedagogical_profile,
+            ),
             **_selection_metadata(selection),
+            **pedagogical_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -80,6 +96,7 @@ def select_relevant_microtopics(
     *,
     limit: int,
     fallback_topic_id: str = "",
+    selected_microtopic_ids: list[str] | None = None,
 ) -> dict[str, object]:
     microtopics = _resolve_microtopics(fallback_topic_id, topic_node)
     if not microtopics:
@@ -90,6 +107,10 @@ def select_relevant_microtopics(
             "review_intensity": review_stage,
             "adaptive_reasoning": ["Nenhum microtopico encontrado; fallback seguro aplicado."],
         }
+
+    if selected_microtopic_ids:
+        selected_ids = set(selected_microtopic_ids)
+        microtopics = [microtopic for microtopic in microtopics if microtopic.id in selected_ids] or microtopics
 
     performance_map = dict(microtopic_performance or {})
     profiles = [
@@ -121,6 +142,7 @@ def select_relevant_microtopics(
             weak_profiles=weak_profiles,
             resurfaced_profiles=resurfaced_profiles,
         ),
+        "selected_profiles": selected_profiles,
     }
 
 
@@ -311,7 +333,12 @@ def _serialize_microtopics(microtopics: list[MicroTopic]) -> list[dict[str, obje
     ]
 
 
-def _generate_summary_content(topic_name: str, depth: str, microtopics: list[MicroTopic]) -> str:
+def _generate_summary_content(
+    topic_name: str,
+    depth: str,
+    microtopics: list[MicroTopic],
+    pedagogical_profile,
+) -> str:
     if not microtopics:
         return (
             f"Visao rapida de {topic_name}: regra central, palavra-chave e ponto de maior risco em prova."
@@ -322,6 +349,25 @@ def _generate_summary_content(topic_name: str, depth: str, microtopics: list[Mic
         for microtopic in microtopics
     ]
 
+    if pedagogical_profile.pedagogical_mode == "guided_explanation":
+        return (
+            f"Resumo aprofundado de {topic_name}: "
+            + " ".join(
+                f"{index + 1}. {section}" for index, section in enumerate(sections)
+            )
+            + " Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. "
+            + "Exemplo de prova: identifique qual detalhe normativo altera o resultado."
+        )
+    if pedagogical_profile.pedagogical_mode == "contextual_application":
+        return (
+            f"Resumo estruturado de {topic_name}: pontos de prova em contexto pratico. "
+            + " ".join(sections)
+            + " Priorize comparacoes entre cenarios e a condicao que muda a resposta."
+        )
+    if pedagogical_profile.pedagogical_mode == "active_recall":
+        return f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
+    if pedagogical_profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}:
+        return f"Visao rapida de {topic_name}: {sections[0]}"
     if depth == "deep":
         return (
             f"Resumo aprofundado de {topic_name}: "
@@ -341,6 +387,7 @@ def _generate_questions(
     topic_name: str,
     microtopics: list[MicroTopic],
     quantity: int,
+    pedagogical_profile,
 ) -> list[dict]:
     selected = microtopics or _fallback_microtopics(
         topic_id=topic_name.lower().replace(" ", "-"),
@@ -351,7 +398,37 @@ def _generate_questions(
     for index in range(quantity):
         microtopic = selected[index % len(selected)]
         focus = _short_content(microtopic.content)
-        if index % 2 == 0:
+        if pedagogical_profile.pedagogical_mode == "contextual_application":
+            if index % 2 == 0:
+                statement = (
+                    f"Considere uma situacao pratica de {topic_name}: no microtopico {microtopic.title}, {focus.lower()}."
+                )
+                answer = True
+                explanation = (
+                    f"Certo. Em contexto aplicado, {microtopic.title} exige comparar cenarios e reconhecer que {focus}"
+                )
+            else:
+                statement = (
+                    f"Em {topic_name}, o microtopico {microtopic.title} pode ser aplicado sem diferenciar o contexto fatico relevante."
+                )
+                answer = False
+                explanation = (
+                    f"Errado. A leitura correta depende do contexto especifico de {microtopic.title}: {focus}"
+                )
+        elif pedagogical_profile.pedagogical_mode == "active_recall":
+            if index % 2 == 0:
+                statement = (
+                    f"Recorde rapidamente em {topic_name}: no microtopico {microtopic.title}, {focus.lower()}."
+                )
+                answer = True
+                explanation = f"Certo. A lembranca-chave de {microtopic.title} e: {focus}"
+            else:
+                statement = (
+                    f"Em {topic_name}, o microtopico {microtopic.title} dispensa recuperacao precisa de seu detalhe central."
+                )
+                answer = False
+                explanation = f"Errado. O detalhe central a recuperar em {microtopic.title} e: {focus}"
+        elif index % 2 == 0:
             statement = (
                 f"Em {topic_name}, no microtopico {microtopic.title}, deve-se considerar que {focus.lower()}."
             )
@@ -376,6 +453,34 @@ def _generate_questions(
             }
         )
     return questions
+
+
+def _resolve_pedagogical_profile(block: StudyBlock, selection: dict[str, object]):
+    selected_profiles = selection.get("selected_profiles", []) or []
+    primary_profile = selected_profiles[0] if selected_profiles else {}
+    selected_microtopics = selection.get("selected_microtopics", []) or []
+    primary_microtopic_id = selected_microtopics[0].id if selected_microtopics else None
+    raw_performance = {}
+    if primary_microtopic_id:
+        raw_performance = dict((block.microtopic_performance or {}).get(primary_microtopic_id, {}) or {})
+    return resolve_pedagogical_profile(
+        curriculum_role=block.curriculum_role,
+        review_intensity=block.review_intensity or selection.get("review_intensity"),
+        weakness_signal=float(primary_profile.get("weakness_signal", 0.0) or 0.0),
+        resurfacing_signal=float(primary_profile.get("resurfacing_signal", 0.0) or 0.0),
+        performance=raw_performance,
+    )
+
+
+def _pedagogical_metadata(profile) -> dict[str, object]:
+    return {
+        "pedagogical_mode": profile.pedagogical_mode,
+        "intervention_reason": profile.intervention_reason,
+        "explanation_depth": profile.explanation_depth,
+        "retrieval_intensity": profile.retrieval_intensity,
+        "pedagogical_reasoning": [profile.intervention_reason],
+        "pedagogical_breakdown": profile.profile_breakdown,
+    }
 
 
 def _normalize_microtopic_performance(raw_performance: dict[str, object] | None) -> dict[str, object]:

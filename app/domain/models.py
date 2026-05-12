@@ -32,13 +32,35 @@ class StudyStrategy(str, Enum):
     QUICK_REVIEW = "quick_review"
 
 
+class PedagogicalMode(str, Enum):
+    GUIDED_EXPLANATION = "guided_explanation"
+    CONCEPTUAL_REINFORCEMENT = "conceptual_reinforcement"
+    CONTEXTUAL_APPLICATION = "contextual_application"
+    ACTIVE_RECALL = "active_recall"
+    RAPID_REVIEW = "rapid_review"
+    REINFORCEMENT_CHECK = "reinforcement_check"
+
+
+class PedagogicalProfile(BaseModel):
+    pedagogical_mode: str
+    intervention_reason: str
+    explanation_depth: str
+    retrieval_intensity: str
+    reinforcement_level: str
+    cognitive_load: str
+    profile_breakdown: dict[str, float] = Field(default_factory=dict)
+
+
 class StudyBlock(BaseModel):
     type: str
     topic_id: str
     quantity: int | None = None
     depth: str | None = None
+    curriculum_role: str | None = None
+    review_intensity: str | None = None
     topic_node: TopicNode | None = None
     microtopic_performance: dict[str, dict[str, object]] = Field(default_factory=dict)
+    selected_microtopic_ids: list[str] = Field(default_factory=list)
 
 
 class StudySession(BaseModel):
@@ -253,6 +275,25 @@ class CurriculumProgress(BaseModel):
     active_window_size: int
     active_topic_ids: list[str] = Field(default_factory=list)
     cumulative_topic_ids: list[str] = Field(default_factory=list)
+
+
+class MicrotopicSessionCandidate(BaseModel):
+    microtopic_id: str
+    microtopic_title: str
+    microtopic_content: str
+    topic_id: str
+    topic_title: str
+    curriculum_role: str
+    review_intensity: str
+    microtopic_priority: float
+    selection_reason: str
+    difficulty_weight: float = 1.0
+    resurfacing_signal: float = 0.0
+    weakness_signal: float = 0.0
+    composition_score: float = 0.0
+    composition_breakdown: dict[str, float] = Field(default_factory=dict)
+    topic_position: int = 0
+    candidate_position: int = 0
 
 
 class ReviewPayload(BaseModel):

@@ -210,6 +210,10 @@ def test_execute_study_block_exposes_adaptive_debug_metadata():
             "weak_microtopics",
             "review_intensity",
             "adaptive_reasoning",
+            "pedagogical_mode",
+            "intervention_reason",
+            "pedagogical_reasoning",
+            "pedagogical_breakdown",
         }
     )
 
@@ -374,6 +378,120 @@ def test_execute_study_block_consecutive_success_stabilizes_repetition_pressure(
 
     weak_titles = {item["title"] for item in payload["weak_microtopics"]}
     assert "Excecao" not in weak_titles
+
+
+def test_execute_study_block_guided_explanation_mode_for_conceptual_weakness():
+    topic_node = build_topic_node(
+        title="Canal Restrito",
+        content="Conceito: limites de manobra.\n\nExcecao: situacoes especiais ampliam restricoes.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="canal", depth="deep", topic_node=topic_node)
+    )
+    target_id = probe["selected_microtopics"][0]["id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="canal",
+            depth="deep",
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(
+                    recent_errors=2,
+                    error_distribution={"conceptual": 2},
+                    consecutive_incorrect=2,
+                )
+            },
+            curriculum_role="active",
+            review_intensity="deep",
+        )
+    )
+
+    assert payload["pedagogical_mode"] in {"guided_explanation", "conceptual_reinforcement"}
+    assert payload["explanation_depth"] == "deep"
+
+
+def test_execute_study_block_contextual_application_mode_for_interpretation_weakness():
+    topic_node = build_topic_node(
+        title="Prioridade de Passagem",
+        content="Conceito: regras de cruzamento.\n\nAplicacao: compare motor e vela.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="prioridade", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="prioridade",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(error_distribution={"interpretation": 2})
+            },
+            curriculum_role="active",
+            review_intensity="medium",
+        )
+    )
+
+    assert payload["pedagogical_mode"] == "contextual_application"
+
+
+def test_execute_study_block_active_recall_mode_for_memory_weakness():
+    topic_node = build_topic_node(
+        title="Apitos",
+        content="Conceito: sinais curtos.\n\nRegra: sinais longos.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="apitos", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="apitos",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(error_distribution={"memory": 2})
+            },
+            curriculum_role="cumulative",
+            review_intensity="light",
+        )
+    )
+
+    assert payload["pedagogical_mode"] == "active_recall"
+
+
+def test_execute_study_block_stable_cumulative_topic_uses_lighter_reinforcement():
+    topic_node = build_topic_node(
+        title="Balizas",
+        content="Conceito: orientam o canal.\n\nAplicacao: identifique a lateral.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="balizas", depth="light", topic_node=topic_node)
+    )
+    target_id = probe["selected_microtopics"][0]["id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="balizas",
+            depth="light",
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(consecutive_correct=4)
+            },
+            curriculum_role="cumulative",
+            review_intensity="light",
+        )
+    )
+
+    assert payload["pedagogical_mode"] in {"reinforcement_check", "rapid_review"}
+    assert payload["retrieval_intensity"] in {"low", "medium"}
 
 
 def test_execute_study_block_cumulative_review_balances_weak_and_mastered_questions():

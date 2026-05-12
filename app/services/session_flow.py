@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
+from app.services.microtopic_session_composer import MicrotopicSessionComposer
 
 
 class SessionManager:
@@ -79,71 +80,99 @@ class SessionManager:
         session.completed = False
 
     def _build_runtime_blocks(self, entries: list[LearningPlanEntry]) -> list[dict]:
-        topic_bundles: list[dict[str, object]] = []
-        for entry_index, entry in enumerate(entries):
-            summaries: list[dict] = []
-            question_blocks: list[dict] = []
-            for block_index, block in enumerate(entry.study_blocks):
-                executed = execute_study_block(block)
-                if executed["type"] == "summary":
-                    summaries.append(
-                        {
-                            **executed,
-                            "topic_title": entry.topic_title,
-                            "_entry_index": entry_index,
-                            "_block_index": block_index,
-                            "_question_index": 0,
-                        }
-                    )
-                    continue
-
-                executed_questions = executed.get("questions", [])
-                for question_index, question in enumerate(executed_questions):
-                    question_blocks.append(
-                        {
-                            "type": "question",
-                            "topic_id": entry.topic_id,
-                            "topic_title": entry.topic_title,
-                            "question_id": self._runtime_question_id(
-                                entry,
-                                block_index=block_index,
-                                question_index=question_index,
-                            ),
-                            "microtopic_id": question.get("microtopic_id"),
-                            "statement": question["statement"],
-                            "correct_answer": question["answer"],
-                            "explanation": question["explanation"],
-                            "_entry_index": entry_index,
-                            "_block_index": block_index,
-                            "_question_index": question_index,
-                        }
-                    )
-            topic_bundles.append(
-                {
-                    "summaries": summaries,
-                    "questions": question_blocks,
-                }
-            )
-        return self._interleave_runtime_blocks(topic_bundles)
-
-    def _interleave_runtime_blocks(self, topic_bundles: list[dict[str, object]]) -> list[dict]:
+        composer = MicrotopicSessionComposer()
+        candidates = composer.compose(entries)
+        entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
+        summary_emitted: set[str] = set()
+        question_count_by_topic: dict[str, int] = {}
         runtime_blocks: list[dict] = []
-        question_queues: list[list[dict]] = []
 
-        for bundle in topic_bundles:
-            summaries = list(bundle["summaries"])
-            questions = list(bundle["questions"])
-            runtime_blocks.extend(summaries)
-            if questions:
-                runtime_blocks.append(questions.pop(0))
-            question_queues.append(questions)
+        for candidate in candidates:
+            entry_index = entry_index_by_topic[candidate.topic_id]
+            entry = entries[entry_index]
+            if candidate.topic_id not in summary_emitted:
+                summary_block = self._summary_block_for_topic(entry, candidate, entry_index=entry_index)
+                if summary_block is not None:
+                    runtime_blocks.append(summary_block)
+                summary_emitted.add(candidate.topic_id)
 
-        while any(question_queues):
-            for queue in question_queues:
-                if queue:
-                    runtime_blocks.append(queue.pop(0))
+            runtime_blocks.append(
+                self._question_block_for_candidate(
+                    entry,
+                    candidate,
+                    entry_index=entry_index,
+                    question_index=question_count_by_topic.get(candidate.topic_id, 0),
+                )
+            )
+            question_count_by_topic[candidate.topic_id] = question_count_by_topic.get(candidate.topic_id, 0) + 1
 
         return runtime_blocks
+
+    def _summary_block_for_topic(
+        self,
+        entry: LearningPlanEntry,
+        candidate,
+        *,
+        entry_index: int,
+    ) -> dict | None:
+        summary_index = next(
+            (index for index, block in enumerate(entry.study_blocks) if block.type == "summary"),
+            None,
+        )
+        if summary_index is None:
+            return None
+        block = entry.study_blocks[summary_index].model_copy(
+            update={"selected_microtopic_ids": [candidate.microtopic_id]}
+        )
+        executed = execute_study_block(block)
+        return {
+            **executed,
+            "topic_title": entry.topic_title,
+            "_entry_index": entry_index,
+            "_block_index": summary_index,
+            "_question_index": 0,
+        }
+
+    def _question_block_for_candidate(
+        self,
+        entry: LearningPlanEntry,
+        candidate,
+        *,
+        entry_index: int,
+        question_index: int,
+    ) -> dict:
+        question_block_index = next(
+            (index for index, block in enumerate(entry.study_blocks) if block.type == "questions"),
+            0,
+        )
+        question_block = entry.study_blocks[question_block_index].model_copy(
+            update={"quantity": 1, "selected_microtopic_ids": [candidate.microtopic_id]}
+        )
+        executed = execute_study_block(question_block)
+        question = executed["questions"][0]
+        return {
+            "type": "question",
+            "topic_id": entry.topic_id,
+            "topic_title": entry.topic_title,
+            "question_id": self._runtime_question_id(
+                entry,
+                block_index=question_block_index,
+                question_index=question_index,
+            ),
+            "microtopic_id": question.get("microtopic_id"),
+            "statement": question["statement"],
+            "correct_answer": question["answer"],
+            "explanation": question["explanation"],
+            "pedagogical_mode": executed.get("pedagogical_mode"),
+            "intervention_reason": executed.get("intervention_reason"),
+            "explanation_depth": executed.get("explanation_depth"),
+            "retrieval_intensity": executed.get("retrieval_intensity"),
+            "pedagogical_reasoning": executed.get("pedagogical_reasoning"),
+            "pedagogical_breakdown": executed.get("pedagogical_breakdown"),
+            "_entry_index": entry_index,
+            "_block_index": question_block_index,
+            "_question_index": question_index,
+        }
 
     def _runtime_question_id(
         self,
