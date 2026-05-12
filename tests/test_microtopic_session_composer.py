@@ -10,6 +10,7 @@ def build_entry(
     curriculum_role: str,
     review_intensity: str,
     microtopic_performance: dict[str, dict[str, object]] | None = None,
+    pedagogical_memory: dict[str, dict[str, object]] | None = None,
     priority_score: float = 0.5,
 ) -> LearningPlanEntry:
     return LearningPlanEntry(
@@ -22,7 +23,10 @@ def build_entry(
         priority_score=priority_score,
         curriculum_role=curriculum_role,
         review_intensity=review_intensity,
-        performance_data={"microtopic_performance": microtopic_performance or {}},
+        performance_data={
+            "microtopic_performance": microtopic_performance or {},
+            "pedagogical_memory": pedagogical_memory or {},
+        },
     )
 
 
@@ -174,8 +178,10 @@ def test_composer_produces_bounded_and_explainable_scores():
         "resurfacing",
         "difficulty",
         "curriculum",
+        "temporal",
         "stabilization_discount",
         "exposure_discount",
+        "pedagogical_discount",
     }
 
 
@@ -196,3 +202,82 @@ def test_composer_handles_sparse_legacy_data_safely():
 
     assert candidates
     assert all(candidate.curriculum_role == "cumulative" for candidate in candidates)
+
+
+def test_composer_temporal_pedagogical_memory_resurfaces_stale_microtopic_deterministically():
+    composer = MicrotopicSessionComposer()
+    base_entry = build_entry(
+        topic_id="topic-time",
+        topic_title="Topic Time",
+        topic_content="Conceito: regra base.\n\nAplicacao: caso pratico.\n\nObservacao: detalhe cumulativo.",
+        curriculum_role="cumulative",
+        review_intensity="light",
+    )
+    probe = composer.compose([base_entry])
+    stale_id = probe[0].microtopic_id
+
+    entries = [
+        build_entry(
+            topic_id="topic-time",
+            topic_title="Topic Time",
+            topic_content="Conceito: regra base.\n\nAplicacao: caso pratico.\n\nObservacao: detalhe cumulativo.",
+            curriculum_role="cumulative",
+            review_intensity="light",
+            pedagogical_memory={
+                stale_id: {
+                    "microtopic_id": stale_id,
+                    "topic_id": "topic-time",
+                    "last_pedagogical_mode": "reinforcement_check",
+                    "recent_effectiveness": "neutral",
+                    "last_intervention_at": "2026-01-01T10:00:00+00:00",
+                    "stabilization_level": 0.6,
+                    "escalation_level": 0.0,
+                    "retrieval_success_trend": 0.4,
+                }
+            },
+        )
+    ]
+
+    candidates = composer.compose(entries)
+
+    assert candidates[0].microtopic_id == stale_id
+    assert "temporal" in candidates[0].composition_breakdown
+
+
+def test_composer_prevents_pedagogical_memory_monopolization():
+    composer = MicrotopicSessionComposer()
+    base_entry = build_entry(
+        topic_id="topic-balance",
+        topic_title="Topic Balance",
+        topic_content="Conceito: regra.\n\nExcecao: detalhe.\n\nAplicacao: comparacao.",
+        curriculum_role="active",
+        review_intensity="deep",
+    )
+    probe = composer.compose([base_entry])
+    target_id = probe[0].microtopic_id
+
+    candidates = composer.compose(
+        [
+            build_entry(
+                topic_id="topic-balance",
+                topic_title="Topic Balance",
+                topic_content="Conceito: regra.\n\nExcecao: detalhe.\n\nAplicacao: comparacao.",
+                curriculum_role="active",
+                review_intensity="deep",
+                pedagogical_memory={
+                    target_id: {
+                        "microtopic_id": target_id,
+                        "topic_id": "topic-balance",
+                        "last_pedagogical_mode": "active_recall",
+                        "recent_effectiveness": "ineffective",
+                        "stabilization_level": 0.0,
+                        "escalation_level": 1.0,
+                        "retrieval_success_trend": 0.0,
+                    }
+                },
+            )
+        ]
+    )
+
+    assert len(candidates) <= 3
+    assert all(0.0 <= candidate.composition_score <= 1.0 for candidate in candidates)

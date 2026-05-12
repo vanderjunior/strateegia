@@ -8,7 +8,10 @@ from app.domain.models import (
     Document,
     ErrorType,
     ItemState,
+    InterventionHistory,
     MicroTopicPerformance,
+    PedagogicalMemory,
+    PedagogicalOutcome,
     ProgressState,
     TopicLearningState,
     utc_now,
@@ -31,6 +34,7 @@ class JsonStudyRepository:
                     "topic_learning_states": {},
                     "item_states": {},
                     "microtopic_performance": {},
+                    "pedagogical_memory": {},
                 },
             }
         )
@@ -68,6 +72,42 @@ class JsonStudyRepository:
         distribution = dict(self._default_error_distribution())
         distribution.update(normalized.get("error_distribution", {}) or {})
         normalized["error_distribution"] = distribution
+        return normalized
+
+    def _normalize_intervention_history(self, mode: str, state: dict | None = None) -> dict:
+        normalized = InterventionHistory(pedagogical_mode=mode).model_dump(mode="json")
+        if state:
+            normalized.update(state)
+        normalized["confidence"] = self._clamp(normalized.get("confidence", 0.5), 0.0, 1.0)
+        return normalized
+
+    def _normalize_pedagogical_memory(
+        self,
+        microtopic_id: str,
+        topic_id: str | None,
+        state: dict | None = None,
+    ) -> dict:
+        normalized = PedagogicalMemory(
+            microtopic_id=microtopic_id,
+            topic_id=topic_id,
+        ).model_dump(mode="json")
+        if state:
+            normalized.update(state)
+        normalized["microtopic_id"] = microtopic_id
+        normalized["topic_id"] = topic_id or normalized.get("topic_id")
+        histories = {}
+        for mode, history in (normalized.get("intervention_history", {}) or {}).items():
+            histories[mode] = self._normalize_intervention_history(mode, history)
+        normalized["intervention_history"] = histories
+        normalized["stabilization_level"] = self._clamp(
+            normalized.get("stabilization_level", 0.0), 0.0, 1.0
+        )
+        normalized["escalation_level"] = self._clamp(
+            normalized.get("escalation_level", 0.0), 0.0, 1.0
+        )
+        normalized["retrieval_success_trend"] = self._clamp(
+            normalized.get("retrieval_success_trend", 0.5), 0.0, 1.0
+        )
         return normalized
 
     def _normalize_error_type(self, error_type: str | ErrorType | None) -> str | None:
@@ -131,6 +171,7 @@ class JsonStudyRepository:
         topic_id: str,
         question_id: str,
         microtopic_id: str | None = None,
+        pedagogical_mode: str | None = None,
         is_correct: bool,
         error_type: str | ErrorType | None = None,
     ) -> None:
@@ -146,6 +187,7 @@ class JsonStudyRepository:
                 document_id=document_id,
                 topic_id=topic_id,
                 microtopic_id=microtopic_id,
+                pedagogical_mode=pedagogical_mode,
                 selected_answer="true" if is_correct else "false",
                 is_correct=is_correct,
                 error_type=error_type,
@@ -160,6 +202,7 @@ class JsonStudyRepository:
         topic_states = progress.setdefault("topic_learning_states", {})
         item_states = progress.setdefault("item_states", {})
         microtopic_states = progress.setdefault("microtopic_performance", {})
+        pedagogical_memories = progress.setdefault("pedagogical_memory", {})
         topic_state = self._normalize_topic_state(
             submission.topic_id, topic_states.get(submission.topic_id)
         )
@@ -173,6 +216,13 @@ class JsonStudyRepository:
                 microtopic_states.get(submission.microtopic_id)
             )
             microtopic_state["topic_id"] = submission.topic_id
+        pedagogical_memory = None
+        if submission.microtopic_id:
+            pedagogical_memory = self._normalize_pedagogical_memory(
+                submission.microtopic_id,
+                submission.topic_id,
+                pedagogical_memories.get(submission.microtopic_id),
+            )
 
         topic_state["attempts"] += 1
         topic_state["total_questions"] = topic_state.get("total_questions", 0) + 1
@@ -261,6 +311,18 @@ class JsonStudyRepository:
         item_states[submission.question_id] = item_state
         if submission.microtopic_id and microtopic_state is not None:
             microtopic_states[submission.microtopic_id] = microtopic_state
+        if (
+            submission.microtopic_id
+            and submission.pedagogical_mode
+            and pedagogical_memory is not None
+        ):
+            self._update_pedagogical_memory(
+                pedagogical_memory=pedagogical_memory,
+                pedagogical_mode=submission.pedagogical_mode,
+                is_correct=submission.is_correct,
+                created_at=submission.created_at.isoformat(),
+            )
+            pedagogical_memories[submission.microtopic_id] = pedagogical_memory
         self._write(payload)
 
     def load_progress(self) -> ProgressState:
@@ -284,6 +346,16 @@ class JsonStudyRepository:
             )
             for microtopic_id, state in payload.get("microtopic_performance", {}).items()
         }
+        pedagogical_memory = {
+            microtopic_id: PedagogicalMemory.model_validate(
+                self._normalize_pedagogical_memory(
+                    microtopic_id,
+                    (state or {}).get("topic_id"),
+                    state,
+                )
+            )
+            for microtopic_id, state in payload.get("pedagogical_memory", {}).items()
+        }
         return ProgressState(
             total_errors=payload["total_errors"],
             weak_topics=payload["weak_topics"],
@@ -291,4 +363,77 @@ class JsonStudyRepository:
             topic_learning_states=topic_states,
             item_states=item_states,
             microtopic_performance=microtopic_performance,
+            pedagogical_memory=pedagogical_memory,
         )
+
+    def _update_pedagogical_memory(
+        self,
+        *,
+        pedagogical_memory: dict,
+        pedagogical_mode: str,
+        is_correct: bool,
+        created_at: str,
+    ) -> None:
+        history = self._normalize_intervention_history(
+            pedagogical_mode,
+            pedagogical_memory.get("intervention_history", {}).get(pedagogical_mode),
+        )
+        history["total_attempts"] += 1
+        history["last_intervention_at"] = created_at
+        if is_correct:
+            history["successful_attempts"] += 1
+            history["consecutive_successes"] += 1
+            history["consecutive_failures"] = 0
+        else:
+            history["failed_attempts"] += 1
+            history["consecutive_failures"] += 1
+            history["consecutive_successes"] = 0
+        history["last_outcome"] = (
+            PedagogicalOutcome.EFFECTIVE.value
+            if is_correct
+            else PedagogicalOutcome.INEFFECTIVE.value
+        )
+
+        success_rate = history["successful_attempts"] / max(history["total_attempts"], 1)
+        history["confidence"] = self._clamp(
+            0.5
+            + (success_rate - 0.5) * 0.6
+            + min(history["consecutive_successes"] * 0.05, 0.2)
+            - min(history["consecutive_failures"] * 0.08, 0.24),
+            0.0,
+            1.0,
+        )
+
+        pedagogical_memory["last_pedagogical_mode"] = pedagogical_mode
+        pedagogical_memory["last_intervention_at"] = created_at
+        pedagogical_memory["consecutive_successes"] = history["consecutive_successes"]
+        pedagogical_memory["consecutive_failures"] = history["consecutive_failures"]
+        pedagogical_memory["recent_effectiveness"] = self._derive_effectiveness(history)
+        pedagogical_memory["retrieval_success_trend"] = self._clamp(success_rate, 0.0, 1.0)
+        pedagogical_memory["stabilization_level"] = self._clamp(
+            success_rate * 0.5
+            + min(history["consecutive_successes"] * 0.1, 0.3)
+            - min(history["consecutive_failures"] * 0.06, 0.18),
+            0.0,
+            1.0,
+        )
+        pedagogical_memory["escalation_level"] = self._clamp(
+            (1.0 - success_rate) * 0.35
+            + min(history["consecutive_failures"] * 0.15, 0.45)
+            - min(history["consecutive_successes"] * 0.05, 0.15),
+            0.0,
+            1.0,
+        )
+        pedagogical_memory.setdefault("intervention_history", {})[pedagogical_mode] = history
+
+    def _derive_effectiveness(self, history: dict) -> str:
+        attempts = history.get("total_attempts", 0)
+        success_rate = history.get("successful_attempts", 0) / max(attempts, 1)
+        if history.get("consecutive_failures", 0) >= 2 or (attempts >= 3 and success_rate <= 0.35):
+            return PedagogicalOutcome.INEFFECTIVE.value
+        if history.get("consecutive_successes", 0) >= 2 or (attempts >= 3 and success_rate >= 0.65):
+            return PedagogicalOutcome.EFFECTIVE.value
+        return PedagogicalOutcome.NEUTRAL.value
+
+    def _clamp(self, value: float, minimum: float, maximum: float) -> float:
+        return max(minimum, min(float(value), maximum))

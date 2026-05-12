@@ -16,6 +16,21 @@ def build_performance(**overrides):
     return base
 
 
+def build_pedagogical_memory(**overrides):
+    base = {
+        "last_pedagogical_mode": None,
+        "recent_effectiveness": "neutral",
+        "consecutive_successes": 0,
+        "consecutive_failures": 0,
+        "stabilization_level": 0.0,
+        "escalation_level": 0.0,
+        "retrieval_success_trend": 0.5,
+        "intervention_history": {},
+    }
+    base.update(overrides)
+    return base
+
+
 def test_conceptual_weakness_uses_deeper_explanation_mode():
     profile = resolve_pedagogical_profile(
         curriculum_role="active",
@@ -173,3 +188,94 @@ def test_pedagogical_adapter_handles_missing_metadata_safely():
 
     assert profile.pedagogical_mode
     assert profile.intervention_reason
+
+
+def test_ineffective_active_recall_escalates_to_guided_explanation():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="active",
+        review_intensity="medium",
+        weakness_signal=0.55,
+        resurfacing_signal=0.25,
+        performance=build_performance(
+            error_distribution={"memory": 3},
+            consecutive_incorrect=2,
+        ),
+        pedagogical_memory=build_pedagogical_memory(
+            last_pedagogical_mode="active_recall",
+            recent_effectiveness="ineffective",
+            consecutive_failures=2,
+            escalation_level=0.7,
+            intervention_history={
+                "active_recall": {
+                    "pedagogical_mode": "active_recall",
+                    "total_attempts": 3,
+                    "successful_attempts": 0,
+                    "failed_attempts": 3,
+                    "consecutive_failures": 2,
+                    "confidence": 0.2,
+                }
+            },
+        ),
+    )
+
+    assert profile.pedagogical_mode == "guided_explanation"
+    assert profile.intervention_transition_reason
+    assert profile.escalation_signal > 0.0
+
+
+def test_effective_guided_explanation_can_stabilize_into_lighter_mode():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="cumulative",
+        review_intensity="light",
+        weakness_signal=0.18,
+        resurfacing_signal=0.35,
+        performance=build_performance(consecutive_correct=3),
+        pedagogical_memory=build_pedagogical_memory(
+            last_pedagogical_mode="guided_explanation",
+            recent_effectiveness="effective",
+            consecutive_successes=3,
+            stabilization_level=0.8,
+            retrieval_success_trend=0.9,
+            intervention_history={
+                "guided_explanation": {
+                    "pedagogical_mode": "guided_explanation",
+                    "total_attempts": 4,
+                    "successful_attempts": 4,
+                    "failed_attempts": 0,
+                    "consecutive_successes": 3,
+                    "confidence": 0.9,
+                }
+            },
+        ),
+    )
+
+    assert profile.pedagogical_mode in {"reinforcement_check", "rapid_review"}
+    assert profile.stabilization_signal > profile.escalation_signal
+
+
+def test_pedagogical_profile_exposes_effectiveness_and_confidence_metadata():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="active",
+        review_intensity="deep",
+        weakness_signal=0.45,
+        resurfacing_signal=0.2,
+        performance=build_performance(error_distribution={"conceptual": 2}),
+        pedagogical_memory=build_pedagogical_memory(
+            last_pedagogical_mode="guided_explanation",
+            recent_effectiveness="effective",
+            intervention_history={
+                "guided_explanation": {
+                    "pedagogical_mode": "guided_explanation",
+                    "total_attempts": 3,
+                    "successful_attempts": 2,
+                    "failed_attempts": 1,
+                    "confidence": 0.72,
+                }
+            },
+        ),
+    )
+
+    assert profile.intervention_effectiveness in {"effective", "neutral", "ineffective"}
+    assert 0.0 <= profile.pedagogical_confidence <= 1.0
+    assert profile.intervention_history_summary
+    assert profile.adaptation_reasoning

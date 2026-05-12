@@ -100,6 +100,21 @@ def build_microtopic_performance(**overrides):
     return base
 
 
+def build_pedagogical_memory(**overrides):
+    base = {
+        "last_pedagogical_mode": None,
+        "recent_effectiveness": "neutral",
+        "consecutive_successes": 0,
+        "consecutive_failures": 0,
+        "stabilization_level": 0.0,
+        "escalation_level": 0.0,
+        "retrieval_success_trend": 0.5,
+        "intervention_history": {},
+    }
+    base.update(overrides)
+    return base
+
+
 def test_execute_study_block_summary_respects_depth():
     light = execute_study_block(StudyBlock(type="summary", topic_id="imunidades", depth="light"))
     medium = execute_study_block(StudyBlock(type="summary", topic_id="imunidades", depth="medium"))
@@ -214,6 +229,12 @@ def test_execute_study_block_exposes_adaptive_debug_metadata():
             "intervention_reason",
             "pedagogical_reasoning",
             "pedagogical_breakdown",
+            "intervention_transition_reason",
+            "pedagogical_confidence",
+            "intervention_effectiveness",
+            "pedagogical_stability",
+            "intervention_history_summary",
+            "why_this_now",
         }
     )
 
@@ -343,6 +364,91 @@ def test_execute_study_block_temporal_inactivity_resurfaces_old_microtopic():
     )
 
     assert any(item["title"] == "Conceito" for item in payload["resurfaced_microtopics"])
+
+
+def test_execute_study_block_uses_pedagogical_memory_to_escalate_ineffective_recall():
+    topic_node = build_topic_node(
+        title="Canal Estreito",
+        content="Conceito: manobra restrita.\n\nAplicacao: prioridade de passagem.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="canal-estreito", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="canal-estreito",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(
+                    recent_errors=2,
+                    error_distribution={"memory": 2},
+                    consecutive_incorrect=2,
+                )
+            },
+            pedagogical_memory={
+                target_id: build_pedagogical_memory(
+                    last_pedagogical_mode="active_recall",
+                    recent_effectiveness="ineffective",
+                    consecutive_failures=2,
+                    escalation_level=0.8,
+                    intervention_history={
+                        "active_recall": {
+                            "pedagogical_mode": "active_recall",
+                            "total_attempts": 3,
+                            "successful_attempts": 0,
+                            "failed_attempts": 3,
+                            "consecutive_failures": 2,
+                            "confidence": 0.15,
+                        }
+                    },
+                )
+            },
+            curriculum_role="active",
+            review_intensity="medium",
+        )
+    )
+
+    assert payload["pedagogical_mode"] == "guided_explanation"
+    assert payload["intervention_transition_reason"]
+
+
+def test_execute_study_block_temporal_reinforcement_resurfaces_stable_old_microtopic_lightly():
+    topic_node = build_topic_node(
+        title="Balizamento",
+        content="Conceito: define referencia lateral.\n\nObservacao: prova confunde top marks.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="balizamento", depth="light", topic_node=topic_node)
+    )
+    target_id = probe["selected_microtopics"][0]["id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="balizamento",
+            depth="light",
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            pedagogical_memory={
+                target_id: build_pedagogical_memory(
+                    last_pedagogical_mode="reinforcement_check",
+                    recent_effectiveness="effective",
+                    last_intervention_at="2026-01-01T10:00:00+00:00",
+                    stabilization_level=0.75,
+                    retrieval_success_trend=0.85,
+                )
+            },
+            curriculum_role="cumulative",
+            review_intensity="light",
+        )
+    )
+
+    assert payload["pedagogical_mode"] in {"reinforcement_check", "active_recall", "rapid_review"}
+    assert payload["why_this_now"]
 
 
 def test_execute_study_block_consecutive_success_stabilizes_repetition_pressure():

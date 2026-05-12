@@ -142,6 +142,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
         "medium": "medium",
     }.get(intensity, "light")
     microtopic_performance = dict(entry.performance_data.get("microtopic_performance", {}) or {})
+    pedagogical_memory = dict(entry.performance_data.get("pedagogical_memory", {}) or {})
     topic_node = (
         TopicNode(title=entry.topic_title, level=2, content=entry.topic_content or "", children=[])
         if entry.topic_content
@@ -169,6 +170,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 review_intensity=entry.review_intensity,
                 topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
+                pedagogical_memory=pedagogical_memory,
             ),
             StudyBlock(
                 type="questions",
@@ -178,6 +180,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 review_intensity=entry.review_intensity,
                 topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
+                pedagogical_memory=pedagogical_memory,
             ),
         ]
     if strategy == StudyStrategy.QUESTIONS:
@@ -190,6 +193,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 review_intensity=entry.review_intensity,
                 topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
+                pedagogical_memory=pedagogical_memory,
             ),
         ]
     if strategy == StudyStrategy.QUICK_REVIEW:
@@ -203,6 +207,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                     review_intensity=entry.review_intensity,
                     topic_node=topic_node,
                     microtopic_performance=microtopic_performance,
+                    pedagogical_memory=pedagogical_memory,
                 ),
             ]
         return [
@@ -214,6 +219,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
                 review_intensity=entry.review_intensity,
                 topic_node=topic_node,
                 microtopic_performance=microtopic_performance,
+                pedagogical_memory=pedagogical_memory,
             ),
         ]
     return [
@@ -225,6 +231,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
             review_intensity=entry.review_intensity,
             topic_node=topic_node,
             microtopic_performance=microtopic_performance,
+            pedagogical_memory=pedagogical_memory,
         ),
         StudyBlock(
             type="questions",
@@ -234,6 +241,7 @@ def build_study_blocks(entry: LearningPlanEntry) -> list[StudyBlock]:
             review_intensity=entry.review_intensity,
             topic_node=topic_node,
             microtopic_performance=microtopic_performance,
+            pedagogical_memory=pedagogical_memory,
         ),
     ]
 
@@ -316,6 +324,14 @@ class LearningDecisionEngine:
                                 **state.model_dump(mode="json"),
                             }
                             for microtopic_id, state in progress.microtopic_performance.items()
+                            if state.topic_id == topic.id
+                        ],
+                        "pedagogical_memory": [
+                            {
+                                "id": microtopic_id,
+                                **state.model_dump(mode="json"),
+                            }
+                            for microtopic_id, state in progress.pedagogical_memory.items()
                             if state.topic_id == topic.id
                         ],
                     }
@@ -450,6 +466,12 @@ class LearningDecisionEngine:
                                 microtopic_data.get("id", f"micro-{index}"): microtopic_data
                                 for index, microtopic_data in enumerate(
                                     candidate.get("microtopic_performance", [])
+                                )
+                            },
+                            "pedagogical_memory": {
+                                memory_data.get("id", f"ped-{index}"): memory_data
+                                for index, memory_data in enumerate(
+                                    candidate.get("pedagogical_memory", [])
                                 )
                             },
                         },

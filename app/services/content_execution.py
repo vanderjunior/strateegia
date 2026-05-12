@@ -40,6 +40,7 @@ def execute_study_block(block: StudyBlock) -> dict:
     selection = select_relevant_microtopics(
         topic_node,
         block.microtopic_performance,
+        block.pedagogical_memory,
         review_stage,
         limit=_resolve_selection_limit(block, review_stage),
         fallback_topic_id=block.topic_id,
@@ -92,6 +93,7 @@ def execute_learning_plan(plan: list[LearningPlanEntry]) -> list[dict]:
 def select_relevant_microtopics(
     topic_node: TopicNode | None,
     microtopic_performance: dict[str, dict[str, object]] | None,
+    pedagogical_memory: dict[str, dict[str, object]] | None,
     review_stage: str,
     *,
     limit: int,
@@ -106,6 +108,8 @@ def select_relevant_microtopics(
             "weak_microtopics": [],
             "review_intensity": review_stage,
             "adaptive_reasoning": ["Nenhum microtopico encontrado; fallback seguro aplicado."],
+            "why_this_now": ["Nao havia microtopicos estruturados; o bloco foi mantido por compatibilidade."],
+            "selected_profiles": [],
         }
 
     if selected_microtopic_ids:
@@ -113,8 +117,14 @@ def select_relevant_microtopics(
         microtopics = [microtopic for microtopic in microtopics if microtopic.id in selected_ids] or microtopics
 
     performance_map = dict(microtopic_performance or {})
+    pedagogical_memory_map = dict(pedagogical_memory or {})
     profiles = [
-        _build_microtopic_profile(microtopic, performance_map.get(microtopic.id), review_stage)
+        _build_microtopic_profile(
+            microtopic,
+            performance_map.get(microtopic.id),
+            pedagogical_memory_map.get(microtopic.id),
+            review_stage,
+        )
         for microtopic in microtopics
     ]
     ranked_profiles = sorted(
@@ -142,6 +152,7 @@ def select_relevant_microtopics(
             weak_profiles=weak_profiles,
             resurfaced_profiles=resurfaced_profiles,
         ),
+        "why_this_now": _build_why_this_now(selected_profiles, review_stage=review_stage),
         "selected_profiles": selected_profiles,
     }
 
@@ -203,9 +214,11 @@ def _resolve_review_stage(block: StudyBlock) -> str:
 def _build_microtopic_profile(
     microtopic: MicroTopic,
     raw_performance: dict[str, object] | None,
+    raw_pedagogical_memory: dict[str, object] | None,
     review_stage: str,
 ) -> dict[str, object]:
     performance = _normalize_microtopic_performance(raw_performance)
+    pedagogical_memory = _normalize_pedagogical_memory(raw_pedagogical_memory)
     weights = REVIEW_STAGE_WEIGHTS[review_stage]
     total_questions = int(performance["total_questions"])
     correct_answers = int(performance["correct_answers"])
@@ -225,6 +238,12 @@ def _build_microtopic_profile(
     cumulative_signal = max(resurfacing_signal, 0.35 if mastered else 0.15)
     temporal_reinforcement = min(consecutive_incorrect * 0.12, 0.3)
     stabilization_discount = min(consecutive_correct * 0.05, 0.2)
+    temporal_signal = _temporal_reinforcement_signal(
+        resurfacing_signal=resurfacing_signal,
+        pedagogical_memory=pedagogical_memory,
+    )
+    pedagogical_discount = min(pedagogical_memory["stabilization_level"] * 0.08, 0.08)
+    pedagogical_escalation = min(pedagogical_memory["escalation_level"] * 0.10, 0.10)
 
     selection_score = (
         weakness_signal * weights["weakness"]
@@ -232,7 +251,10 @@ def _build_microtopic_profile(
         + difficulty_signal * weights["difficulty"]
         + cumulative_signal * weights["cumulative"]
         + temporal_reinforcement
+        + temporal_signal
+        + pedagogical_escalation
         - stabilization_discount
+        - pedagogical_discount
     )
     if mastered and review_stage == "light":
         selection_score += 0.08
@@ -243,9 +265,10 @@ def _build_microtopic_profile(
         "weakness_signal": round(weakness_signal, 6),
         "resurfacing_signal": round(resurfacing_signal, 6),
         "difficulty_weight": microtopic.difficulty_weight,
+        "temporal_signal": round(temporal_signal, 6),
         "is_mastered": mastered,
         "is_weak": recent_errors > 0 or weakness_signal >= 0.6 or consecutive_incorrect >= 2,
-        "is_resurfaced": mastered and resurfacing_signal >= 0.5,
+        "is_resurfaced": (mastered and resurfacing_signal >= 0.5) or temporal_signal >= 0.12,
         "position": 0,
     }
 
@@ -319,6 +342,7 @@ def _selection_metadata(selection: dict[str, object]) -> dict[str, object]:
         "weak_microtopics": _serialize_microtopics(selection["weak_microtopics"]),
         "review_intensity": selection["review_intensity"],
         "adaptive_reasoning": selection["adaptive_reasoning"],
+        "why_this_now": selection.get("why_this_now", []),
     }
 
 
@@ -461,14 +485,17 @@ def _resolve_pedagogical_profile(block: StudyBlock, selection: dict[str, object]
     selected_microtopics = selection.get("selected_microtopics", []) or []
     primary_microtopic_id = selected_microtopics[0].id if selected_microtopics else None
     raw_performance = {}
+    raw_pedagogical_memory = {}
     if primary_microtopic_id:
         raw_performance = dict((block.microtopic_performance or {}).get(primary_microtopic_id, {}) or {})
+        raw_pedagogical_memory = dict((block.pedagogical_memory or {}).get(primary_microtopic_id, {}) or {})
     return resolve_pedagogical_profile(
         curriculum_role=block.curriculum_role,
         review_intensity=block.review_intensity or selection.get("review_intensity"),
         weakness_signal=float(primary_profile.get("weakness_signal", 0.0) or 0.0),
         resurfacing_signal=float(primary_profile.get("resurfacing_signal", 0.0) or 0.0),
         performance=raw_performance,
+        pedagogical_memory=raw_pedagogical_memory,
     )
 
 
@@ -478,9 +505,73 @@ def _pedagogical_metadata(profile) -> dict[str, object]:
         "intervention_reason": profile.intervention_reason,
         "explanation_depth": profile.explanation_depth,
         "retrieval_intensity": profile.retrieval_intensity,
-        "pedagogical_reasoning": [profile.intervention_reason],
+        "pedagogical_reasoning": profile.adaptation_reasoning or [profile.intervention_reason],
         "pedagogical_breakdown": profile.profile_breakdown,
+        "intervention_transition_reason": profile.intervention_transition_reason,
+        "pedagogical_confidence": profile.pedagogical_confidence,
+        "intervention_effectiveness": profile.intervention_effectiveness,
+        "pedagogical_stability": profile.pedagogical_stability,
+        "intervention_history_summary": profile.intervention_history_summary,
+        "adaptation_reasoning": profile.adaptation_reasoning,
     }
+
+
+def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[str, object]:
+    memory = {
+        "last_pedagogical_mode": None,
+        "recent_effectiveness": "neutral",
+        "consecutive_successes": 0,
+        "consecutive_failures": 0,
+        "last_intervention_at": None,
+        "stabilization_level": 0.0,
+        "escalation_level": 0.0,
+        "retrieval_success_trend": 0.5,
+        "intervention_history": {},
+    }
+    if not raw_memory:
+        return memory
+    memory.update(raw_memory)
+    memory["stabilization_level"] = max(0.0, min(float(memory.get("stabilization_level", 0.0) or 0.0), 1.0))
+    memory["escalation_level"] = max(0.0, min(float(memory.get("escalation_level", 0.0) or 0.0), 1.0))
+    memory["retrieval_success_trend"] = max(0.0, min(float(memory.get("retrieval_success_trend", 0.5) or 0.5), 1.0))
+    memory["consecutive_successes"] = int(memory.get("consecutive_successes", 0) or 0)
+    memory["consecutive_failures"] = int(memory.get("consecutive_failures", 0) or 0)
+    return memory
+
+
+def _temporal_reinforcement_signal(
+    *,
+    resurfacing_signal: float,
+    pedagogical_memory: dict[str, object],
+) -> float:
+    intervention_resurfacing = _resurfacing_signal(pedagogical_memory.get("last_intervention_at"))
+    retrieval_decay = max(0.0, 0.55 - float(pedagogical_memory.get("retrieval_success_trend", 0.5) or 0.5))
+    escalation = float(pedagogical_memory.get("escalation_level", 0.0) or 0.0)
+    stability_discount = float(pedagogical_memory.get("stabilization_level", 0.0) or 0.0) * 0.05
+    return max(
+        0.0,
+        min(
+            0.18,
+            max(resurfacing_signal, intervention_resurfacing) * 0.08
+            + retrieval_decay * 0.10
+            + escalation * 0.08
+            - stability_discount,
+        ),
+    )
+
+
+def _build_why_this_now(selected_profiles: list[dict[str, object]], *, review_stage: str) -> list[str]:
+    if not selected_profiles:
+        return ["Nenhum microtopico especifico disponivel; fallback seguro aplicado."]
+    reasons = [f"Bloco acionado em intensidade {review_stage}."]
+    primary = selected_profiles[0]
+    if primary.get("weakness_signal", 0.0) >= 0.55:
+        reasons.append("Fragilidade local elevou a prioridade deste microtopico agora.")
+    elif primary.get("resurfacing_signal", 0.0) >= 0.5 or primary.get("temporal_signal", 0.0) >= 0.12:
+        reasons.append("O microtopico reapareceu por resurfacing cumulativo e reforco temporal leve.")
+    else:
+        reasons.append("O microtopico entrou para manter variedade cognitiva e continuidade curricular.")
+    return reasons
 
 
 def _normalize_microtopic_performance(raw_performance: dict[str, object] | None) -> dict[str, object]:

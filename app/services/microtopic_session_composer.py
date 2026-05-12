@@ -37,12 +37,16 @@ class MicrotopicSessionComposer:
     ) -> list[MicrotopicSessionCandidate]:
         microtopics = self._extract_microtopics(entry)
         performance_map = dict(entry.performance_data.get("microtopic_performance", {}) or {})
+        pedagogical_memory_map = dict(entry.performance_data.get("pedagogical_memory", {}) or {})
         curriculum_role = entry.curriculum_role or "active"
         review_intensity = entry.review_intensity or "light"
 
         candidates: list[MicrotopicSessionCandidate] = []
         for microtopic in microtopics:
             performance = self._normalize_microtopic_performance(performance_map.get(microtopic.id))
+            pedagogical_memory = self._normalize_pedagogical_memory(
+                pedagogical_memory_map.get(microtopic.id)
+            )
             weakness_signal = min(compute_microtopic_priority(performance) / 1.5, 1.0)
             resurfacing_signal = self._resurfacing_signal(
                 performance.get("last_reviewed_at") or performance.get("last_seen_at")
@@ -51,6 +55,14 @@ class MicrotopicSessionComposer:
             curriculum_signal = self._curriculum_signal(curriculum_role, review_intensity)
             stabilization_discount = self._stabilization_discount(performance)
             exposure_discount = self._exposure_discount(performance)
+            temporal_signal = self._temporal_signal(
+                resurfacing_signal=resurfacing_signal,
+                pedagogical_memory=pedagogical_memory,
+            )
+            pedagogical_discount = min(
+                float(pedagogical_memory.get("stabilization_level", 0.0) or 0.0) * 0.08,
+                0.08,
+            )
             composition_score = max(
                 0.0,
                 min(
@@ -59,14 +71,17 @@ class MicrotopicSessionComposer:
                     + resurfacing_signal * 0.20
                     + difficulty_signal * 0.15
                     + curriculum_signal * 0.25
+                    + temporal_signal
                     - stabilization_discount
                     - exposure_discount,
-                ),
+                )
+                - pedagogical_discount,
             )
             selection_reason = self._selection_reason(
                 weakness_signal=weakness_signal,
-                resurfacing_signal=resurfacing_signal,
+                resurfacing_signal=max(resurfacing_signal, temporal_signal * 4),
                 curriculum_role=curriculum_role,
+                temporal_signal=temporal_signal,
             )
             candidates.append(
                 MicrotopicSessionCandidate(
@@ -88,8 +103,10 @@ class MicrotopicSessionComposer:
                         "resurfacing": round(resurfacing_signal, 4),
                         "difficulty": round(difficulty_signal, 4),
                         "curriculum": round(curriculum_signal, 4),
+                        "temporal": round(temporal_signal, 4),
                         "stabilization_discount": round(stabilization_discount, 4),
                         "exposure_discount": round(exposure_discount, 4),
+                        "pedagogical_discount": round(pedagogical_discount, 4),
                     },
                     topic_position=topic_position,
                 )
@@ -202,6 +219,34 @@ class MicrotopicSessionComposer:
         normalized["error_distribution"] = distribution
         return normalized
 
+    def _normalize_pedagogical_memory(self, raw_memory: dict[str, object] | None) -> dict[str, object]:
+        normalized = {
+            "last_pedagogical_mode": None,
+            "recent_effectiveness": "neutral",
+            "consecutive_successes": 0,
+            "consecutive_failures": 0,
+            "last_intervention_at": None,
+            "stabilization_level": 0.0,
+            "escalation_level": 0.0,
+            "retrieval_success_trend": 0.5,
+        }
+        if not raw_memory:
+            return normalized
+        normalized.update(raw_memory)
+        normalized["stabilization_level"] = min(
+            max(float(normalized.get("stabilization_level", 0.0) or 0.0), 0.0),
+            1.0,
+        )
+        normalized["escalation_level"] = min(
+            max(float(normalized.get("escalation_level", 0.0) or 0.0), 0.0),
+            1.0,
+        )
+        normalized["retrieval_success_trend"] = min(
+            max(float(normalized.get("retrieval_success_trend", 0.5) or 0.5), 0.0),
+            1.0,
+        )
+        return normalized
+
     def _resurfacing_signal(self, last_reviewed_at: object) -> float:
         if not last_reviewed_at:
             return 0.45
@@ -219,6 +264,30 @@ class MicrotopicSessionComposer:
             "light": 0.04,
         }.get(review_intensity, 0.04)
         return min(base + bonus, 1.0)
+
+    def _temporal_signal(
+        self,
+        *,
+        resurfacing_signal: float,
+        pedagogical_memory: dict[str, object],
+    ) -> float:
+        memory_resurfacing = self._resurfacing_signal(pedagogical_memory.get("last_intervention_at"))
+        retrieval_decay = max(
+            0.0,
+            0.55 - float(pedagogical_memory.get("retrieval_success_trend", 0.5) or 0.5),
+        )
+        escalation = float(pedagogical_memory.get("escalation_level", 0.0) or 0.0)
+        stabilization = float(pedagogical_memory.get("stabilization_level", 0.0) or 0.0)
+        return min(
+            max(
+                max(resurfacing_signal, memory_resurfacing) * 0.10
+                + retrieval_decay * 0.08
+                + escalation * 0.08
+                - stabilization * 0.04,
+                0.0,
+            ),
+            0.18,
+        )
 
     def _stabilization_discount(self, performance: dict[str, object]) -> float:
         consecutive_correct = int(performance.get("consecutive_correct", 0) or 0)
@@ -238,11 +307,14 @@ class MicrotopicSessionComposer:
         weakness_signal: float,
         resurfacing_signal: float,
         curriculum_role: str,
+        temporal_signal: float,
     ) -> str:
         if weakness_signal >= 0.55:
             return "weakness_reinforcement"
         if resurfacing_signal >= 0.5:
             return "cumulative_resurfacing"
+        if temporal_signal >= 0.10:
+            return "temporal_resurfacing"
         if curriculum_role == "active":
             return "active_progression"
         return "light_cumulative_recall"

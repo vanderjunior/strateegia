@@ -1870,3 +1870,40 @@ def test_trim_entries_case_strong_drop_advanced_user_keeps_only_top(tmp_path):
     trimmed = engine._trim_entries(entries, max_questions=5)
 
     assert [entry.topic_id for entry in trimmed] == ["Top"]
+
+
+def test_build_study_blocks_propagates_pedagogical_memory_to_runtime_blocks():
+    entry = LearningPlanEntry(
+        document_id="doc-1",
+        document_title="Doc 1",
+        topic_id="topic-1",
+        topic_title="Topic 1",
+        topic_content="Conceito: regra.\n\nAplicacao: caso pratico.",
+        question_ids=["q-1"],
+        priority_score=0.8,
+        recommended_difficulty=1,
+        reasons=[],
+        score_breakdown={"raw_priority": 0.8, "normalized_priority": 0.8},
+        item_reasons={"q-1": []},
+        curriculum_role="active",
+        review_intensity="deep",
+        study_strategy=StudyStrategy.MIXED.value,
+        performance_data={
+            "microtopic_performance": {
+                "micro-1": {"total_questions": 1, "correct_answers": 0, "recent_errors": 1}
+            },
+            "pedagogical_memory": {
+                "micro-1": {
+                    "microtopic_id": "micro-1",
+                    "topic_id": "topic-1",
+                    "last_pedagogical_mode": "active_recall",
+                    "recent_effectiveness": "ineffective",
+                }
+            },
+        },
+    )
+
+    blocks = build_study_blocks(entry)
+
+    assert blocks
+    assert all("micro-1" in block.pedagogical_memory for block in blocks)

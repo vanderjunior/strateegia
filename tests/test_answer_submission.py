@@ -417,3 +417,36 @@ def test_repository_loads_old_microtopic_json_without_temporal_fields(tmp_path):
     assert microtopic.last_reviewed_at is None
     assert microtopic.consecutive_correct == 0
     assert microtopic.consecutive_incorrect == 0
+
+
+def test_pedagogical_memory_is_persisted_and_backward_compatible(tmp_path):
+    client, repository = create_client(tmp_path)
+    now = datetime(2026, 5, 5, 14, 0, tzinfo=timezone.utc)
+    document = build_document(
+        title="Memoria Pedagogica",
+        topic_id="topic-1",
+        question_id="q-1",
+        created_at=now - timedelta(days=1),
+    )
+    repository.save_document(document)
+
+    response = client.post(
+        "/api/answers/submit",
+        json={
+            "topic_id": "topic-1",
+            "question_id": "q-1",
+            "microtopic_id": "micro-ped",
+            "user_answer": False,
+            "correct_answer": True,
+            "error_type": "conceptual",
+            "pedagogical_mode": "active_recall",
+        },
+    )
+
+    progress = repository.load_progress()
+    memory = progress.pedagogical_memory["micro-ped"]
+
+    assert response.status_code == 200
+    assert memory.last_pedagogical_mode == "active_recall"
+    assert memory.intervention_history["active_recall"].failed_attempts == 1
+    assert memory.recent_effectiveness in {"neutral", "ineffective"}

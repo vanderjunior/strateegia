@@ -41,6 +41,12 @@ class PedagogicalMode(str, Enum):
     REINFORCEMENT_CHECK = "reinforcement_check"
 
 
+class PedagogicalOutcome(str, Enum):
+    EFFECTIVE = "effective"
+    NEUTRAL = "neutral"
+    INEFFECTIVE = "ineffective"
+
+
 class PedagogicalProfile(BaseModel):
     pedagogical_mode: str
     intervention_reason: str
@@ -48,6 +54,14 @@ class PedagogicalProfile(BaseModel):
     retrieval_intensity: str
     reinforcement_level: str
     cognitive_load: str
+    intervention_transition_reason: str | None = None
+    stabilization_signal: float = 0.0
+    escalation_signal: float = 0.0
+    pedagogical_confidence: float = 0.5
+    intervention_effectiveness: str = PedagogicalOutcome.NEUTRAL.value
+    pedagogical_stability: str = "adaptive"
+    adaptation_reasoning: list[str] = Field(default_factory=list)
+    intervention_history_summary: dict[str, object] = Field(default_factory=dict)
     profile_breakdown: dict[str, float] = Field(default_factory=dict)
 
 
@@ -60,6 +74,7 @@ class StudyBlock(BaseModel):
     review_intensity: str | None = None
     topic_node: TopicNode | None = None
     microtopic_performance: dict[str, dict[str, object]] = Field(default_factory=dict)
+    pedagogical_memory: dict[str, dict[str, object]] = Field(default_factory=dict)
     selected_microtopic_ids: list[str] = Field(default_factory=list)
 
 
@@ -168,6 +183,7 @@ class AnswerSubmission(BaseModel):
     document_id: str
     topic_id: str
     microtopic_id: str | None = None
+    pedagogical_mode: str | None = None
     selected_answer: str
     is_correct: bool
     error_type: str | ErrorType | None = None
@@ -231,6 +247,32 @@ class MicroTopicPerformance(BaseModel):
     last_incorrect_at: datetime | None = None
     consecutive_correct: int = 0
     consecutive_incorrect: int = 0
+
+
+class InterventionHistory(BaseModel):
+    pedagogical_mode: str
+    total_attempts: int = 0
+    successful_attempts: int = 0
+    failed_attempts: int = 0
+    consecutive_successes: int = 0
+    consecutive_failures: int = 0
+    last_intervention_at: datetime | None = None
+    last_outcome: str = PedagogicalOutcome.NEUTRAL.value
+    confidence: float = 0.5
+
+
+class PedagogicalMemory(BaseModel):
+    microtopic_id: str | None = None
+    topic_id: str | None = None
+    last_pedagogical_mode: str | None = None
+    recent_effectiveness: str = PedagogicalOutcome.NEUTRAL.value
+    consecutive_successes: int = 0
+    consecutive_failures: int = 0
+    last_intervention_at: datetime | None = None
+    stabilization_level: float = 0.0
+    escalation_level: float = 0.0
+    retrieval_success_trend: float = 0.5
+    intervention_history: dict[str, InterventionHistory] = Field(default_factory=dict)
 
 
 class LearningPlanEntry(BaseModel):
@@ -317,3 +359,4 @@ class ProgressState(BaseModel):
     topic_learning_states: dict[str, TopicLearningState] = Field(default_factory=dict)
     item_states: dict[str, ItemState] = Field(default_factory=dict)
     microtopic_performance: dict[str, MicroTopicPerformance] = Field(default_factory=dict)
+    pedagogical_memory: dict[str, PedagogicalMemory] = Field(default_factory=dict)
