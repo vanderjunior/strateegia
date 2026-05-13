@@ -110,6 +110,11 @@ def build_pedagogical_memory(**overrides):
         "escalation_level": 0.0,
         "retrieval_success_trend": 0.5,
         "intervention_history": {},
+        "resurfacing_cycles": 0,
+        "successful_resurfacing_cycles": 0,
+        "fatigue_exposure": 0.0,
+        "recovery_count": 0,
+        "last_stabilized_at": None,
     }
     base.update(overrides)
     return base
@@ -235,6 +240,14 @@ def test_execute_study_block_exposes_adaptive_debug_metadata():
             "pedagogical_stability",
             "intervention_history_summary",
             "why_this_now",
+            "stabilization_stage",
+            "longitudinal_retention",
+            "intervention_fatigue",
+            "reinforcement_reason",
+            "fatigue_reason",
+            "stabilization_reasoning",
+            "retention_reasoning",
+            "recovery_signal",
         }
     )
 
@@ -449,6 +462,44 @@ def test_execute_study_block_temporal_reinforcement_resurfaces_stable_old_microt
 
     assert payload["pedagogical_mode"] in {"reinforcement_check", "active_recall", "rapid_review"}
     assert payload["why_this_now"]
+
+
+def test_execute_study_block_exposes_longitudinal_stability_metadata():
+    topic_node = build_topic_node(
+        title="Farol",
+        content="Conceito: referencia visual.\n\nObservacao: prova explora confusoes com alcance.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="summary", topic_id="farol", depth="light", topic_node=topic_node)
+    )
+    target_id = probe["selected_microtopics"][0]["id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="farol",
+            depth="light",
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            pedagogical_memory={
+                target_id: build_pedagogical_memory(
+                    last_pedagogical_mode="reinforcement_check",
+                    recent_effectiveness="effective",
+                    stabilization_level=0.82,
+                    retrieval_success_trend=0.9,
+                    fatigue_exposure=0.3,
+                    resurfacing_cycles=4,
+                    successful_resurfacing_cycles=4,
+                    recovery_count=1,
+                )
+            },
+            curriculum_role="cumulative",
+            review_intensity="light",
+        )
+    )
+
+    assert payload["stabilization_stage"] in {"stabilizing", "consolidated", "resilient"}
+    assert payload["longitudinal_retention"] >= 0.5
+    assert payload["retention_reasoning"]
 
 
 def test_execute_study_block_consecutive_success_stabilizes_repetition_pressure():

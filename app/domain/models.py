@@ -60,6 +60,14 @@ class PedagogicalProfile(BaseModel):
     pedagogical_confidence: float = 0.5
     intervention_effectiveness: str = PedagogicalOutcome.NEUTRAL.value
     pedagogical_stability: str = "adaptive"
+    stabilization_stage: str = "unstable"
+    longitudinal_retention: float = 0.0
+    intervention_fatigue: float = 0.0
+    reinforcement_reason: str | None = None
+    fatigue_reason: str | None = None
+    stabilization_reasoning: list[str] = Field(default_factory=list)
+    retention_reasoning: list[str] = Field(default_factory=list)
+    recovery_signal: float = 0.0
     adaptation_reasoning: list[str] = Field(default_factory=list)
     intervention_history_summary: dict[str, object] = Field(default_factory=dict)
     profile_breakdown: dict[str, float] = Field(default_factory=dict)
@@ -272,6 +280,11 @@ class PedagogicalMemory(BaseModel):
     stabilization_level: float = 0.0
     escalation_level: float = 0.0
     retrieval_success_trend: float = 0.5
+    resurfacing_cycles: int = 0
+    successful_resurfacing_cycles: int = 0
+    fatigue_exposure: float = 0.0
+    recovery_count: int = 0
+    last_stabilized_at: datetime | None = None
     intervention_history: dict[str, InterventionHistory] = Field(default_factory=dict)
 
 

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from app.domain.models import LearningPlanEntry, MicrotopicSessionCandidate, TopicNode
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.microtopic_extractor import MicroTopicExtractor
+from app.services.pedagogical_stability import analyze_pedagogical_stability
 
 
 class MicrotopicSessionComposer:
@@ -59,8 +60,14 @@ class MicrotopicSessionComposer:
                 resurfacing_signal=resurfacing_signal,
                 pedagogical_memory=pedagogical_memory,
             )
+            stability = analyze_pedagogical_stability(
+                performance=performance,
+                pedagogical_memory=pedagogical_memory,
+                resurfacing_signal=max(resurfacing_signal, temporal_signal),
+            )
             pedagogical_discount = min(
-                float(pedagogical_memory.get("stabilization_level", 0.0) or 0.0) * 0.08,
+                float(stability["retention_confidence"]) * 0.06
+                + float(stability["intervention_fatigue"]) * 0.05,
                 0.08,
             )
             composition_score = max(
@@ -72,6 +79,7 @@ class MicrotopicSessionComposer:
                     + difficulty_signal * 0.15
                     + curriculum_signal * 0.25
                     + temporal_signal
+                    + min(float(stability["reinforcement_signal"]) * 0.08, 0.08)
                     - stabilization_discount
                     - exposure_discount,
                 )
@@ -104,6 +112,8 @@ class MicrotopicSessionComposer:
                         "difficulty": round(difficulty_signal, 4),
                         "curriculum": round(curriculum_signal, 4),
                         "temporal": round(temporal_signal, 4),
+                        "stability": round(float(stability["pedagogical_stability_score"]), 4),
+                        "fatigue": round(float(stability["intervention_fatigue"]), 4),
                         "stabilization_discount": round(stabilization_discount, 4),
                         "exposure_discount": round(exposure_discount, 4),
                         "pedagogical_discount": round(pedagogical_discount, 4),

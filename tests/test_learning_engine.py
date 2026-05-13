@@ -1892,18 +1892,55 @@ def test_build_study_blocks_propagates_pedagogical_memory_to_runtime_blocks():
             "microtopic_performance": {
                 "micro-1": {"total_questions": 1, "correct_answers": 0, "recent_errors": 1}
             },
-            "pedagogical_memory": {
-                "micro-1": {
-                    "microtopic_id": "micro-1",
-                    "topic_id": "topic-1",
-                    "last_pedagogical_mode": "active_recall",
-                    "recent_effectiveness": "ineffective",
-                }
+                "pedagogical_memory": {
+                    "micro-1": {
+                        "microtopic_id": "micro-1",
+                        "topic_id": "topic-1",
+                        "last_pedagogical_mode": "active_recall",
+                        "recent_effectiveness": "ineffective",
+                        "resurfacing_cycles": 2,
+                    }
+                },
             },
-        },
-    )
+        )
 
     blocks = build_study_blocks(entry)
 
     assert blocks
     assert all("micro-1" in block.pedagogical_memory for block in blocks)
+
+
+def test_build_study_blocks_preserves_longitudinal_memory_fields():
+    entry = LearningPlanEntry(
+        document_id="doc-2",
+        document_title="Doc 2",
+        topic_id="topic-2",
+        topic_title="Topic 2",
+        topic_content="Conceito: regra.\n\nAplicacao: caso.",
+        question_ids=["q-2"],
+        priority_score=0.6,
+        recommended_difficulty=1,
+        reasons=[],
+        score_breakdown={"raw_priority": 0.6, "normalized_priority": 0.6},
+        item_reasons={"q-2": []},
+        curriculum_role="cumulative",
+        review_intensity="light",
+        study_strategy=StudyStrategy.QUICK_REVIEW.value,
+        performance_data={
+            "pedagogical_memory": {
+                "micro-2": {
+                    "microtopic_id": "micro-2",
+                    "topic_id": "topic-2",
+                    "stabilization_level": 0.7,
+                    "fatigue_exposure": 0.25,
+                    "resurfacing_cycles": 4,
+                    "successful_resurfacing_cycles": 3,
+                }
+            },
+        },
+    )
+
+    block = build_study_blocks(entry)[0]
+
+    assert block.pedagogical_memory["micro-2"]["stabilization_level"] == 0.7
+    assert block.pedagogical_memory["micro-2"]["fatigue_exposure"] == 0.25

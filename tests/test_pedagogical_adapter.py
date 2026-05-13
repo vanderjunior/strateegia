@@ -26,6 +26,11 @@ def build_pedagogical_memory(**overrides):
         "escalation_level": 0.0,
         "retrieval_success_trend": 0.5,
         "intervention_history": {},
+        "resurfacing_cycles": 0,
+        "successful_resurfacing_cycles": 0,
+        "fatigue_exposure": 0.0,
+        "recovery_count": 0,
+        "last_stabilized_at": None,
     }
     base.update(overrides)
     return base
@@ -279,3 +284,26 @@ def test_pedagogical_profile_exposes_effectiveness_and_confidence_metadata():
     assert 0.0 <= profile.pedagogical_confidence <= 1.0
     assert profile.intervention_history_summary
     assert profile.adaptation_reasoning
+
+
+def test_pedagogical_profile_exposes_longitudinal_stability_metadata():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="cumulative",
+        review_intensity="light",
+        weakness_signal=0.15,
+        resurfacing_signal=0.55,
+        performance=build_performance(consecutive_correct=5),
+        pedagogical_memory=build_pedagogical_memory(
+            recent_effectiveness="effective",
+            stabilization_level=0.75,
+            retrieval_success_trend=0.88,
+            resurfacing_cycles=4,
+            successful_resurfacing_cycles=4,
+            fatigue_exposure=0.25,
+            recovery_count=1,
+        ),
+    )
+
+    assert profile.longitudinal_retention >= 0.5
+    assert profile.stabilization_stage in {"stabilizing", "consolidated", "resilient"}
+    assert profile.retention_reasoning

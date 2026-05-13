@@ -511,6 +511,14 @@ def _pedagogical_metadata(profile) -> dict[str, object]:
         "pedagogical_confidence": profile.pedagogical_confidence,
         "intervention_effectiveness": profile.intervention_effectiveness,
         "pedagogical_stability": profile.pedagogical_stability,
+        "stabilization_stage": profile.stabilization_stage,
+        "longitudinal_retention": profile.longitudinal_retention,
+        "intervention_fatigue": profile.intervention_fatigue,
+        "reinforcement_reason": profile.reinforcement_reason,
+        "fatigue_reason": profile.fatigue_reason,
+        "stabilization_reasoning": profile.stabilization_reasoning,
+        "retention_reasoning": profile.retention_reasoning,
+        "recovery_signal": profile.recovery_signal,
         "intervention_history_summary": profile.intervention_history_summary,
         "adaptation_reasoning": profile.adaptation_reasoning,
     }
@@ -526,6 +534,11 @@ def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[
         "stabilization_level": 0.0,
         "escalation_level": 0.0,
         "retrieval_success_trend": 0.5,
+        "resurfacing_cycles": 0,
+        "successful_resurfacing_cycles": 0,
+        "fatigue_exposure": 0.0,
+        "recovery_count": 0,
+        "last_stabilized_at": None,
         "intervention_history": {},
     }
     if not raw_memory:
@@ -536,6 +549,10 @@ def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[
     memory["retrieval_success_trend"] = max(0.0, min(float(memory.get("retrieval_success_trend", 0.5) or 0.5), 1.0))
     memory["consecutive_successes"] = int(memory.get("consecutive_successes", 0) or 0)
     memory["consecutive_failures"] = int(memory.get("consecutive_failures", 0) or 0)
+    memory["resurfacing_cycles"] = int(memory.get("resurfacing_cycles", 0) or 0)
+    memory["successful_resurfacing_cycles"] = int(memory.get("successful_resurfacing_cycles", 0) or 0)
+    memory["fatigue_exposure"] = max(0.0, min(float(memory.get("fatigue_exposure", 0.0) or 0.0), 1.0))
+    memory["recovery_count"] = int(memory.get("recovery_count", 0) or 0)
     return memory
 
 

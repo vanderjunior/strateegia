@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.domain.models import PedagogicalMode, PedagogicalOutcome, PedagogicalProfile
+from app.services.pedagogical_stability import analyze_pedagogical_stability
 
 
 ERROR_TYPE_PRIORITY = ["conceptual", "interpretation", "memory", "attention"]
@@ -26,6 +27,11 @@ def resolve_pedagogical_profile(
 ) -> PedagogicalProfile:
     normalized_performance = _normalize_performance(performance)
     normalized_memory = _normalize_pedagogical_memory(pedagogical_memory)
+    stability = analyze_pedagogical_stability(
+        performance=performance,
+        pedagogical_memory=pedagogical_memory,
+        resurfacing_signal=resurfacing_signal,
+    )
     normalized_weakness = _clamp(weakness_signal)
     normalized_resurfacing = _clamp(resurfacing_signal)
     stabilization_signal = _clamp(
@@ -33,6 +39,7 @@ def resolve_pedagogical_profile(
             normalized_performance["consecutive_correct"] / 5.0,
             normalized_memory["stabilization_level"],
             normalized_memory["consecutive_successes"] / 4.0,
+            float(stability["pedagogical_stability_score"]) * 0.6,
         )
     )
     incorrect_pressure = _clamp(
@@ -40,6 +47,7 @@ def resolve_pedagogical_profile(
             normalized_performance["consecutive_incorrect"] / 4.0,
             normalized_memory["escalation_level"],
             normalized_memory["consecutive_failures"] / 3.0,
+            float(stability["forgetting_signal"]) * 0.85,
         )
     )
     curriculum_density = CURRICULUM_DENSITY.get(curriculum_role or "", 0.6)
@@ -50,6 +58,7 @@ def resolve_pedagogical_profile(
             incorrect_pressure,
             normalized_memory["escalation_level"],
             (1.0 - normalized_memory["retrieval_success_trend"]) * 0.5,
+            float(stability["reinforcement_signal"]) * 0.6,
         )
     )
     base_mode = compute_pedagogical_mode(
@@ -82,6 +91,8 @@ def resolve_pedagogical_profile(
         "curriculum_density": curriculum_density,
         "review_density": review_density,
         "retrieval_trend": normalized_memory["retrieval_success_trend"],
+        "longitudinal_retention": round(float(stability["retention_confidence"]), 4),
+        "intervention_fatigue": round(float(stability["intervention_fatigue"]), 4),
     }
 
     explanation_depth = compute_explanation_depth(
@@ -115,6 +126,8 @@ def resolve_pedagogical_profile(
         chosen_history.get("confidence", 0.5) * 0.7
         + stabilization_signal * 0.2
         + (1.0 - escalation_signal) * 0.1
+        + float(stability["retention_confidence"]) * 0.1
+        - float(stability["intervention_fatigue"]) * 0.08
     )
     intervention_effectiveness = normalized_memory["recent_effectiveness"]
     pedagogical_stability = _pedagogical_stability(
@@ -127,6 +140,7 @@ def resolve_pedagogical_profile(
         intervention_effectiveness=intervention_effectiveness,
         weakness_signal=normalized_weakness,
         resurfacing_signal=normalized_resurfacing,
+        stabilization_stage=str(stability["stabilization_stage"]),
     )
 
     return PedagogicalProfile(
@@ -149,6 +163,14 @@ def resolve_pedagogical_profile(
         pedagogical_confidence=pedagogical_confidence,
         intervention_effectiveness=intervention_effectiveness,
         pedagogical_stability=pedagogical_stability,
+        stabilization_stage=str(stability["stabilization_stage"]),
+        longitudinal_retention=float(stability["retention_confidence"]),
+        intervention_fatigue=float(stability["intervention_fatigue"]),
+        reinforcement_reason=str(stability["reinforcement_reason"]),
+        fatigue_reason=str(stability["fatigue_reason"]),
+        stabilization_reasoning=list(stability["stabilization_reasoning"]),
+        retention_reasoning=list(stability["retention_reasoning"]),
+        recovery_signal=float(stability["recovery_signal"]),
         adaptation_reasoning=adaptation_reasoning,
         intervention_history_summary={
             "last_mode": normalized_memory["last_pedagogical_mode"],
@@ -156,6 +178,8 @@ def resolve_pedagogical_profile(
             "recent_effectiveness": intervention_effectiveness,
             "consecutive_successes": normalized_memory["consecutive_successes"],
             "consecutive_failures": normalized_memory["consecutive_failures"],
+            "resurfacing_cycles": normalized_memory["resurfacing_cycles"],
+            "fatigue_exposure": normalized_memory["fatigue_exposure"],
         },
         profile_breakdown=breakdown,
     )
@@ -171,7 +195,15 @@ def compute_pedagogical_mode(
     stabilization_signal: float,
     incorrect_pressure: float,
 ) -> PedagogicalMode:
-    if stabilization_signal >= 0.8 and weakness_signal <= 0.25 and incorrect_pressure <= 0.1:
+    if stabilization_signal >= 0.8 and weakness_signal <= 0.25 and incorrect_pressure <= 0.15:
+        return PedagogicalMode.REINFORCEMENT_CHECK
+
+    if (
+        curriculum_role == "cumulative"
+        and review_intensity == "light"
+        and stabilization_signal >= 0.7
+        and incorrect_pressure <= 0.2
+    ):
         return PedagogicalMode.REINFORCEMENT_CHECK
 
     if (
@@ -359,11 +391,13 @@ def _build_adaptation_reasoning(
     intervention_effectiveness: str,
     weakness_signal: float,
     resurfacing_signal: float,
+    stabilization_stage: str,
 ) -> list[str]:
     reasons = [
         f"Modo final: {pedagogical_mode.value}.",
         f"Eficacia recente: {intervention_effectiveness}.",
         f"Fragilidade {weakness_signal:.2f} e resurfacing {resurfacing_signal:.2f}.",
+        f"Estagio longitudinal: {stabilization_stage}.",
     ]
     if transition_reason:
         reasons.append(transition_reason)
@@ -418,6 +452,11 @@ def _normalize_pedagogical_memory(pedagogical_memory: dict[str, object] | None) 
         "stabilization_level": _clamp((pedagogical_memory or {}).get("stabilization_level", 0.0)),
         "escalation_level": _clamp((pedagogical_memory or {}).get("escalation_level", 0.0)),
         "retrieval_success_trend": _clamp((pedagogical_memory or {}).get("retrieval_success_trend", 0.5)),
+        "resurfacing_cycles": int((pedagogical_memory or {}).get("resurfacing_cycles", 0) or 0),
+        "successful_resurfacing_cycles": int((pedagogical_memory or {}).get("successful_resurfacing_cycles", 0) or 0),
+        "fatigue_exposure": _clamp((pedagogical_memory or {}).get("fatigue_exposure", 0.0)),
+        "recovery_count": int((pedagogical_memory or {}).get("recovery_count", 0) or 0),
+        "last_stabilized_at": (pedagogical_memory or {}).get("last_stabilized_at"),
         "intervention_history": intervention_history,
     }
 

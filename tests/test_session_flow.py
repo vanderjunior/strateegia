@@ -180,10 +180,12 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "explanation_depth" in summary_block
     assert "retrieval_intensity" in summary_block
     assert "why_this_now" in summary_block
+    assert "stabilization_stage" in summary_block
     assert "pedagogical_mode" in question_block
     assert "intervention_reason" in question_block
     assert "intervention_effectiveness" in question_block
     assert "pedagogical_confidence" in question_block
+    assert "longitudinal_retention" in question_block
 
 
 def test_session_completion_returns_completed_true(tmp_path):

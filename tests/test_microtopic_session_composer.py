@@ -173,16 +173,18 @@ def test_composer_produces_bounded_and_explainable_scores():
     candidate = composer.compose(entries)[0]
 
     assert 0.0 <= candidate.composition_score <= 1.0
-    assert set(candidate.composition_breakdown) == {
-        "weakness",
-        "resurfacing",
-        "difficulty",
-        "curriculum",
-        "temporal",
-        "stabilization_discount",
-        "exposure_discount",
-        "pedagogical_discount",
-    }
+    assert set(candidate.composition_breakdown).issuperset(
+        {
+            "weakness",
+            "resurfacing",
+            "difficulty",
+            "curriculum",
+            "temporal",
+            "stabilization_discount",
+            "exposure_discount",
+            "pedagogical_discount",
+        }
+    )
 
 
 def test_composer_handles_sparse_legacy_data_safely():
@@ -281,3 +283,46 @@ def test_composer_prevents_pedagogical_memory_monopolization():
 
     assert len(candidates) <= 3
     assert all(0.0 <= candidate.composition_score <= 1.0 for candidate in candidates)
+
+
+def test_composer_considers_stability_and_fatigue_in_breakdown():
+    composer = MicrotopicSessionComposer()
+    probe = composer.compose(
+        [
+            build_entry(
+                topic_id="topic-stability",
+                topic_title="Topic Stability",
+                topic_content="Conceito: regra.\n\nExcecao: detalhe.\n\nAplicacao: comparacao.",
+                curriculum_role="cumulative",
+                review_intensity="light",
+            )
+        ]
+    )
+    target_id = probe[0].microtopic_id
+
+    candidates = composer.compose(
+        [
+            build_entry(
+                topic_id="topic-stability",
+                topic_title="Topic Stability",
+                topic_content="Conceito: regra.\n\nExcecao: detalhe.\n\nAplicacao: comparacao.",
+                curriculum_role="cumulative",
+                review_intensity="light",
+                pedagogical_memory={
+                    target_id: {
+                        "microtopic_id": target_id,
+                        "topic_id": "topic-stability",
+                        "stabilization_level": 0.85,
+                        "retrieval_success_trend": 0.9,
+                        "fatigue_exposure": 0.7,
+                        "resurfacing_cycles": 5,
+                        "successful_resurfacing_cycles": 5,
+                    }
+                },
+            )
+        ]
+    )
+
+    candidate = candidates[0]
+    assert "stability" in candidate.composition_breakdown
+    assert "fatigue" in candidate.composition_breakdown

@@ -108,6 +108,14 @@ class JsonStudyRepository:
         normalized["retrieval_success_trend"] = self._clamp(
             normalized.get("retrieval_success_trend", 0.5), 0.0, 1.0
         )
+        normalized["resurfacing_cycles"] = int(normalized.get("resurfacing_cycles", 0) or 0)
+        normalized["successful_resurfacing_cycles"] = int(
+            normalized.get("successful_resurfacing_cycles", 0) or 0
+        )
+        normalized["fatigue_exposure"] = self._clamp(
+            normalized.get("fatigue_exposure", 0.0), 0.0, 1.0
+        )
+        normalized["recovery_count"] = int(normalized.get("recovery_count", 0) or 0)
         return normalized
 
     def _normalize_error_type(self, error_type: str | ErrorType | None) -> str | None:
@@ -374,6 +382,7 @@ class JsonStudyRepository:
         is_correct: bool,
         created_at: str,
     ) -> None:
+        previous_failures = int(pedagogical_memory.get("consecutive_failures", 0) or 0)
         history = self._normalize_intervention_history(
             pedagogical_mode,
             pedagogical_memory.get("intervention_history", {}).get(pedagogical_mode),
@@ -406,10 +415,17 @@ class JsonStudyRepository:
 
         pedagogical_memory["last_pedagogical_mode"] = pedagogical_mode
         pedagogical_memory["last_intervention_at"] = created_at
+        pedagogical_memory["resurfacing_cycles"] = pedagogical_memory.get("resurfacing_cycles", 0) + 1
         pedagogical_memory["consecutive_successes"] = history["consecutive_successes"]
         pedagogical_memory["consecutive_failures"] = history["consecutive_failures"]
         pedagogical_memory["recent_effectiveness"] = self._derive_effectiveness(history)
         pedagogical_memory["retrieval_success_trend"] = self._clamp(success_rate, 0.0, 1.0)
+        if is_correct:
+            pedagogical_memory["successful_resurfacing_cycles"] = (
+                pedagogical_memory.get("successful_resurfacing_cycles", 0) + 1
+            )
+        if is_correct and previous_failures >= 2:
+            pedagogical_memory["recovery_count"] = pedagogical_memory.get("recovery_count", 0) + 1
         pedagogical_memory["stabilization_level"] = self._clamp(
             success_rate * 0.5
             + min(history["consecutive_successes"] * 0.1, 0.3)
@@ -424,6 +440,18 @@ class JsonStudyRepository:
             0.0,
             1.0,
         )
+        pedagogical_memory["fatigue_exposure"] = self._clamp(
+            pedagogical_memory.get("fatigue_exposure", 0.0)
+            + (
+                0.08
+                if history["consecutive_successes"] >= 2 and pedagogical_memory["last_pedagogical_mode"] == pedagogical_mode
+                else -0.05
+            ),
+            0.0,
+            1.0,
+        )
+        if pedagogical_memory["stabilization_level"] >= 0.7 and is_correct:
+            pedagogical_memory["last_stabilized_at"] = created_at
         pedagogical_memory.setdefault("intervention_history", {})[pedagogical_mode] = history
 
     def _derive_effectiveness(self, history: dict) -> str:
