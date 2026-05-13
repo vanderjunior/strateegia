@@ -180,6 +180,7 @@ def test_pedagogical_breakdown_is_bounded():
     )
 
     assert all(0.0 <= value <= 1.0 for value in profile.profile_breakdown.values())
+    assert 0.0 <= profile.cognitive_load_score <= 1.0
 
 
 def test_pedagogical_adapter_handles_missing_metadata_safely():

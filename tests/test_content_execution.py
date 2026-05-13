@@ -232,6 +232,7 @@ def test_execute_study_block_exposes_adaptive_debug_metadata():
             "adaptive_reasoning",
             "pedagogical_mode",
             "intervention_reason",
+            "cognitive_load",
             "pedagogical_reasoning",
             "pedagogical_breakdown",
             "intervention_transition_reason",

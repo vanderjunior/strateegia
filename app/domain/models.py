@@ -54,6 +54,7 @@ class PedagogicalProfile(BaseModel):
     retrieval_intensity: str
     reinforcement_level: str
     cognitive_load: str
+    cognitive_load_score: float = 0.0
     intervention_transition_reason: str | None = None
     stabilization_signal: float = 0.0
     escalation_signal: float = 0.0
@@ -71,6 +72,22 @@ class PedagogicalProfile(BaseModel):
     adaptation_reasoning: list[str] = Field(default_factory=list)
     intervention_history_summary: dict[str, object] = Field(default_factory=dict)
     profile_breakdown: dict[str, float] = Field(default_factory=dict)
+
+
+class SessionEquilibriumDecision(BaseModel):
+    cognitive_load: str
+    cognitive_load_score: float = 0.0
+    session_density: float = 0.0
+    intervention_rotation_pressure: float = 0.0
+    equilibrium_pressure: float = 0.0
+    pacing_signal: float = 0.0
+    cumulative_fatigue_signal: float = 0.0
+    equilibrium_reason: str
+    pacing_reason: str
+    intervention_rotation_reason: str
+    density_reason: str
+    fatigue_mitigation_reason: str
+    why_this_block_now: str
 
 
 class StudyBlock(BaseModel):

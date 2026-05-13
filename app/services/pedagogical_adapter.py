@@ -157,6 +157,7 @@ def resolve_pedagogical_profile(
         retrieval_intensity=retrieval_intensity,
         reinforcement_level=reinforcement_level,
         cognitive_load=cognitive_load,
+        cognitive_load_score=_cognitive_load_score(cognitive_load),
         intervention_transition_reason=transition_reason,
         stabilization_signal=stabilization_signal,
         escalation_signal=escalation_signal,
@@ -365,6 +366,14 @@ def _compute_cognitive_load(
     if load >= 0.42:
         return "medium"
     return "low"
+
+
+def _cognitive_load_score(cognitive_load: str) -> float:
+    return {
+        "high": 0.82,
+        "medium": 0.56,
+        "low": 0.28,
+    }.get(cognitive_load, 0.5)
 
 
 def _build_intervention_reason(

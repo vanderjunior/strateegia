@@ -5,6 +5,7 @@ from uuid import uuid4
 from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
+from app.services.session_equilibrium import SessionEquilibriumLayer
 
 
 class SessionManager:
@@ -81,6 +82,7 @@ class SessionManager:
 
     def _build_runtime_blocks(self, entries: list[LearningPlanEntry]) -> list[dict]:
         composer = MicrotopicSessionComposer()
+        equilibrium = SessionEquilibriumLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -106,7 +108,7 @@ class SessionManager:
             )
             question_count_by_topic[candidate.topic_id] = question_count_by_topic.get(candidate.topic_id, 0) + 1
 
-        return runtime_blocks
+        return equilibrium.balance(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -128,6 +130,8 @@ class SessionManager:
         return {
             **executed,
             "topic_title": entry.topic_title,
+            "curriculum_role": entry.curriculum_role,
+            "review_intensity": entry.review_intensity,
             "_entry_index": entry_index,
             "_block_index": summary_index,
             "_question_index": 0,
@@ -154,6 +158,8 @@ class SessionManager:
             "type": "question",
             "topic_id": entry.topic_id,
             "topic_title": entry.topic_title,
+            "curriculum_role": entry.curriculum_role,
+            "review_intensity": entry.review_intensity,
             "question_id": self._runtime_question_id(
                 entry,
                 block_index=question_block_index,

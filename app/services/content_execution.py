@@ -503,6 +503,8 @@ def _pedagogical_metadata(profile) -> dict[str, object]:
     return {
         "pedagogical_mode": profile.pedagogical_mode,
         "intervention_reason": profile.intervention_reason,
+        "cognitive_load": profile.cognitive_load,
+        "cognitive_load_score": profile.cognitive_load_score,
         "explanation_depth": profile.explanation_depth,
         "retrieval_intensity": profile.retrieval_intensity,
         "pedagogical_reasoning": profile.adaptation_reasoning or [profile.intervention_reason],
