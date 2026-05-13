@@ -6,6 +6,7 @@ from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
 from app.services.session_equilibrium import SessionEquilibriumLayer
+from app.services.session_narrative import SessionNarrativeLayer
 
 
 class SessionManager:
@@ -83,6 +84,7 @@ class SessionManager:
     def _build_runtime_blocks(self, entries: list[LearningPlanEntry]) -> list[dict]:
         composer = MicrotopicSessionComposer()
         equilibrium = SessionEquilibriumLayer()
+        narrative = SessionNarrativeLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -108,7 +110,8 @@ class SessionManager:
             )
             question_count_by_topic[candidate.topic_id] = question_count_by_topic.get(candidate.topic_id, 0) + 1
 
-        return equilibrium.balance(runtime_blocks)
+        runtime_blocks = equilibrium.balance(runtime_blocks)
+        return narrative.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,

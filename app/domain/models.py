@@ -90,6 +90,18 @@ class SessionEquilibriumDecision(BaseModel):
     why_this_block_now: str
 
 
+class SessionNarrativeDecision(BaseModel):
+    narrative_relation: str
+    narrative_role: str
+    continuity_signal: float = 0.0
+    contextual_anchor: str | None = None
+    transition_reason: str
+    comparison_reason: str | None = None
+    recall_reason: str | None = None
+    progression_reason: str | None = None
+    why_this_after_previous: str
+
+
 class StudyBlock(BaseModel):
     type: str
     topic_id: str
