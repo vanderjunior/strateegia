@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from math import ceil
 
 from app.domain.models import LearningPlanEntry, MicroTopic, StudyBlock, TopicNode
+from app.services.cognitive_facets import resolve_facet_profile
 from app.services.conceptual_relationships import (
     ConceptualRelationshipsLayer,
     build_relationship_signals,
@@ -52,7 +53,8 @@ def execute_study_block(block: StudyBlock) -> dict:
         selected_microtopic_ids=block.selected_microtopic_ids,
     )
     selected_microtopics = selection["selected_microtopics"]
-    pedagogical_profile = _resolve_pedagogical_profile(block, selection)
+    facet_profile = _resolve_facet_profile(selection)
+    pedagogical_profile = _resolve_pedagogical_profile(block, selection, facet_profile)
     pedagogical_metadata = _pedagogical_metadata(pedagogical_profile)
     micro_intervention = resolve_micro_intervention(
         block_type=block.type,
@@ -60,7 +62,9 @@ def execute_study_block(block: StudyBlock) -> dict:
         review_intensity=block.review_intensity or selection.get("review_intensity"),
         pedagogical_profile=pedagogical_profile,
         relationship_signal=selection.get("relationship_signal"),
+        facet_profile=facet_profile,
     )
+    facet_metadata = _facet_metadata(facet_profile)
     micro_intervention_metadata = _micro_intervention_metadata(micro_intervention)
 
     if block.type == "summary":
@@ -75,9 +79,11 @@ def execute_study_block(block: StudyBlock) -> dict:
                 selected_microtopics,
                 pedagogical_profile,
                 micro_intervention,
+                facet_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
+            **facet_metadata,
             **micro_intervention_metadata,
         }
     if block.type == "questions":
@@ -91,9 +97,11 @@ def execute_study_block(block: StudyBlock) -> dict:
                 quantity,
                 pedagogical_profile,
                 micro_intervention,
+                facet_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
+            **facet_metadata,
             **micro_intervention_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
@@ -501,6 +509,7 @@ def _generate_summary_content(
     microtopics: list[MicroTopic],
     pedagogical_profile,
     micro_intervention,
+    facet_profile,
 ) -> str:
     if not microtopics:
         return (
@@ -521,20 +530,20 @@ def _generate_summary_content(
             + " Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. "
             + "Exemplo de prova: identifique qual detalhe normativo altera o resultado."
         )
-        return _apply_intervention_to_summary(content, micro_intervention)
+        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
     if pedagogical_profile.pedagogical_mode == "contextual_application":
         content = (
             f"Resumo estruturado de {topic_name}: pontos de prova em contexto pratico. "
             + " ".join(sections)
             + " Priorize comparacoes entre cenarios e a condicao que muda a resposta."
         )
-        return _apply_intervention_to_summary(content, micro_intervention)
+        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
     if pedagogical_profile.pedagogical_mode == "active_recall":
         content = f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
-        return _apply_intervention_to_summary(content, micro_intervention)
+        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
     if pedagogical_profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}:
         content = f"Visao rapida de {topic_name}: {sections[0]}"
-        return _apply_intervention_to_summary(content, micro_intervention)
+        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
     if depth == "deep":
         content = (
             f"Resumo aprofundado de {topic_name}: "
@@ -543,13 +552,17 @@ def _generate_summary_content(
             )
             + " Exemplo de prova: compare a regra geral com a excecao aplicavel e identifique o detalhe que altera o resultado."
         )
-        return _apply_intervention_to_summary(content, micro_intervention)
+        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
     if depth == "medium":
         content = f"Resumo estruturado de {topic_name}: pontos de prova e focos especificos. " + " ".join(
             sections
         )
-        return _apply_intervention_to_summary(content, micro_intervention)
-    return _apply_intervention_to_summary(f"Visao rapida de {topic_name}: {sections[0]}", micro_intervention)
+        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
+    return _apply_intervention_to_summary(
+        f"Visao rapida de {topic_name}: {sections[0]}",
+        micro_intervention,
+        facet_profile,
+    )
 
 
 def _generate_questions(
@@ -558,6 +571,7 @@ def _generate_questions(
     quantity: int,
     pedagogical_profile,
     micro_intervention,
+    facet_profile,
 ) -> list[dict]:
     selected = microtopics or _fallback_microtopics(
         topic_id=topic_name.lower().replace(" ", "-"),
@@ -616,16 +630,30 @@ def _generate_questions(
             )
         questions.append(
             {
-                "statement": _apply_intervention_to_question_statement(statement, micro_intervention, index=index),
+                "statement": _apply_intervention_to_question_statement(
+                    statement,
+                    micro_intervention,
+                    facet_profile,
+                    index=index,
+                ),
                 "answer": answer,
-                "explanation": _apply_intervention_to_question_explanation(explanation, micro_intervention, index=index),
+                "explanation": _apply_intervention_to_question_explanation(
+                    explanation,
+                    micro_intervention,
+                    facet_profile,
+                    index=index,
+                ),
                 "microtopic_id": microtopic.id,
             }
         )
     return questions
 
 
-def _resolve_pedagogical_profile(block: StudyBlock, selection: dict[str, object]):
+def _resolve_pedagogical_profile(
+    block: StudyBlock,
+    selection: dict[str, object],
+    facet_profile,
+):
     selected_profiles = selection.get("selected_profiles", []) or []
     primary_profile = selected_profiles[0] if selected_profiles else {}
     selected_microtopics = selection.get("selected_microtopics", []) or []
@@ -642,6 +670,26 @@ def _resolve_pedagogical_profile(block: StudyBlock, selection: dict[str, object]
         resurfacing_signal=float(primary_profile.get("resurfacing_signal", 0.0) or 0.0),
         performance=raw_performance,
         pedagogical_memory=raw_pedagogical_memory,
+        relationship_signal=selection.get("relationship_signal"),
+        facet_profile=facet_profile,
+    )
+
+
+def _resolve_facet_profile(selection: dict[str, object]):
+    selected_microtopics = selection.get("selected_microtopics", []) or []
+    primary_microtopic = selected_microtopics[0] if selected_microtopics else None
+    if primary_microtopic is None:
+        return resolve_facet_profile(
+            MicroTopic(
+                id="fallback-facet",
+                title="Conceito",
+                content="Conceito central mantido por compatibilidade.",
+                source_topic_title="Tema",
+                difficulty_weight=1.0,
+            )
+        )
+    return resolve_facet_profile(
+        primary_microtopic,
         relationship_signal=selection.get("relationship_signal"),
     )
 
@@ -683,6 +731,22 @@ def _pedagogical_metadata(profile) -> dict[str, object]:
     }
 
 
+def _facet_metadata(profile) -> dict[str, object]:
+    return {
+        "cognitive_facets": [facet.model_dump(mode="json") for facet in profile.cognitive_facets],
+        "dominant_facet": profile.dominant_facet,
+        "facet_reasoning": profile.facet_reasoning,
+        "cognitive_dimension": profile.cognitive_dimension,
+        "retrieval_dimension": profile.retrieval_dimension,
+        "conceptual_dimension": profile.conceptual_dimension,
+        "transfer_signal": profile.transfer_signal,
+        "reconstruction_signal": profile.reconstruction_signal,
+        "recognition_signal": profile.recognition_signal,
+        "why_this_facet_now": profile.why_this_facet_now,
+        "facet_support_reason": profile.facet_support_reason,
+    }
+
+
 def _micro_intervention_metadata(intervention) -> dict[str, object]:
     return {
         "micro_intervention": intervention.intervention_type,
@@ -697,7 +761,7 @@ def _micro_intervention_metadata(intervention) -> dict[str, object]:
     }
 
 
-def _apply_intervention_to_summary(content: str, intervention) -> str:
+def _apply_intervention_to_summary(content: str, intervention, facet_profile) -> str:
     prefix = {
         "prerequisite_recall": "Ancora rapida: recupere a regra-base antes de prosseguir. ",
         "exception_alignment": "Alinhamento de excecao: compare a ressalva com a regra-base antes do detalhe. ",
@@ -710,10 +774,20 @@ def _apply_intervention_to_summary(content: str, intervention) -> str:
         "rapid_anchor": "Ancora curta: fixe a palavra-chave antes da verificacao. ",
         "verification_step": "Verificacao leve: cheque o detalhe decisivo antes de seguir. ",
     }.get(intervention.intervention_type, "")
-    return prefix + content
+    facet_prefix = {
+        "definition": "Foco definicional: organize primeiro o conceito-base. ",
+        "rule": "Foco normativo: confirme a regra antes do detalhe. ",
+        "exception": "Foco de ressalva: compare a excecao com a regra-base. ",
+        "application": "Foco aplicado: leve a regra para o caso concreto. ",
+        "interpretation": "Foco interpretativo: leia o contexto antes do julgamento. ",
+        "recognition": "Foco de reconhecimento: identifique o marcador decisivo. ",
+        "reconstruction": "Foco de reconstrucao: refaca a sequencia logica. ",
+        "contextual_transfer": "Foco de transferencia: mova a regra entre contextos proximos. ",
+    }.get(getattr(facet_profile, "dominant_facet", None), "")
+    return prefix + facet_prefix + content
 
 
-def _apply_intervention_to_question_statement(statement: str, intervention, *, index: int) -> str:
+def _apply_intervention_to_question_statement(statement: str, intervention, facet_profile, *, index: int) -> str:
     if index > 0:
         return statement
     prefix = {
@@ -728,10 +802,15 @@ def _apply_intervention_to_question_statement(statement: str, intervention, *, i
         "rapid_anchor": "Ancora curta: ",
         "verification_step": "Verificacao rapida: ",
     }.get(intervention.intervention_type, "")
-    return prefix + statement
+    facet_prefix = {
+        "recognition": "Reconheca o marcador-chave: ",
+        "reconstruction": "Reconstrua a sequencia-base: ",
+        "contextual_transfer": "Transfira a regra entre contextos: ",
+    }.get(getattr(facet_profile, "dominant_facet", None), "")
+    return prefix + facet_prefix + statement
 
 
-def _apply_intervention_to_question_explanation(explanation: str, intervention, *, index: int) -> str:
+def _apply_intervention_to_question_explanation(explanation: str, intervention, facet_profile, *, index: int) -> str:
     if index > 0:
         return explanation
     suffix = {
@@ -746,7 +825,12 @@ def _apply_intervention_to_question_explanation(explanation: str, intervention, 
         "rapid_anchor": " Uma ancora curta foi usada para reduzir desorientacao conceitual.",
         "verification_step": " O foco foi checar rapidamente o detalhe mais decisivo.",
     }.get(intervention.intervention_type, "")
-    return explanation + suffix
+    facet_suffix = {
+        "recognition": " A checagem privilegiou reconhecimento rapido do marcador correto.",
+        "reconstruction": " A checagem privilegiou a reconstrucao do encadeamento principal.",
+        "contextual_transfer": " A checagem privilegiou transferencia entre contextos proximos.",
+    }.get(getattr(facet_profile, "dominant_facet", None), "")
+    return explanation + suffix + facet_suffix
 
 
 def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[str, object]:

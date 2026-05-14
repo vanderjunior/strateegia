@@ -259,6 +259,25 @@ def test_effective_guided_explanation_can_stabilize_into_lighter_mode():
     assert profile.stabilization_signal > profile.escalation_signal
 
 
+def test_contextual_transfer_facet_can_prevent_overly_light_mode():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="active",
+        review_intensity="medium",
+        weakness_signal=0.15,
+        resurfacing_signal=0.1,
+        performance=build_performance(),
+        facet_profile={
+            "dominant_facet": "contextual_transfer",
+            "transfer_signal": 0.72,
+            "reconstruction_signal": 0.1,
+            "recognition_signal": 0.1,
+        },
+    )
+
+    assert profile.pedagogical_mode in {"contextual_application", "reinforcement_check"}
+    assert "facet_transfer" in profile.profile_breakdown
+
+
 def test_pedagogical_profile_exposes_effectiveness_and_confidence_metadata():
     profile = resolve_pedagogical_profile(
         curriculum_role="active",

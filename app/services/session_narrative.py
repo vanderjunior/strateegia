@@ -164,8 +164,16 @@ class SessionNarrativeLayer:
         default_reason = "O bloco atual preserva a progressao local da sessao."
         base_reason = reasons.get(relation, default_reason)
         micro_intervention = current.get("micro_intervention")
+        dominant_facet = current.get("dominant_facet")
+        if micro_intervention and dominant_facet:
+            return (
+                f"{base_reason} Micro-intervencao ativa: {micro_intervention}. "
+                f"Faceta cognitiva dominante: {dominant_facet}."
+            )
         if micro_intervention:
             return f"{base_reason} Micro-intervencao ativa: {micro_intervention}."
+        if dominant_facet:
+            return f"{base_reason} Faceta cognitiva dominante: {dominant_facet}."
         return base_reason
 
     def _comparison_reason(self, previous: dict, current: dict, relation: str) -> str | None:
@@ -187,7 +195,10 @@ class SessionNarrativeLayer:
         return None
 
     def _progression_reason(self, previous: dict, current: dict, relation: str) -> str | None:
+        dominant_facet = str(current.get("dominant_facet") or "")
         if relation == "application":
+            if dominant_facet == "contextual_transfer":
+                return "A aplicacao vem logo depois da explicacao para consolidar transferencia entre contextos proximos."
             return "A aplicacao vem logo depois da explicacao para consolidar transferencia de contexto."
         if relation == "reinforcement":
             return "O reforco imediato preserva continuidade conceitual antes de mudar o foco."

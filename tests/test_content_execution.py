@@ -195,6 +195,35 @@ def test_execute_study_block_questions_use_microtopics():
     assert payload["selected_microtopics"]
 
 
+def test_execute_study_block_exposes_cognitive_facets_metadata():
+    topic_node = build_topic_node(
+        title="RIPAM",
+        content=(
+            "Conceito: definicao da regra principal.\n\n"
+            "Aplicacao: compare motor e vela em contexto pratico."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="ripam", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="ripam",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["cognitive_facets"]
+    assert payload["dominant_facet"]
+    assert payload["facet_reasoning"]
+    assert "cognitive_dimension" in payload
+    assert "transfer_signal" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

@@ -93,6 +93,7 @@ class CognitiveMomentumLayer:
         mode = str(block.get("pedagogical_mode") or "")
         depth = str(block.get("explanation_depth") or "light")
         relationship_type = str(block.get("relationship_type") or "")
+        conceptual_dimension = str(block.get("conceptual_dimension") or "")
         weight = {
             "guided_explanation": 0.78,
             "conceptual_reinforcement": 0.72,
@@ -104,27 +105,35 @@ class CognitiveMomentumLayer:
         weight += {"deep": 0.14, "medium": 0.07, "light": 0.02}.get(depth, 0.02)
         if relationship_type in {"prerequisite", "exception_of", "applied_by"}:
             weight += 0.08
+        if conceptual_dimension in {"rule_exception", "definition_application"}:
+            weight += 0.05
         return self._clamp(weight)
 
     def _abstraction_weight(self, block: dict) -> float:
         block_type = str(block.get("type") or "")
         depth = str(block.get("explanation_depth") or "light")
         narrative_relation = str(block.get("narrative_relation") or "")
+        transfer_signal = float(block.get("transfer_signal", 0.0) or 0.0)
         weight = 0.18 if block_type == "summary" else 0.08
         weight += {"deep": 0.24, "medium": 0.12, "light": 0.03}.get(depth, 0.03)
         if narrative_relation in {"contrast", "application", "escalation"}:
             weight += 0.08
+        weight += min(transfer_signal * 0.08, 0.06)
         return self._clamp(weight)
 
     def _retrieval_weight(self, block: dict) -> float:
         retrieval = str(block.get("retrieval_intensity") or "low")
         mode = str(block.get("pedagogical_mode") or "")
         micro_intervention = str(block.get("micro_intervention") or "")
+        reconstruction_signal = float(block.get("reconstruction_signal", 0.0) or 0.0)
+        recognition_signal = float(block.get("recognition_signal", 0.0) or 0.0)
         weight = {"high": 0.82, "medium": 0.5, "low": 0.18}.get(retrieval, 0.18)
         if mode == "active_recall":
             weight += 0.08
         if micro_intervention in {"semantic_reactivation", "prerequisite_recall"}:
             weight += 0.06
+        weight += min(reconstruction_signal * 0.06, 0.04)
+        weight += min(recognition_signal * 0.03, 0.02)
         return self._clamp(weight)
 
     def _intervention_fatigue(self, window: list[dict]) -> float:

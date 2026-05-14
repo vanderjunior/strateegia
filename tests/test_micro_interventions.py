@@ -52,6 +52,7 @@ def test_prerequisite_reminder_selected_before_application():
             prerequisite_signal=0.68,
             conceptual_anchor="Conceito",
         ),
+        facet_profile={"dominant_facet": "application", "transfer_signal": 0.65, "reconstruction_signal": 0.2, "recognition_signal": 0.1},
     )
 
     assert intervention.intervention_type == "prerequisite_recall"
@@ -77,6 +78,7 @@ def test_exception_alignment_selected_for_exception_block():
             prerequisite_signal=0.55,
             conceptual_anchor="Regra",
         ),
+        facet_profile={"dominant_facet": "exception", "transfer_signal": 0.1, "reconstruction_signal": 0.25, "recognition_signal": 0.15},
     )
 
     assert intervention.intervention_type == "exception_alignment"
@@ -132,6 +134,7 @@ def test_cumulative_bridge_selected_for_resurfacing():
             relationship_type="cumulative_extension",
             conceptual_anchor="Conceito Base",
         ),
+        facet_profile={"dominant_facet": "contextual_transfer", "transfer_signal": 0.7, "reconstruction_signal": 0.2, "recognition_signal": 0.15},
     )
 
     assert intervention.intervention_type == "cumulative_bridge"
@@ -156,6 +159,7 @@ def test_micro_intervention_selection_is_deterministic_and_bounded():
             prerequisite_signal=0.68,
             conceptual_anchor="Conceito",
         ),
+        facet_profile={"dominant_facet": "application", "transfer_signal": 0.65, "reconstruction_signal": 0.2, "recognition_signal": 0.1},
     )
 
     first = resolve_micro_intervention(**kwargs)
@@ -174,6 +178,7 @@ def test_micro_intervention_handles_missing_metadata():
         review_intensity="medium",
         pedagogical_profile={},
         relationship_signal={},
+        facet_profile={},
     )
 
     assert intervention.intervention_type

@@ -15,9 +15,11 @@ def resolve_micro_intervention(
     review_intensity: str | None,
     pedagogical_profile: dict[str, object] | object,
     relationship_signal: dict[str, object] | None,
+    facet_profile: dict[str, object] | object | None = None,
 ) -> MicroIntervention:
     profile = _normalize_profile(pedagogical_profile)
     relationship = dict(relationship_signal or {})
+    facets = _normalize_profile(facet_profile)
     context = InterventionContext(
         block_type="question" if block_type == "questions" else block_type,
         curriculum_role=str(curriculum_role or "active"),
@@ -32,10 +34,15 @@ def resolve_micro_intervention(
         prerequisite_signal=_clamp(float(relationship.get("prerequisite_signal", 0.0) or 0.0)),
         conceptual_anchor=str(relationship.get("conceptual_anchor") or "") or None,
     )
-    return _resolve_from_context(context)
+    return _resolve_from_context(context, facets)
 
 
-def _resolve_from_context(context: InterventionContext) -> MicroIntervention:
+def _resolve_from_context(context: InterventionContext, facets: dict[str, object]) -> MicroIntervention:
+    dominant_facet = str(facets.get("dominant_facet") or "")
+    transfer_signal = _clamp(float(facets.get("transfer_signal", 0.0) or 0.0))
+    reconstruction_signal = _clamp(float(facets.get("reconstruction_signal", 0.0) or 0.0))
+    recognition_signal = _clamp(float(facets.get("recognition_signal", 0.0) or 0.0))
+
     if context.relationship_type == "applied_by" and context.prerequisite_signal >= 0.45:
         return _build_intervention(
             MicroInterventionType.PREREQUISITE_RECALL,
@@ -81,13 +88,36 @@ def _resolve_from_context(context: InterventionContext) -> MicroIntervention:
             fatigue_mitigation=0.18,
         )
 
+    if (
+        dominant_facet == "contextual_transfer"
+        and transfer_signal >= 0.55
+        and context.block_type == "question"
+        and context.curriculum_role == "cumulative"
+    ):
+        return _build_intervention(
+            MicroInterventionType.CUMULATIVE_BRIDGE,
+            "A transferencia contextual reapareceu como ponte cumulativa para reativar comparacoes anteriores.",
+            "Sustentar transferencia entre contextos com baixo atrito cumulativo.",
+            retrieval_support_reason="A ponte cumulativa preserva o contexto antes do novo julgamento.",
+            intervention_transition="contextual_bridge",
+            why_this_intervention="Este momento ganhou uma ponte cumulativa porque a faceta dominante ainda depende de contexto transferido.",
+            local_cognitive_strategy="Reconectar o contexto anterior antes de decidir no contexto atual.",
+            support_strength=0.4,
+            retrieval_shift=0.36,
+            fatigue_mitigation=0.2,
+        )
+
     if context.stabilization_stage in {"consolidated", "resilient"} and context.longitudinal_retention >= 0.5:
         if context.block_type == "question":
+            if recognition_signal >= 0.35:
+                support_reason = "A verificacao foi reduzida a reconhecimento rapido porque o traço ja parece estavel."
+            else:
+                support_reason = "A pergunta funciona como confirmacao leve de dominio."
             return _build_intervention(
                 MicroInterventionType.CONFIDENCE_CHECK,
                 "O conceito ja mostra estabilidade suficiente para um cheque rapido de confianca.",
                 "Verificar retencao sem reabrir explicacao densa.",
-                retrieval_support_reason="A pergunta funciona como confirmacao leve de dominio.",
+                retrieval_support_reason=support_reason,
                 intervention_transition="stability_check",
                 why_this_intervention="Este momento usa um cheque de confianca para evitar reforco excessivo.",
                 local_cognitive_strategy="Confirmar rapidamente o ponto central sem apoio pesado.",
@@ -106,6 +136,34 @@ def _resolve_from_context(context: InterventionContext) -> MicroIntervention:
             support_strength=0.18,
             retrieval_shift=0.34,
             fatigue_mitigation=0.34,
+        )
+
+    if dominant_facet == "recognition" and recognition_signal >= 0.45:
+        return _build_intervention(
+            MicroInterventionType.VERIFICATION_STEP,
+            "A faceta local pede verificacao curta por reconhecimento, sem expandir densidade.",
+            "Checar rapidamente o marcador certo antes do julgamento final.",
+            retrieval_support_reason="O reconhecimento rapido reduz custo cognitivo quando a faceta ja esta bem delimitada.",
+            intervention_transition="recognition_check",
+            why_this_intervention="Este momento recebeu uma verificacao curta porque o foco atual e mais de reconhecimento do que de reconstrucao.",
+            local_cognitive_strategy="Reconhecer o marcador central antes da decisao final.",
+            support_strength=0.16,
+            retrieval_shift=0.18,
+            fatigue_mitigation=0.18,
+        )
+
+    if dominant_facet == "reconstruction" and reconstruction_signal >= 0.45:
+        return _build_intervention(
+            MicroInterventionType.GUIDED_RECONSTRUCTION,
+            "A faceta local pede reconstrucao do encadeamento antes do detalhe final.",
+            "Refazer a sequencia logica do microtopico antes da resposta.",
+            conceptual_support_reason="A reconstrucao guiada melhora o encaixe entre etapas do raciocinio.",
+            intervention_transition="facet_reconstruction",
+            why_this_intervention="Este momento foi empurrado para reconstrucao guiada porque a faceta dominante exige recompor a logica.",
+            local_cognitive_strategy="Reconstituir a ordem do raciocinio antes de decidir.",
+            support_strength=0.44,
+            retrieval_shift=0.2,
+            fatigue_mitigation=0.08,
         )
 
     if context.pedagogical_mode == "guided_explanation":

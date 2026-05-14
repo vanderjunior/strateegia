@@ -78,6 +78,17 @@ class MomentumTrend(str, Enum):
     BALANCED = "balanced"
 
 
+class FacetType(str, Enum):
+    DEFINITION = "definition"
+    RULE = "rule"
+    EXCEPTION = "exception"
+    APPLICATION = "application"
+    INTERPRETATION = "interpretation"
+    RECOGNITION = "recognition"
+    RECONSTRUCTION = "reconstruction"
+    CONTEXTUAL_TRANSFER = "contextual_transfer"
+
+
 class PedagogicalProfile(BaseModel):
     pedagogical_mode: str
     intervention_reason: str
@@ -240,6 +251,33 @@ class MicroIntervention(BaseModel):
     why_this_intervention: str
     local_cognitive_strategy: str
     intervention_signal: InterventionSignal = Field(default_factory=InterventionSignal)
+
+
+class FacetSignal(BaseModel):
+    transfer_signal: float = 0.0
+    reconstruction_signal: float = 0.0
+    recognition_signal: float = 0.0
+
+
+class CognitiveFacet(BaseModel):
+    facet_type: str
+    strength: float = 0.0
+    reason: str
+
+
+class CognitiveFacetProfile(BaseModel):
+    cognitive_facets: list[CognitiveFacet] = Field(default_factory=list)
+    dominant_facet: str | None = None
+    facet_reasoning: list[str] = Field(default_factory=list)
+    cognitive_dimension: str = "general"
+    retrieval_dimension: str = "balanced"
+    conceptual_dimension: str = "single_focus"
+    transfer_signal: float = 0.0
+    reconstruction_signal: float = 0.0
+    recognition_signal: float = 0.0
+    why_this_facet_now: str = ""
+    facet_support_reason: str | None = None
+    facet_signal: FacetSignal = Field(default_factory=FacetSignal)
 
 
 class CognitiveMomentumSignal(BaseModel):

@@ -25,6 +25,7 @@ def resolve_pedagogical_profile(
     performance: dict[str, object] | None,
     pedagogical_memory: dict[str, object] | None = None,
     relationship_signal: dict[str, object] | None = None,
+    facet_profile: dict[str, object] | object | None = None,
 ) -> PedagogicalProfile:
     normalized_performance = _normalize_performance(performance)
     normalized_memory = _normalize_pedagogical_memory(pedagogical_memory)
@@ -54,6 +55,7 @@ def resolve_pedagogical_profile(
     curriculum_density = CURRICULUM_DENSITY.get(curriculum_role or "", 0.6)
     review_density = REVIEW_DENSITY.get(review_intensity or "", 0.5)
     dominant_error_type = _dominant_error_type(normalized_performance["error_distribution"])
+    normalized_facets = _normalize_facet_profile(facet_profile)
     escalation_signal = _clamp(
         max(
             incorrect_pressure,
@@ -78,6 +80,14 @@ def resolve_pedagogical_profile(
         dominant_error_type=dominant_error_type,
         relationship_signal=relationship_signal,
     )
+    base_mode, facet_reason = _apply_facet_guard(
+        base_mode=base_mode,
+        curriculum_role=curriculum_role,
+        review_intensity=review_intensity,
+        weakness_signal=normalized_weakness,
+        stabilization_signal=stabilization_signal,
+        facet_profile=normalized_facets,
+    )
     pedagogical_mode, transition_reason = _apply_pedagogical_memory_transition(
         base_mode=base_mode,
         dominant_error_type=dominant_error_type,
@@ -99,6 +109,9 @@ def resolve_pedagogical_profile(
         "curriculum_density": curriculum_density,
         "review_density": review_density,
         "relationship": _clamp(float((relationship_signal or {}).get("prerequisite_signal", 0.0) or 0.0)),
+        "facet_transfer": normalized_facets["transfer_signal"],
+        "facet_reconstruction": normalized_facets["reconstruction_signal"],
+        "facet_recognition": normalized_facets["recognition_signal"],
         "retrieval_trend": normalized_memory["retrieval_success_trend"],
         "longitudinal_retention": round(float(stability["retention_confidence"]), 4),
         "intervention_fatigue": round(float(stability["intervention_fatigue"]), 4),
@@ -153,10 +166,13 @@ def resolve_pedagogical_profile(
     )
     if relationship_reason:
         adaptation_reasoning.append(relationship_reason)
+    if facet_reason:
+        adaptation_reasoning.append(facet_reason)
 
     return PedagogicalProfile(
         pedagogical_mode=pedagogical_mode.value,
         intervention_reason=relationship_reason
+        or facet_reason
         or _build_intervention_reason(
             pedagogical_mode=pedagogical_mode,
             dominant_error_type=dominant_error_type,
@@ -286,6 +302,53 @@ def _apply_relationship_guard(
         PedagogicalMode.CONCEPTUAL_REINFORCEMENT,
         "A base conceitual foi reforcada antes de manter foco em aplicacao.",
     )
+
+
+def _apply_facet_guard(
+    *,
+    base_mode: PedagogicalMode,
+    curriculum_role: str | None,
+    review_intensity: str | None,
+    weakness_signal: float,
+    stabilization_signal: float,
+    facet_profile: dict[str, object],
+) -> tuple[PedagogicalMode, str | None]:
+    dominant_facet = str(facet_profile.get("dominant_facet") or "")
+    transfer_signal = _clamp(float(facet_profile.get("transfer_signal", 0.0) or 0.0))
+    reconstruction_signal = _clamp(float(facet_profile.get("reconstruction_signal", 0.0) or 0.0))
+    recognition_signal = _clamp(float(facet_profile.get("recognition_signal", 0.0) or 0.0))
+
+    if (
+        dominant_facet == "contextual_transfer"
+        and transfer_signal >= 0.55
+        and base_mode == PedagogicalMode.REINFORCEMENT_CHECK
+        and curriculum_role == "active"
+    ):
+        return (
+            PedagogicalMode.CONTEXTUAL_APPLICATION,
+            "A faceta dominante exige transferencia contextual leve antes de reduzir demais a intervencao.",
+        )
+    if (
+        dominant_facet == "reconstruction"
+        and reconstruction_signal >= 0.45
+        and base_mode in {PedagogicalMode.RAPID_REVIEW, PedagogicalMode.REINFORCEMENT_CHECK}
+        and (weakness_signal >= 0.3 or review_intensity == "deep")
+    ):
+        return (
+            PedagogicalMode.CONCEPTUAL_REINFORCEMENT,
+            "A faceta dominante pede reconstrucao do encadeamento antes de uma revisao muito compacta.",
+        )
+    if (
+        dominant_facet == "recognition"
+        and recognition_signal >= 0.45
+        and stabilization_signal >= 0.65
+        and base_mode == PedagogicalMode.ACTIVE_RECALL
+    ):
+        return (
+            PedagogicalMode.REINFORCEMENT_CHECK,
+            "A faceta dominante ja pode ser verificada por reconhecimento leve, sem recall intenso.",
+        )
+    return base_mode, None
 
 
 def compute_explanation_depth(
@@ -508,6 +571,21 @@ def _normalize_pedagogical_memory(pedagogical_memory: dict[str, object] | None) 
         "recovery_count": int((pedagogical_memory or {}).get("recovery_count", 0) or 0),
         "last_stabilized_at": (pedagogical_memory or {}).get("last_stabilized_at"),
         "intervention_history": intervention_history,
+    }
+
+
+def _normalize_facet_profile(facet_profile: dict[str, object] | object | None) -> dict[str, object]:
+    if hasattr(facet_profile, "model_dump"):
+        normalized = facet_profile.model_dump(mode="json")
+    elif isinstance(facet_profile, dict):
+        normalized = dict(facet_profile)
+    else:
+        normalized = {}
+    return {
+        "dominant_facet": normalized.get("dominant_facet"),
+        "transfer_signal": _clamp(normalized.get("transfer_signal", 0.0) or 0.0),
+        "reconstruction_signal": _clamp(normalized.get("reconstruction_signal", 0.0) or 0.0),
+        "recognition_signal": _clamp(normalized.get("recognition_signal", 0.0) or 0.0),
     }
 
 
