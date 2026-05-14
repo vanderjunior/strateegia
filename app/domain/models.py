@@ -69,6 +69,15 @@ class MicroInterventionType(str, Enum):
     SEMANTIC_REACTIVATION = "semantic_reactivation"
 
 
+class MomentumTrend(str, Enum):
+    STABLE = "stable"
+    CONCEPTUALLY_DENSE = "conceptually_dense"
+    RETRIEVAL_HEAVY = "retrieval_heavy"
+    CONTINUITY_FRAGILE = "continuity_fragile"
+    PRESSURED = "pressured"
+    BALANCED = "balanced"
+
+
 class PedagogicalProfile(BaseModel):
     pedagogical_mode: str
     intervention_reason: str
@@ -231,6 +240,38 @@ class MicroIntervention(BaseModel):
     why_this_intervention: str
     local_cognitive_strategy: str
     intervention_signal: InterventionSignal = Field(default_factory=InterventionSignal)
+
+
+class CognitiveMomentumSignal(BaseModel):
+    conceptual_density: float = 0.0
+    abstraction_load: float = 0.0
+    retrieval_fatigue: float = 0.0
+    intervention_fatigue: float = 0.0
+    continuity_stability: float = 0.0
+    stabilization_balance: float = 0.0
+    cognitive_pressure: float = 0.0
+    resurfacing_balance: float = 0.0
+
+
+class SessionCognitiveSnapshot(BaseModel):
+    state_label: str
+    window_size: int = 0
+    heavy_block_count: int = 0
+    retrieval_heavy_count: int = 0
+    continuity_average: float = 0.0
+
+
+class CognitiveMomentumState(BaseModel):
+    cognitive_momentum: str
+    momentum_signal: CognitiveMomentumSignal = Field(default_factory=CognitiveMomentumSignal)
+    conceptual_density_reason: str
+    retrieval_fatigue_reason: str
+    continuity_pressure_reason: str
+    stabilization_balance_reason: str
+    pacing_relief_reason: str
+    why_this_relief_now: str
+    cognitive_session_state: SessionCognitiveSnapshot
+    local_momentum_reasoning: list[str] = Field(default_factory=list)
 
 
 class Topic(BaseModel):

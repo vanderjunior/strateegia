@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
+from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
@@ -85,6 +86,7 @@ class SessionManager:
         composer = MicrotopicSessionComposer()
         equilibrium = SessionEquilibriumLayer()
         narrative = SessionNarrativeLayer()
+        momentum = CognitiveMomentumLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -111,7 +113,8 @@ class SessionManager:
             question_count_by_topic[candidate.topic_id] = question_count_by_topic.get(candidate.topic_id, 0) + 1
 
         runtime_blocks = equilibrium.balance(runtime_blocks)
-        return narrative.annotate(runtime_blocks)
+        runtime_blocks = narrative.annotate(runtime_blocks)
+        return momentum.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
