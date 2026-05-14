@@ -188,6 +188,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "cognitive_dimension" in summary_block
     assert "trajectory_state" in summary_block
     assert "stabilization_quality" in summary_block
+    assert "pedagogical_expression_mode" in summary_block
+    assert "why_this_expression_now" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -210,6 +212,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "retrieval_dimension" in question_block
     assert "trajectory_state" in question_block
     assert "false_fluency_signal" in question_block
+    assert "pedagogical_expression_mode" in question_block
+    assert "continuity_support" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

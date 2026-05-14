@@ -332,6 +332,19 @@ class CognitiveTrajectory(BaseModel):
     facet_trajectories: list[FacetTrajectory] = Field(default_factory=list)
 
 
+class PedagogicalExpressionProfile(BaseModel):
+    pedagogical_expression_mode: str
+    expression_reasoning: list[str] = Field(default_factory=list)
+    readability_adjustment: float = 0.0
+    pacing_adjustment: float = 0.0
+    continuity_support: float = 0.0
+    retrieval_framing: float = 0.0
+    explanation_density: float = 0.0
+    cognitive_friction_reduction: float = 0.0
+    transition_support_reason: str | None = None
+    why_this_expression_now: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

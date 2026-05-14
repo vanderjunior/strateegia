@@ -14,6 +14,7 @@ from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
 from app.services.pedagogical_adapter import resolve_pedagogical_profile
+from app.services.pedagogical_expression import resolve_pedagogical_expression
 
 
 REVIEW_STAGE_WEIGHTS = {
@@ -75,6 +76,15 @@ def execute_study_block(block: StudyBlock) -> dict:
     facet_metadata = _facet_metadata(facet_profile)
     trajectory_metadata = _trajectory_metadata(trajectory_profile)
     micro_intervention_metadata = _micro_intervention_metadata(micro_intervention)
+    expression_profile = _resolve_expression_profile(
+        block,
+        selection,
+        pedagogical_profile,
+        micro_intervention,
+        facet_profile,
+        trajectory_profile,
+    )
+    expression_metadata = _expression_metadata(expression_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -89,12 +99,14 @@ def execute_study_block(block: StudyBlock) -> dict:
                 pedagogical_profile,
                 micro_intervention,
                 facet_profile,
+                expression_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
             **facet_metadata,
             **trajectory_metadata,
             **micro_intervention_metadata,
+            **expression_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -108,12 +120,14 @@ def execute_study_block(block: StudyBlock) -> dict:
                 pedagogical_profile,
                 micro_intervention,
                 facet_profile,
+                expression_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
             **facet_metadata,
             **trajectory_metadata,
             **micro_intervention_metadata,
+            **expression_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -521,10 +535,15 @@ def _generate_summary_content(
     pedagogical_profile,
     micro_intervention,
     facet_profile,
+    expression_profile,
 ) -> str:
     if not microtopics:
-        return (
+        content = (
             f"Visao rapida de {topic_name}: regra central, palavra-chave e ponto de maior risco em prova."
+        )
+        return _apply_expression_to_summary(
+            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+            expression_profile,
         )
 
     sections = [
@@ -541,20 +560,32 @@ def _generate_summary_content(
             + " Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. "
             + "Exemplo de prova: identifique qual detalhe normativo altera o resultado."
         )
-        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
+        return _apply_expression_to_summary(
+            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+            expression_profile,
+        )
     if pedagogical_profile.pedagogical_mode == "contextual_application":
         content = (
             f"Resumo estruturado de {topic_name}: pontos de prova em contexto pratico. "
             + " ".join(sections)
             + " Priorize comparacoes entre cenarios e a condicao que muda a resposta."
         )
-        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
+        return _apply_expression_to_summary(
+            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+            expression_profile,
+        )
     if pedagogical_profile.pedagogical_mode == "active_recall":
         content = f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
-        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
+        return _apply_expression_to_summary(
+            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+            expression_profile,
+        )
     if pedagogical_profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}:
         content = f"Visao rapida de {topic_name}: {sections[0]}"
-        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
+        return _apply_expression_to_summary(
+            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+            expression_profile,
+        )
     if depth == "deep":
         content = (
             f"Resumo aprofundado de {topic_name}: "
@@ -568,11 +599,17 @@ def _generate_summary_content(
         content = f"Resumo estruturado de {topic_name}: pontos de prova e focos especificos. " + " ".join(
             sections
         )
-        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
-    return _apply_intervention_to_summary(
-        f"Visao rapida de {topic_name}: {sections[0]}",
-        micro_intervention,
-        facet_profile,
+        return _apply_expression_to_summary(
+            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+            expression_profile,
+        )
+    return _apply_expression_to_summary(
+        _apply_intervention_to_summary(
+            f"Visao rapida de {topic_name}: {sections[0]}",
+            micro_intervention,
+            facet_profile,
+        ),
+        expression_profile,
     )
 
 
@@ -583,6 +620,7 @@ def _generate_questions(
     pedagogical_profile,
     micro_intervention,
     facet_profile,
+    expression_profile,
 ) -> list[dict]:
     selected = microtopics or _fallback_microtopics(
         topic_id=topic_name.lower().replace(" ", "-"),
@@ -645,6 +683,7 @@ def _generate_questions(
                     statement,
                     micro_intervention,
                     facet_profile,
+                    expression_profile,
                     index=index,
                 ),
                 "answer": answer,
@@ -652,6 +691,7 @@ def _generate_questions(
                     explanation,
                     micro_intervention,
                     facet_profile,
+                    expression_profile,
                     index=index,
                 ),
                 "microtopic_id": microtopic.id,
@@ -726,6 +766,33 @@ def _resolve_trajectory_profile(
     )
 
 
+def _resolve_expression_profile(
+    block: StudyBlock,
+    selection: dict[str, object],
+    pedagogical_profile,
+    micro_intervention,
+    facet_profile,
+    trajectory_profile,
+):
+    return resolve_pedagogical_expression(
+        block_type=block.type,
+        pedagogical_mode=pedagogical_profile.pedagogical_mode,
+        curriculum_role=block.curriculum_role,
+        review_intensity=block.review_intensity or selection.get("review_intensity"),
+        cognitive_load=pedagogical_profile.cognitive_load,
+        retrieval_intensity=pedagogical_profile.retrieval_intensity,
+        narrative_relation="cumulative_resurfacing"
+        if block.curriculum_role == "cumulative" and (block.review_intensity or selection.get("review_intensity")) == "light"
+        else "reinforcement",
+        cognitive_momentum="conceptually_dense"
+        if pedagogical_profile.cognitive_load == "high"
+        else "balanced",
+        micro_intervention=micro_intervention.intervention_type,
+        dominant_facet=facet_profile.dominant_facet,
+        trajectory_state=trajectory_profile.trajectory_state,
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -795,6 +862,21 @@ def _trajectory_metadata(profile) -> dict[str, object]:
     }
 
 
+def _expression_metadata(profile) -> dict[str, object]:
+    return {
+        "pedagogical_expression_mode": profile.pedagogical_expression_mode,
+        "expression_reasoning": profile.expression_reasoning,
+        "readability_adjustment": profile.readability_adjustment,
+        "pacing_adjustment": profile.pacing_adjustment,
+        "continuity_support": profile.continuity_support,
+        "retrieval_framing": profile.retrieval_framing,
+        "explanation_density": profile.explanation_density,
+        "cognitive_friction_reduction": profile.cognitive_friction_reduction,
+        "transition_support_reason": profile.transition_support_reason,
+        "why_this_expression_now": profile.why_this_expression_now,
+    }
+
+
 def _micro_intervention_metadata(intervention) -> dict[str, object]:
     return {
         "micro_intervention": intervention.intervention_type,
@@ -835,7 +917,14 @@ def _apply_intervention_to_summary(content: str, intervention, facet_profile) ->
     return prefix + facet_prefix + content
 
 
-def _apply_intervention_to_question_statement(statement: str, intervention, facet_profile, *, index: int) -> str:
+def _apply_intervention_to_question_statement(
+    statement: str,
+    intervention,
+    facet_profile,
+    expression_profile,
+    *,
+    index: int,
+) -> str:
     if index > 0:
         return statement
     prefix = {
@@ -855,10 +944,18 @@ def _apply_intervention_to_question_statement(statement: str, intervention, face
         "reconstruction": "Reconstrua a sequencia-base: ",
         "contextual_transfer": "Transfira a regra entre contextos: ",
     }.get(getattr(facet_profile, "dominant_facet", None), "")
-    return prefix + facet_prefix + statement
+    text = prefix + facet_prefix + statement
+    return _apply_expression_to_question_statement(text, expression_profile, index=index)
 
 
-def _apply_intervention_to_question_explanation(explanation: str, intervention, facet_profile, *, index: int) -> str:
+def _apply_intervention_to_question_explanation(
+    explanation: str,
+    intervention,
+    facet_profile,
+    expression_profile,
+    *,
+    index: int,
+) -> str:
     if index > 0:
         return explanation
     suffix = {
@@ -878,7 +975,54 @@ def _apply_intervention_to_question_explanation(explanation: str, intervention, 
         "reconstruction": " A checagem privilegiou a reconstrucao do encadeamento principal.",
         "contextual_transfer": " A checagem privilegiou transferencia entre contextos proximos.",
     }.get(getattr(facet_profile, "dominant_facet", None), "")
-    return explanation + suffix + facet_suffix
+    text = explanation + suffix + facet_suffix
+    return _apply_expression_to_question_explanation(text, expression_profile, index=index)
+
+
+def _apply_expression_to_summary(content: str, expression_profile) -> str:
+    prefix = {
+        "concise_reinforcement": "Ponto-chave: ",
+        "progressive_anchor": "Passo atual: ",
+        "contextual_bridge": "Ponte de contexto: ",
+        "retrieval_softener": "Recupere com calma: ",
+        "conceptual_clarifier": "Em termos diretos: ",
+        "transition_smoother": "Antes de avancar: ",
+        "pacing_relief": "Leitura leve: ",
+        "focused_reconstruction": "Reconstrua em uma linha: ",
+        "cumulative_reactivation": "Retome rapidamente: ",
+        "stabilization_reassurance": "Confirmacao breve: ",
+    }.get(expression_profile.pedagogical_expression_mode, "")
+    if expression_profile.pedagogical_expression_mode in {"conceptual_clarifier", "pacing_relief"}:
+        content = content.replace(" Exemplo de prova:", " Ponto de prova:")
+    return prefix + content
+
+
+def _apply_expression_to_question_statement(statement: str, expression_profile, *, index: int) -> str:
+    if index > 0:
+        return statement
+    prefix = {
+        "retrieval_softener": "Sem pressa: ",
+        "progressive_anchor": "Siga a trilha: ",
+        "contextual_bridge": "Leve o contexto anterior: ",
+        "focused_reconstruction": "Refaca a cadeia: ",
+        "cumulative_reactivation": "Reative o ponto anterior: ",
+        "stabilization_reassurance": "Cheque breve: ",
+    }.get(expression_profile.pedagogical_expression_mode, "")
+    return prefix + statement
+
+
+def _apply_expression_to_question_explanation(explanation: str, expression_profile, *, index: int) -> str:
+    if index > 0:
+        return explanation
+    suffix = {
+        "conceptual_clarifier": " A explicacao foi mantida mais direta para reduzir densidade.",
+        "retrieval_softener": " A formulacao foi suavizada para manter recuperacao com menor atrito.",
+        "contextual_bridge": " A explicacao preserva uma ponte curta com o contexto anterior.",
+        "focused_reconstruction": " A formulacao manteve foco no encadeamento principal.",
+        "cumulative_reactivation": " O reaparecimento foi mantido em framing leve e cumulativo.",
+        "stabilization_reassurance": " O objetivo aqui foi confirmar estabilidade com formulacao enxuta.",
+    }.get(expression_profile.pedagogical_expression_mode, "")
+    return explanation + suffix
 
 
 def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[str, object]:

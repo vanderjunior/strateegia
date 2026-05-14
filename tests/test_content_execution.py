@@ -268,6 +268,30 @@ def test_execute_study_block_exposes_cognitive_trajectory_metadata():
     assert "why_this_trajectory_now" in payload
 
 
+def test_execute_study_block_exposes_pedagogical_expression_metadata():
+    topic_node = build_topic_node(
+        title="Conceito",
+        content=(
+            "Conceito: definicao geral da regra principal.\n\n"
+            "Aplicacao: compare os cenarios e julgue a transferencia."
+        ),
+    )
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="conceito",
+            depth="deep",
+            topic_node=topic_node,
+        )
+    )
+
+    assert payload["pedagogical_expression_mode"]
+    assert payload["expression_reasoning"]
+    assert "readability_adjustment" in payload
+    assert "why_this_expression_now" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

@@ -166,6 +166,7 @@ class SessionNarrativeLayer:
         micro_intervention = current.get("micro_intervention")
         dominant_facet = current.get("dominant_facet")
         trajectory_state = current.get("trajectory_state")
+        expression_mode = current.get("pedagogical_expression_mode")
         if micro_intervention and dominant_facet:
             reason = (
                 f"{base_reason} Micro-intervencao ativa: {micro_intervention}. "
@@ -178,7 +179,9 @@ class SessionNarrativeLayer:
         else:
             reason = base_reason
         if trajectory_state in {"transfer_fragile", "reconstruction_fragile", "superficially_stable"}:
-            return f"{reason} Trajetoria ativa: {trajectory_state}."
+            reason = f"{reason} Trajetoria ativa: {trajectory_state}."
+        if expression_mode in {"contextual_bridge", "transition_smoother", "progressive_anchor"}:
+            return f"{reason} Refino expressivo: {expression_mode}."
         return reason
 
     def _comparison_reason(self, previous: dict, current: dict, relation: str) -> str | None:

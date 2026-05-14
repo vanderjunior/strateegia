@@ -95,6 +95,7 @@ class CognitiveMomentumLayer:
         relationship_type = str(block.get("relationship_type") or "")
         conceptual_dimension = str(block.get("conceptual_dimension") or "")
         trajectory_state = str(block.get("trajectory_state") or "")
+        expression_mode = str(block.get("pedagogical_expression_mode") or "")
         weight = {
             "guided_explanation": 0.78,
             "conceptual_reinforcement": 0.72,
@@ -110,6 +111,8 @@ class CognitiveMomentumLayer:
             weight += 0.05
         if trajectory_state in {"reconstruction_fragile", "transfer_fragile"}:
             weight += 0.04
+        if expression_mode == "conceptual_clarifier":
+            weight -= 0.04
         return self._clamp(weight)
 
     def _abstraction_weight(self, block: dict) -> float:
@@ -131,6 +134,7 @@ class CognitiveMomentumLayer:
         reconstruction_signal = float(block.get("reconstruction_signal", 0.0) or 0.0)
         recognition_signal = float(block.get("recognition_signal", 0.0) or 0.0)
         false_fluency_signal = float(block.get("false_fluency_signal", 0.0) or 0.0)
+        expression_mode = str(block.get("pedagogical_expression_mode") or "")
         weight = {"high": 0.82, "medium": 0.5, "low": 0.18}.get(retrieval, 0.18)
         if mode == "active_recall":
             weight += 0.08
@@ -139,6 +143,8 @@ class CognitiveMomentumLayer:
         weight += min(reconstruction_signal * 0.06, 0.04)
         weight += min(recognition_signal * 0.03, 0.02)
         weight += min(false_fluency_signal * 0.05, 0.03)
+        if expression_mode == "retrieval_softener":
+            weight -= 0.06
         return self._clamp(weight)
 
     def _intervention_fatigue(self, window: list[dict]) -> float:
