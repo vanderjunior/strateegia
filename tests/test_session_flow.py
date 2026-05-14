@@ -181,6 +181,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "narrative_relation" in summary_block
     assert "transition_reason" in summary_block
     assert "why_this_after_previous" in summary_block
+    assert "relationship_type" in summary_block
+    assert "prerequisite_signal" in summary_block
     assert "cognitive_load" in summary_block
     assert "explanation_depth" in summary_block
     assert "retrieval_intensity" in summary_block
@@ -192,6 +194,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "narrative_relation" in question_block
     assert "transition_reason" in question_block
     assert "why_this_after_previous" in question_block
+    assert "relationship_type" in question_block
+    assert "prerequisite_signal" in question_block
     assert "cognitive_load_score" in question_block
     assert "intervention_effectiveness" in question_block
     assert "pedagogical_confidence" in question_block

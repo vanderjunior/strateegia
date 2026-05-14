@@ -24,6 +24,7 @@ def resolve_pedagogical_profile(
     resurfacing_signal: float,
     performance: dict[str, object] | None,
     pedagogical_memory: dict[str, object] | None = None,
+    relationship_signal: dict[str, object] | None = None,
 ) -> PedagogicalProfile:
     normalized_performance = _normalize_performance(performance)
     normalized_memory = _normalize_pedagogical_memory(pedagogical_memory)
@@ -70,6 +71,13 @@ def resolve_pedagogical_profile(
         stabilization_signal=stabilization_signal,
         incorrect_pressure=incorrect_pressure,
     )
+    base_mode, relationship_reason = _apply_relationship_guard(
+        base_mode=base_mode,
+        curriculum_role=curriculum_role,
+        review_intensity=review_intensity,
+        dominant_error_type=dominant_error_type,
+        relationship_signal=relationship_signal,
+    )
     pedagogical_mode, transition_reason = _apply_pedagogical_memory_transition(
         base_mode=base_mode,
         dominant_error_type=dominant_error_type,
@@ -90,6 +98,7 @@ def resolve_pedagogical_profile(
         "escalation_signal": escalation_signal,
         "curriculum_density": curriculum_density,
         "review_density": review_density,
+        "relationship": _clamp(float((relationship_signal or {}).get("prerequisite_signal", 0.0) or 0.0)),
         "retrieval_trend": normalized_memory["retrieval_success_trend"],
         "longitudinal_retention": round(float(stability["retention_confidence"]), 4),
         "intervention_fatigue": round(float(stability["intervention_fatigue"]), 4),
@@ -142,10 +151,13 @@ def resolve_pedagogical_profile(
         resurfacing_signal=normalized_resurfacing,
         stabilization_stage=str(stability["stabilization_stage"]),
     )
+    if relationship_reason:
+        adaptation_reasoning.append(relationship_reason)
 
     return PedagogicalProfile(
         pedagogical_mode=pedagogical_mode.value,
-        intervention_reason=_build_intervention_reason(
+        intervention_reason=relationship_reason
+        or _build_intervention_reason(
             pedagogical_mode=pedagogical_mode,
             dominant_error_type=dominant_error_type,
             curriculum_role=curriculum_role,
@@ -245,6 +257,35 @@ def compute_pedagogical_mode(
         return PedagogicalMode.RAPID_REVIEW
 
     return PedagogicalMode.REINFORCEMENT_CHECK
+
+
+def _apply_relationship_guard(
+    *,
+    base_mode: PedagogicalMode,
+    curriculum_role: str | None,
+    review_intensity: str | None,
+    dominant_error_type: str | None,
+    relationship_signal: dict[str, object] | None,
+) -> tuple[PedagogicalMode, str | None]:
+    signal = dict(relationship_signal or {})
+    prerequisite_signal = _clamp(float(signal.get("prerequisite_signal", 0.0) or 0.0))
+    relationship_type = str(signal.get("relationship_type") or "")
+    if prerequisite_signal < 0.45:
+        return base_mode, None
+    if relationship_type not in {"applied_by", "exception_of", "prerequisite"}:
+        return base_mode, None
+    if base_mode != PedagogicalMode.CONTEXTUAL_APPLICATION:
+        return base_mode, None
+
+    if curriculum_role == "active" or review_intensity == "deep" or dominant_error_type == "conceptual":
+        return (
+            PedagogicalMode.GUIDED_EXPLANATION,
+            "A base conceitual ainda precisa ser reforcada antes da aplicacao contextual.",
+        )
+    return (
+        PedagogicalMode.CONCEPTUAL_REINFORCEMENT,
+        "A base conceitual foi reforcada antes de manter foco em aplicacao.",
+    )
 
 
 def compute_explanation_depth(

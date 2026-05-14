@@ -308,3 +308,21 @@ def test_pedagogical_profile_exposes_longitudinal_stability_metadata():
     assert profile.longitudinal_retention >= 0.5
     assert profile.stabilization_stage in {"stabilizing", "consolidated", "resilient"}
     assert profile.retention_reasoning
+
+
+def test_pedagogical_adapter_avoids_contextual_application_without_prerequisite_basis():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="active",
+        review_intensity="medium",
+        weakness_signal=0.55,
+        resurfacing_signal=0.1,
+        performance=build_performance(error_distribution={"interpretation": 2}),
+        relationship_signal={
+            "relationship_type": "applied_by",
+            "prerequisite_signal": 0.65,
+            "relationship_reason": "Aplicacao depende de regra anterior.",
+        },
+    )
+
+    assert profile.pedagogical_mode in {"guided_explanation", "conceptual_reinforcement"}
+    assert "relationship" in profile.profile_breakdown

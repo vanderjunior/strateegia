@@ -4,6 +4,10 @@ from datetime import datetime, timezone
 from math import ceil
 
 from app.domain.models import LearningPlanEntry, MicroTopic, StudyBlock, TopicNode
+from app.services.conceptual_relationships import (
+    ConceptualRelationshipsLayer,
+    build_relationship_signals,
+)
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.microtopic_extractor import MicroTopicExtractor
 from app.services.pedagogical_adapter import resolve_pedagogical_profile
@@ -112,18 +116,23 @@ def select_relevant_microtopics(
             "selected_profiles": [],
         }
 
-    if selected_microtopic_ids:
+    preferred_ids = set(selected_microtopic_ids or [])
+    if preferred_ids and limit == 1:
         selected_ids = set(selected_microtopic_ids)
         microtopics = [microtopic for microtopic in microtopics if microtopic.id in selected_ids] or microtopics
 
     performance_map = dict(microtopic_performance or {})
     pedagogical_memory_map = dict(pedagogical_memory or {})
+    relationships = ConceptualRelationshipsLayer().extract(topic_node, microtopics)
+    relationship_signals = build_relationship_signals(microtopics, relationships)
     profiles = [
         _build_microtopic_profile(
             microtopic,
             performance_map.get(microtopic.id),
             pedagogical_memory_map.get(microtopic.id),
             review_stage,
+            relationship_signals.get(microtopic.id),
+            preferred=microtopic.id in preferred_ids,
         )
         for microtopic in microtopics
     ]
@@ -137,9 +146,21 @@ def select_relevant_microtopics(
         ),
     )
 
-    selected_profiles = _choose_profiles(ranked_profiles, review_stage=review_stage, limit=max(1, limit))
+    selected_profiles = _choose_profiles(
+        ranked_profiles,
+        review_stage=review_stage,
+        limit=max(1, limit),
+        preferred_ids=preferred_ids,
+    )
+    if preferred_ids:
+        selected_profiles = _apply_conceptual_support(
+            selected_profiles,
+            ranked_profiles,
+            limit=max(1, limit),
+        )
     weak_profiles = [profile for profile in ranked_profiles if profile["is_weak"]]
     resurfaced_profiles = [profile for profile in selected_profiles if profile["is_resurfaced"]]
+    selected_ids = {profile["microtopic"].id for profile in selected_profiles}
 
     return {
         "selected_microtopics": [profile["microtopic"] for profile in selected_profiles],
@@ -154,6 +175,13 @@ def select_relevant_microtopics(
         ),
         "why_this_now": _build_why_this_now(selected_profiles, review_stage=review_stage),
         "selected_profiles": selected_profiles,
+        "relationship_signal": _primary_relationship_signal(selected_profiles),
+        "conceptual_relationships": [
+            relationship.model_dump(mode="json")
+            for relationship in relationships
+            if relationship.source_microtopic_id in selected_ids
+            and relationship.target_microtopic_id in selected_ids
+        ],
     }
 
 
@@ -216,6 +244,9 @@ def _build_microtopic_profile(
     raw_performance: dict[str, object] | None,
     raw_pedagogical_memory: dict[str, object] | None,
     review_stage: str,
+    relationship_signal: dict[str, object] | None,
+    *,
+    preferred: bool,
 ) -> dict[str, object]:
     performance = _normalize_microtopic_performance(raw_performance)
     pedagogical_memory = _normalize_pedagogical_memory(raw_pedagogical_memory)
@@ -244,6 +275,17 @@ def _build_microtopic_profile(
     )
     pedagogical_discount = min(pedagogical_memory["stabilization_level"] * 0.08, 0.08)
     pedagogical_escalation = min(pedagogical_memory["escalation_level"] * 0.10, 0.10)
+    normalized_relationship = dict(relationship_signal or {})
+    prerequisite_signal = min(
+        max(float(normalized_relationship.get("prerequisite_signal", 0.0) or 0.0), 0.0),
+        1.0,
+    )
+    support_signal = min(
+        max(float(normalized_relationship.get("support_signal", 0.0) or 0.0), 0.0),
+        1.0,
+    )
+    relationship_bonus = min(support_signal * 0.08 + prerequisite_signal * 0.05, 0.1)
+    preferred_bonus = 0.12 if preferred else 0.0
 
     selection_score = (
         weakness_signal * weights["weakness"]
@@ -253,6 +295,8 @@ def _build_microtopic_profile(
         + temporal_reinforcement
         + temporal_signal
         + pedagogical_escalation
+        + relationship_bonus
+        + preferred_bonus
         - stabilization_discount
         - pedagogical_discount
     )
@@ -269,6 +313,8 @@ def _build_microtopic_profile(
         "is_mastered": mastered,
         "is_weak": recent_errors > 0 or weakness_signal >= 0.6 or consecutive_incorrect >= 2,
         "is_resurfaced": (mastered and resurfacing_signal >= 0.5) or temporal_signal >= 0.12,
+        "relationship_signal": normalized_relationship,
+        "preferred": preferred,
         "position": 0,
     }
 
@@ -278,6 +324,7 @@ def _choose_profiles(
     *,
     review_stage: str,
     limit: int,
+    preferred_ids: set[str],
 ) -> list[dict[str, object]]:
     for position, profile in enumerate(ranked_profiles):
         profile["position"] = position
@@ -309,7 +356,79 @@ def _choose_profiles(
             continue
         selected.append(profile)
 
+    for preferred_id in preferred_ids:
+        if any(profile["microtopic"].id == preferred_id for profile in selected):
+            continue
+        preferred_profile = next(
+            (profile for profile in ranked_profiles if profile["microtopic"].id == preferred_id),
+            None,
+        )
+        if preferred_profile is None:
+            continue
+        if len(selected) < limit:
+            selected.append(preferred_profile)
+        else:
+            selected[-1] = preferred_profile
+
     return selected[:limit]
+
+
+def _apply_conceptual_support(
+    selected_profiles: list[dict[str, object]],
+    ranked_profiles: list[dict[str, object]],
+    *,
+    limit: int,
+) -> list[dict[str, object]]:
+    if limit <= 1 or not selected_profiles:
+        return selected_profiles
+
+    by_id = {profile["microtopic"].id: profile for profile in ranked_profiles}
+    selected = list(selected_profiles)
+    selected_ids = {profile["microtopic"].id for profile in selected}
+
+    for profile in list(selected_profiles):
+        relationship_signal = dict(profile.get("relationship_signal", {}) or {})
+        anchor_id = relationship_signal.get("anchor_microtopic_id")
+        prerequisite_signal = float(relationship_signal.get("prerequisite_signal", 0.0) or 0.0)
+        if not anchor_id or prerequisite_signal < 0.3 or anchor_id in selected_ids:
+            continue
+        anchor_profile = by_id.get(anchor_id)
+        if anchor_profile is None:
+            continue
+        insertion_index = selected.index(profile)
+        selected.insert(insertion_index, anchor_profile)
+        selected_ids.add(anchor_id)
+
+    deduped: list[dict[str, object]] = []
+    seen_ids: set[str] = set()
+    for profile in selected:
+        microtopic_id = profile["microtopic"].id
+        if microtopic_id in seen_ids:
+            continue
+        seen_ids.add(microtopic_id)
+        deduped.append(profile)
+    return _relationship_order(deduped[:limit])
+
+
+def _relationship_order(selected_profiles: list[dict[str, object]]) -> list[dict[str, object]]:
+    if len(selected_profiles) <= 1:
+        return selected_profiles
+
+    ordered = list(selected_profiles)
+    index_by_id = {profile["microtopic"].id: index for index, profile in enumerate(ordered)}
+    for profile in list(ordered):
+        relationship_signal = dict(profile.get("relationship_signal", {}) or {})
+        anchor_id = relationship_signal.get("anchor_microtopic_id")
+        prerequisite_signal = float(relationship_signal.get("prerequisite_signal", 0.0) or 0.0)
+        if not anchor_id or prerequisite_signal < 0.3:
+            continue
+        anchor_index = index_by_id.get(anchor_id)
+        profile_index = index_by_id.get(profile["microtopic"].id)
+        if anchor_index is None or profile_index is None or anchor_index < profile_index:
+            continue
+        ordered.insert(profile_index, ordered.pop(anchor_index))
+        index_by_id = {item["microtopic"].id: index for index, item in enumerate(ordered)}
+    return ordered
 
 
 def _build_adaptive_reasoning(
@@ -336,6 +455,7 @@ def _build_adaptive_reasoning(
 
 
 def _selection_metadata(selection: dict[str, object]) -> dict[str, object]:
+    relationship_signal = dict(selection.get("relationship_signal", {}) or {})
     return {
         "selected_microtopics": _serialize_microtopics(selection["selected_microtopics"]),
         "resurfaced_microtopics": _serialize_microtopics(selection["resurfaced_microtopics"]),
@@ -343,6 +463,14 @@ def _selection_metadata(selection: dict[str, object]) -> dict[str, object]:
         "review_intensity": selection["review_intensity"],
         "adaptive_reasoning": selection["adaptive_reasoning"],
         "why_this_now": selection.get("why_this_now", []),
+        "conceptual_relationships": selection.get("conceptual_relationships", []),
+        "relationship_type": relationship_signal.get("relationship_type"),
+        "relationship_reason": relationship_signal.get("relationship_reason"),
+        "conceptual_anchor": relationship_signal.get("conceptual_anchor"),
+        "prerequisite_signal": relationship_signal.get("prerequisite_signal", 0.0),
+        "conceptual_transition": relationship_signal.get("conceptual_transition"),
+        "semantic_continuity_reason": relationship_signal.get("semantic_continuity_reason"),
+        "why_this_before_that": relationship_signal.get("why_this_before_that"),
     }
 
 
@@ -496,7 +624,18 @@ def _resolve_pedagogical_profile(block: StudyBlock, selection: dict[str, object]
         resurfacing_signal=float(primary_profile.get("resurfacing_signal", 0.0) or 0.0),
         performance=raw_performance,
         pedagogical_memory=raw_pedagogical_memory,
+        relationship_signal=selection.get("relationship_signal"),
     )
+
+
+def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
+    if not selected_profiles:
+        return {}
+    for profile in selected_profiles:
+        relationship_signal = dict(profile.get("relationship_signal", {}) or {})
+        if relationship_signal.get("relationship_type"):
+            return relationship_signal
+    return dict(selected_profiles[0].get("relationship_signal", {}) or {})
 
 
 def _pedagogical_metadata(profile) -> dict[str, object]:

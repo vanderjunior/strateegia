@@ -326,3 +326,45 @@ def test_composer_considers_stability_and_fatigue_in_breakdown():
     candidate = candidates[0]
     assert "stability" in candidate.composition_breakdown
     assert "fatigue" in candidate.composition_breakdown
+
+
+def test_composer_lightly_boosts_rule_before_weak_exception():
+    composer = MicrotopicSessionComposer()
+    probe = composer.compose(
+        [
+            build_entry(
+                topic_id="topic-relationship",
+                topic_title="Topic Relationship",
+                topic_content="Regra: base normativa.\n\nExcecao: ressalva restritiva.\n\nAplicacao: caso pratico.",
+                curriculum_role="active",
+                review_intensity="deep",
+            )
+        ]
+    )
+    ids_by_title = {candidate.microtopic_title: candidate.microtopic_id for candidate in probe}
+
+    candidates = composer.compose(
+        [
+            build_entry(
+                topic_id="topic-relationship",
+                topic_title="Topic Relationship",
+                topic_content="Regra: base normativa.\n\nExcecao: ressalva restritiva.\n\nAplicacao: caso pratico.",
+                curriculum_role="active",
+                review_intensity="deep",
+                microtopic_performance={
+                    ids_by_title["Excecao"]: {
+                        "total_questions": 4,
+                        "correct_answers": 1,
+                        "recent_errors": 2,
+                        "error_distribution": {"conceptual": 2},
+                    }
+                },
+            )
+        ]
+    )
+
+    titles = [candidate.microtopic_title for candidate in candidates]
+    regra = next(candidate for candidate in candidates if candidate.microtopic_title == "Regra")
+
+    assert titles.index("Regra") < titles.index("Excecao")
+    assert "relationship" in regra.composition_breakdown

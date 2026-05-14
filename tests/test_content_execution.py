@@ -13,6 +13,7 @@ from app.domain.models import (
     TopicNode,
 )
 from app.repositories.json_store import JsonStudyRepository
+from app.services.microtopic_extractor import MicroTopicExtractor
 from app.services.content_execution import execute_learning_plan, execute_study_block
 from app.services.learning_engine import LearningDecisionEngine
 
@@ -192,6 +193,34 @@ def test_execute_study_block_questions_use_microtopics():
     assert "excecao" in statements or "observacao" in statements
     assert "manobras e luzes" in explanations or "termos absolutos" in explanations
     assert payload["selected_microtopics"]
+
+
+def test_execute_study_block_summary_supports_prerequisite_before_application():
+    topic_node = build_topic_node(
+        title="RIPAM",
+        content=(
+            "Conceito: a regra define prioridade de passagem.\n\n"
+            "Aplicacao: em cruzamento, compare embarcacao a motor e a vela."
+        ),
+    )
+    extracted = MicroTopicExtractor().extract(topic_node)
+    application = next(microtopic for microtopic in extracted if microtopic.title == "Aplicacao")
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="summary",
+            topic_id="ripam",
+            depth="deep",
+            topic_node=topic_node,
+            selected_microtopic_ids=[application.id],
+        )
+    )
+
+    titles = [item["title"] for item in payload["selected_microtopics"]]
+
+    assert titles[:2] == ["Conceito", "Aplicacao"]
+    assert payload["relationship_type"] == "applied_by"
+    assert payload["prerequisite_signal"] > 0.0
 
 
 def test_execute_study_block_question_format_is_correct():

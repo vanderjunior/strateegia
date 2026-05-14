@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.domain.models import LearningPlanEntry, MicrotopicSessionCandidate, TopicNode
+from app.services.conceptual_relationships import (
+    ConceptualRelationshipsLayer,
+    build_relationship_signals,
+)
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.microtopic_extractor import MicroTopicExtractor
 from app.services.pedagogical_stability import analyze_pedagogical_stability
@@ -41,6 +45,14 @@ class MicrotopicSessionComposer:
         pedagogical_memory_map = dict(entry.performance_data.get("pedagogical_memory", {}) or {})
         curriculum_role = entry.curriculum_role or "active"
         review_intensity = entry.review_intensity or "light"
+        topic_node = TopicNode(
+            title=entry.topic_title,
+            level=2,
+            content=entry.topic_content or entry.topic_title,
+            children=[],
+        )
+        relationships = ConceptualRelationshipsLayer().extract(topic_node, microtopics)
+        relationship_signals = build_relationship_signals(microtopics, relationships)
 
         candidates: list[MicrotopicSessionCandidate] = []
         for microtopic in microtopics:
@@ -59,6 +71,12 @@ class MicrotopicSessionComposer:
             temporal_signal = self._temporal_signal(
                 resurfacing_signal=resurfacing_signal,
                 pedagogical_memory=pedagogical_memory,
+            )
+            relationship_signal = relationship_signals.get(microtopic.id)
+            relationship_bonus = min(
+                float((relationship_signal.support_signal if relationship_signal else 0.0)) * 0.08
+                + float((relationship_signal.prerequisite_signal if relationship_signal else 0.0)) * 0.04,
+                0.1,
             )
             stability = analyze_pedagogical_stability(
                 performance=performance,
@@ -79,6 +97,7 @@ class MicrotopicSessionComposer:
                     + difficulty_signal * 0.15
                     + curriculum_signal * 0.25
                     + temporal_signal
+                    + relationship_bonus
                     + min(float(stability["reinforcement_signal"]) * 0.08, 0.08)
                     - stabilization_discount
                     - exposure_discount,
@@ -112,6 +131,7 @@ class MicrotopicSessionComposer:
                         "difficulty": round(difficulty_signal, 4),
                         "curriculum": round(curriculum_signal, 4),
                         "temporal": round(temporal_signal, 4),
+                        "relationship": round(relationship_bonus, 4),
                         "stability": round(float(stability["pedagogical_stability_score"]), 4),
                         "fatigue": round(float(stability["intervention_fatigue"]), 4),
                         "stabilization_discount": round(stabilization_discount, 4),
@@ -133,6 +153,7 @@ class MicrotopicSessionComposer:
             ),
         )
         selected = self._apply_quota(ordered, curriculum_role=curriculum_role, review_intensity=review_intensity)
+        selected = self._relationship_order(selected, relationship_signals)
         for candidate_position, candidate in enumerate(selected):
             candidate.candidate_position = candidate_position
         return selected
@@ -328,6 +349,28 @@ class MicrotopicSessionComposer:
         if curriculum_role == "active":
             return "active_progression"
         return "light_cumulative_recall"
+
+    def _relationship_order(
+        self,
+        candidates: list[MicrotopicSessionCandidate],
+        relationship_signals,
+    ) -> list[MicrotopicSessionCandidate]:
+        if len(candidates) <= 1:
+            return candidates
+
+        ordered = list(candidates)
+        index_by_id = {candidate.microtopic_id: index for index, candidate in enumerate(ordered)}
+        for candidate in list(ordered):
+            signal = relationship_signals.get(candidate.microtopic_id)
+            if signal is None or signal.prerequisite_signal < 0.3 or not signal.anchor_microtopic_id:
+                continue
+            anchor_index = index_by_id.get(signal.anchor_microtopic_id)
+            candidate_index = index_by_id.get(candidate.microtopic_id)
+            if anchor_index is None or candidate_index is None or anchor_index < candidate_index:
+                continue
+            ordered.insert(candidate_index, ordered.pop(anchor_index))
+            index_by_id = {item.microtopic_id: index for index, item in enumerate(ordered)}
+        return ordered
 
     def _parse_datetime(self, raw_value: object) -> datetime | None:
         if isinstance(raw_value, datetime):

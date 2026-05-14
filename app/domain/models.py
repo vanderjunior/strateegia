@@ -47,6 +47,15 @@ class PedagogicalOutcome(str, Enum):
     INEFFECTIVE = "ineffective"
 
 
+class RelationshipType(str, Enum):
+    PREREQUISITE = "prerequisite"
+    REINFORCES = "reinforces"
+    EXCEPTION_OF = "exception_of"
+    APPLIED_BY = "applied_by"
+    CONTRASTS_WITH = "contrasts_with"
+    CUMULATIVE_EXTENSION = "cumulative_extension"
+
+
 class PedagogicalProfile(BaseModel):
     pedagogical_mode: str
     intervention_reason: str
@@ -95,6 +104,12 @@ class SessionNarrativeDecision(BaseModel):
     narrative_role: str
     continuity_signal: float = 0.0
     contextual_anchor: str | None = None
+    relationship_type: str | None = None
+    relationship_reason: str | None = None
+    prerequisite_signal: float = 0.0
+    conceptual_transition: str | None = None
+    semantic_continuity_reason: str | None = None
+    why_this_before_that: str | None = None
     transition_reason: str
     comparison_reason: str | None = None
     recall_reason: str | None = None
@@ -143,6 +158,33 @@ class MicroTopic(BaseModel):
     content: str
     source_topic_title: str
     difficulty_weight: float = 1.0
+
+
+class ConceptualRelationship(BaseModel):
+    source_microtopic_id: str
+    target_microtopic_id: str
+    relationship_type: str
+    reason: str
+    strength: float = 0.0
+
+
+class ConceptualAnchor(BaseModel):
+    microtopic_id: str
+    title: str
+    relationship_type: str | None = None
+
+
+class RelationshipSignal(BaseModel):
+    relationship_type: str | None = None
+    relationship_reason: str | None = None
+    conceptual_anchor: str | None = None
+    anchor_microtopic_id: str | None = None
+    prerequisite_signal: float = 0.0
+    support_signal: float = 0.0
+    conceptual_transition: str | None = None
+    reinforcement_reason: str | None = None
+    semantic_continuity_reason: str | None = None
+    why_this_before_that: str | None = None
 
 
 class Topic(BaseModel):

@@ -187,3 +187,35 @@ def test_session_narrative_preserves_deterministic_order_and_bounded_signals():
         assert 0.0 <= block["continuity_signal"] <= 1.0
         assert block["transition_reason"]
         assert block["narrative_relation"]
+
+
+def test_session_narrative_uses_exception_relationship_as_local_contrast():
+    blocks = [
+        build_block(
+            block_id="question-rule",
+            topic_id="topic-nav",
+            topic_title="Navegacao",
+            pedagogical_mode="guided_explanation",
+            microtopic_id="mt-rule",
+            question_index=0,
+        ),
+        build_block(
+            block_id="question-exception",
+            topic_id="topic-nav",
+            topic_title="Navegacao",
+            pedagogical_mode="conceptual_reinforcement",
+            cognitive_load_score=0.64,
+            microtopic_id="mt-exception",
+            question_index=1,
+        )
+        | {
+            "relationship_type": "exception_of",
+            "relationship_reason": "A excecao depende da regra geral imediatamente anterior.",
+            "conceptual_transition": "rule_before_exception",
+        },
+    ]
+
+    annotated = SessionNarrativeLayer().annotate(blocks)
+
+    assert annotated[1]["narrative_relation"] == "contrast"
+    assert annotated[1]["comparison_reason"]

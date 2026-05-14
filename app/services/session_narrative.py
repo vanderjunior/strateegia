@@ -63,6 +63,12 @@ class SessionNarrativeLayer:
             narrative_role=role,
             continuity_signal=continuity,
             contextual_anchor=anchor,
+            relationship_type=str(current.get("relationship_type") or "") or None,
+            relationship_reason=current.get("relationship_reason"),
+            prerequisite_signal=self._clamp(float(current.get("prerequisite_signal", 0.0) or 0.0)),
+            conceptual_transition=current.get("conceptual_transition"),
+            semantic_continuity_reason=current.get("semantic_continuity_reason"),
+            why_this_before_that=current.get("why_this_before_that"),
             transition_reason=self._transition_reason(previous, current, relation),
             comparison_reason=self._comparison_reason(previous, current, relation),
             recall_reason=self._recall_reason(previous, current, relation),
@@ -75,10 +81,17 @@ class SessionNarrativeLayer:
         current_mode = str(current.get("pedagogical_mode") or "")
         current_role = str(current.get("curriculum_role") or "")
         current_intensity = str(current.get("review_intensity") or "")
+        relationship_type = str(current.get("relationship_type") or "")
         previous_score = self._cognitive_load(previous)
         current_score = self._cognitive_load(current)
         stabilization_stage = str(current.get("stabilization_stage") or "")
 
+        if same_topic and relationship_type == "exception_of":
+            return "contrast"
+        if same_topic and relationship_type == "applied_by":
+            return "application"
+        if same_topic and relationship_type == "prerequisite":
+            return "reinforcement"
         if current_role == "cumulative" and current_intensity == "light":
             return "cumulative_resurfacing"
         if current_mode in {"rapid_review", "reinforcement_check", "active_recall"} and (
@@ -154,7 +167,7 @@ class SessionNarrativeLayer:
     def _comparison_reason(self, previous: dict, current: dict, relation: str) -> str | None:
         if relation != "contrast":
             return None
-        return (
+        return current.get("relationship_reason") or (
             f"O topico {current.get('topic_title') or current.get('topic_id')} "
             f"entra agora para contrastar com {previous.get('topic_title') or previous.get('topic_id')} "
             "sem quebrar a progressao curricular."
