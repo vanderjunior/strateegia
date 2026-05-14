@@ -224,6 +224,50 @@ def test_execute_study_block_exposes_cognitive_facets_metadata():
     assert "transfer_signal" in payload
 
 
+def test_execute_study_block_exposes_cognitive_trajectory_metadata():
+    topic_node = build_topic_node(
+        title="Aplicacao",
+        content=(
+            "Aplicacao: compare os contextos e transfira a regra.\n\n"
+            "Observacao: reconheca o marcador final."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="aplicacao", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="aplicacao",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(
+                    consecutive_correct=3,
+                    recent_errors=0,
+                )
+            },
+            pedagogical_memory={
+                target_id: build_pedagogical_memory(
+                    recent_effectiveness="effective",
+                    resurfacing_cycles=3,
+                    successful_resurfacing_cycles=0,
+                    stabilization_level=0.55,
+                    retrieval_success_trend=0.55,
+                )
+            },
+        )
+    )
+
+    assert payload["cognitive_trajectory"]
+    assert payload["trajectory_state"]
+    assert "stabilization_quality" in payload
+    assert "false_fluency_signal" in payload
+    assert "why_this_trajectory_now" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

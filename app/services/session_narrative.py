@@ -165,16 +165,21 @@ class SessionNarrativeLayer:
         base_reason = reasons.get(relation, default_reason)
         micro_intervention = current.get("micro_intervention")
         dominant_facet = current.get("dominant_facet")
+        trajectory_state = current.get("trajectory_state")
         if micro_intervention and dominant_facet:
-            return (
+            reason = (
                 f"{base_reason} Micro-intervencao ativa: {micro_intervention}. "
                 f"Faceta cognitiva dominante: {dominant_facet}."
             )
-        if micro_intervention:
-            return f"{base_reason} Micro-intervencao ativa: {micro_intervention}."
-        if dominant_facet:
-            return f"{base_reason} Faceta cognitiva dominante: {dominant_facet}."
-        return base_reason
+        elif micro_intervention:
+            reason = f"{base_reason} Micro-intervencao ativa: {micro_intervention}."
+        elif dominant_facet:
+            reason = f"{base_reason} Faceta cognitiva dominante: {dominant_facet}."
+        else:
+            reason = base_reason
+        if trajectory_state in {"transfer_fragile", "reconstruction_fragile", "superficially_stable"}:
+            return f"{reason} Trajetoria ativa: {trajectory_state}."
+        return reason
 
     def _comparison_reason(self, previous: dict, current: dict, relation: str) -> str | None:
         if relation != "contrast":
@@ -218,6 +223,11 @@ class SessionNarrativeLayer:
         anchor: str | None,
     ) -> str:
         if relation == "application":
+            if current.get("trajectory_state") == "transfer_fragile":
+                return (
+                    f"Este bloco contextualiza {anchor or self._anchor_label(previous)} "
+                    "com apoio extra porque a transferencia ainda oscila."
+                )
             return f"Este bloco contextualiza o que acabou de ser explicado em {anchor or self._anchor_label(previous)}."
         if relation == "cumulative_resurfacing":
             return f"Este bloco reaparece agora para manter vivo um conceito cumulativo ligado a {anchor or self._anchor_label(current)}."
@@ -227,6 +237,11 @@ class SessionNarrativeLayer:
             return f"Este bloco reforca {anchor or self._anchor_label(current)} antes de ampliar o contexto."
         if relation == "stabilization":
             return f"Este bloco confirma estabilidade recente em {anchor or self._anchor_label(current)} com pressao reduzida."
+        if current.get("trajectory_state") == "superficially_stable":
+            return (
+                f"Este bloco reaparece agora para verificar se {anchor or self._anchor_label(current)} "
+                "ja esta realmente estavel, e nao apenas fluente."
+            )
         if relation == "recall":
             return "Este bloco reduz a pressao local para preservar ritmo e recuperacao."
         if relation == "escalation":

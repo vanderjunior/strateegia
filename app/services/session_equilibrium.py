@@ -133,6 +133,10 @@ class SessionEquilibriumLayer:
         review_intensity = str(block.get("review_intensity") or "light")
         retention = float(block.get("longitudinal_retention", 0.0) or 0.0)
         fatigue = float(block.get("intervention_fatigue", 0.0) or 0.0)
+        false_fluency = float(block.get("false_fluency_signal", 0.0) or 0.0)
+        reconstruction_fragility = float(block.get("reconstruction_fragility", 0.0) or 0.0)
+        transfer_fragility = float(block.get("transfer_fragility", 0.0) or 0.0)
+        stabilization_quality = float(block.get("stabilization_quality", 0.0) or 0.0)
 
         base = 0.42 if block_type == "summary" else 0.36
         base += {
@@ -150,6 +154,10 @@ class SessionEquilibriumLayer:
             base -= 0.06
         base -= retention * 0.14
         base -= fatigue * 0.06
+        base += min(false_fluency * 0.06, 0.04)
+        base += min(reconstruction_fragility * 0.08, 0.05)
+        base += min(transfer_fragility * 0.06, 0.04)
+        base -= min(stabilization_quality * 0.05, 0.03)
         return self._clamp(base)
 
     def _rotation_pressure(self, recent_modes: list[str], block: dict) -> float:

@@ -179,7 +179,36 @@ def test_micro_intervention_handles_missing_metadata():
         pedagogical_profile={},
         relationship_signal={},
         facet_profile={},
+        trajectory_profile={},
     )
 
     assert intervention.intervention_type
     assert intervention.why_this_intervention
+
+
+def test_superficial_recognition_can_trigger_reconstruction_check():
+    intervention = resolve_micro_intervention(
+        block_type="question",
+        curriculum_role="cumulative",
+        review_intensity="light",
+        pedagogical_profile=build_profile(
+            pedagogical_mode="reinforcement_check",
+            stabilization_stage="consolidated",
+            longitudinal_retention=0.74,
+        ),
+        relationship_signal=build_relationship(),
+        facet_profile={
+            "dominant_facet": "recognition",
+            "transfer_signal": 0.1,
+            "reconstruction_signal": 0.15,
+            "recognition_signal": 0.72,
+        },
+        trajectory_profile={
+            "trajectory_state": "superficially_stable",
+            "false_fluency_signal": 0.68,
+            "reconstruction_fragility": 0.22,
+            "transfer_fragility": 0.1,
+        },
+    )
+
+    assert intervention.intervention_type == "guided_reconstruction"

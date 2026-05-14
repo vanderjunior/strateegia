@@ -16,10 +16,12 @@ def resolve_micro_intervention(
     pedagogical_profile: dict[str, object] | object,
     relationship_signal: dict[str, object] | None,
     facet_profile: dict[str, object] | object | None = None,
+    trajectory_profile: dict[str, object] | object | None = None,
 ) -> MicroIntervention:
     profile = _normalize_profile(pedagogical_profile)
     relationship = dict(relationship_signal or {})
     facets = _normalize_profile(facet_profile)
+    trajectory = _normalize_profile(trajectory_profile)
     context = InterventionContext(
         block_type="question" if block_type == "questions" else block_type,
         curriculum_role=str(curriculum_role or "active"),
@@ -34,14 +36,22 @@ def resolve_micro_intervention(
         prerequisite_signal=_clamp(float(relationship.get("prerequisite_signal", 0.0) or 0.0)),
         conceptual_anchor=str(relationship.get("conceptual_anchor") or "") or None,
     )
-    return _resolve_from_context(context, facets)
+    return _resolve_from_context(context, facets, trajectory)
 
 
-def _resolve_from_context(context: InterventionContext, facets: dict[str, object]) -> MicroIntervention:
+def _resolve_from_context(
+    context: InterventionContext,
+    facets: dict[str, object],
+    trajectory: dict[str, object],
+) -> MicroIntervention:
     dominant_facet = str(facets.get("dominant_facet") or "")
     transfer_signal = _clamp(float(facets.get("transfer_signal", 0.0) or 0.0))
     reconstruction_signal = _clamp(float(facets.get("reconstruction_signal", 0.0) or 0.0))
     recognition_signal = _clamp(float(facets.get("recognition_signal", 0.0) or 0.0))
+    trajectory_state = str(trajectory.get("trajectory_state") or "")
+    false_fluency = _clamp(float(trajectory.get("false_fluency_signal", 0.0) or 0.0))
+    trajectory_reconstruction = _clamp(float(trajectory.get("reconstruction_fragility", 0.0) or 0.0))
+    trajectory_transfer = _clamp(float(trajectory.get("transfer_fragility", 0.0) or 0.0))
 
     if context.relationship_type == "applied_by" and context.prerequisite_signal >= 0.45:
         return _build_intervention(
@@ -86,6 +96,46 @@ def _resolve_from_context(context: InterventionContext, facets: dict[str, object
             support_strength=0.42,
             retrieval_shift=0.38,
             fatigue_mitigation=0.18,
+        )
+
+    if (
+        trajectory_state == "transfer_fragile"
+        and dominant_facet in {"application", "contextual_transfer"}
+        and trajectory_transfer >= 0.5
+    ):
+        return _build_intervention(
+            MicroInterventionType.CUMULATIVE_BRIDGE,
+            "A transferencia contextual ainda oscila e ganhou uma ponte mais explicita.",
+            "Sustentar o salto entre contextos antes de exigir resposta independente.",
+            retrieval_support_reason="A ponte reduz colapso de contexto em reapresentacoes sucessivas.",
+            conceptual_support_reason="A transferencia continua ligada a uma base anterior antes do julgamento atual.",
+            intervention_transition="transfer_fragility_bridge",
+            why_this_intervention="Este momento recebeu uma ponte mais forte porque a trajetoria ainda mostra fragilidade de transferencia.",
+            local_cognitive_strategy="Recuperar o contexto-base e so depois mover a regra.",
+            support_strength=0.46,
+            retrieval_shift=0.34,
+            fatigue_mitigation=0.16,
+        )
+
+    if (
+        trajectory_state in {"reconstruction_fragile", "superficially_stable"}
+        and (
+            trajectory_reconstruction >= 0.45
+            or (dominant_facet == "recognition" and false_fluency >= 0.48)
+        )
+    ):
+        return _build_intervention(
+            MicroInterventionType.GUIDED_RECONSTRUCTION,
+            "A trajetoria indica que reconhecer rapido ainda nao garante reconstrucao estavel.",
+            "Reconstruir o encadeamento central antes de confiar no acerto superficial.",
+            retrieval_support_reason="A reconstrucao guiada checa se o acerto recente se sustenta sem pista forte.",
+            conceptual_support_reason="O bloco pede validar a sequencia do raciocinio, nao apenas o marcador final.",
+            intervention_transition="trajectory_reconstruction_check",
+            why_this_intervention="Este momento recebeu reconstrucao guiada porque a trajetoria sugere fluencia superficial ou reconstrucao fragil.",
+            local_cognitive_strategy="Refazer a cadeia do raciocinio antes de aceitar a resposta como dominada.",
+            support_strength=0.48,
+            retrieval_shift=0.22,
+            fatigue_mitigation=0.1,
         )
 
     if (

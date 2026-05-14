@@ -89,6 +89,16 @@ class FacetType(str, Enum):
     CONTEXTUAL_TRANSFER = "contextual_transfer"
 
 
+class ConsolidationState(str, Enum):
+    EMERGING = "emerging"
+    STABILIZING = "stabilizing"
+    UNSTABLE = "unstable"
+    SUPERFICIALLY_STABLE = "superficially_stable"
+    CONSOLIDATED = "consolidated"
+    TRANSFER_FRAGILE = "transfer_fragile"
+    RECONSTRUCTION_FRAGILE = "reconstruction_fragile"
+
+
 class PedagogicalProfile(BaseModel):
     pedagogical_mode: str
     intervention_reason: str
@@ -111,6 +121,17 @@ class PedagogicalProfile(BaseModel):
     stabilization_reasoning: list[str] = Field(default_factory=list)
     retention_reasoning: list[str] = Field(default_factory=list)
     recovery_signal: float = 0.0
+    cognitive_trajectory: str = ConsolidationState.EMERGING.value
+    trajectory_state: str = ConsolidationState.EMERGING.value
+    trajectory_reasoning: list[str] = Field(default_factory=list)
+    consolidation_state: str = ConsolidationState.EMERGING.value
+    stabilization_quality: float = 0.0
+    false_fluency_signal: float = 0.0
+    reconstruction_fragility: float = 0.0
+    transfer_fragility: float = 0.0
+    longitudinal_consistency: float = 0.0
+    why_this_trajectory_now: str = ""
+    trajectory_support_reason: str | None = None
     adaptation_reasoning: list[str] = Field(default_factory=list)
     intervention_history_summary: dict[str, object] = Field(default_factory=dict)
     profile_breakdown: dict[str, float] = Field(default_factory=dict)
@@ -278,6 +299,37 @@ class CognitiveFacetProfile(BaseModel):
     why_this_facet_now: str = ""
     facet_support_reason: str | None = None
     facet_signal: FacetSignal = Field(default_factory=FacetSignal)
+
+
+class TrajectorySignal(BaseModel):
+    stabilization_quality: float = 0.0
+    false_fluency_signal: float = 0.0
+    reconstruction_fragility: float = 0.0
+    transfer_fragility: float = 0.0
+    longitudinal_consistency: float = 0.0
+
+
+class FacetTrajectory(BaseModel):
+    facet_type: str
+    consolidation_state: str
+    strength: float = 0.0
+    reason: str
+
+
+class CognitiveTrajectory(BaseModel):
+    cognitive_trajectory: str
+    trajectory_state: str
+    trajectory_reasoning: list[str] = Field(default_factory=list)
+    consolidation_state: str
+    stabilization_quality: float = 0.0
+    false_fluency_signal: float = 0.0
+    reconstruction_fragility: float = 0.0
+    transfer_fragility: float = 0.0
+    longitudinal_consistency: float = 0.0
+    why_this_trajectory_now: str
+    trajectory_support_reason: str | None = None
+    trajectory_signal: TrajectorySignal = Field(default_factory=TrajectorySignal)
+    facet_trajectories: list[FacetTrajectory] = Field(default_factory=list)
 
 
 class CognitiveMomentumSignal(BaseModel):

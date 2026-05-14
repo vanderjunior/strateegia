@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.domain.models import PedagogicalMode, PedagogicalOutcome, PedagogicalProfile
+from app.services.cognitive_trajectory import analyze_cognitive_trajectory
 from app.services.pedagogical_stability import analyze_pedagogical_stability
 
 
@@ -26,6 +27,7 @@ def resolve_pedagogical_profile(
     pedagogical_memory: dict[str, object] | None = None,
     relationship_signal: dict[str, object] | None = None,
     facet_profile: dict[str, object] | object | None = None,
+    trajectory_profile: dict[str, object] | object | None = None,
 ) -> PedagogicalProfile:
     normalized_performance = _normalize_performance(performance)
     normalized_memory = _normalize_pedagogical_memory(pedagogical_memory)
@@ -56,6 +58,14 @@ def resolve_pedagogical_profile(
     review_density = REVIEW_DENSITY.get(review_intensity or "", 0.5)
     dominant_error_type = _dominant_error_type(normalized_performance["error_distribution"])
     normalized_facets = _normalize_facet_profile(facet_profile)
+    trajectory = _normalize_trajectory_profile(
+        trajectory_profile
+        or analyze_cognitive_trajectory(
+            performance=performance,
+            pedagogical_memory=pedagogical_memory,
+            facet_profile=facet_profile,
+        )
+    )
     escalation_signal = _clamp(
         max(
             incorrect_pressure,
@@ -88,6 +98,13 @@ def resolve_pedagogical_profile(
         stabilization_signal=stabilization_signal,
         facet_profile=normalized_facets,
     )
+    base_mode, trajectory_reason = _apply_trajectory_guard(
+        base_mode=base_mode,
+        curriculum_role=curriculum_role,
+        review_intensity=review_intensity,
+        trajectory=trajectory,
+        facet_profile=normalized_facets,
+    )
     pedagogical_mode, transition_reason = _apply_pedagogical_memory_transition(
         base_mode=base_mode,
         dominant_error_type=dominant_error_type,
@@ -112,6 +129,11 @@ def resolve_pedagogical_profile(
         "facet_transfer": normalized_facets["transfer_signal"],
         "facet_reconstruction": normalized_facets["reconstruction_signal"],
         "facet_recognition": normalized_facets["recognition_signal"],
+        "trajectory_stability": trajectory["stabilization_quality"],
+        "trajectory_false_fluency": trajectory["false_fluency_signal"],
+        "trajectory_reconstruction_fragility": trajectory["reconstruction_fragility"],
+        "trajectory_transfer_fragility": trajectory["transfer_fragility"],
+        "trajectory_consistency": trajectory["longitudinal_consistency"],
         "retrieval_trend": normalized_memory["retrieval_success_trend"],
         "longitudinal_retention": round(float(stability["retention_confidence"]), 4),
         "intervention_fatigue": round(float(stability["intervention_fatigue"]), 4),
@@ -168,11 +190,14 @@ def resolve_pedagogical_profile(
         adaptation_reasoning.append(relationship_reason)
     if facet_reason:
         adaptation_reasoning.append(facet_reason)
+    if trajectory_reason:
+        adaptation_reasoning.append(trajectory_reason)
 
     return PedagogicalProfile(
         pedagogical_mode=pedagogical_mode.value,
         intervention_reason=relationship_reason
         or facet_reason
+        or trajectory_reason
         or _build_intervention_reason(
             pedagogical_mode=pedagogical_mode,
             dominant_error_type=dominant_error_type,
@@ -200,6 +225,17 @@ def resolve_pedagogical_profile(
         stabilization_reasoning=list(stability["stabilization_reasoning"]),
         retention_reasoning=list(stability["retention_reasoning"]),
         recovery_signal=float(stability["recovery_signal"]),
+        cognitive_trajectory=trajectory["trajectory_state"],
+        trajectory_state=trajectory["trajectory_state"],
+        trajectory_reasoning=trajectory["trajectory_reasoning"],
+        consolidation_state=trajectory["consolidation_state"],
+        stabilization_quality=trajectory["stabilization_quality"],
+        false_fluency_signal=trajectory["false_fluency_signal"],
+        reconstruction_fragility=trajectory["reconstruction_fragility"],
+        transfer_fragility=trajectory["transfer_fragility"],
+        longitudinal_consistency=trajectory["longitudinal_consistency"],
+        why_this_trajectory_now=trajectory["why_this_trajectory_now"],
+        trajectory_support_reason=trajectory["trajectory_support_reason"],
         adaptation_reasoning=adaptation_reasoning,
         intervention_history_summary={
             "last_mode": normalized_memory["last_pedagogical_mode"],
@@ -347,6 +383,47 @@ def _apply_facet_guard(
         return (
             PedagogicalMode.REINFORCEMENT_CHECK,
             "A faceta dominante ja pode ser verificada por reconhecimento leve, sem recall intenso.",
+        )
+    return base_mode, None
+
+
+def _apply_trajectory_guard(
+    *,
+    base_mode: PedagogicalMode,
+    curriculum_role: str | None,
+    review_intensity: str | None,
+    trajectory: dict[str, object],
+    facet_profile: dict[str, object],
+) -> tuple[PedagogicalMode, str | None]:
+    state = str(trajectory.get("trajectory_state") or "")
+    dominant_facet = str(facet_profile.get("dominant_facet") or "")
+    if (
+        state == "transfer_fragile"
+        and dominant_facet in {"application", "contextual_transfer"}
+        and base_mode in {PedagogicalMode.REINFORCEMENT_CHECK, PedagogicalMode.RAPID_REVIEW}
+    ):
+        return (
+            PedagogicalMode.CONTEXTUAL_APPLICATION,
+            "A trajetoria mostra transferencia fragil; a aplicacao contextual nao deve relaxar cedo demais.",
+        )
+    if (
+        state == "reconstruction_fragile"
+        and base_mode in {PedagogicalMode.REINFORCEMENT_CHECK, PedagogicalMode.RAPID_REVIEW}
+    ):
+        return (
+            PedagogicalMode.CONCEPTUAL_REINFORCEMENT,
+            "A trajetoria ainda mostra reconstrucao fragil; o suporte conceitual foi mantido por mais tempo.",
+        )
+    if (
+        state == "superficially_stable"
+        and dominant_facet == "recognition"
+        and base_mode == PedagogicalMode.REINFORCEMENT_CHECK
+        and curriculum_role == "cumulative"
+        and review_intensity == "light"
+    ):
+        return (
+            PedagogicalMode.RAPID_REVIEW,
+            "A estabilidade parece superficial; a intervencao foi mantida levemente acima do minimo.",
         )
     return base_mode, None
 
@@ -586,6 +663,27 @@ def _normalize_facet_profile(facet_profile: dict[str, object] | object | None) -
         "transfer_signal": _clamp(normalized.get("transfer_signal", 0.0) or 0.0),
         "reconstruction_signal": _clamp(normalized.get("reconstruction_signal", 0.0) or 0.0),
         "recognition_signal": _clamp(normalized.get("recognition_signal", 0.0) or 0.0),
+    }
+
+
+def _normalize_trajectory_profile(trajectory_profile: dict[str, object] | object | None) -> dict[str, object]:
+    if hasattr(trajectory_profile, "model_dump"):
+        normalized = trajectory_profile.model_dump(mode="json")
+    elif isinstance(trajectory_profile, dict):
+        normalized = dict(trajectory_profile)
+    else:
+        normalized = {}
+    return {
+        "trajectory_state": str(normalized.get("trajectory_state") or normalized.get("cognitive_trajectory") or "emerging"),
+        "trajectory_reasoning": list(normalized.get("trajectory_reasoning", []) or []),
+        "consolidation_state": str(normalized.get("consolidation_state") or normalized.get("trajectory_state") or "emerging"),
+        "stabilization_quality": _clamp(normalized.get("stabilization_quality", 0.0) or 0.0),
+        "false_fluency_signal": _clamp(normalized.get("false_fluency_signal", 0.0) or 0.0),
+        "reconstruction_fragility": _clamp(normalized.get("reconstruction_fragility", 0.0) or 0.0),
+        "transfer_fragility": _clamp(normalized.get("transfer_fragility", 0.0) or 0.0),
+        "longitudinal_consistency": _clamp(normalized.get("longitudinal_consistency", 0.0) or 0.0),
+        "why_this_trajectory_now": str(normalized.get("why_this_trajectory_now") or ""),
+        "trajectory_support_reason": normalized.get("trajectory_support_reason"),
     }
 
 

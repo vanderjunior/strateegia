@@ -5,6 +5,7 @@ from math import ceil
 
 from app.domain.models import LearningPlanEntry, MicroTopic, StudyBlock, TopicNode
 from app.services.cognitive_facets import resolve_facet_profile
+from app.services.cognitive_trajectory import analyze_cognitive_trajectory
 from app.services.conceptual_relationships import (
     ConceptualRelationshipsLayer,
     build_relationship_signals,
@@ -54,7 +55,13 @@ def execute_study_block(block: StudyBlock) -> dict:
     )
     selected_microtopics = selection["selected_microtopics"]
     facet_profile = _resolve_facet_profile(selection)
-    pedagogical_profile = _resolve_pedagogical_profile(block, selection, facet_profile)
+    trajectory_profile = _resolve_trajectory_profile(block, selection, facet_profile)
+    pedagogical_profile = _resolve_pedagogical_profile(
+        block,
+        selection,
+        facet_profile,
+        trajectory_profile,
+    )
     pedagogical_metadata = _pedagogical_metadata(pedagogical_profile)
     micro_intervention = resolve_micro_intervention(
         block_type=block.type,
@@ -63,8 +70,10 @@ def execute_study_block(block: StudyBlock) -> dict:
         pedagogical_profile=pedagogical_profile,
         relationship_signal=selection.get("relationship_signal"),
         facet_profile=facet_profile,
+        trajectory_profile=trajectory_profile,
     )
     facet_metadata = _facet_metadata(facet_profile)
+    trajectory_metadata = _trajectory_metadata(trajectory_profile)
     micro_intervention_metadata = _micro_intervention_metadata(micro_intervention)
 
     if block.type == "summary":
@@ -84,6 +93,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **_selection_metadata(selection),
             **pedagogical_metadata,
             **facet_metadata,
+            **trajectory_metadata,
             **micro_intervention_metadata,
         }
     if block.type == "questions":
@@ -102,6 +112,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **_selection_metadata(selection),
             **pedagogical_metadata,
             **facet_metadata,
+            **trajectory_metadata,
             **micro_intervention_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
@@ -653,6 +664,7 @@ def _resolve_pedagogical_profile(
     block: StudyBlock,
     selection: dict[str, object],
     facet_profile,
+    trajectory_profile,
 ):
     selected_profiles = selection.get("selected_profiles", []) or []
     primary_profile = selected_profiles[0] if selected_profiles else {}
@@ -672,6 +684,7 @@ def _resolve_pedagogical_profile(
         pedagogical_memory=raw_pedagogical_memory,
         relationship_signal=selection.get("relationship_signal"),
         facet_profile=facet_profile,
+        trajectory_profile=trajectory_profile,
     )
 
 
@@ -691,6 +704,25 @@ def _resolve_facet_profile(selection: dict[str, object]):
     return resolve_facet_profile(
         primary_microtopic,
         relationship_signal=selection.get("relationship_signal"),
+    )
+
+
+def _resolve_trajectory_profile(
+    block: StudyBlock,
+    selection: dict[str, object],
+    facet_profile,
+):
+    selected_microtopics = selection.get("selected_microtopics", []) or []
+    primary_microtopic_id = selected_microtopics[0].id if selected_microtopics else None
+    raw_performance = {}
+    raw_pedagogical_memory = {}
+    if primary_microtopic_id:
+        raw_performance = dict((block.microtopic_performance or {}).get(primary_microtopic_id, {}) or {})
+        raw_pedagogical_memory = dict((block.pedagogical_memory or {}).get(primary_microtopic_id, {}) or {})
+    return analyze_cognitive_trajectory(
+        performance=raw_performance,
+        pedagogical_memory=raw_pedagogical_memory,
+        facet_profile=facet_profile,
     )
 
 
@@ -744,6 +776,22 @@ def _facet_metadata(profile) -> dict[str, object]:
         "recognition_signal": profile.recognition_signal,
         "why_this_facet_now": profile.why_this_facet_now,
         "facet_support_reason": profile.facet_support_reason,
+    }
+
+
+def _trajectory_metadata(profile) -> dict[str, object]:
+    return {
+        "cognitive_trajectory": profile.cognitive_trajectory,
+        "trajectory_state": profile.trajectory_state,
+        "trajectory_reasoning": profile.trajectory_reasoning,
+        "consolidation_state": profile.consolidation_state,
+        "stabilization_quality": profile.stabilization_quality,
+        "false_fluency_signal": profile.false_fluency_signal,
+        "reconstruction_fragility": profile.reconstruction_fragility,
+        "transfer_fragility": profile.transfer_fragility,
+        "longitudinal_consistency": profile.longitudinal_consistency,
+        "why_this_trajectory_now": profile.why_this_trajectory_now,
+        "trajectory_support_reason": profile.trajectory_support_reason,
     }
 
 

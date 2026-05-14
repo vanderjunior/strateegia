@@ -278,6 +278,36 @@ def test_contextual_transfer_facet_can_prevent_overly_light_mode():
     assert "facet_transfer" in profile.profile_breakdown
 
 
+def test_superficial_trajectory_avoids_premature_minimal_mode():
+    profile = resolve_pedagogical_profile(
+        curriculum_role="cumulative",
+        review_intensity="light",
+        weakness_signal=0.12,
+        resurfacing_signal=0.2,
+        performance=build_performance(consecutive_correct=3),
+        facet_profile={
+            "dominant_facet": "recognition",
+            "recognition_signal": 0.7,
+            "reconstruction_signal": 0.1,
+            "transfer_signal": 0.1,
+        },
+        trajectory_profile={
+            "trajectory_state": "superficially_stable",
+            "consolidation_state": "superficially_stable",
+            "stabilization_quality": 0.55,
+            "false_fluency_signal": 0.68,
+            "reconstruction_fragility": 0.2,
+            "transfer_fragility": 0.1,
+            "longitudinal_consistency": 0.42,
+            "trajectory_reasoning": ["Superficial."],
+            "why_this_trajectory_now": "Teste.",
+        },
+    )
+
+    assert profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}
+    assert "trajectory_false_fluency" in profile.profile_breakdown
+
+
 def test_pedagogical_profile_exposes_effectiveness_and_confidence_metadata():
     profile = resolve_pedagogical_profile(
         curriculum_role="active",

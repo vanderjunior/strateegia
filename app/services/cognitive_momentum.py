@@ -94,6 +94,7 @@ class CognitiveMomentumLayer:
         depth = str(block.get("explanation_depth") or "light")
         relationship_type = str(block.get("relationship_type") or "")
         conceptual_dimension = str(block.get("conceptual_dimension") or "")
+        trajectory_state = str(block.get("trajectory_state") or "")
         weight = {
             "guided_explanation": 0.78,
             "conceptual_reinforcement": 0.72,
@@ -107,6 +108,8 @@ class CognitiveMomentumLayer:
             weight += 0.08
         if conceptual_dimension in {"rule_exception", "definition_application"}:
             weight += 0.05
+        if trajectory_state in {"reconstruction_fragile", "transfer_fragile"}:
+            weight += 0.04
         return self._clamp(weight)
 
     def _abstraction_weight(self, block: dict) -> float:
@@ -127,6 +130,7 @@ class CognitiveMomentumLayer:
         micro_intervention = str(block.get("micro_intervention") or "")
         reconstruction_signal = float(block.get("reconstruction_signal", 0.0) or 0.0)
         recognition_signal = float(block.get("recognition_signal", 0.0) or 0.0)
+        false_fluency_signal = float(block.get("false_fluency_signal", 0.0) or 0.0)
         weight = {"high": 0.82, "medium": 0.5, "low": 0.18}.get(retrieval, 0.18)
         if mode == "active_recall":
             weight += 0.08
@@ -134,6 +138,7 @@ class CognitiveMomentumLayer:
             weight += 0.06
         weight += min(reconstruction_signal * 0.06, 0.04)
         weight += min(recognition_signal * 0.03, 0.02)
+        weight += min(false_fluency_signal * 0.05, 0.03)
         return self._clamp(weight)
 
     def _intervention_fatigue(self, window: list[dict]) -> float:
@@ -162,6 +167,7 @@ class CognitiveMomentumLayer:
         retention = float(block.get("longitudinal_retention", 0.0) or 0.0)
         stage = str(block.get("stabilization_stage") or "")
         mode = str(block.get("micro_intervention") or "")
+        stabilization_quality = float(block.get("stabilization_quality", 0.0) or 0.0)
         weight = retention * 0.72
         weight += {
             "resilient": 0.22,
@@ -170,6 +176,7 @@ class CognitiveMomentumLayer:
         }.get(stage, 0.0)
         if mode in {"confidence_check", "lightweight_retrieval"}:
             weight += 0.08
+        weight += min(stabilization_quality * 0.08, 0.06)
         return self._clamp(weight)
 
     def _resurfacing_weight(self, block: dict) -> float:
