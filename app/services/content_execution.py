@@ -9,6 +9,7 @@ from app.services.conceptual_relationships import (
     build_relationship_signals,
 )
 from app.services.learning_engine import compute_microtopic_priority
+from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
 from app.services.pedagogical_adapter import resolve_pedagogical_profile
 
@@ -53,6 +54,14 @@ def execute_study_block(block: StudyBlock) -> dict:
     selected_microtopics = selection["selected_microtopics"]
     pedagogical_profile = _resolve_pedagogical_profile(block, selection)
     pedagogical_metadata = _pedagogical_metadata(pedagogical_profile)
+    micro_intervention = resolve_micro_intervention(
+        block_type=block.type,
+        curriculum_role=block.curriculum_role,
+        review_intensity=block.review_intensity or selection.get("review_intensity"),
+        pedagogical_profile=pedagogical_profile,
+        relationship_signal=selection.get("relationship_signal"),
+    )
+    micro_intervention_metadata = _micro_intervention_metadata(micro_intervention)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -65,9 +74,11 @@ def execute_study_block(block: StudyBlock) -> dict:
                 depth,
                 selected_microtopics,
                 pedagogical_profile,
+                micro_intervention,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
+            **micro_intervention_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -79,9 +90,11 @@ def execute_study_block(block: StudyBlock) -> dict:
                 selected_microtopics,
                 quantity,
                 pedagogical_profile,
+                micro_intervention,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
+            **micro_intervention_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -117,9 +130,6 @@ def select_relevant_microtopics(
         }
 
     preferred_ids = set(selected_microtopic_ids or [])
-    if preferred_ids and limit == 1:
-        selected_ids = set(selected_microtopic_ids)
-        microtopics = [microtopic for microtopic in microtopics if microtopic.id in selected_ids] or microtopics
 
     performance_map = dict(microtopic_performance or {})
     pedagogical_memory_map = dict(pedagogical_memory or {})
@@ -284,7 +294,7 @@ def _build_microtopic_profile(
         max(float(normalized_relationship.get("support_signal", 0.0) or 0.0), 0.0),
         1.0,
     )
-    relationship_bonus = min(support_signal * 0.08 + prerequisite_signal * 0.05, 0.1)
+    relationship_bonus = min(support_signal * 0.14 + prerequisite_signal * 0.015, 0.1)
     preferred_bonus = 0.12 if preferred else 0.0
 
     selection_score = (
@@ -490,6 +500,7 @@ def _generate_summary_content(
     depth: str,
     microtopics: list[MicroTopic],
     pedagogical_profile,
+    micro_intervention,
 ) -> str:
     if not microtopics:
         return (
@@ -502,7 +513,7 @@ def _generate_summary_content(
     ]
 
     if pedagogical_profile.pedagogical_mode == "guided_explanation":
-        return (
+        content = (
             f"Resumo aprofundado de {topic_name}: "
             + " ".join(
                 f"{index + 1}. {section}" for index, section in enumerate(sections)
@@ -510,29 +521,35 @@ def _generate_summary_content(
             + " Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. "
             + "Exemplo de prova: identifique qual detalhe normativo altera o resultado."
         )
+        return _apply_intervention_to_summary(content, micro_intervention)
     if pedagogical_profile.pedagogical_mode == "contextual_application":
-        return (
+        content = (
             f"Resumo estruturado de {topic_name}: pontos de prova em contexto pratico. "
             + " ".join(sections)
             + " Priorize comparacoes entre cenarios e a condicao que muda a resposta."
         )
+        return _apply_intervention_to_summary(content, micro_intervention)
     if pedagogical_profile.pedagogical_mode == "active_recall":
-        return f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
+        content = f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
+        return _apply_intervention_to_summary(content, micro_intervention)
     if pedagogical_profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}:
-        return f"Visao rapida de {topic_name}: {sections[0]}"
+        content = f"Visao rapida de {topic_name}: {sections[0]}"
+        return _apply_intervention_to_summary(content, micro_intervention)
     if depth == "deep":
-        return (
+        content = (
             f"Resumo aprofundado de {topic_name}: "
             + " ".join(
                 f"{index + 1}. {section}" for index, section in enumerate(sections)
             )
             + " Exemplo de prova: compare a regra geral com a excecao aplicavel e identifique o detalhe que altera o resultado."
         )
+        return _apply_intervention_to_summary(content, micro_intervention)
     if depth == "medium":
-        return f"Resumo estruturado de {topic_name}: pontos de prova e focos especificos. " + " ".join(
+        content = f"Resumo estruturado de {topic_name}: pontos de prova e focos especificos. " + " ".join(
             sections
         )
-    return f"Visao rapida de {topic_name}: {sections[0]}"
+        return _apply_intervention_to_summary(content, micro_intervention)
+    return _apply_intervention_to_summary(f"Visao rapida de {topic_name}: {sections[0]}", micro_intervention)
 
 
 def _generate_questions(
@@ -540,6 +557,7 @@ def _generate_questions(
     microtopics: list[MicroTopic],
     quantity: int,
     pedagogical_profile,
+    micro_intervention,
 ) -> list[dict]:
     selected = microtopics or _fallback_microtopics(
         topic_id=topic_name.lower().replace(" ", "-"),
@@ -598,9 +616,9 @@ def _generate_questions(
             )
         questions.append(
             {
-                "statement": statement,
+                "statement": _apply_intervention_to_question_statement(statement, micro_intervention, index=index),
                 "answer": answer,
-                "explanation": explanation,
+                "explanation": _apply_intervention_to_question_explanation(explanation, micro_intervention, index=index),
                 "microtopic_id": microtopic.id,
             }
         )
@@ -663,6 +681,72 @@ def _pedagogical_metadata(profile) -> dict[str, object]:
         "intervention_history_summary": profile.intervention_history_summary,
         "adaptation_reasoning": profile.adaptation_reasoning,
     }
+
+
+def _micro_intervention_metadata(intervention) -> dict[str, object]:
+    return {
+        "micro_intervention": intervention.intervention_type,
+        "micro_intervention_reason": intervention.intervention_reason,
+        "cognitive_goal": intervention.cognitive_goal,
+        "retrieval_support_reason": intervention.retrieval_support_reason,
+        "conceptual_support_reason": intervention.conceptual_support_reason,
+        "intervention_transition": intervention.intervention_transition,
+        "why_this_intervention": intervention.why_this_intervention,
+        "local_cognitive_strategy": intervention.local_cognitive_strategy,
+        "intervention_signal": intervention.intervention_signal.model_dump(mode="json"),
+    }
+
+
+def _apply_intervention_to_summary(content: str, intervention) -> str:
+    prefix = {
+        "prerequisite_recall": "Ancora rapida: recupere a regra-base antes de prosseguir. ",
+        "exception_alignment": "Alinhamento de excecao: compare a ressalva com a regra-base antes do detalhe. ",
+        "confidence_check": "Cheque de confianca: confirme o nucleo sem reabrir explicacao longa. ",
+        "guided_reconstruction": "Reconstrucao guiada: refaca o encadeamento antes de memorizar a conclusao. ",
+        "lightweight_retrieval": "Recall leve: reative o ponto central com baixo custo cognitivo. ",
+        "cumulative_bridge": "Ponte cumulativa: conecte este reaparecimento ao que ja foi consolidado. ",
+        "semantic_reactivation": "Reativacao semantica: puxe a ideia central antes do detalhe. ",
+        "contrast_reconciliation": "Reconcilie o contraste local antes de fixar a resposta. ",
+        "rapid_anchor": "Ancora curta: fixe a palavra-chave antes da verificacao. ",
+        "verification_step": "Verificacao leve: cheque o detalhe decisivo antes de seguir. ",
+    }.get(intervention.intervention_type, "")
+    return prefix + content
+
+
+def _apply_intervention_to_question_statement(statement: str, intervention, *, index: int) -> str:
+    if index > 0:
+        return statement
+    prefix = {
+        "prerequisite_recall": "Ancora rapida: relembre a regra-base antes de julgar. ",
+        "exception_alignment": "Antes de julgar, alinhe excecao e regra-base. ",
+        "confidence_check": "Cheque de confianca: ",
+        "guided_reconstruction": "Reconstrua o raciocinio: ",
+        "lightweight_retrieval": "Recall leve: ",
+        "cumulative_bridge": "Ponte cumulativa: ",
+        "semantic_reactivation": "Reative a conexao central: ",
+        "contrast_reconciliation": "Compare com o ponto anterior: ",
+        "rapid_anchor": "Ancora curta: ",
+        "verification_step": "Verificacao rapida: ",
+    }.get(intervention.intervention_type, "")
+    return prefix + statement
+
+
+def _apply_intervention_to_question_explanation(explanation: str, intervention, *, index: int) -> str:
+    if index > 0:
+        return explanation
+    suffix = {
+        "prerequisite_recall": " A regra-base foi reativada para sustentar a aplicacao.",
+        "exception_alignment": " A conciliacao entre regra e excecao foi mantida de forma explicita.",
+        "confidence_check": " O objetivo aqui foi confirmar dominio com minima pressao adicional.",
+        "guided_reconstruction": " A explicacao foi mantida em formato de reconstrucao guiada.",
+        "lightweight_retrieval": " O bloco foi suavizado para preservar retencao com baixo atrito.",
+        "cumulative_bridge": " O recall foi conectado ao historico cumulativo do conceito.",
+        "semantic_reactivation": " A recuperacao buscou primeiro a ideia central do microtopico.",
+        "contrast_reconciliation": " O contraste local foi mantido para reconciliar diferencas proximas.",
+        "rapid_anchor": " Uma ancora curta foi usada para reduzir desorientacao conceitual.",
+        "verification_step": " O foco foi checar rapidamente o detalhe mais decisivo.",
+    }.get(intervention.intervention_type, "")
+    return explanation + suffix
 
 
 def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[str, object]:

@@ -56,6 +56,19 @@ class RelationshipType(str, Enum):
     CUMULATIVE_EXTENSION = "cumulative_extension"
 
 
+class MicroInterventionType(str, Enum):
+    RAPID_ANCHOR = "rapid_anchor"
+    PREREQUISITE_RECALL = "prerequisite_recall"
+    CONTRAST_RECONCILIATION = "contrast_reconciliation"
+    CONFIDENCE_CHECK = "confidence_check"
+    GUIDED_RECONSTRUCTION = "guided_reconstruction"
+    LIGHTWEIGHT_RETRIEVAL = "lightweight_retrieval"
+    EXCEPTION_ALIGNMENT = "exception_alignment"
+    CUMULATIVE_BRIDGE = "cumulative_bridge"
+    VERIFICATION_STEP = "verification_step"
+    SEMANTIC_REACTIVATION = "semantic_reactivation"
+
+
 class PedagogicalProfile(BaseModel):
     pedagogical_mode: str
     intervention_reason: str
@@ -185,6 +198,39 @@ class RelationshipSignal(BaseModel):
     reinforcement_reason: str | None = None
     semantic_continuity_reason: str | None = None
     why_this_before_that: str | None = None
+
+
+class InterventionContext(BaseModel):
+    block_type: str
+    curriculum_role: str
+    review_intensity: str
+    pedagogical_mode: str
+    explanation_depth: str
+    retrieval_intensity: str
+    stabilization_stage: str
+    longitudinal_retention: float = 0.0
+    intervention_fatigue: float = 0.0
+    relationship_type: str | None = None
+    prerequisite_signal: float = 0.0
+    conceptual_anchor: str | None = None
+
+
+class InterventionSignal(BaseModel):
+    support_strength: float = 0.0
+    retrieval_shift: float = 0.0
+    fatigue_mitigation: float = 0.0
+
+
+class MicroIntervention(BaseModel):
+    intervention_type: str
+    intervention_reason: str
+    cognitive_goal: str
+    retrieval_support_reason: str | None = None
+    conceptual_support_reason: str | None = None
+    intervention_transition: str | None = None
+    why_this_intervention: str
+    local_cognitive_strategy: str
+    intervention_signal: InterventionSignal = Field(default_factory=InterventionSignal)
 
 
 class Topic(BaseModel):

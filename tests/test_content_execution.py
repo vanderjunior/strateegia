@@ -195,6 +195,75 @@ def test_execute_study_block_questions_use_microtopics():
     assert payload["selected_microtopics"]
 
 
+def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
+    topic_node = build_topic_node(
+        title="RIPAM",
+        content=(
+            "Conceito: a regra define prioridade de passagem.\n\n"
+            "Aplicacao: em cruzamento, compare embarcacao a motor e a vela."
+        ),
+    )
+    extracted = MicroTopicExtractor().extract(topic_node)
+    application = next(microtopic for microtopic in extracted if microtopic.title == "Aplicacao")
+
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="ripam",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[application.id],
+        )
+    )
+
+    question = payload["questions"][0]
+
+    assert payload["micro_intervention"] == "prerequisite_recall"
+    assert "ancora" in question["statement"].lower() or "regra-base" in question["statement"].lower()
+
+
+def test_execute_study_block_uses_confidence_check_for_stable_question():
+    topic_node = build_topic_node(
+        title="Balizamento",
+        content="Conceito: referencia lateral.\n\nObservacao: prova confunde top marks.",
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="balizamento", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="balizamento",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            curriculum_role="cumulative",
+            review_intensity="light",
+            microtopic_performance={
+                target_id: build_microtopic_performance(
+                    total_questions=6,
+                    correct_answers=6,
+                    recent_errors=0,
+                    consecutive_correct=5,
+                )
+            },
+            pedagogical_memory={
+                target_id: build_pedagogical_memory(
+                    last_pedagogical_mode="reinforcement_check",
+                    recent_effectiveness="effective",
+                    stabilization_level=0.82,
+                    retrieval_success_trend=0.9,
+                    resurfacing_cycles=4,
+                    successful_resurfacing_cycles=4,
+                )
+            },
+        )
+    )
+
+    assert payload["micro_intervention"] == "confidence_check"
+    assert payload["local_cognitive_strategy"]
+
 def test_execute_study_block_summary_supports_prerequisite_before_application():
     topic_node = build_topic_node(
         title="RIPAM",

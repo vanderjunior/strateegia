@@ -162,7 +162,11 @@ class SessionNarrativeLayer:
             "contrast": "O bloco atual alterna para outro topico sem romper a coerencia do fluxo.",
         }
         default_reason = "O bloco atual preserva a progressao local da sessao."
-        return reasons.get(relation, default_reason)
+        base_reason = reasons.get(relation, default_reason)
+        micro_intervention = current.get("micro_intervention")
+        if micro_intervention:
+            return f"{base_reason} Micro-intervencao ativa: {micro_intervention}."
+        return base_reason
 
     def _comparison_reason(self, previous: dict, current: dict, relation: str) -> str | None:
         if relation != "contrast":
@@ -218,6 +222,11 @@ class SessionNarrativeLayer:
             return f"Este bloco aprofunda {anchor or self._anchor_label(current)} logo apos a base anterior."
         if relation == "continuation":
             return f"Este bloco continua a trilha local de {anchor or self._anchor_label(current)}."
+        if current.get("micro_intervention"):
+            return (
+                f"Este bloco segue a progressao local com {current.get('micro_intervention')} "
+                f"para modular o momento cognitivo em {anchor or self._anchor_label(current)}."
+            )
         return (
             f"Este bloco alterna para {self._anchor_label(current)} mantendo a progressao curricular apos "
             f"{self._anchor_label(previous)}."
