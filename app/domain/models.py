@@ -357,6 +357,19 @@ class SessionCoherenceDecision(BaseModel):
     why_this_transition_now: str
 
 
+class CognitiveCompressionProfile(BaseModel):
+    cognitive_compression_mode: str
+    compression_reasoning: list[str] = Field(default_factory=list)
+    informational_density: float = 0.0
+    contextual_support_level: float = 0.0
+    retrieval_compaction: float = 0.0
+    explanatory_expansion: float = 0.0
+    redundancy_adjustment: float = 0.0
+    prerequisite_support_signal: float = 0.0
+    compression_transition_reason: str | None = None
+    why_this_compression_now: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

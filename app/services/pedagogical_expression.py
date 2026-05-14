@@ -107,6 +107,22 @@ def expression_family(mode: str | None) -> str:
     }.get(mode, "neutral")
 
 
+def expression_compression_hint(mode: str | None) -> str:
+    mode = str(mode or "")
+    return {
+        "concise_reinforcement": "reinforcement_condensed",
+        "progressive_anchor": "guided_compact",
+        "contextual_bridge": "context_supported",
+        "retrieval_softener": "retrieval_focused",
+        "conceptual_clarifier": "guided_compact",
+        "transition_smoother": "guided_compact",
+        "pacing_relief": "stable_compressed",
+        "focused_reconstruction": "reconstruction_scaffolded",
+        "cumulative_reactivation": "cumulative_lightweight",
+        "stabilization_reassurance": "stable_compressed",
+    }.get(mode, "fully_explicit")
+
+
 def _readability_adjustment(mode: str) -> float:
     return {
         "conceptual_clarifier": 0.76,

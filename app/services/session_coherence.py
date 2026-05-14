@@ -133,6 +133,8 @@ class SessionCoherenceLayer:
             stability += 0.18
         if str(previous.get("micro_intervention") or "") == str(current.get("micro_intervention") or ""):
             stability += 0.08
+        if self._compression_family(previous) == self._compression_family(current):
+            stability += 0.08
         if abs(self._load(previous) - self._load(current)) <= 0.24:
             stability += 0.1
         return self._clamp(stability)
@@ -251,6 +253,16 @@ class SessionCoherenceLayer:
         if mode in {"active_recall", "rapid_review", "reinforcement_check"}:
             return "recall"
         return "generic"
+
+    def _compression_family(self, block: dict) -> str:
+        mode = str(block.get("cognitive_compression_mode") or "")
+        if mode in {"guided_compact", "stable_compressed", "reinforcement_condensed", "cumulative_lightweight"}:
+            return "compact"
+        if mode in {"prerequisite_supported", "transfer_expanded", "context_supported"}:
+            return "supported"
+        if mode in {"retrieval_focused", "reconstruction_scaffolded"}:
+            return "retrieval"
+        return "neutral"
 
     def _load(self, block: dict) -> float:
         return self._clamp(float(block.get("cognitive_load_score", 0.5) or 0.5))

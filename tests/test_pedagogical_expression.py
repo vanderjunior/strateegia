@@ -106,3 +106,11 @@ def test_expression_family_helper_is_stable():
     assert expression_family("conceptual_clarifier") == "clarity"
     assert expression_family("retrieval_softener") == "retrieval"
     assert expression_family("unknown") == "neutral"
+
+
+def test_expression_compression_hint_is_stable():
+    from app.services.pedagogical_expression import expression_compression_hint
+
+    assert expression_compression_hint("conceptual_clarifier") == "guided_compact"
+    assert expression_compression_hint("cumulative_reactivation") == "cumulative_lightweight"
+    assert expression_compression_hint("unknown") == "fully_explicit"

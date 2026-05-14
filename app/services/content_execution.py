@@ -10,6 +10,7 @@ from app.services.conceptual_relationships import (
     ConceptualRelationshipsLayer,
     build_relationship_signals,
 )
+from app.services.cognitive_compression import resolve_cognitive_compression
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
@@ -85,6 +86,15 @@ def execute_study_block(block: StudyBlock) -> dict:
         trajectory_profile,
     )
     expression_metadata = _expression_metadata(expression_profile)
+    compression_profile = _resolve_compression_profile(
+        block,
+        selection,
+        pedagogical_profile,
+        facet_profile,
+        trajectory_profile,
+        expression_profile,
+    )
+    compression_metadata = _compression_metadata(compression_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -100,6 +110,7 @@ def execute_study_block(block: StudyBlock) -> dict:
                 micro_intervention,
                 facet_profile,
                 expression_profile,
+                compression_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
@@ -107,6 +118,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **trajectory_metadata,
             **micro_intervention_metadata,
             **expression_metadata,
+            **compression_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -121,6 +133,7 @@ def execute_study_block(block: StudyBlock) -> dict:
                 micro_intervention,
                 facet_profile,
                 expression_profile,
+                compression_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
@@ -128,6 +141,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **trajectory_metadata,
             **micro_intervention_metadata,
             **expression_metadata,
+            **compression_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -536,14 +550,18 @@ def _generate_summary_content(
     micro_intervention,
     facet_profile,
     expression_profile,
+    compression_profile,
 ) -> str:
     if not microtopics:
         content = (
             f"Visao rapida de {topic_name}: regra central, palavra-chave e ponto de maior risco em prova."
         )
-        return _apply_expression_to_summary(
-            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-            expression_profile,
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
         )
 
     sections = [
@@ -560,9 +578,12 @@ def _generate_summary_content(
             + " Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. "
             + "Exemplo de prova: identifique qual detalhe normativo altera o resultado."
         )
-        return _apply_expression_to_summary(
-            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-            expression_profile,
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
         )
     if pedagogical_profile.pedagogical_mode == "contextual_application":
         content = (
@@ -570,21 +591,30 @@ def _generate_summary_content(
             + " ".join(sections)
             + " Priorize comparacoes entre cenarios e a condicao que muda a resposta."
         )
-        return _apply_expression_to_summary(
-            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-            expression_profile,
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
         )
     if pedagogical_profile.pedagogical_mode == "active_recall":
         content = f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
-        return _apply_expression_to_summary(
-            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-            expression_profile,
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
         )
     if pedagogical_profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}:
         content = f"Visao rapida de {topic_name}: {sections[0]}"
-        return _apply_expression_to_summary(
-            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-            expression_profile,
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
         )
     if depth == "deep":
         content = (
@@ -594,22 +624,34 @@ def _generate_summary_content(
             )
             + " Exemplo de prova: compare a regra geral com a excecao aplicavel e identifique o detalhe que altera o resultado."
         )
-        return _apply_intervention_to_summary(content, micro_intervention, facet_profile)
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
+        )
     if depth == "medium":
         content = f"Resumo estruturado de {topic_name}: pontos de prova e focos especificos. " + " ".join(
             sections
         )
-        return _apply_expression_to_summary(
-            _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-            expression_profile,
+        return _apply_compression_to_summary(
+            _apply_expression_to_summary(
+                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                expression_profile,
+            ),
+            compression_profile,
         )
-    return _apply_expression_to_summary(
-        _apply_intervention_to_summary(
-            f"Visao rapida de {topic_name}: {sections[0]}",
-            micro_intervention,
-            facet_profile,
+    return _apply_compression_to_summary(
+        _apply_expression_to_summary(
+            _apply_intervention_to_summary(
+                f"Visao rapida de {topic_name}: {sections[0]}",
+                micro_intervention,
+                facet_profile,
+            ),
+            expression_profile,
         ),
-        expression_profile,
+        compression_profile,
     )
 
 
@@ -621,6 +663,7 @@ def _generate_questions(
     micro_intervention,
     facet_profile,
     expression_profile,
+    compression_profile,
 ) -> list[dict]:
     selected = microtopics or _fallback_microtopics(
         topic_id=topic_name.lower().replace(" ", "-"),
@@ -684,6 +727,7 @@ def _generate_questions(
                     micro_intervention,
                     facet_profile,
                     expression_profile,
+                    compression_profile,
                     index=index,
                 ),
                 "answer": answer,
@@ -692,6 +736,7 @@ def _generate_questions(
                     micro_intervention,
                     facet_profile,
                     expression_profile,
+                    compression_profile,
                     index=index,
                 ),
                 "microtopic_id": microtopic.id,
@@ -793,6 +838,38 @@ def _resolve_expression_profile(
     )
 
 
+def _resolve_compression_profile(
+    block: StudyBlock,
+    selection: dict[str, object],
+    pedagogical_profile,
+    facet_profile,
+    trajectory_profile,
+    expression_profile,
+):
+    return resolve_cognitive_compression(
+        block_type=block.type,
+        pedagogical_mode=pedagogical_profile.pedagogical_mode,
+        curriculum_role=block.curriculum_role,
+        review_intensity=block.review_intensity or selection.get("review_intensity"),
+        relationship_signal=selection.get("relationship_signal"),
+        pedagogical_profile=pedagogical_profile,
+        facet_profile=facet_profile,
+        trajectory_profile=trajectory_profile,
+        expression_profile=expression_profile,
+        session_coherence={
+            "session_coherence_state": "stable_progression",
+            "progression_continuity": 0.68,
+        },
+        cognitive_momentum={
+            "cognitive_momentum": "retrieval_heavy"
+            if pedagogical_profile.retrieval_intensity == "high"
+            else "conceptually_dense"
+            if pedagogical_profile.cognitive_load == "high"
+            else "stable",
+        },
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -877,6 +954,21 @@ def _expression_metadata(profile) -> dict[str, object]:
     }
 
 
+def _compression_metadata(profile) -> dict[str, object]:
+    return {
+        "cognitive_compression_mode": profile.cognitive_compression_mode,
+        "compression_reasoning": profile.compression_reasoning,
+        "informational_density": profile.informational_density,
+        "contextual_support_level": profile.contextual_support_level,
+        "retrieval_compaction": profile.retrieval_compaction,
+        "explanatory_expansion": profile.explanatory_expansion,
+        "redundancy_adjustment": profile.redundancy_adjustment,
+        "prerequisite_support_signal": profile.prerequisite_support_signal,
+        "compression_transition_reason": profile.compression_transition_reason,
+        "why_this_compression_now": profile.why_this_compression_now,
+    }
+
+
 def _micro_intervention_metadata(intervention) -> dict[str, object]:
     return {
         "micro_intervention": intervention.intervention_type,
@@ -922,11 +1014,12 @@ def _apply_intervention_to_question_statement(
     intervention,
     facet_profile,
     expression_profile,
+    compression_profile,
     *,
     index: int,
 ) -> str:
     if index > 0:
-        return statement
+        return _apply_compression_to_question_statement(statement, compression_profile, index=index)
     prefix = {
         "prerequisite_recall": "Ancora rapida: relembre a regra-base antes de julgar. ",
         "exception_alignment": "Antes de julgar, alinhe excecao e regra-base. ",
@@ -945,7 +1038,11 @@ def _apply_intervention_to_question_statement(
         "contextual_transfer": "Transfira a regra entre contextos: ",
     }.get(getattr(facet_profile, "dominant_facet", None), "")
     text = prefix + facet_prefix + statement
-    return _apply_expression_to_question_statement(text, expression_profile, index=index)
+    return _apply_compression_to_question_statement(
+        _apply_expression_to_question_statement(text, expression_profile, index=index),
+        compression_profile,
+        index=index,
+    )
 
 
 def _apply_intervention_to_question_explanation(
@@ -953,11 +1050,12 @@ def _apply_intervention_to_question_explanation(
     intervention,
     facet_profile,
     expression_profile,
+    compression_profile,
     *,
     index: int,
 ) -> str:
     if index > 0:
-        return explanation
+        return _apply_compression_to_question_explanation(explanation, compression_profile, index=index)
     suffix = {
         "prerequisite_recall": " A regra-base foi reativada para sustentar a aplicacao.",
         "exception_alignment": " A conciliacao entre regra e excecao foi mantida de forma explicita.",
@@ -976,7 +1074,11 @@ def _apply_intervention_to_question_explanation(
         "contextual_transfer": " A checagem privilegiou transferencia entre contextos proximos.",
     }.get(getattr(facet_profile, "dominant_facet", None), "")
     text = explanation + suffix + facet_suffix
-    return _apply_expression_to_question_explanation(text, expression_profile, index=index)
+    return _apply_compression_to_question_explanation(
+        _apply_expression_to_question_explanation(text, expression_profile, index=index),
+        compression_profile,
+        index=index,
+    )
 
 
 def _apply_expression_to_summary(content: str, expression_profile) -> str:
@@ -997,6 +1099,31 @@ def _apply_expression_to_summary(content: str, expression_profile) -> str:
     return prefix + content
 
 
+def _apply_compression_to_summary(content: str, compression_profile) -> str:
+    mode = compression_profile.cognitive_compression_mode
+    prefix = {
+        "prerequisite_supported": "Base visivel: ",
+        "transfer_expanded": "Contexto de apoio: ",
+        "reconstruction_scaffolded": "Sequencia guiada: ",
+        "cumulative_lightweight": "Retomada leve: ",
+        "retrieval_focused": "Nucleo de recall: ",
+        "reinforcement_condensed": "Reforco enxuto: ",
+    }.get(mode, "")
+    if mode in {"stable_compressed", "reinforcement_condensed", "cumulative_lightweight", "guided_compact"}:
+        content = content.replace("Resumo aprofundado de", "Resumo de")
+        content = content.replace("Resumo estruturado de", "Resumo de")
+    if mode == "retrieval_focused":
+        content = content.replace("Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. ", "")
+        content = content.replace(" Priorize comparacoes entre cenarios e a condicao que muda a resposta.", "")
+    if mode == "reconstruction_scaffolded":
+        content += " Refaça primeiro a cadeia central antes de fixar o detalhe final."
+    if mode == "transfer_expanded":
+        content += " Mantenha o contexto comparativo visivel antes de transferir a regra."
+    if mode == "prerequisite_supported":
+        content += " Confirme a base normativa antes da aplicacao ou da excecao."
+    return prefix + content
+
+
 def _apply_expression_to_question_statement(statement: str, expression_profile, *, index: int) -> str:
     if index > 0:
         return statement
@@ -1011,6 +1138,20 @@ def _apply_expression_to_question_statement(statement: str, expression_profile, 
     return prefix + statement
 
 
+def _apply_compression_to_question_statement(statement: str, compression_profile, *, index: int) -> str:
+    if index > 0:
+        return statement
+    prefix = {
+        "prerequisite_supported": "Base primeiro: ",
+        "transfer_expanded": "Contexto visivel: ",
+        "reconstruction_scaffolded": "Passo a passo: ",
+        "cumulative_lightweight": "Revisita leve: ",
+        "retrieval_focused": "Nucleo: ",
+        "reinforcement_condensed": "Essencial: ",
+    }.get(compression_profile.cognitive_compression_mode, "")
+    return prefix + statement
+
+
 def _apply_expression_to_question_explanation(explanation: str, expression_profile, *, index: int) -> str:
     if index > 0:
         return explanation
@@ -1022,6 +1163,20 @@ def _apply_expression_to_question_explanation(explanation: str, expression_profi
         "cumulative_reactivation": " O reaparecimento foi mantido em framing leve e cumulativo.",
         "stabilization_reassurance": " O objetivo aqui foi confirmar estabilidade com formulacao enxuta.",
     }.get(expression_profile.pedagogical_expression_mode, "")
+    return explanation + suffix
+
+
+def _apply_compression_to_question_explanation(explanation: str, compression_profile, *, index: int) -> str:
+    if index > 0:
+        return explanation
+    suffix = {
+        "stable_compressed": " A explicacao foi compactada por estabilidade suficiente.",
+        "retrieval_focused": " A explicacao foi mantida curta para preservar o recall.",
+        "cumulative_lightweight": " A reapresentacao foi mantida leve por consolidacao previa.",
+        "reconstruction_scaffolded": " A explicacao reteve apoio extra para sustentar a reconstrucao.",
+        "transfer_expanded": " A explicacao reteve contexto extra para sustentar a transferencia.",
+        "prerequisite_supported": " A explicacao preservou a base previa como apoio explicito.",
+    }.get(compression_profile.cognitive_compression_mode, "")
     return explanation + suffix
 
 

@@ -192,6 +192,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "why_this_expression_now" in summary_block
     assert "session_coherence_state" in summary_block
     assert "coherence_reasoning" in summary_block
+    assert "cognitive_compression_mode" in summary_block
+    assert "why_this_compression_now" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -218,6 +220,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "continuity_support" in question_block
     assert "session_coherence_state" in question_block
     assert "progression_continuity" in question_block
+    assert "cognitive_compression_mode" in question_block
+    assert "informational_density" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

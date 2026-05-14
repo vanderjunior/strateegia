@@ -135,3 +135,33 @@ def test_session_coherence_preserves_order_and_bounded_signals():
         assert 0.0 <= block["progression_continuity"] <= 1.0
         assert 0.0 <= block["framing_stability"] <= 1.0
         assert 0.0 <= block["cognitive_rhythm"] <= 1.0
+
+
+def test_session_coherence_tolerates_compression_metadata():
+    blocks = [
+        build_block(
+            block_id="q1",
+            pedagogical_expression_mode="retrieval_softener",
+            micro_intervention="semantic_reactivation",
+        )
+        | {
+            "cognitive_compression_mode": "retrieval_focused",
+            "informational_density": 0.34,
+        },
+        build_block(
+            block_id="q2",
+            pedagogical_expression_mode="cumulative_reactivation",
+            curriculum_role="cumulative",
+            review_intensity="light",
+            narrative_relation="cumulative_resurfacing",
+            cognitive_load_score=0.28,
+        )
+        | {
+            "cognitive_compression_mode": "cumulative_lightweight",
+            "informational_density": 0.24,
+        },
+    ]
+
+    annotated = SessionCoherenceLayer().annotate(blocks)
+
+    assert annotated[1]["session_coherence_state"]

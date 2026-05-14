@@ -292,6 +292,29 @@ def test_execute_study_block_exposes_pedagogical_expression_metadata():
     assert "why_this_expression_now" in payload
 
 
+def test_execute_study_block_exposes_cognitive_compression_metadata():
+    topic_node = build_topic_node(
+        title="Aplicacao",
+        content=(
+            "Conceito: regra-base da prioridade.\n\n"
+            "Aplicacao: compare dois contextos e transfira a regra."
+        ),
+    )
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="aplicacao",
+            quantity=1,
+            topic_node=topic_node,
+        )
+    )
+
+    assert payload["cognitive_compression_mode"]
+    assert payload["compression_reasoning"]
+    assert "informational_density" in payload
+    assert "why_this_compression_now" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",
