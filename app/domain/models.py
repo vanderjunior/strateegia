@@ -345,6 +345,18 @@ class PedagogicalExpressionProfile(BaseModel):
     why_this_expression_now: str = ""
 
 
+class SessionCoherenceDecision(BaseModel):
+    session_coherence_state: str
+    coherence_reasoning: list[str] = Field(default_factory=list)
+    pacing_transition_reason: str
+    progression_continuity: float = 0.0
+    coherence_support_reason: str | None = None
+    framing_stability: float = 0.0
+    cognitive_rhythm: float = 0.0
+    continuity_smoothing_reason: str | None = None
+    why_this_transition_now: str
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

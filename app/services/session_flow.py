@@ -6,6 +6,7 @@ from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
 from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
+from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
 
@@ -87,6 +88,7 @@ class SessionManager:
         equilibrium = SessionEquilibriumLayer()
         narrative = SessionNarrativeLayer()
         momentum = CognitiveMomentumLayer()
+        coherence = SessionCoherenceLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -114,7 +116,8 @@ class SessionManager:
 
         runtime_blocks = equilibrium.balance(runtime_blocks)
         runtime_blocks = narrative.annotate(runtime_blocks)
-        return momentum.annotate(runtime_blocks)
+        runtime_blocks = momentum.annotate(runtime_blocks)
+        return coherence.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -235,6 +238,15 @@ class SessionManager:
             "cognitive_friction_reduction": executed.get("cognitive_friction_reduction"),
             "transition_support_reason": executed.get("transition_support_reason"),
             "why_this_expression_now": executed.get("why_this_expression_now"),
+            "session_coherence_state": executed.get("session_coherence_state"),
+            "coherence_reasoning": executed.get("coherence_reasoning"),
+            "pacing_transition_reason": executed.get("pacing_transition_reason"),
+            "progression_continuity": executed.get("progression_continuity"),
+            "coherence_support_reason": executed.get("coherence_support_reason"),
+            "framing_stability": executed.get("framing_stability"),
+            "cognitive_rhythm": executed.get("cognitive_rhythm"),
+            "continuity_smoothing_reason": executed.get("continuity_smoothing_reason"),
+            "why_this_transition_now": executed.get("why_this_transition_now"),
             "micro_intervention": executed.get("micro_intervention"),
             "micro_intervention_reason": executed.get("micro_intervention_reason"),
             "cognitive_goal": executed.get("cognitive_goal"),

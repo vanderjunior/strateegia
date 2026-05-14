@@ -91,6 +91,22 @@ def resolve_pedagogical_expression(
     )
 
 
+def expression_family(mode: str | None) -> str:
+    mode = str(mode or "")
+    return {
+        "concise_reinforcement": "reinforcement",
+        "progressive_anchor": "progression",
+        "contextual_bridge": "continuity",
+        "retrieval_softener": "retrieval",
+        "conceptual_clarifier": "clarity",
+        "transition_smoother": "continuity",
+        "pacing_relief": "relief",
+        "focused_reconstruction": "reconstruction",
+        "cumulative_reactivation": "cumulative",
+        "stabilization_reassurance": "stabilization",
+    }.get(mode, "neutral")
+
+
 def _readability_adjustment(mode: str) -> float:
     return {
         "conceptual_clarifier": 0.76,

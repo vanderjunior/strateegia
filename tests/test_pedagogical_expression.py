@@ -98,3 +98,11 @@ def test_expression_handles_missing_metadata():
     assert 0.0 <= expression.readability_adjustment <= 1.0
     assert 0.0 <= expression.pacing_adjustment <= 1.0
     assert 0.0 <= expression.cognitive_friction_reduction <= 1.0
+
+
+def test_expression_family_helper_is_stable():
+    from app.services.pedagogical_expression import expression_family
+
+    assert expression_family("conceptual_clarifier") == "clarity"
+    assert expression_family("retrieval_softener") == "retrieval"
+    assert expression_family("unknown") == "neutral"

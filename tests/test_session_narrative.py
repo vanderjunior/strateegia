@@ -219,3 +219,34 @@ def test_session_narrative_uses_exception_relationship_as_local_contrast():
 
     assert annotated[1]["narrative_relation"] == "contrast"
     assert annotated[1]["comparison_reason"]
+
+
+def test_session_narrative_keeps_transition_reason_stable_for_local_progression():
+    blocks = [
+        build_block(
+            block_id="summary-a",
+            block_type="summary",
+            topic_id="topic-a",
+            topic_title="Topic A",
+            pedagogical_mode="guided_explanation",
+            microtopic_id=None,
+            question_index=0,
+        ),
+        build_block(
+            block_id="question-a",
+            topic_id="topic-a",
+            topic_title="Topic A",
+            pedagogical_mode="conceptual_reinforcement",
+            cognitive_load_score=0.6,
+            explanation_depth="medium",
+            retrieval_intensity="medium",
+            microtopic_id="mt-a",
+            question_index=0,
+        ) | {
+            "pedagogical_expression_mode": "progressive_anchor",
+        },
+    ]
+
+    annotated = SessionNarrativeLayer().annotate(blocks)
+
+    assert "Refino expressivo" in annotated[1]["transition_reason"]
