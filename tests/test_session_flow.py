@@ -210,6 +210,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "pedagogical_tuning_state" in summary_block
     assert "tuning_profile_summary" in summary_block
     assert "retrieval_tolerance" in summary_block
+    assert "validation_harness_state" in summary_block
+    assert "runtime_validation_summary" in summary_block
+    assert "validation_confidence" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -254,6 +257,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "pedagogical_tuning_state" in question_block
     assert "compression_conservatism" in question_block
     assert "why_this_tuning_profile" in question_block
+    assert "validation_harness_state" in question_block
+    assert "pedagogical_balance_signal" in question_block
+    assert "why_this_validation_state" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

@@ -530,6 +530,35 @@ def test_execute_study_block_exposes_pedagogical_tuning_profile():
     assert "why_this_tuning_profile" in payload
 
 
+def test_execute_study_block_exposes_validation_harness_metadata():
+    topic_node = build_topic_node(
+        title="Harness de Validacao",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="harness-validacao", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="harness-validacao",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["validation_harness_state"]
+    assert payload["validation_harness_reasoning"]
+    assert "retrieval_sustainability_signal" in payload
+    assert "runtime_validation_summary" in payload
+    assert "why_this_validation_state" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

@@ -13,6 +13,7 @@ from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
 from app.services.session_stability_metrics import SessionStabilityMetricsLayer
+from app.services.validation_harness import ValidationHarnessLayer
 from app.services.pedagogical_tuning_profiles import PedagogicalTuningProfilesLayer
 
 
@@ -99,6 +100,7 @@ class SessionManager:
         validation = PedagogicalValidationLayer()
         session_stability = SessionStabilityMetricsLayer()
         tuning_profiles = PedagogicalTuningProfilesLayer()
+        validation_harness = ValidationHarnessLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -132,7 +134,8 @@ class SessionManager:
         runtime_blocks = traceability.annotate(runtime_blocks)
         runtime_blocks = validation.annotate(runtime_blocks)
         runtime_blocks = session_stability.annotate(runtime_blocks)
-        return tuning_profiles.annotate(runtime_blocks)
+        runtime_blocks = tuning_profiles.annotate(runtime_blocks)
+        return validation_harness.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -355,6 +358,24 @@ class SessionManager:
             "modulation_density_tolerance": executed.get("modulation_density_tolerance"),
             "intervention_rotation_sensitivity": executed.get("intervention_rotation_sensitivity"),
             "why_this_tuning_profile": executed.get("why_this_tuning_profile"),
+            "validation_harness_state": executed.get("validation_harness_state"),
+            "validation_harness_reasoning": executed.get("validation_harness_reasoning"),
+            "retrieval_sustainability_signal": executed.get("retrieval_sustainability_signal"),
+            "scaffold_dependency_signal": executed.get("scaffold_dependency_signal"),
+            "reconstruction_sustainability_signal": executed.get("reconstruction_sustainability_signal"),
+            "transfer_stability_signal": executed.get("transfer_stability_signal"),
+            "resurfacing_effectiveness_signal": executed.get("resurfacing_effectiveness_signal"),
+            "stabilization_reliability_signal": executed.get("stabilization_reliability_signal"),
+            "compression_safety_signal": executed.get("compression_safety_signal"),
+            "continuity_sustainability_signal": executed.get("continuity_sustainability_signal"),
+            "pacing_sustainability_signal": executed.get("pacing_sustainability_signal"),
+            "cognitive_friction_signal": executed.get("cognitive_friction_signal"),
+            "adaptive_overlap_signal": executed.get("adaptive_overlap_signal"),
+            "pedagogical_balance_signal": executed.get("pedagogical_balance_signal"),
+            "validation_confidence": executed.get("validation_confidence"),
+            "runtime_validation_summary": executed.get("runtime_validation_summary"),
+            "evidence_alignment": executed.get("evidence_alignment"),
+            "why_this_validation_state": executed.get("why_this_validation_state"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

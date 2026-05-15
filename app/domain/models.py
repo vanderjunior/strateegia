@@ -483,6 +483,27 @@ class PedagogicalTuningProfile(BaseModel):
     why_this_tuning_profile: str = ""
 
 
+class ValidationHarnessProfile(BaseModel):
+    validation_harness_state: str
+    validation_harness_reasoning: list[str] = Field(default_factory=list)
+    retrieval_sustainability_signal: float = 0.0
+    scaffold_dependency_signal: float = 0.0
+    reconstruction_sustainability_signal: float = 0.0
+    transfer_stability_signal: float = 0.0
+    resurfacing_effectiveness_signal: float = 0.0
+    stabilization_reliability_signal: float = 0.0
+    compression_safety_signal: float = 0.0
+    continuity_sustainability_signal: float = 0.0
+    pacing_sustainability_signal: float = 0.0
+    cognitive_friction_signal: float = 0.0
+    adaptive_overlap_signal: float = 0.0
+    pedagogical_balance_signal: float = 0.0
+    validation_confidence: float = 0.0
+    runtime_validation_summary: str = ""
+    evidence_alignment: float = 0.0
+    why_this_validation_state: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

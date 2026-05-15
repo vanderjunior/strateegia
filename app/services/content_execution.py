@@ -17,6 +17,7 @@ from app.services.runtime_traceability import resolve_runtime_traceability
 from app.services.runtime_signal_normalization import normalize_runtime_signal_families
 from app.services.pedagogical_tuning_profiles import resolve_pedagogical_tuning_profile
 from app.services.session_stability_metrics import resolve_session_stability_metrics
+from app.services.validation_harness import resolve_validation_harness
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
@@ -177,6 +178,15 @@ def execute_study_block(block: StudyBlock) -> dict:
         session_stability_profile,
     )
     tuning_metadata = _pedagogical_tuning_metadata(tuning_profile)
+    validation_harness_profile = _resolve_validation_harness_profile(
+        block,
+        trajectory_profile,
+        observability_profile,
+        validation_profile,
+        session_stability_profile,
+        normalized_signal_profile,
+    )
+    validation_harness_metadata = _validation_harness_metadata(validation_harness_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -209,6 +219,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **normalized_signal_metadata,
             **session_stability_metadata,
             **tuning_metadata,
+            **validation_harness_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -240,6 +251,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **normalized_signal_metadata,
             **session_stability_metadata,
             **tuning_metadata,
+            **validation_harness_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1285,6 +1297,48 @@ def _resolve_pedagogical_tuning_profile(
     )
 
 
+def _resolve_validation_harness_profile(
+    block: StudyBlock,
+    trajectory_profile,
+    observability_profile,
+    validation_profile,
+    session_stability_profile,
+    normalized_signal_profile,
+):
+    return resolve_validation_harness(
+        [
+            {
+                "type": block.type,
+                "retrieval_effectiveness_signal": validation_profile.retrieval_effectiveness_signal,
+                "retrieval_pressure_accumulation": observability_profile.retrieval_pressure_accumulation,
+                "scaffold_dependency_signal": validation_profile.scaffold_dependency_signal,
+                "scaffold_density": observability_profile.scaffold_density,
+                "reconstruction_progress_signal": validation_profile.reconstruction_progress_signal,
+                "reconstruction_fragility": trajectory_profile.reconstruction_fragility,
+                "transfer_stability_signal": validation_profile.transfer_stability_signal,
+                "transfer_fragility": trajectory_profile.transfer_fragility,
+                "stabilization_quality_signal": validation_profile.stabilization_quality_signal,
+                "longitudinal_validation_signal": validation_profile.longitudinal_validation_signal,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "continuity_smoothness_metric": session_stability_profile.continuity_smoothness_metric,
+                "pacing_stability_metric": session_stability_profile.pacing_stability_metric,
+                "cognitive_balance_metric": session_stability_profile.cognitive_balance_metric,
+                "modulation_overlap": observability_profile.modulation_redundancy,
+                "signal_overlap_density": observability_profile.signal_overlap_density,
+                "support_density": session_stability_profile.support_density,
+                "intervention_repetition_signal": observability_profile.intervention_repetition_signal,
+                "pedagogical_validation_state": validation_profile.pedagogical_validation_state,
+                "session_stability_state": session_stability_profile.session_stability_state,
+                "retrieval_family": normalized_signal_profile.retrieval_family,
+                "support_family": normalized_signal_profile.support_family,
+                "continuity_family": normalized_signal_profile.continuity_family,
+                "stabilization_family": normalized_signal_profile.stabilization_family,
+                "overlap_family": normalized_signal_profile.overlap_family,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1508,6 +1562,29 @@ def _pedagogical_tuning_metadata(profile) -> dict[str, object]:
         "modulation_density_tolerance": profile.modulation_density_tolerance,
         "intervention_rotation_sensitivity": profile.intervention_rotation_sensitivity,
         "why_this_tuning_profile": profile.why_this_tuning_profile,
+    }
+
+
+def _validation_harness_metadata(profile) -> dict[str, object]:
+    return {
+        "validation_harness_state": profile.validation_harness_state,
+        "validation_harness_reasoning": profile.validation_harness_reasoning,
+        "retrieval_sustainability_signal": profile.retrieval_sustainability_signal,
+        "scaffold_dependency_signal": profile.scaffold_dependency_signal,
+        "reconstruction_sustainability_signal": profile.reconstruction_sustainability_signal,
+        "transfer_stability_signal": profile.transfer_stability_signal,
+        "resurfacing_effectiveness_signal": profile.resurfacing_effectiveness_signal,
+        "stabilization_reliability_signal": profile.stabilization_reliability_signal,
+        "compression_safety_signal": profile.compression_safety_signal,
+        "continuity_sustainability_signal": profile.continuity_sustainability_signal,
+        "pacing_sustainability_signal": profile.pacing_sustainability_signal,
+        "cognitive_friction_signal": profile.cognitive_friction_signal,
+        "adaptive_overlap_signal": profile.adaptive_overlap_signal,
+        "pedagogical_balance_signal": profile.pedagogical_balance_signal,
+        "validation_confidence": profile.validation_confidence,
+        "runtime_validation_summary": profile.runtime_validation_summary,
+        "evidence_alignment": profile.evidence_alignment,
+        "why_this_validation_state": profile.why_this_validation_state,
     }
 
 
