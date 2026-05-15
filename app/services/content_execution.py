@@ -14,6 +14,7 @@ from app.services.cognitive_compression import resolve_cognitive_compression
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
+from app.services.adaptive_signal_consolidation import resolve_adaptive_signal_consolidation
 from app.services.pedagogical_adapter import resolve_pedagogical_profile
 from app.services.pedagogical_expression import resolve_pedagogical_expression
 
@@ -95,6 +96,14 @@ def execute_study_block(block: StudyBlock) -> dict:
         expression_profile,
     )
     compression_metadata = _compression_metadata(compression_profile)
+    consolidation_profile = _resolve_adaptive_signal_consolidation_profile(
+        pedagogical_profile,
+        micro_intervention,
+        trajectory_profile,
+        expression_profile,
+        compression_profile,
+    )
+    consolidation_metadata = _adaptive_signal_consolidation_metadata(consolidation_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -111,6 +120,7 @@ def execute_study_block(block: StudyBlock) -> dict:
                 facet_profile,
                 expression_profile,
                 compression_profile,
+                consolidation_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
@@ -119,6 +129,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **micro_intervention_metadata,
             **expression_metadata,
             **compression_metadata,
+            **consolidation_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -134,6 +145,7 @@ def execute_study_block(block: StudyBlock) -> dict:
                 facet_profile,
                 expression_profile,
                 compression_profile,
+                consolidation_profile,
             ),
             **_selection_metadata(selection),
             **pedagogical_metadata,
@@ -142,6 +154,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **micro_intervention_metadata,
             **expression_metadata,
             **compression_metadata,
+            **consolidation_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -551,17 +564,21 @@ def _generate_summary_content(
     facet_profile,
     expression_profile,
     compression_profile,
+    consolidation_profile,
 ) -> str:
     if not microtopics:
         content = (
             f"Visao rapida de {topic_name}: regra central, palavra-chave e ponto de maior risco em prova."
         )
-        return _apply_compression_to_summary(
-            _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-                expression_profile,
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
             ),
-            compression_profile,
+            consolidation_profile,
         )
 
     sections = [
@@ -578,12 +595,15 @@ def _generate_summary_content(
             + " Compare a regra geral com a excecao aplicavel, destaque o contraste conceitual e observe o ponto que muda o julgamento. "
             + "Exemplo de prova: identifique qual detalhe normativo altera o resultado."
         )
-        return _apply_compression_to_summary(
-            _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-                expression_profile,
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
             ),
-            compression_profile,
+            consolidation_profile,
         )
     if pedagogical_profile.pedagogical_mode == "contextual_application":
         content = (
@@ -591,30 +611,39 @@ def _generate_summary_content(
             + " ".join(sections)
             + " Priorize comparacoes entre cenarios e a condicao que muda a resposta."
         )
-        return _apply_compression_to_summary(
-            _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-                expression_profile,
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
             ),
-            compression_profile,
+            consolidation_profile,
         )
     if pedagogical_profile.pedagogical_mode == "active_recall":
         content = f"Visao rapida de {topic_name}: relembre sem apoio total. " + " ".join(sections[: max(1, min(2, len(sections)))])
-        return _apply_compression_to_summary(
-            _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-                expression_profile,
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
             ),
-            compression_profile,
+            consolidation_profile,
         )
     if pedagogical_profile.pedagogical_mode in {"rapid_review", "reinforcement_check"}:
         content = f"Visao rapida de {topic_name}: {sections[0]}"
-        return _apply_compression_to_summary(
-            _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-                expression_profile,
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
             ),
-            compression_profile,
+            consolidation_profile,
         )
     if depth == "deep":
         content = (
@@ -624,34 +653,43 @@ def _generate_summary_content(
             )
             + " Exemplo de prova: compare a regra geral com a excecao aplicavel e identifique o detalhe que altera o resultado."
         )
-        return _apply_compression_to_summary(
-            _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
-                expression_profile,
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
             ),
-            compression_profile,
+            consolidation_profile,
         )
     if depth == "medium":
         content = f"Resumo estruturado de {topic_name}: pontos de prova e focos especificos. " + " ".join(
             sections
         )
-        return _apply_compression_to_summary(
+        return _apply_signal_consolidation_to_summary(
+            _apply_compression_to_summary(
+                _apply_expression_to_summary(
+                    _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                    expression_profile,
+                ),
+                compression_profile,
+            ),
+            consolidation_profile,
+        )
+    return _apply_signal_consolidation_to_summary(
+        _apply_compression_to_summary(
             _apply_expression_to_summary(
-                _apply_intervention_to_summary(content, micro_intervention, facet_profile),
+                _apply_intervention_to_summary(
+                    f"Visao rapida de {topic_name}: {sections[0]}",
+                    micro_intervention,
+                    facet_profile,
+                ),
                 expression_profile,
             ),
             compression_profile,
-        )
-    return _apply_compression_to_summary(
-        _apply_expression_to_summary(
-            _apply_intervention_to_summary(
-                f"Visao rapida de {topic_name}: {sections[0]}",
-                micro_intervention,
-                facet_profile,
-            ),
-            expression_profile,
         ),
-        compression_profile,
+        consolidation_profile,
     )
 
 
@@ -664,6 +702,7 @@ def _generate_questions(
     facet_profile,
     expression_profile,
     compression_profile,
+    consolidation_profile,
 ) -> list[dict]:
     selected = microtopics or _fallback_microtopics(
         topic_id=topic_name.lower().replace(" ", "-"),
@@ -728,6 +767,7 @@ def _generate_questions(
                     facet_profile,
                     expression_profile,
                     compression_profile,
+                    consolidation_profile,
                     index=index,
                 ),
                 "answer": answer,
@@ -737,6 +777,7 @@ def _generate_questions(
                     facet_profile,
                     expression_profile,
                     compression_profile,
+                    consolidation_profile,
                     index=index,
                 ),
                 "microtopic_id": microtopic.id,
@@ -870,6 +911,43 @@ def _resolve_compression_profile(
     )
 
 
+def _resolve_adaptive_signal_consolidation_profile(
+    pedagogical_profile,
+    micro_intervention,
+    trajectory_profile,
+    expression_profile,
+    compression_profile,
+):
+    return resolve_adaptive_signal_consolidation(
+        pedagogical_mode=pedagogical_profile.pedagogical_mode,
+        micro_intervention=micro_intervention.intervention_type,
+        cognitive_trajectory=trajectory_profile.trajectory_state,
+        cognitive_momentum="retrieval_heavy"
+        if pedagogical_profile.retrieval_intensity == "high"
+        else "conceptually_dense"
+        if pedagogical_profile.cognitive_load == "high"
+        else "balanced"
+        if trajectory_profile.longitudinal_consistency >= 0.55
+        else "stable",
+        session_coherence="stable_progression"
+        if trajectory_profile.longitudinal_consistency >= 0.5
+        else "pacing_fragile"
+        if trajectory_profile.reconstruction_fragility >= 0.6
+        else "continuity_stable",
+        compression_mode=compression_profile.cognitive_compression_mode,
+        expression_mode=expression_profile.pedagogical_expression_mode,
+        stabilization_state=pedagogical_profile.stabilization_stage,
+        retrieval_intensity=pedagogical_profile.retrieval_intensity,
+        cognitive_load_score=pedagogical_profile.cognitive_load_score,
+        informational_density=compression_profile.informational_density,
+        explanation_density=expression_profile.explanation_density,
+        reconstruction_fragility=trajectory_profile.reconstruction_fragility,
+        transfer_fragility=trajectory_profile.transfer_fragility,
+        longitudinal_retention=pedagogical_profile.longitudinal_retention,
+        progression_continuity=trajectory_profile.longitudinal_consistency,
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -969,6 +1047,21 @@ def _compression_metadata(profile) -> dict[str, object]:
     }
 
 
+def _adaptive_signal_consolidation_metadata(profile) -> dict[str, object]:
+    return {
+        "adaptive_signal_state": profile.adaptive_signal_state,
+        "consolidation_reasoning": profile.consolidation_reasoning,
+        "modulation_overlap": profile.modulation_overlap,
+        "reinforcement_convergence": profile.reinforcement_convergence,
+        "retrieval_pressure_balance": profile.retrieval_pressure_balance,
+        "reconstruction_support_balance": profile.reconstruction_support_balance,
+        "pacing_consolidation": profile.pacing_consolidation,
+        "stabilization_consolidation": profile.stabilization_consolidation,
+        "cognitive_signal_alignment": profile.cognitive_signal_alignment,
+        "why_this_consolidation_now": profile.why_this_consolidation_now,
+    }
+
+
 def _micro_intervention_metadata(intervention) -> dict[str, object]:
     return {
         "micro_intervention": intervention.intervention_type,
@@ -1015,11 +1108,16 @@ def _apply_intervention_to_question_statement(
     facet_profile,
     expression_profile,
     compression_profile,
+    consolidation_profile,
     *,
     index: int,
 ) -> str:
     if index > 0:
-        return _apply_compression_to_question_statement(statement, compression_profile, index=index)
+        return _apply_signal_consolidation_to_question_statement(
+            _apply_compression_to_question_statement(statement, compression_profile, index=index),
+            consolidation_profile,
+            index=index,
+        )
     prefix = {
         "prerequisite_recall": "Ancora rapida: relembre a regra-base antes de julgar. ",
         "exception_alignment": "Antes de julgar, alinhe excecao e regra-base. ",
@@ -1038,9 +1136,13 @@ def _apply_intervention_to_question_statement(
         "contextual_transfer": "Transfira a regra entre contextos: ",
     }.get(getattr(facet_profile, "dominant_facet", None), "")
     text = prefix + facet_prefix + statement
-    return _apply_compression_to_question_statement(
-        _apply_expression_to_question_statement(text, expression_profile, index=index),
-        compression_profile,
+    return _apply_signal_consolidation_to_question_statement(
+        _apply_compression_to_question_statement(
+            _apply_expression_to_question_statement(text, expression_profile, index=index),
+            compression_profile,
+            index=index,
+        ),
+        consolidation_profile,
         index=index,
     )
 
@@ -1051,11 +1153,16 @@ def _apply_intervention_to_question_explanation(
     facet_profile,
     expression_profile,
     compression_profile,
+    consolidation_profile,
     *,
     index: int,
 ) -> str:
     if index > 0:
-        return _apply_compression_to_question_explanation(explanation, compression_profile, index=index)
+        return _apply_signal_consolidation_to_question_explanation(
+            _apply_compression_to_question_explanation(explanation, compression_profile, index=index),
+            consolidation_profile,
+            index=index,
+        )
     suffix = {
         "prerequisite_recall": " A regra-base foi reativada para sustentar a aplicacao.",
         "exception_alignment": " A conciliacao entre regra e excecao foi mantida de forma explicita.",
@@ -1074,9 +1181,13 @@ def _apply_intervention_to_question_explanation(
         "contextual_transfer": " A checagem privilegiou transferencia entre contextos proximos.",
     }.get(getattr(facet_profile, "dominant_facet", None), "")
     text = explanation + suffix + facet_suffix
-    return _apply_compression_to_question_explanation(
-        _apply_expression_to_question_explanation(text, expression_profile, index=index),
-        compression_profile,
+    return _apply_signal_consolidation_to_question_explanation(
+        _apply_compression_to_question_explanation(
+            _apply_expression_to_question_explanation(text, expression_profile, index=index),
+            compression_profile,
+            index=index,
+        ),
+        consolidation_profile,
         index=index,
     )
 
@@ -1124,6 +1235,10 @@ def _apply_compression_to_summary(content: str, compression_profile) -> str:
     return prefix + content
 
 
+def _apply_signal_consolidation_to_summary(content: str, consolidation_profile) -> str:
+    return _apply_signal_consolidation_to_text(content, consolidation_profile)
+
+
 def _apply_expression_to_question_statement(statement: str, expression_profile, *, index: int) -> str:
     if index > 0:
         return statement
@@ -1152,6 +1267,17 @@ def _apply_compression_to_question_statement(statement: str, compression_profile
     return prefix + statement
 
 
+def _apply_signal_consolidation_to_question_statement(
+    statement: str,
+    consolidation_profile,
+    *,
+    index: int,
+) -> str:
+    if index > 0:
+        return statement
+    return _apply_signal_consolidation_to_text(statement, consolidation_profile)
+
+
 def _apply_expression_to_question_explanation(explanation: str, expression_profile, *, index: int) -> str:
     if index > 0:
         return explanation
@@ -1178,6 +1304,78 @@ def _apply_compression_to_question_explanation(explanation: str, compression_pro
         "prerequisite_supported": " A explicacao preservou a base previa como apoio explicito.",
     }.get(compression_profile.cognitive_compression_mode, "")
     return explanation + suffix
+
+
+def _apply_signal_consolidation_to_question_explanation(
+    explanation: str,
+    consolidation_profile,
+    *,
+    index: int,
+) -> str:
+    if index > 0:
+        return explanation
+    return _apply_signal_consolidation_to_text(explanation, consolidation_profile)
+
+
+def _apply_signal_consolidation_to_text(text: str, consolidation_profile) -> str:
+    if consolidation_profile.adaptive_signal_state not in {
+        "retrieval_saturation",
+        "compressed_stability",
+        "reinforcement_overlap",
+        "modulation_stable",
+        "support_convergent",
+    }:
+        return text
+    max_prefixes = 2 if consolidation_profile.modulation_overlap >= 0.5 else 3
+    return _collapse_leading_prefixes(text, max_prefixes=max_prefixes)
+
+
+def _collapse_leading_prefixes(text: str, *, max_prefixes: int) -> str:
+    prefixes = [
+        "Reforco enxuto: ",
+        "Ponto-chave: ",
+        "Base visivel: ",
+        "Contexto de apoio: ",
+        "Sequencia guiada: ",
+        "Retomada leve: ",
+        "Nucleo de recall: ",
+        "Ancora rapida: ",
+        "Cheque de confianca: ",
+        "Recall leve: ",
+        "Ponte cumulativa: ",
+        "Reativacao semantica: ",
+        "Verificacao leve: ",
+        "Ancora curta: ",
+        "Em termos diretos: ",
+        "Antes de avancar: ",
+        "Leitura leve: ",
+        "Reconstrua em uma linha: ",
+        "Retome rapidamente: ",
+        "Confirmacao breve: ",
+        "Sem pressa: ",
+        "Siga a trilha: ",
+        "Leve o contexto anterior: ",
+        "Refaca a cadeia: ",
+        "Reative o ponto anterior: ",
+        "Cheque breve: ",
+        "Base primeiro: ",
+        "Contexto visivel: ",
+        "Passo a passo: ",
+        "Revisita leve: ",
+        "Nucleo: ",
+        "Essencial: ",
+    ]
+    remainder = text
+    captured: list[str] = []
+    while True:
+        matched = next((prefix for prefix in prefixes if remainder.startswith(prefix)), None)
+        if matched is None:
+            break
+        captured.append(matched)
+        remainder = remainder[len(matched) :]
+    if len(captured) <= max_prefixes:
+        return text
+    return "".join(captured[:max_prefixes]) + remainder
 
 
 def _normalize_pedagogical_memory(raw_memory: dict[str, object] | None) -> dict[str, object]:

@@ -370,6 +370,19 @@ class CognitiveCompressionProfile(BaseModel):
     why_this_compression_now: str = ""
 
 
+class AdaptiveSignalConsolidationProfile(BaseModel):
+    adaptive_signal_state: str
+    consolidation_reasoning: list[str] = Field(default_factory=list)
+    modulation_overlap: float = 0.0
+    reinforcement_convergence: float = 0.0
+    retrieval_pressure_balance: float = 0.0
+    reconstruction_support_balance: float = 0.0
+    pacing_consolidation: float = 0.0
+    stabilization_consolidation: float = 0.0
+    cognitive_signal_alignment: float = 0.0
+    why_this_consolidation_now: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

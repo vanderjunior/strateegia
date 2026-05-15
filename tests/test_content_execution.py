@@ -315,6 +315,47 @@ def test_execute_study_block_exposes_cognitive_compression_metadata():
     assert "why_this_compression_now" in payload
 
 
+def test_execute_study_block_exposes_adaptive_signal_consolidation_metadata():
+    topic_node = build_topic_node(
+        title="Reconstrucao",
+        content=(
+            "Regra: confirme a sequencia central.\n\n"
+            "Aplicacao: leve a regra ao caso concreto com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="reconstrucao", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="reconstrucao",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+            microtopic_performance={
+                target_id: build_microtopic_performance(
+                    recent_errors=2,
+                    consecutive_incorrect=2,
+                )
+            },
+            pedagogical_memory={
+                target_id: build_pedagogical_memory(
+                    recent_effectiveness="ineffective",
+                    escalation_level=0.4,
+                    retrieval_success_trend=0.32,
+                )
+            },
+        )
+    )
+
+    assert payload["adaptive_signal_state"]
+    assert payload["consolidation_reasoning"]
+    assert "modulation_overlap" in payload
+    assert "why_this_consolidation_now" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",
