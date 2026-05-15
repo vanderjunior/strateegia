@@ -70,6 +70,10 @@ def test_inspection_endpoint_returns_fallback_when_no_runtime_exists(tmp_path):
     assert payload["inspection_available"] is False
     assert payload["benchmark_summary"]["pedagogical_benchmark_state"] == "not_available"
     assert payload["benchmark_case_reports"] == []
+    assert payload["controlled_tuning_registry"]["tuning_experiment_registry_state"] in {
+        "registry_ready",
+        "registry_empty",
+    }
 
 
 def test_inspection_page_is_served_successfully(tmp_path):
@@ -117,6 +121,7 @@ def test_inspection_endpoint_returns_benchmark_and_validation_payload(tmp_path):
     assert payload["scientific_runtime_validation"]["scientific_validation_state"]
     assert payload["stability_metrics"]["session_stability_state"]
     assert payload["validation_dataset_awareness"]["validation_dataset_state"]
+    assert payload["controlled_tuning_registry"]["total_experiments"] >= 1
 
 
 def test_inspection_endpoint_is_deterministic_for_same_runtime_state(tmp_path):

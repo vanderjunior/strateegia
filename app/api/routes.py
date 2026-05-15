@@ -12,6 +12,9 @@ from app.api.schemas import (
 )
 from app.domain.models import AnswerSubmission, BoardStyle
 from app.repositories.json_store import JsonStudyRepository
+from app.services.controlled_tuning_experiments import (
+    build_controlled_tuning_experiment_registry,
+)
 from app.services.learning_engine import LearningDecisionEngine
 from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
@@ -63,6 +66,7 @@ def _inspection_defaults() -> dict[str, object]:
         "session_export_debug": {},
         "stability_metrics": {},
         "validation_dataset_awareness": {},
+        "controlled_tuning_registry": build_controlled_tuning_experiment_registry().model_dump(mode="json"),
         "raw_runtime_block": {},
     }
 

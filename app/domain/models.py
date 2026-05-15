@@ -792,6 +792,54 @@ class PedagogicalBenchmarkResult(BaseModel):
     why_this_benchmark_result: str = ""
 
 
+class ControlledTuningDimension(BaseModel):
+    dimension_id: str
+    current_reference: str = ""
+    hypothetical_direction: str = ""
+    rationale: str = ""
+
+
+class ControlledTuningHypothesis(BaseModel):
+    hypothesis_id: str
+    statement: str
+    expected_directional_effects: list[str] = Field(default_factory=list)
+    relevant_benchmark_cases: list[str] = Field(default_factory=list)
+
+
+class ControlledTuningProfile(BaseModel):
+    profile_id: str
+    profile_name: str
+    tuning_dimensions: list[ControlledTuningDimension] = Field(default_factory=list)
+
+
+class ControlledTuningExperiment(BaseModel):
+    experiment_id: str
+    experiment_name: str
+    experiment_category: str
+    experiment_description: str = ""
+    tuning_dimensions: list[ControlledTuningDimension] = Field(default_factory=list)
+    hypothesis: ControlledTuningHypothesis
+    expected_directional_effects: list[str] = Field(default_factory=list)
+    relevant_benchmark_cases: list[str] = Field(default_factory=list)
+    risk_level: str = "low"
+    read_only: bool = True
+    executable: bool = False
+    experiment_reasoning: list[str] = Field(default_factory=list)
+
+
+class ControlledTuningExperimentRegistry(BaseModel):
+    tuning_experiment_registry_state: str
+    tuning_experiment_registry_summary: str = ""
+    tuning_experiments: list[ControlledTuningExperiment] = Field(default_factory=list)
+    total_experiments: int = 0
+    read_only_experiments: int = 0
+    executable_experiments: int = 0
+    experiment_categories: list[str] = Field(default_factory=list)
+    benchmark_case_coverage: dict[str, list[str]] = Field(default_factory=dict)
+    experiment_risk_summary: dict[str, int] = Field(default_factory=dict)
+    why_this_registry_state: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""

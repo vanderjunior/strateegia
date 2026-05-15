@@ -91,6 +91,7 @@ function renderPayload(payload) {
   renderKv("comparative-analytics", payload.comparative_session_analytics);
   renderKv("dataset-awareness", payload.validation_dataset_awareness);
   renderKv("session-export-debug", payload.session_export_debug);
+  renderKv("controlled-tuning-registry", payload.controlled_tuning_registry);
   document.getElementById("raw-json").textContent = JSON.stringify(payload, null, 2);
 }
 
