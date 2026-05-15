@@ -12,7 +12,10 @@ from app.services.conceptual_relationships import (
 )
 from app.services.cognitive_compression import resolve_cognitive_compression
 from app.services.pedagogical_observability import resolve_pedagogical_observability
+from app.services.pedagogical_validation import resolve_pedagogical_validation
 from app.services.runtime_traceability import resolve_runtime_traceability
+from app.services.runtime_signal_normalization import normalize_runtime_signal_families
+from app.services.session_stability_metrics import resolve_session_stability_metrics
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
@@ -127,6 +130,42 @@ def execute_study_block(block: StudyBlock) -> dict:
         observability_profile,
     )
     traceability_metadata = _runtime_traceability_metadata(traceability_profile)
+    validation_profile = _resolve_pedagogical_validation_profile(
+        block,
+        pedagogical_profile,
+        micro_intervention,
+        trajectory_profile,
+        expression_profile,
+        compression_profile,
+        consolidation_profile,
+        observability_profile,
+        traceability_profile,
+    )
+    validation_metadata = _pedagogical_validation_metadata(validation_profile)
+    normalized_signal_profile = _resolve_runtime_signal_normalization_profile(
+        pedagogical_profile,
+        micro_intervention,
+        trajectory_profile,
+        expression_profile,
+        compression_profile,
+        consolidation_profile,
+        observability_profile,
+        traceability_profile,
+        validation_profile,
+    )
+    normalized_signal_metadata = _runtime_signal_normalization_metadata(normalized_signal_profile)
+    session_stability_profile = _resolve_session_stability_metrics_profile(
+        block,
+        pedagogical_profile,
+        trajectory_profile,
+        expression_profile,
+        compression_profile,
+        consolidation_profile,
+        observability_profile,
+        validation_profile,
+        normalized_signal_profile,
+    )
+    session_stability_metadata = _session_stability_metrics_metadata(session_stability_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -155,6 +194,9 @@ def execute_study_block(block: StudyBlock) -> dict:
             **consolidation_metadata,
             **observability_metadata,
             **traceability_metadata,
+            **validation_metadata,
+            **normalized_signal_metadata,
+            **session_stability_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -182,6 +224,9 @@ def execute_study_block(block: StudyBlock) -> dict:
             **consolidation_metadata,
             **observability_metadata,
             **traceability_metadata,
+            **validation_metadata,
+            **normalized_signal_metadata,
+            **session_stability_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1060,6 +1105,136 @@ def _resolve_runtime_traceability_profile(
     )
 
 
+def _resolve_pedagogical_validation_profile(
+    block: StudyBlock,
+    pedagogical_profile,
+    micro_intervention,
+    trajectory_profile,
+    expression_profile,
+    compression_profile,
+    consolidation_profile,
+    observability_profile,
+    traceability_profile,
+):
+    return resolve_pedagogical_validation(
+        current_block={
+            "type": block.type,
+            "trajectory_state": trajectory_profile.trajectory_state,
+            "stabilization_stage": pedagogical_profile.stabilization_stage,
+            "retrieval_intensity": pedagogical_profile.retrieval_intensity,
+            "cognitive_momentum": "retrieval_heavy"
+            if pedagogical_profile.retrieval_intensity == "high"
+            else "conceptually_dense"
+            if pedagogical_profile.cognitive_load == "high"
+            else "balanced",
+            "session_coherence_state": "stable_progression"
+            if trajectory_profile.longitudinal_consistency >= 0.5
+            else "pacing_fragile",
+            "pedagogical_expression_mode": expression_profile.pedagogical_expression_mode,
+            "cognitive_compression_mode": compression_profile.cognitive_compression_mode,
+            "micro_intervention": micro_intervention.intervention_type,
+            "adaptive_signal_state": consolidation_profile.adaptive_signal_state,
+            "pedagogical_observability_state": observability_profile.pedagogical_observability_state,
+            "runtime_trace_state": traceability_profile.runtime_trace_state,
+            "longitudinal_retention": pedagogical_profile.longitudinal_retention,
+            "longitudinal_consistency": trajectory_profile.longitudinal_consistency,
+            "stabilization_quality": trajectory_profile.stabilization_quality,
+            "false_fluency_signal": trajectory_profile.false_fluency_signal,
+            "reconstruction_fragility": trajectory_profile.reconstruction_fragility,
+            "transfer_fragility": trajectory_profile.transfer_fragility,
+            "scaffold_density": observability_profile.scaffold_density,
+            "signal_overlap_density": observability_profile.signal_overlap_density,
+            "retrieval_pressure_accumulation": observability_profile.retrieval_pressure_accumulation,
+            "modulation_overlap": consolidation_profile.modulation_overlap,
+            "reinforcement_convergence": consolidation_profile.reinforcement_convergence,
+            "explanatory_expansion": compression_profile.explanatory_expansion,
+        },
+        recent_blocks=[],
+    )
+
+
+def _resolve_runtime_signal_normalization_profile(
+    pedagogical_profile,
+    micro_intervention,
+    trajectory_profile,
+    expression_profile,
+    compression_profile,
+    consolidation_profile,
+    observability_profile,
+    traceability_profile,
+    validation_profile,
+):
+    return normalize_runtime_signal_families(
+        {
+            "retrieval_intensity": pedagogical_profile.retrieval_intensity,
+            "cognitive_momentum": "retrieval_heavy"
+            if pedagogical_profile.retrieval_intensity == "high"
+            else "conceptually_dense"
+            if pedagogical_profile.cognitive_load == "high"
+            else "balanced",
+            "pedagogical_expression_mode": expression_profile.pedagogical_expression_mode,
+            "cognitive_compression_mode": compression_profile.cognitive_compression_mode,
+            "adaptive_signal_state": consolidation_profile.adaptive_signal_state,
+            "pedagogical_observability_state": observability_profile.pedagogical_observability_state,
+            "runtime_trace_state": traceability_profile.runtime_trace_state,
+            "session_coherence_state": "stable_progression"
+            if trajectory_profile.longitudinal_consistency >= 0.5
+            else "pacing_fragile",
+            "trajectory_state": trajectory_profile.trajectory_state,
+            "stabilization_stage": pedagogical_profile.stabilization_stage,
+            "modulation_overlap": consolidation_profile.modulation_overlap,
+            "signal_overlap_density": observability_profile.signal_overlap_density,
+            "scaffold_density": observability_profile.scaffold_density,
+            "retrieval_pressure_accumulation": observability_profile.retrieval_pressure_accumulation,
+            "longitudinal_retention": pedagogical_profile.longitudinal_retention,
+            "pedagogical_validation_state": validation_profile.pedagogical_validation_state,
+        }
+    )
+
+
+def _resolve_session_stability_metrics_profile(
+    block: StudyBlock,
+    pedagogical_profile,
+    trajectory_profile,
+    expression_profile,
+    compression_profile,
+    consolidation_profile,
+    observability_profile,
+    validation_profile,
+    normalized_signal_profile,
+):
+    return resolve_session_stability_metrics(
+        [
+            {
+                "type": block.type,
+                "retrieval_pressure_accumulation": observability_profile.retrieval_pressure_accumulation,
+                "scaffold_density": observability_profile.scaffold_density,
+                "continuity_stability": observability_profile.continuity_stability,
+                "progression_continuity": trajectory_profile.longitudinal_consistency,
+                "reconstruction_fragility": trajectory_profile.reconstruction_fragility,
+                "compression_support_alignment": observability_profile.compression_support_alignment,
+                "stabilization_quality": trajectory_profile.stabilization_quality,
+                "stabilization_quality_signal": validation_profile.stabilization_quality_signal,
+                "longitudinal_validation_signal": validation_profile.longitudinal_validation_signal,
+                "longitudinal_consistency": trajectory_profile.longitudinal_consistency,
+                "modulation_overlap": consolidation_profile.modulation_overlap,
+                "signal_overlap_density": observability_profile.signal_overlap_density,
+                "retrieval_effectiveness_signal": validation_profile.retrieval_effectiveness_signal,
+                "pacing_adjustment": expression_profile.pacing_adjustment,
+                "false_fluency_risk": validation_profile.false_fluency_risk,
+                "retrieval_family": normalized_signal_profile.retrieval_family,
+                "support_family": normalized_signal_profile.support_family,
+                "continuity_family": normalized_signal_profile.continuity_family,
+                "stabilization_family": normalized_signal_profile.stabilization_family,
+                "overlap_family": normalized_signal_profile.overlap_family,
+                "pedagogical_observability_state": observability_profile.pedagogical_observability_state,
+                "runtime_trace_state": "runtime_balanced",
+                "pedagogical_validation_state": validation_profile.pedagogical_validation_state,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1213,6 +1388,57 @@ def _runtime_traceability_metadata(profile) -> dict[str, object]:
         "modulation_trace": profile.modulation_trace,
         "trace_alignment": profile.trace_alignment,
         "why_this_trace_now": profile.why_this_trace_now,
+    }
+
+
+def _pedagogical_validation_metadata(profile) -> dict[str, object]:
+    return {
+        "pedagogical_validation_state": profile.pedagogical_validation_state,
+        "learning_effect_profile": profile.learning_effect_profile,
+        "validation_reasoning": profile.validation_reasoning,
+        "retrieval_effectiveness_signal": profile.retrieval_effectiveness_signal,
+        "stabilization_quality_signal": profile.stabilization_quality_signal,
+        "false_fluency_risk": profile.false_fluency_risk,
+        "scaffold_dependency_signal": profile.scaffold_dependency_signal,
+        "transfer_stability_signal": profile.transfer_stability_signal,
+        "reconstruction_progress_signal": profile.reconstruction_progress_signal,
+        "adaptation_overlap_signal": profile.adaptation_overlap_signal,
+        "reinforcement_density_signal": profile.reinforcement_density_signal,
+        "longitudinal_validation_signal": profile.longitudinal_validation_signal,
+        "validation_alignment": profile.validation_alignment,
+        "why_this_validation_now": profile.why_this_validation_now,
+    }
+
+
+def _runtime_signal_normalization_metadata(profile) -> dict[str, object]:
+    return {
+        "retrieval_family": profile.retrieval_family,
+        "support_family": profile.support_family,
+        "continuity_family": profile.continuity_family,
+        "stabilization_family": profile.stabilization_family,
+        "overlap_family": profile.overlap_family,
+        "semantic_normalization_reasoning": profile.semantic_normalization_reasoning,
+        "runtime_semantic_summary": profile.runtime_semantic_summary,
+    }
+
+
+def _session_stability_metrics_metadata(profile) -> dict[str, object]:
+    return {
+        "session_stability_state": profile.session_stability_state,
+        "session_stability_reasoning": profile.session_stability_reasoning,
+        "retrieval_density_metric": profile.retrieval_density_metric,
+        "scaffold_load_metric": profile.scaffold_load_metric,
+        "continuity_smoothness_metric": profile.continuity_smoothness_metric,
+        "reconstruction_pressure_metric": profile.reconstruction_pressure_metric,
+        "compression_safety_metric": profile.compression_safety_metric,
+        "modulation_convergence_metric": profile.modulation_convergence_metric,
+        "stabilization_sustainability_metric": profile.stabilization_sustainability_metric,
+        "support_density": profile.support_density,
+        "pacing_stability_metric": profile.pacing_stability_metric,
+        "cognitive_balance_metric": profile.cognitive_balance_metric,
+        "session_pressure_summary": profile.session_pressure_summary,
+        "session_stability_summary": profile.session_stability_summary,
+        "why_this_session_state": profile.why_this_session_state,
     }
 
 

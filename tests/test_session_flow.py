@@ -200,6 +200,13 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "why_this_observation_now" in summary_block
     assert "runtime_trace_state" in summary_block
     assert "why_this_trace_now" in summary_block
+    assert "pedagogical_validation_state" in summary_block
+    assert "why_this_validation_now" in summary_block
+    assert "retrieval_family" in summary_block
+    assert "runtime_semantic_summary" in summary_block
+    assert "session_stability_state" in summary_block
+    assert "retrieval_density_metric" in summary_block
+    assert "session_stability_summary" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -234,6 +241,13 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "signal_overlap_density" in question_block
     assert "runtime_trace_state" in question_block
     assert "trace_alignment" in question_block
+    assert "pedagogical_validation_state" in question_block
+    assert "validation_alignment" in question_block
+    assert "retrieval_family" in question_block
+    assert "support_family" in question_block
+    assert "session_stability_state" in question_block
+    assert "modulation_convergence_metric" in question_block
+    assert "cognitive_balance_metric" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

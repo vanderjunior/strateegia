@@ -7,10 +7,12 @@ from app.services.content_execution import execute_study_block
 from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
 from app.services.pedagogical_observability import PedagogicalObservabilityLayer
+from app.services.pedagogical_validation import PedagogicalValidationLayer
 from app.services.runtime_traceability import RuntimeTraceabilityLayer
 from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
+from app.services.session_stability_metrics import SessionStabilityMetricsLayer
 
 
 class SessionManager:
@@ -93,6 +95,8 @@ class SessionManager:
         coherence = SessionCoherenceLayer()
         observability = PedagogicalObservabilityLayer()
         traceability = RuntimeTraceabilityLayer()
+        validation = PedagogicalValidationLayer()
+        session_stability = SessionStabilityMetricsLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -123,7 +127,9 @@ class SessionManager:
         runtime_blocks = momentum.annotate(runtime_blocks)
         runtime_blocks = coherence.annotate(runtime_blocks)
         runtime_blocks = observability.annotate(runtime_blocks)
-        return traceability.annotate(runtime_blocks)
+        runtime_blocks = traceability.annotate(runtime_blocks)
+        runtime_blocks = validation.annotate(runtime_blocks)
+        return session_stability.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -296,6 +302,42 @@ class SessionManager:
             "modulation_trace": executed.get("modulation_trace"),
             "trace_alignment": executed.get("trace_alignment"),
             "why_this_trace_now": executed.get("why_this_trace_now"),
+            "pedagogical_validation_state": executed.get("pedagogical_validation_state"),
+            "learning_effect_profile": executed.get("learning_effect_profile"),
+            "validation_reasoning": executed.get("validation_reasoning"),
+            "retrieval_effectiveness_signal": executed.get("retrieval_effectiveness_signal"),
+            "stabilization_quality_signal": executed.get("stabilization_quality_signal"),
+            "false_fluency_risk": executed.get("false_fluency_risk"),
+            "scaffold_dependency_signal": executed.get("scaffold_dependency_signal"),
+            "transfer_stability_signal": executed.get("transfer_stability_signal"),
+            "reconstruction_progress_signal": executed.get("reconstruction_progress_signal"),
+            "adaptation_overlap_signal": executed.get("adaptation_overlap_signal"),
+            "reinforcement_density_signal": executed.get("reinforcement_density_signal"),
+            "longitudinal_validation_signal": executed.get("longitudinal_validation_signal"),
+            "validation_alignment": executed.get("validation_alignment"),
+            "why_this_validation_now": executed.get("why_this_validation_now"),
+            "retrieval_family": executed.get("retrieval_family"),
+            "support_family": executed.get("support_family"),
+            "continuity_family": executed.get("continuity_family"),
+            "stabilization_family": executed.get("stabilization_family"),
+            "overlap_family": executed.get("overlap_family"),
+            "semantic_normalization_reasoning": executed.get("semantic_normalization_reasoning"),
+            "runtime_semantic_summary": executed.get("runtime_semantic_summary"),
+            "session_stability_state": executed.get("session_stability_state"),
+            "session_stability_reasoning": executed.get("session_stability_reasoning"),
+            "retrieval_density_metric": executed.get("retrieval_density_metric"),
+            "scaffold_load_metric": executed.get("scaffold_load_metric"),
+            "continuity_smoothness_metric": executed.get("continuity_smoothness_metric"),
+            "reconstruction_pressure_metric": executed.get("reconstruction_pressure_metric"),
+            "compression_safety_metric": executed.get("compression_safety_metric"),
+            "modulation_convergence_metric": executed.get("modulation_convergence_metric"),
+            "stabilization_sustainability_metric": executed.get("stabilization_sustainability_metric"),
+            "support_density": executed.get("support_density"),
+            "pacing_stability_metric": executed.get("pacing_stability_metric"),
+            "cognitive_balance_metric": executed.get("cognitive_balance_metric"),
+            "session_pressure_summary": executed.get("session_pressure_summary"),
+            "session_stability_summary": executed.get("session_stability_summary"),
+            "why_this_session_state": executed.get("why_this_session_state"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

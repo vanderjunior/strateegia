@@ -421,6 +421,51 @@ class RuntimeTraceProfile(BaseModel):
     why_this_trace_now: str = ""
 
 
+class PedagogicalValidationProfile(BaseModel):
+    pedagogical_validation_state: str
+    learning_effect_profile: str = ""
+    validation_reasoning: list[str] = Field(default_factory=list)
+    retrieval_effectiveness_signal: float = 0.0
+    stabilization_quality_signal: float = 0.0
+    false_fluency_risk: float = 0.0
+    scaffold_dependency_signal: float = 0.0
+    transfer_stability_signal: float = 0.0
+    reconstruction_progress_signal: float = 0.0
+    adaptation_overlap_signal: float = 0.0
+    reinforcement_density_signal: float = 0.0
+    longitudinal_validation_signal: float = 0.0
+    validation_alignment: float = 0.0
+    why_this_validation_now: str = ""
+
+
+class RuntimeSignalNormalizationProfile(BaseModel):
+    retrieval_family: str
+    support_family: str
+    continuity_family: str
+    stabilization_family: str
+    overlap_family: str
+    semantic_normalization_reasoning: list[str] = Field(default_factory=list)
+    runtime_semantic_summary: str = ""
+
+
+class SessionStabilityMetricsProfile(BaseModel):
+    session_stability_state: str
+    session_stability_reasoning: list[str] = Field(default_factory=list)
+    retrieval_density_metric: float = 0.0
+    scaffold_load_metric: float = 0.0
+    continuity_smoothness_metric: float = 0.0
+    reconstruction_pressure_metric: float = 0.0
+    compression_safety_metric: float = 0.0
+    modulation_convergence_metric: float = 0.0
+    stabilization_sustainability_metric: float = 0.0
+    support_density: float = 0.0
+    pacing_stability_metric: float = 0.0
+    cognitive_balance_metric: float = 0.0
+    session_pressure_summary: str = ""
+    session_stability_summary: str = ""
+    why_this_session_state: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

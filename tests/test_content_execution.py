@@ -413,6 +413,94 @@ def test_execute_study_block_exposes_runtime_traceability_metadata():
     assert "why_this_trace_now" in payload
 
 
+def test_execute_study_block_exposes_pedagogical_validation_metadata():
+    topic_node = build_topic_node(
+        title="Validacao",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="validacao", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="validacao",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["pedagogical_validation_state"]
+    assert payload["learning_effect_profile"]
+    assert payload["validation_reasoning"]
+    assert "validation_alignment" in payload
+    assert "why_this_validation_now" in payload
+
+
+def test_execute_study_block_exposes_normalized_signal_families():
+    topic_node = build_topic_node(
+        title="Normalizacao",
+        content=(
+            "Regra: confirme a base.\n\n"
+            "Aplicacao: leve a regra ao caso concreto."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="normalizacao", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="normalizacao",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["retrieval_family"]
+    assert payload["support_family"]
+    assert payload["continuity_family"]
+    assert payload["stabilization_family"]
+    assert payload["overlap_family"]
+    assert payload["runtime_semantic_summary"]
+
+
+def test_execute_study_block_exposes_session_stability_metrics():
+    topic_node = build_topic_node(
+        title="Metricas de Sessao",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="metricas-sessao", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="metricas-sessao",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["session_stability_state"]
+    assert payload["session_stability_reasoning"]
+    assert "retrieval_density_metric" in payload
+    assert "session_stability_summary" in payload
+    assert "why_this_session_state" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",
