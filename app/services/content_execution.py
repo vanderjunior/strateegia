@@ -12,6 +12,7 @@ from app.services.conceptual_relationships import (
 )
 from app.services.cognitive_compression import resolve_cognitive_compression
 from app.services.comparative_session_analytics import compare_session_analytics
+from app.services.empirical_validation_dataset import evaluate_empirical_validation_dataset
 from app.services.pedagogical_observability import resolve_pedagogical_observability
 from app.services.pedagogical_validation import resolve_pedagogical_validation
 from app.services.runtime_traceability import resolve_runtime_traceability
@@ -256,6 +257,18 @@ def execute_study_block(block: StudyBlock) -> dict:
     runtime_scenario_simulation_metadata = _runtime_scenario_simulation_metadata(
         runtime_scenario_simulation_profile
     )
+    empirical_validation_dataset_summary = _resolve_empirical_validation_dataset_summary(
+        block,
+        session_stability_profile,
+        validation_harness_profile,
+        validation_profile,
+        validation_dataset_awareness_profile,
+        scientific_runtime_validation_profile,
+        comparative_session_analytics_profile,
+    )
+    empirical_validation_dataset_metadata = _empirical_validation_dataset_metadata(
+        empirical_validation_dataset_summary
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -295,6 +308,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **scientific_runtime_validation_metadata,
             **comparative_session_analytics_metadata,
             **runtime_scenario_simulation_metadata,
+            **empirical_validation_dataset_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -333,6 +347,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **scientific_runtime_validation_metadata,
             **comparative_session_analytics_metadata,
             **runtime_scenario_simulation_metadata,
+            **empirical_validation_dataset_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1694,6 +1709,45 @@ def _resolve_runtime_scenario_simulation_profile(
     )
 
 
+def _resolve_empirical_validation_dataset_summary(
+    block: StudyBlock,
+    session_stability_profile,
+    validation_harness_profile,
+    validation_profile,
+    validation_dataset_awareness_profile,
+    scientific_runtime_validation_profile,
+    comparative_session_analytics_profile,
+):
+    return evaluate_empirical_validation_dataset(
+        [
+            {
+                "type": block.type,
+                "topic_id": block.topic_id,
+                "retrieval_density_metric": session_stability_profile.retrieval_density_metric,
+                "scaffold_load_metric": session_stability_profile.scaffold_load_metric,
+                "continuity_smoothness_metric": session_stability_profile.continuity_smoothness_metric,
+                "reconstruction_pressure_metric": session_stability_profile.reconstruction_pressure_metric,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "stabilization_sustainability_metric": session_stability_profile.stabilization_sustainability_metric,
+                "pacing_stability_metric": session_stability_profile.pacing_stability_metric,
+                "cognitive_balance_metric": session_stability_profile.cognitive_balance_metric,
+                "support_density": session_stability_profile.support_density,
+                "adaptive_overlap_signal": validation_harness_profile.adaptive_overlap_signal,
+                "validation_confidence": validation_harness_profile.validation_confidence,
+                "false_fluency_risk": validation_profile.false_fluency_risk,
+                "scaffold_dependency_signal": validation_profile.scaffold_dependency_signal,
+                "resurfacing_effectiveness_signal": validation_harness_profile.resurfacing_effectiveness_signal,
+                "transfer_stability_signal": validation_harness_profile.transfer_stability_signal,
+                "compression_safety_signal": validation_harness_profile.compression_safety_signal,
+                "scientific_validation_state": scientific_runtime_validation_profile.scientific_validation_state,
+                "validation_dataset_state": validation_dataset_awareness_profile.validation_dataset_state,
+                "comparative_session_state": comparative_session_analytics_profile.comparative_session_state,
+                "pedagogical_regression_signal": comparative_session_analytics_profile.pedagogical_regression_signal,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -2069,6 +2123,23 @@ def _runtime_scenario_simulation_metadata(profile) -> dict[str, object]:
         "scenario_mismatch_reason": profile.scenario_mismatch_reason,
         "scenario_replay_summary": profile.scenario_replay_summary,
         "why_this_scenario_outcome": profile.why_this_scenario_outcome,
+    }
+
+
+def _empirical_validation_dataset_metadata(profile) -> dict[str, object]:
+    return {
+        "empirical_dataset_state": profile.empirical_dataset_state,
+        "empirical_dataset_summary": profile.empirical_dataset_summary,
+        "empirical_dataset_reasoning": profile.empirical_dataset_reasoning,
+        "validation_case_results": [case.model_dump(mode="json") for case in profile.validation_case_results],
+        "passed_cases": profile.passed_cases,
+        "failed_cases": profile.failed_cases,
+        "inconclusive_cases": profile.inconclusive_cases,
+        "dataset_alignment_score": profile.dataset_alignment_score,
+        "dataset_regression_flags": profile.dataset_regression_flags,
+        "dataset_coverage_summary": profile.dataset_coverage_summary,
+        "empirical_validation_context": profile.empirical_validation_context,
+        "why_this_dataset_result": profile.why_this_dataset_result,
     }
 
 

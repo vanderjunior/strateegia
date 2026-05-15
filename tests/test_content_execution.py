@@ -735,6 +735,35 @@ def test_execute_study_block_exposes_runtime_scenario_simulation_metadata():
     assert "why_this_scenario_outcome" in payload
 
 
+def test_execute_study_block_exposes_empirical_validation_dataset_metadata():
+    topic_node = build_topic_node(
+        title="Empirical Validation Dataset",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="empirical-dataset", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="empirical-dataset",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["empirical_dataset_state"]
+    assert payload["empirical_dataset_summary"]
+    assert payload["validation_case_results"]
+    assert "dataset_alignment_score" in payload
+    assert "why_this_dataset_result" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

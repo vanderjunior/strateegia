@@ -676,6 +676,61 @@ class ScenarioSimulationResult(BaseModel):
     why_this_scenario_outcome: str = ""
 
 
+class EmpiricalValidationExpectation(BaseModel):
+    expected_scenario_category: str = ""
+    expected_validation_state: str = ""
+    expected_dataset_awareness_state: str = ""
+    expected_scientific_validation_state: str = ""
+    expected_comparative_state: str = ""
+    expected_regression_signal: str = ""
+    expected_risk_flags: list[str] = Field(default_factory=list)
+    expected_case_state: str = ""
+
+
+class EmpiricalValidationCase(BaseModel):
+    case_id: str
+    case_name: str
+    case_category: str
+    expected_states: EmpiricalValidationExpectation = Field(default_factory=EmpiricalValidationExpectation)
+    case_notes: str = ""
+
+
+class EmpiricalValidationCaseResult(BaseModel):
+    case_id: str
+    case_name: str
+    case_category: str
+    expected_states: dict[str, object] = Field(default_factory=dict)
+    observed_states: dict[str, object] = Field(default_factory=dict)
+    expectation_alignment: float = 0.0
+    case_result_state: str = ""
+    case_reasoning: list[str] = Field(default_factory=list)
+    mismatch_reasons: list[str] = Field(default_factory=list)
+    regression_flags: list[str] = Field(default_factory=list)
+    validation_confidence: float = 0.0
+    why_this_case_result: str = ""
+
+
+class EmpiricalValidationDataset(BaseModel):
+    dataset_id: str
+    dataset_name: str
+    cases: list[EmpiricalValidationCase] = Field(default_factory=list)
+
+
+class EmpiricalValidationDatasetSummary(BaseModel):
+    empirical_dataset_state: str
+    empirical_dataset_summary: str = ""
+    empirical_dataset_reasoning: list[str] = Field(default_factory=list)
+    validation_case_results: list[EmpiricalValidationCaseResult] = Field(default_factory=list)
+    passed_cases: list[str] = Field(default_factory=list)
+    failed_cases: list[str] = Field(default_factory=list)
+    inconclusive_cases: list[str] = Field(default_factory=list)
+    dataset_alignment_score: float = 0.0
+    dataset_regression_flags: list[str] = Field(default_factory=list)
+    dataset_coverage_summary: str = ""
+    empirical_validation_context: str = ""
+    why_this_dataset_result: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
