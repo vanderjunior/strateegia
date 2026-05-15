@@ -11,6 +11,7 @@ from app.services.conceptual_relationships import (
     build_relationship_signals,
 )
 from app.services.cognitive_compression import resolve_cognitive_compression
+from app.services.pedagogical_observability import resolve_pedagogical_observability
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
@@ -104,6 +105,16 @@ def execute_study_block(block: StudyBlock) -> dict:
         compression_profile,
     )
     consolidation_metadata = _adaptive_signal_consolidation_metadata(consolidation_profile)
+    observability_profile = _resolve_pedagogical_observability_profile(
+        block,
+        pedagogical_profile,
+        micro_intervention,
+        trajectory_profile,
+        expression_profile,
+        compression_profile,
+        consolidation_profile,
+    )
+    observability_metadata = _pedagogical_observability_metadata(observability_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -130,6 +141,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **expression_metadata,
             **compression_metadata,
             **consolidation_metadata,
+            **observability_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -155,6 +167,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **expression_metadata,
             **compression_metadata,
             **consolidation_metadata,
+            **observability_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -948,6 +961,47 @@ def _resolve_adaptive_signal_consolidation_profile(
     )
 
 
+def _resolve_pedagogical_observability_profile(
+    block: StudyBlock,
+    pedagogical_profile,
+    micro_intervention,
+    trajectory_profile,
+    expression_profile,
+    compression_profile,
+    consolidation_profile,
+):
+    return resolve_pedagogical_observability(
+        current_block={
+            "type": block.type,
+            "pedagogical_mode": pedagogical_profile.pedagogical_mode,
+            "micro_intervention": micro_intervention.intervention_type,
+            "retrieval_intensity": pedagogical_profile.retrieval_intensity,
+            "pedagogical_expression_mode": expression_profile.pedagogical_expression_mode,
+            "cognitive_compression_mode": compression_profile.cognitive_compression_mode,
+            "session_coherence_state": "stable_progression"
+            if trajectory_profile.longitudinal_consistency >= 0.5
+            else "pacing_fragile",
+            "cognitive_momentum": "retrieval_heavy"
+            if pedagogical_profile.retrieval_intensity == "high"
+            else "conceptually_dense"
+            if pedagogical_profile.cognitive_load == "high"
+            else "balanced",
+            "trajectory_state": trajectory_profile.trajectory_state,
+            "stabilization_stage": pedagogical_profile.stabilization_stage,
+            "explanation_density": expression_profile.explanation_density,
+            "informational_density": compression_profile.informational_density,
+            "progression_continuity": trajectory_profile.longitudinal_consistency,
+            "longitudinal_consistency": trajectory_profile.longitudinal_consistency,
+            "reconstruction_fragility": trajectory_profile.reconstruction_fragility,
+            "transfer_fragility": trajectory_profile.transfer_fragility,
+            "cognitive_load_score": pedagogical_profile.cognitive_load_score,
+            "adaptive_signal_state": consolidation_profile.adaptive_signal_state,
+            "explanatory_expansion": compression_profile.explanatory_expansion,
+        },
+        recent_blocks=[],
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1059,6 +1113,30 @@ def _adaptive_signal_consolidation_metadata(profile) -> dict[str, object]:
         "stabilization_consolidation": profile.stabilization_consolidation,
         "cognitive_signal_alignment": profile.cognitive_signal_alignment,
         "why_this_consolidation_now": profile.why_this_consolidation_now,
+    }
+
+
+def _pedagogical_observability_metadata(profile) -> dict[str, object]:
+    return {
+        "pedagogical_observability_state": profile.pedagogical_observability_state,
+        "observability_reasoning": profile.observability_reasoning,
+        "signal_overlap_density": profile.signal_overlap_density,
+        "retrieval_pressure_accumulation": profile.retrieval_pressure_accumulation,
+        "compression_support_alignment": profile.compression_support_alignment,
+        "scaffold_density": profile.scaffold_density,
+        "continuity_stability": profile.continuity_stability,
+        "modulation_redundancy": profile.modulation_redundancy,
+        "expression_variation_balance": profile.expression_variation_balance,
+        "intervention_repetition_signal": profile.intervention_repetition_signal,
+        "trajectory_consistency": profile.trajectory_consistency,
+        "adaptive_behavior_summary": profile.adaptive_behavior_summary,
+        "signal_overlap_reason": profile.signal_overlap_reason,
+        "support_density_reason": profile.support_density_reason,
+        "retrieval_balance_reason": profile.retrieval_balance_reason,
+        "modulation_consistency": profile.modulation_consistency,
+        "continuity_observation": profile.continuity_observation,
+        "stability_profile": profile.stability_profile,
+        "why_this_observation_now": profile.why_this_observation_now,
     }
 
 

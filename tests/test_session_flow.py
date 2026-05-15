@@ -196,6 +196,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "why_this_compression_now" in summary_block
     assert "adaptive_signal_state" in summary_block
     assert "why_this_consolidation_now" in summary_block
+    assert "pedagogical_observability_state" in summary_block
+    assert "why_this_observation_now" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -226,6 +228,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "informational_density" in question_block
     assert "adaptive_signal_state" in question_block
     assert "modulation_overlap" in question_block
+    assert "pedagogical_observability_state" in question_block
+    assert "signal_overlap_density" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

@@ -383,6 +383,28 @@ class AdaptiveSignalConsolidationProfile(BaseModel):
     why_this_consolidation_now: str = ""
 
 
+class PedagogicalObservabilityProfile(BaseModel):
+    pedagogical_observability_state: str
+    observability_reasoning: list[str] = Field(default_factory=list)
+    signal_overlap_density: float = 0.0
+    retrieval_pressure_accumulation: float = 0.0
+    compression_support_alignment: float = 0.0
+    scaffold_density: float = 0.0
+    continuity_stability: float = 0.0
+    modulation_redundancy: float = 0.0
+    expression_variation_balance: float = 0.0
+    intervention_repetition_signal: float = 0.0
+    trajectory_consistency: float = 0.0
+    adaptive_behavior_summary: str = ""
+    signal_overlap_reason: str = ""
+    support_density_reason: str = ""
+    retrieval_balance_reason: str = ""
+    modulation_consistency: str = ""
+    continuity_observation: str = ""
+    stability_profile: str = ""
+    why_this_observation_now: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

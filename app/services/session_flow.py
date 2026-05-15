@@ -6,6 +6,7 @@ from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
 from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
+from app.services.pedagogical_observability import PedagogicalObservabilityLayer
 from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
@@ -89,6 +90,7 @@ class SessionManager:
         narrative = SessionNarrativeLayer()
         momentum = CognitiveMomentumLayer()
         coherence = SessionCoherenceLayer()
+        observability = PedagogicalObservabilityLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -117,7 +119,8 @@ class SessionManager:
         runtime_blocks = equilibrium.balance(runtime_blocks)
         runtime_blocks = narrative.annotate(runtime_blocks)
         runtime_blocks = momentum.annotate(runtime_blocks)
-        return coherence.annotate(runtime_blocks)
+        runtime_blocks = coherence.annotate(runtime_blocks)
+        return observability.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -258,6 +261,25 @@ class SessionManager:
             "stabilization_consolidation": executed.get("stabilization_consolidation"),
             "cognitive_signal_alignment": executed.get("cognitive_signal_alignment"),
             "why_this_consolidation_now": executed.get("why_this_consolidation_now"),
+            "pedagogical_observability_state": executed.get("pedagogical_observability_state"),
+            "observability_reasoning": executed.get("observability_reasoning"),
+            "signal_overlap_density": executed.get("signal_overlap_density"),
+            "retrieval_pressure_accumulation": executed.get("retrieval_pressure_accumulation"),
+            "compression_support_alignment": executed.get("compression_support_alignment"),
+            "scaffold_density": executed.get("scaffold_density"),
+            "continuity_stability": executed.get("continuity_stability"),
+            "modulation_redundancy": executed.get("modulation_redundancy"),
+            "expression_variation_balance": executed.get("expression_variation_balance"),
+            "intervention_repetition_signal": executed.get("intervention_repetition_signal"),
+            "trajectory_consistency": executed.get("trajectory_consistency"),
+            "adaptive_behavior_summary": executed.get("adaptive_behavior_summary"),
+            "signal_overlap_reason": executed.get("signal_overlap_reason"),
+            "support_density_reason": executed.get("support_density_reason"),
+            "retrieval_balance_reason": executed.get("retrieval_balance_reason"),
+            "modulation_consistency": executed.get("modulation_consistency"),
+            "continuity_observation": executed.get("continuity_observation"),
+            "stability_profile": executed.get("stability_profile"),
+            "why_this_observation_now": executed.get("why_this_observation_now"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

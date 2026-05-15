@@ -356,6 +356,34 @@ def test_execute_study_block_exposes_adaptive_signal_consolidation_metadata():
     assert "why_this_consolidation_now" in payload
 
 
+def test_execute_study_block_exposes_pedagogical_observability_metadata():
+    topic_node = build_topic_node(
+        title="Transferencia",
+        content=(
+            "Aplicacao: transfira a regra entre cenarios proximos.\n\n"
+            "Regra: preserve a base normativa antes do caso."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="transferencia", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="transferencia",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["pedagogical_observability_state"]
+    assert payload["observability_reasoning"]
+    assert "signal_overlap_density" in payload
+    assert "why_this_observation_now" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",
