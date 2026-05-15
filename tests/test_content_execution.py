@@ -501,6 +501,35 @@ def test_execute_study_block_exposes_session_stability_metrics():
     assert "why_this_session_state" in payload
 
 
+def test_execute_study_block_exposes_pedagogical_tuning_profile():
+    topic_node = build_topic_node(
+        title="Tuning Pedagogico",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="tuning-pedagogico", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="tuning-pedagogico",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["pedagogical_tuning_state"]
+    assert payload["tuning_profile_summary"]
+    assert payload["tuning_reasoning"]
+    assert "retrieval_tolerance" in payload
+    assert "why_this_tuning_profile" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

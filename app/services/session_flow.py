@@ -13,6 +13,7 @@ from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
 from app.services.session_stability_metrics import SessionStabilityMetricsLayer
+from app.services.pedagogical_tuning_profiles import PedagogicalTuningProfilesLayer
 
 
 class SessionManager:
@@ -97,6 +98,7 @@ class SessionManager:
         traceability = RuntimeTraceabilityLayer()
         validation = PedagogicalValidationLayer()
         session_stability = SessionStabilityMetricsLayer()
+        tuning_profiles = PedagogicalTuningProfilesLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -129,7 +131,8 @@ class SessionManager:
         runtime_blocks = observability.annotate(runtime_blocks)
         runtime_blocks = traceability.annotate(runtime_blocks)
         runtime_blocks = validation.annotate(runtime_blocks)
-        return session_stability.annotate(runtime_blocks)
+        runtime_blocks = session_stability.annotate(runtime_blocks)
+        return tuning_profiles.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -338,6 +341,20 @@ class SessionManager:
             "session_pressure_summary": executed.get("session_pressure_summary"),
             "session_stability_summary": executed.get("session_stability_summary"),
             "why_this_session_state": executed.get("why_this_session_state"),
+            "pedagogical_tuning_state": executed.get("pedagogical_tuning_state"),
+            "tuning_profile_summary": executed.get("tuning_profile_summary"),
+            "tuning_reasoning": executed.get("tuning_reasoning"),
+            "retrieval_tolerance": executed.get("retrieval_tolerance"),
+            "scaffold_sensitivity": executed.get("scaffold_sensitivity"),
+            "continuity_smoothing_strength": executed.get("continuity_smoothing_strength"),
+            "compression_conservatism": executed.get("compression_conservatism"),
+            "reconstruction_support_level": executed.get("reconstruction_support_level"),
+            "pacing_relief_sensitivity": executed.get("pacing_relief_sensitivity"),
+            "overlap_tolerance": executed.get("overlap_tolerance"),
+            "stabilization_threshold": executed.get("stabilization_threshold"),
+            "modulation_density_tolerance": executed.get("modulation_density_tolerance"),
+            "intervention_rotation_sensitivity": executed.get("intervention_rotation_sensitivity"),
+            "why_this_tuning_profile": executed.get("why_this_tuning_profile"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

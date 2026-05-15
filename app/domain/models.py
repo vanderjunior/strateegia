@@ -466,6 +466,23 @@ class SessionStabilityMetricsProfile(BaseModel):
     why_this_session_state: str = ""
 
 
+class PedagogicalTuningProfile(BaseModel):
+    pedagogical_tuning_state: str
+    tuning_profile_summary: str = ""
+    tuning_reasoning: list[str] = Field(default_factory=list)
+    retrieval_tolerance: float = 0.0
+    scaffold_sensitivity: float = 0.0
+    continuity_smoothing_strength: float = 0.0
+    compression_conservatism: float = 0.0
+    reconstruction_support_level: float = 0.0
+    pacing_relief_sensitivity: float = 0.0
+    overlap_tolerance: float = 0.0
+    stabilization_threshold: float = 0.0
+    modulation_density_tolerance: float = 0.0
+    intervention_rotation_sensitivity: float = 0.0
+    why_this_tuning_profile: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

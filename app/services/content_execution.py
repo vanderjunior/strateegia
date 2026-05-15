@@ -15,6 +15,7 @@ from app.services.pedagogical_observability import resolve_pedagogical_observabi
 from app.services.pedagogical_validation import resolve_pedagogical_validation
 from app.services.runtime_traceability import resolve_runtime_traceability
 from app.services.runtime_signal_normalization import normalize_runtime_signal_families
+from app.services.pedagogical_tuning_profiles import resolve_pedagogical_tuning_profile
 from app.services.session_stability_metrics import resolve_session_stability_metrics
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
@@ -166,6 +167,16 @@ def execute_study_block(block: StudyBlock) -> dict:
         normalized_signal_profile,
     )
     session_stability_metadata = _session_stability_metrics_metadata(session_stability_profile)
+    tuning_profile = _resolve_pedagogical_tuning_profile(
+        block,
+        trajectory_profile,
+        expression_profile,
+        observability_profile,
+        validation_profile,
+        normalized_signal_profile,
+        session_stability_profile,
+    )
+    tuning_metadata = _pedagogical_tuning_metadata(tuning_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -197,6 +208,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **validation_metadata,
             **normalized_signal_metadata,
             **session_stability_metadata,
+            **tuning_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -227,6 +239,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **validation_metadata,
             **normalized_signal_metadata,
             **session_stability_metadata,
+            **tuning_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1235,6 +1248,43 @@ def _resolve_session_stability_metrics_profile(
     )
 
 
+def _resolve_pedagogical_tuning_profile(
+    block: StudyBlock,
+    trajectory_profile,
+    expression_profile,
+    observability_profile,
+    validation_profile,
+    normalized_signal_profile,
+    session_stability_profile,
+):
+    return resolve_pedagogical_tuning_profile(
+        [
+            {
+                "type": block.type,
+                "retrieval_pressure_accumulation": observability_profile.retrieval_pressure_accumulation,
+                "scaffold_density": observability_profile.scaffold_density,
+                "continuity_stability": observability_profile.continuity_stability,
+                "progression_continuity": trajectory_profile.longitudinal_consistency,
+                "reconstruction_fragility": trajectory_profile.reconstruction_fragility,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "modulation_overlap": session_stability_profile.modulation_convergence_metric,
+                "signal_overlap_density": observability_profile.signal_overlap_density,
+                "stabilization_quality": trajectory_profile.stabilization_quality,
+                "stabilization_sustainability_metric": session_stability_profile.stabilization_sustainability_metric,
+                "pacing_adjustment": expression_profile.pacing_adjustment,
+                "intervention_repetition_signal": observability_profile.intervention_repetition_signal,
+                "retrieval_family": normalized_signal_profile.retrieval_family,
+                "support_family": normalized_signal_profile.support_family,
+                "continuity_family": normalized_signal_profile.continuity_family,
+                "stabilization_family": normalized_signal_profile.stabilization_family,
+                "overlap_family": normalized_signal_profile.overlap_family,
+                "pedagogical_observability_state": observability_profile.pedagogical_observability_state,
+                "session_stability_state": session_stability_profile.session_stability_state,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1439,6 +1489,25 @@ def _session_stability_metrics_metadata(profile) -> dict[str, object]:
         "session_pressure_summary": profile.session_pressure_summary,
         "session_stability_summary": profile.session_stability_summary,
         "why_this_session_state": profile.why_this_session_state,
+    }
+
+
+def _pedagogical_tuning_metadata(profile) -> dict[str, object]:
+    return {
+        "pedagogical_tuning_state": profile.pedagogical_tuning_state,
+        "tuning_profile_summary": profile.tuning_profile_summary,
+        "tuning_reasoning": profile.tuning_reasoning,
+        "retrieval_tolerance": profile.retrieval_tolerance,
+        "scaffold_sensitivity": profile.scaffold_sensitivity,
+        "continuity_smoothing_strength": profile.continuity_smoothing_strength,
+        "compression_conservatism": profile.compression_conservatism,
+        "reconstruction_support_level": profile.reconstruction_support_level,
+        "pacing_relief_sensitivity": profile.pacing_relief_sensitivity,
+        "overlap_tolerance": profile.overlap_tolerance,
+        "stabilization_threshold": profile.stabilization_threshold,
+        "modulation_density_tolerance": profile.modulation_density_tolerance,
+        "intervention_rotation_sensitivity": profile.intervention_rotation_sensitivity,
+        "why_this_tuning_profile": profile.why_this_tuning_profile,
     }
 
 
