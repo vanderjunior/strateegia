@@ -235,6 +235,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "empirical_dataset_state" in summary_block
     assert "empirical_dataset_summary" in summary_block
     assert "dataset_alignment_score" in summary_block
+    assert "pedagogical_benchmark_state" in summary_block
+    assert "pedagogical_benchmark_summary" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -304,6 +306,8 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "empirical_dataset_state" in question_block
     assert "validation_case_results" in question_block
     assert "dataset_regression_flags" in question_block
+    assert "pedagogical_benchmark_state" in question_block
+    assert "benchmark_case_reports" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

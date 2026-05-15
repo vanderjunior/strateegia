@@ -13,6 +13,7 @@ from app.services.conceptual_relationships import (
 from app.services.cognitive_compression import resolve_cognitive_compression
 from app.services.comparative_session_analytics import compare_session_analytics
 from app.services.empirical_validation_dataset import evaluate_empirical_validation_dataset
+from app.services.pedagogical_benchmark_runner import run_pedagogical_benchmark
 from app.services.pedagogical_observability import resolve_pedagogical_observability
 from app.services.pedagogical_validation import resolve_pedagogical_validation
 from app.services.runtime_traceability import resolve_runtime_traceability
@@ -269,6 +270,12 @@ def execute_study_block(block: StudyBlock) -> dict:
     empirical_validation_dataset_metadata = _empirical_validation_dataset_metadata(
         empirical_validation_dataset_summary
     )
+    pedagogical_benchmark_result = _resolve_pedagogical_benchmark_result(
+        empirical_validation_dataset_summary
+    )
+    pedagogical_benchmark_metadata = _pedagogical_benchmark_metadata(
+        pedagogical_benchmark_result
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -309,6 +316,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **comparative_session_analytics_metadata,
             **runtime_scenario_simulation_metadata,
             **empirical_validation_dataset_metadata,
+            **pedagogical_benchmark_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -348,6 +356,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **comparative_session_analytics_metadata,
             **runtime_scenario_simulation_metadata,
             **empirical_validation_dataset_metadata,
+            **pedagogical_benchmark_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1748,6 +1757,10 @@ def _resolve_empirical_validation_dataset_summary(
     )
 
 
+def _resolve_pedagogical_benchmark_result(empirical_validation_dataset_summary):
+    return run_pedagogical_benchmark(dataset_summary=empirical_validation_dataset_summary)
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -2140,6 +2153,26 @@ def _empirical_validation_dataset_metadata(profile) -> dict[str, object]:
         "dataset_coverage_summary": profile.dataset_coverage_summary,
         "empirical_validation_context": profile.empirical_validation_context,
         "why_this_dataset_result": profile.why_this_dataset_result,
+    }
+
+
+def _pedagogical_benchmark_metadata(profile) -> dict[str, object]:
+    return {
+        "pedagogical_benchmark_state": profile.pedagogical_benchmark_state,
+        "pedagogical_benchmark_summary": profile.pedagogical_benchmark_summary,
+        "pedagogical_benchmark_reasoning": profile.pedagogical_benchmark_reasoning,
+        "benchmark_case_reports": [case.model_dump(mode="json") for case in profile.benchmark_case_reports],
+        "benchmark_total_cases": profile.benchmark_total_cases,
+        "benchmark_passed_cases": profile.benchmark_passed_cases,
+        "benchmark_failed_cases": profile.benchmark_failed_cases,
+        "benchmark_inconclusive_cases": profile.benchmark_inconclusive_cases,
+        "benchmark_regression_cases": profile.benchmark_regression_cases,
+        "benchmark_regression_flags": profile.benchmark_regression_flags,
+        "benchmark_regression_severity": profile.benchmark_regression_severity,
+        "benchmark_readiness": profile.benchmark_readiness,
+        "benchmark_alignment_score": profile.benchmark_alignment_score,
+        "benchmark_coverage_summary": profile.benchmark_coverage_summary,
+        "why_this_benchmark_result": profile.why_this_benchmark_result,
     }
 
 

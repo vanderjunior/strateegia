@@ -731,6 +731,67 @@ class EmpiricalValidationDatasetSummary(BaseModel):
     why_this_dataset_result: str = ""
 
 
+class PedagogicalBenchmarkRun(BaseModel):
+    benchmark_id: str
+    benchmark_name: str
+    dataset_id: str = ""
+    dataset_name: str = ""
+    case_ids: list[str] = Field(default_factory=list)
+
+
+class PedagogicalBenchmarkCaseReport(BaseModel):
+    case_id: str
+    case_name: str
+    case_category: str
+    case_result_state: str
+    expectation_alignment: float = 0.0
+    regression_flags: list[str] = Field(default_factory=list)
+    validation_confidence: float = 0.0
+    benchmark_case_status: str = "inconclusive"
+    case_benchmark_summary: str = ""
+    case_benchmark_reasoning: list[str] = Field(default_factory=list)
+
+
+class PedagogicalBenchmarkRegressionReport(BaseModel):
+    regression_case_ids: list[str] = Field(default_factory=list)
+    regression_flags: list[str] = Field(default_factory=list)
+    regression_summary: str = ""
+    regression_severity: str = "none"
+    regression_reasoning: list[str] = Field(default_factory=list)
+
+
+class PedagogicalBenchmarkSummary(BaseModel):
+    benchmark_total_cases: int = 0
+    benchmark_passed_cases: list[str] = Field(default_factory=list)
+    benchmark_failed_cases: list[str] = Field(default_factory=list)
+    benchmark_inconclusive_cases: list[str] = Field(default_factory=list)
+    benchmark_regression_cases: list[str] = Field(default_factory=list)
+    benchmark_alignment_score: float = 0.0
+    benchmark_coverage_summary: str = ""
+    benchmark_readiness: str = "benchmark_insufficient"
+
+
+class PedagogicalBenchmarkResult(BaseModel):
+    benchmark_run: PedagogicalBenchmarkRun
+    benchmark_summary_profile: PedagogicalBenchmarkSummary
+    regression_report: PedagogicalBenchmarkRegressionReport
+    pedagogical_benchmark_state: str
+    pedagogical_benchmark_summary: str = ""
+    pedagogical_benchmark_reasoning: list[str] = Field(default_factory=list)
+    benchmark_case_reports: list[PedagogicalBenchmarkCaseReport] = Field(default_factory=list)
+    benchmark_total_cases: int = 0
+    benchmark_passed_cases: list[str] = Field(default_factory=list)
+    benchmark_failed_cases: list[str] = Field(default_factory=list)
+    benchmark_inconclusive_cases: list[str] = Field(default_factory=list)
+    benchmark_regression_cases: list[str] = Field(default_factory=list)
+    benchmark_regression_flags: list[str] = Field(default_factory=list)
+    benchmark_regression_severity: str = "none"
+    benchmark_readiness: str = "benchmark_insufficient"
+    benchmark_alignment_score: float = 0.0
+    benchmark_coverage_summary: str = ""
+    why_this_benchmark_result: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""

@@ -764,6 +764,16 @@ def test_execute_study_block_exposes_empirical_validation_dataset_metadata():
     assert "why_this_dataset_result" in payload
 
 
+def test_execute_study_block_exposes_pedagogical_benchmark_metadata():
+    payload = execute_study_block(StudyBlock(type="questions", topic_id="benchmark", quantity=1))
+
+    assert payload["pedagogical_benchmark_state"]
+    assert payload["pedagogical_benchmark_summary"]
+    assert payload["benchmark_case_reports"]
+    assert payload["benchmark_alignment_score"] >= 0.0
+    assert payload["benchmark_readiness"]
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",
