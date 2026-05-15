@@ -504,6 +504,26 @@ class ValidationHarnessProfile(BaseModel):
     why_this_validation_state: str = ""
 
 
+class ValidationDatasetAwarenessProfile(BaseModel):
+    validation_dataset_state: str
+    validation_dataset_reasoning: list[str] = Field(default_factory=list)
+    pedagogical_scenario_family: str = ""
+    retrieval_condition_profile: str = ""
+    scaffold_condition_profile: str = ""
+    continuity_condition_profile: str = ""
+    reconstruction_condition_profile: str = ""
+    compression_condition_profile: str = ""
+    transfer_condition_profile: str = ""
+    stabilization_condition_profile: str = ""
+    overlap_condition_profile: str = ""
+    pacing_condition_profile: str = ""
+    reinforcement_condition_profile: str = ""
+    runtime_validation_context: str = ""
+    comparative_validation_alignment: float = 0.0
+    dataset_awareness_summary: str = ""
+    why_this_validation_context: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""

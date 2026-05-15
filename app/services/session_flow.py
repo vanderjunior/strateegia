@@ -15,6 +15,7 @@ from app.services.session_export_debug import SessionExportDebugLayer
 from app.services.session_narrative import SessionNarrativeLayer
 from app.services.session_stability_metrics import SessionStabilityMetricsLayer
 from app.services.session_snapshot_diff import SessionSnapshotDiffLayer
+from app.services.validation_dataset_awareness import ValidationDatasetAwarenessLayer
 from app.services.validation_harness import ValidationHarnessLayer
 from app.services.pedagogical_tuning_profiles import PedagogicalTuningProfilesLayer
 
@@ -105,6 +106,7 @@ class SessionManager:
         validation_harness = ValidationHarnessLayer()
         snapshot_diff = SessionSnapshotDiffLayer()
         export_debug = SessionExportDebugLayer()
+        validation_dataset_awareness = ValidationDatasetAwarenessLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -141,7 +143,8 @@ class SessionManager:
         runtime_blocks = tuning_profiles.annotate(runtime_blocks)
         runtime_blocks = validation_harness.annotate(runtime_blocks)
         runtime_blocks = snapshot_diff.annotate(runtime_blocks)
-        return export_debug.annotate(runtime_blocks)
+        runtime_blocks = export_debug.annotate(runtime_blocks)
+        return validation_dataset_awareness.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,

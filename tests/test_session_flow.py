@@ -220,6 +220,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "session_export_state" in summary_block
     assert "runtime_export_summary" in summary_block
     assert "export_trace_summary" in summary_block
+    assert "validation_dataset_state" in summary_block
+    assert "runtime_validation_context" in summary_block
+    assert "dataset_awareness_summary" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -274,6 +277,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "session_export_state" in question_block
     assert "pedagogical_runtime_snapshot" in question_block
     assert "behavioral_diff_snapshot" in question_block
+    assert "validation_dataset_state" in question_block
+    assert "pedagogical_scenario_family" in question_block
+    assert "comparative_validation_alignment" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

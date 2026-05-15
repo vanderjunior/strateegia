@@ -19,6 +19,7 @@ from app.services.pedagogical_tuning_profiles import resolve_pedagogical_tuning_
 from app.services.session_export_debug import build_session_export_snapshot
 from app.services.session_stability_metrics import resolve_session_stability_metrics
 from app.services.session_snapshot_diff import build_session_snapshot, compare_session_snapshots
+from app.services.validation_dataset_awareness import resolve_validation_dataset_awareness
 from app.services.validation_harness import resolve_validation_harness
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
@@ -205,6 +206,17 @@ def execute_study_block(block: StudyBlock) -> dict:
         validation_harness_profile,
     )
     session_export_metadata = _session_export_debug_metadata(session_export_snapshot)
+    validation_dataset_awareness_profile = _resolve_validation_dataset_awareness_profile(
+        block,
+        session_stability_profile,
+        validation_harness_profile,
+        session_snapshot_profile,
+        behavioral_diff_profile,
+        normalized_signal_profile,
+    )
+    validation_dataset_awareness_metadata = _validation_dataset_awareness_metadata(
+        validation_dataset_awareness_profile
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -240,6 +252,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **validation_harness_metadata,
             **session_snapshot_diff_metadata,
             **session_export_metadata,
+            **validation_dataset_awareness_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -274,6 +287,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **validation_harness_metadata,
             **session_snapshot_diff_metadata,
             **session_export_metadata,
+            **validation_dataset_awareness_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1432,6 +1446,56 @@ def _resolve_session_export_snapshot(
     )
 
 
+def _resolve_validation_dataset_awareness_profile(
+    block: StudyBlock,
+    session_stability_profile,
+    validation_harness_profile,
+    session_snapshot_profile,
+    behavioral_diff_profile,
+    normalized_signal_profile,
+):
+    return resolve_validation_dataset_awareness(
+        [
+            {
+                "type": block.type,
+                "topic_id": block.topic_id,
+                "retrieval_pressure_accumulation": session_stability_profile.retrieval_density_metric,
+                "retrieval_density_metric": session_stability_profile.retrieval_density_metric,
+                "scaffold_density": session_stability_profile.scaffold_load_metric,
+                "scaffold_load_metric": session_stability_profile.scaffold_load_metric,
+                "continuity_smoothness_metric": session_stability_profile.continuity_smoothness_metric,
+                "continuity_sustainability_signal": validation_harness_profile.continuity_sustainability_signal,
+                "reconstruction_fragility": 1.0 - validation_harness_profile.reconstruction_sustainability_signal,
+                "reconstruction_pressure_metric": session_stability_profile.reconstruction_pressure_metric,
+                "reconstruction_sustainability_signal": validation_harness_profile.reconstruction_sustainability_signal,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "compression_safety_signal": validation_harness_profile.compression_safety_signal,
+                "transfer_fragility": 1.0 - validation_harness_profile.transfer_stability_signal,
+                "transfer_stability_signal": validation_harness_profile.transfer_stability_signal,
+                "stabilization_sustainability_metric": session_stability_profile.stabilization_sustainability_metric,
+                "stabilization_reliability_signal": validation_harness_profile.stabilization_reliability_signal,
+                "support_density": session_stability_profile.support_density,
+                "reinforcement_density_signal": validation_harness_profile.pedagogical_balance_signal,
+                "pacing_stability_metric": session_stability_profile.pacing_stability_metric,
+                "pacing_sustainability_signal": validation_harness_profile.pacing_sustainability_signal,
+                "modulation_overlap": session_stability_profile.modulation_convergence_metric,
+                "adaptive_overlap_signal": validation_harness_profile.adaptive_overlap_signal,
+                "validation_confidence": validation_harness_profile.validation_confidence,
+                "resurfacing_effectiveness_signal": validation_harness_profile.resurfacing_effectiveness_signal,
+                "retrieval_family": normalized_signal_profile.retrieval_family,
+                "support_family": normalized_signal_profile.support_family,
+                "continuity_family": normalized_signal_profile.continuity_family,
+                "stabilization_family": normalized_signal_profile.stabilization_family,
+                "overlap_family": normalized_signal_profile.overlap_family,
+                "session_stability_state": session_stability_profile.session_stability_state,
+                "validation_harness_state": validation_harness_profile.validation_harness_state,
+                "behavioral_diff_state": behavioral_diff_profile.behavioral_diff_state,
+                "session_snapshot_state": session_snapshot_profile.session_snapshot_state,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1721,6 +1785,28 @@ def _session_export_debug_metadata(profile) -> dict[str, object]:
         "export_reasoning": profile.export_reasoning,
         "export_alignment": profile.export_alignment,
         "export_trace_summary": profile.export_trace_summary,
+    }
+
+
+def _validation_dataset_awareness_metadata(profile) -> dict[str, object]:
+    return {
+        "validation_dataset_state": profile.validation_dataset_state,
+        "validation_dataset_reasoning": profile.validation_dataset_reasoning,
+        "pedagogical_scenario_family": profile.pedagogical_scenario_family,
+        "retrieval_condition_profile": profile.retrieval_condition_profile,
+        "scaffold_condition_profile": profile.scaffold_condition_profile,
+        "continuity_condition_profile": profile.continuity_condition_profile,
+        "reconstruction_condition_profile": profile.reconstruction_condition_profile,
+        "compression_condition_profile": profile.compression_condition_profile,
+        "transfer_condition_profile": profile.transfer_condition_profile,
+        "stabilization_condition_profile": profile.stabilization_condition_profile,
+        "overlap_condition_profile": profile.overlap_condition_profile,
+        "pacing_condition_profile": profile.pacing_condition_profile,
+        "reinforcement_condition_profile": profile.reinforcement_condition_profile,
+        "runtime_validation_context": profile.runtime_validation_context,
+        "comparative_validation_alignment": profile.comparative_validation_alignment,
+        "dataset_awareness_summary": profile.dataset_awareness_summary,
+        "why_this_validation_context": profile.why_this_validation_context,
     }
 
 
