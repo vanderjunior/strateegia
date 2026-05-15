@@ -21,6 +21,7 @@ from app.services.session_export_debug import build_session_export_snapshot
 from app.services.session_stability_metrics import resolve_session_stability_metrics
 from app.services.session_snapshot_diff import build_session_snapshot, compare_session_snapshots
 from app.services.scientific_runtime_validation import resolve_scientific_runtime_validation
+from app.services.runtime_scenario_simulation import simulate_runtime_scenario
 from app.services.validation_dataset_awareness import resolve_validation_dataset_awareness
 from app.services.validation_harness import resolve_validation_harness
 from app.services.learning_engine import compute_microtopic_priority
@@ -242,6 +243,19 @@ def execute_study_block(block: StudyBlock) -> dict:
     comparative_session_analytics_metadata = _comparative_session_analytics_metadata(
         comparative_session_analytics_profile
     )
+    runtime_scenario_simulation_profile = _resolve_runtime_scenario_simulation_profile(
+        block,
+        session_stability_profile,
+        validation_harness_profile,
+        validation_profile,
+        session_export_snapshot,
+        validation_dataset_awareness_profile,
+        scientific_runtime_validation_profile,
+        comparative_session_analytics_profile,
+    )
+    runtime_scenario_simulation_metadata = _runtime_scenario_simulation_metadata(
+        runtime_scenario_simulation_profile
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -280,6 +294,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **validation_dataset_awareness_metadata,
             **scientific_runtime_validation_metadata,
             **comparative_session_analytics_metadata,
+            **runtime_scenario_simulation_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -317,6 +332,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **validation_dataset_awareness_metadata,
             **scientific_runtime_validation_metadata,
             **comparative_session_analytics_metadata,
+            **runtime_scenario_simulation_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1637,6 +1653,47 @@ def _resolve_comparative_session_analytics_profile(
     return compare_session_analytics(baseline_snapshot, candidate_snapshot)
 
 
+def _resolve_runtime_scenario_simulation_profile(
+    block: StudyBlock,
+    session_stability_profile,
+    validation_harness_profile,
+    validation_profile,
+    session_export_snapshot,
+    validation_dataset_awareness_profile,
+    scientific_runtime_validation_profile,
+    comparative_session_analytics_profile,
+):
+    return simulate_runtime_scenario(
+        [
+            {
+                "type": block.type,
+                "topic_id": block.topic_id,
+                "retrieval_density_metric": session_stability_profile.retrieval_density_metric,
+                "scaffold_load_metric": session_stability_profile.scaffold_load_metric,
+                "continuity_smoothness_metric": session_stability_profile.continuity_smoothness_metric,
+                "reconstruction_pressure_metric": session_stability_profile.reconstruction_pressure_metric,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "stabilization_sustainability_metric": session_stability_profile.stabilization_sustainability_metric,
+                "pacing_stability_metric": session_stability_profile.pacing_stability_metric,
+                "cognitive_balance_metric": session_stability_profile.cognitive_balance_metric,
+                "support_density": session_stability_profile.support_density,
+                "adaptive_overlap_signal": validation_harness_profile.adaptive_overlap_signal,
+                "validation_confidence": validation_harness_profile.validation_confidence,
+                "false_fluency_risk": validation_profile.false_fluency_risk,
+                "scaffold_dependency_signal": validation_profile.scaffold_dependency_signal,
+                "resurfacing_effectiveness_signal": validation_harness_profile.resurfacing_effectiveness_signal,
+                "transfer_stability_signal": validation_harness_profile.transfer_stability_signal,
+                "compression_safety_signal": validation_harness_profile.compression_safety_signal,
+                "scientific_validation_state": scientific_runtime_validation_profile.scientific_validation_state,
+                "validation_dataset_state": validation_dataset_awareness_profile.validation_dataset_state,
+                "comparative_session_state": comparative_session_analytics_profile.comparative_session_state,
+                "pedagogical_regression_signal": comparative_session_analytics_profile.pedagogical_regression_signal,
+                "session_export_state": session_export_snapshot.session_export_state,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1995,6 +2052,23 @@ def _comparative_session_analytics_metadata(profile) -> dict[str, object]:
         "pedagogical_regression_signal": profile.pedagogical_regression_signal,
         "comparative_validation_alignment": profile.comparative_validation_alignment,
         "why_this_comparison_state": profile.why_this_comparison_state,
+    }
+
+
+def _runtime_scenario_simulation_metadata(profile) -> dict[str, object]:
+    return {
+        "runtime_scenario_state": profile.runtime_scenario_state,
+        "scenario_simulation_reasoning": profile.scenario_simulation_reasoning,
+        "scenario_category": profile.scenario_category,
+        "scenario_replay_snapshot": profile.scenario_replay_snapshot,
+        "scenario_expected_states": profile.scenario_expected_states,
+        "scenario_observed_states": profile.scenario_observed_states,
+        "scenario_expectation_alignment": profile.scenario_expectation_alignment,
+        "scenario_validation_outcome": profile.scenario_validation_outcome,
+        "scenario_regression_signal": profile.scenario_regression_signal,
+        "scenario_mismatch_reason": profile.scenario_mismatch_reason,
+        "scenario_replay_summary": profile.scenario_replay_summary,
+        "why_this_scenario_outcome": profile.why_this_scenario_outcome,
     }
 
 

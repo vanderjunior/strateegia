@@ -229,6 +229,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "comparative_session_state" in summary_block
     assert "comparative_runtime_summary" in summary_block
     assert "baseline_session_signature" in summary_block
+    assert "runtime_scenario_state" in summary_block
+    assert "scenario_replay_summary" in summary_block
+    assert "scenario_validation_outcome" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -292,6 +295,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "comparative_session_state" in question_block
     assert "pedagogical_regression_signal" in question_block
     assert "candidate_session_signature" in question_block
+    assert "runtime_scenario_state" in question_block
+    assert "scenario_category" in question_block
+    assert "scenario_expectation_alignment" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

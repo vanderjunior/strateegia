@@ -9,6 +9,7 @@ from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
 from app.services.pedagogical_observability import PedagogicalObservabilityLayer
 from app.services.pedagogical_validation import PedagogicalValidationLayer
+from app.services.runtime_scenario_simulation import RuntimeScenarioSimulationLayer
 from app.services.runtime_traceability import RuntimeTraceabilityLayer
 from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
@@ -111,6 +112,7 @@ class SessionManager:
         validation_dataset_awareness = ValidationDatasetAwarenessLayer()
         scientific_runtime_validation = ScientificRuntimeValidationLayer()
         comparative_analytics = ComparativeSessionAnalyticsLayer()
+        scenario_simulation = RuntimeScenarioSimulationLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -150,7 +152,8 @@ class SessionManager:
         runtime_blocks = export_debug.annotate(runtime_blocks)
         runtime_blocks = validation_dataset_awareness.annotate(runtime_blocks)
         runtime_blocks = scientific_runtime_validation.annotate(runtime_blocks)
-        return comparative_analytics.annotate(runtime_blocks)
+        runtime_blocks = comparative_analytics.annotate(runtime_blocks)
+        return scenario_simulation.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -478,6 +481,18 @@ class SessionManager:
             "pedagogical_regression_signal": executed.get("pedagogical_regression_signal"),
             "comparative_validation_alignment": executed.get("comparative_validation_alignment"),
             "why_this_comparison_state": executed.get("why_this_comparison_state"),
+            "runtime_scenario_state": executed.get("runtime_scenario_state"),
+            "scenario_simulation_reasoning": executed.get("scenario_simulation_reasoning"),
+            "scenario_category": executed.get("scenario_category"),
+            "scenario_replay_snapshot": executed.get("scenario_replay_snapshot"),
+            "scenario_expected_states": executed.get("scenario_expected_states"),
+            "scenario_observed_states": executed.get("scenario_observed_states"),
+            "scenario_expectation_alignment": executed.get("scenario_expectation_alignment"),
+            "scenario_validation_outcome": executed.get("scenario_validation_outcome"),
+            "scenario_regression_signal": executed.get("scenario_regression_signal"),
+            "scenario_mismatch_reason": executed.get("scenario_mismatch_reason"),
+            "scenario_replay_summary": executed.get("scenario_replay_summary"),
+            "why_this_scenario_outcome": executed.get("why_this_scenario_outcome"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

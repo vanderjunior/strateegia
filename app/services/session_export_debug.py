@@ -76,6 +76,7 @@ def build_session_export_snapshot(runtime_blocks: list[dict] | None) -> SessionE
         stability_snapshot={
             "session_stability_state": session_snapshot.session_snapshot_state,
             "stabilization_sustainability": session_snapshot.stabilization_sustainability,
+            "pacing_stability": session_snapshot.pacing_stability,
             "cognitive_balance": session_snapshot.cognitive_balance,
         },
         tuning_snapshot={

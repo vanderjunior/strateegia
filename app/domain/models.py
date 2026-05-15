@@ -622,6 +622,60 @@ class ComparativeSessionAnalyticsProfile(BaseModel):
     why_this_comparison_state: str = ""
 
 
+class ScenarioReplaySnapshot(BaseModel):
+    retrieval_level: float = 0.0
+    scaffold_level: float = 0.0
+    compression_safety: float = 0.0
+    reconstruction_pressure: float = 0.0
+    transfer_stability: float = 0.0
+    continuity_level: float = 0.0
+    pacing_stability: float = 0.0
+    validation_confidence: float = 0.0
+    sustainability_level: float = 0.0
+    overlap_level: float = 0.0
+    expected_classification: str = ""
+
+
+class ScenarioExpectation(BaseModel):
+    expected_validation_state: str = ""
+    expected_dataset_awareness_state: str = ""
+    expected_scientific_validation_state: str = ""
+    expected_comparative_state: str = ""
+    expected_regression_signal: str = ""
+    expected_risk_flags: list[str] = Field(default_factory=list)
+
+
+class RuntimeScenarioProfile(BaseModel):
+    scenario_category: str
+    scenario_expected_states: ScenarioExpectation = Field(default_factory=ScenarioExpectation)
+    scenario_notes: str = ""
+
+
+class ScenarioValidationOutcome(BaseModel):
+    runtime_scenario_state: str
+    scenario_validation_outcome: str = ""
+    scenario_expectation_alignment: float = 0.0
+    scenario_regression_signal: str = ""
+    scenario_mismatch_reason: str = ""
+    scenario_replay_summary: str = ""
+    why_this_scenario_outcome: str = ""
+
+
+class ScenarioSimulationResult(BaseModel):
+    runtime_scenario_state: str
+    scenario_simulation_reasoning: list[str] = Field(default_factory=list)
+    scenario_category: str = ""
+    scenario_replay_snapshot: dict[str, object] = Field(default_factory=dict)
+    scenario_expected_states: dict[str, object] = Field(default_factory=dict)
+    scenario_observed_states: dict[str, object] = Field(default_factory=dict)
+    scenario_expectation_alignment: float = 0.0
+    scenario_validation_outcome: str = ""
+    scenario_regression_signal: str = ""
+    scenario_mismatch_reason: str = ""
+    scenario_replay_summary: str = ""
+    why_this_scenario_outcome: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""

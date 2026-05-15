@@ -706,6 +706,35 @@ def test_execute_study_block_exposes_comparative_session_analytics_metadata():
     assert "why_this_comparison_state" in payload
 
 
+def test_execute_study_block_exposes_runtime_scenario_simulation_metadata():
+    topic_node = build_topic_node(
+        title="Runtime Scenario Simulation",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="scenario-simulation", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="scenario-simulation",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["runtime_scenario_state"]
+    assert payload["scenario_category"]
+    assert payload["scenario_replay_snapshot"]
+    assert payload["scenario_validation_outcome"]
+    assert "why_this_scenario_outcome" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",
