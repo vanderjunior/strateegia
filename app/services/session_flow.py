@@ -13,6 +13,7 @@ from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
 from app.services.session_stability_metrics import SessionStabilityMetricsLayer
+from app.services.session_snapshot_diff import SessionSnapshotDiffLayer
 from app.services.validation_harness import ValidationHarnessLayer
 from app.services.pedagogical_tuning_profiles import PedagogicalTuningProfilesLayer
 
@@ -101,6 +102,7 @@ class SessionManager:
         session_stability = SessionStabilityMetricsLayer()
         tuning_profiles = PedagogicalTuningProfilesLayer()
         validation_harness = ValidationHarnessLayer()
+        snapshot_diff = SessionSnapshotDiffLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -135,7 +137,8 @@ class SessionManager:
         runtime_blocks = validation.annotate(runtime_blocks)
         runtime_blocks = session_stability.annotate(runtime_blocks)
         runtime_blocks = tuning_profiles.annotate(runtime_blocks)
-        return validation_harness.annotate(runtime_blocks)
+        runtime_blocks = validation_harness.annotate(runtime_blocks)
+        return snapshot_diff.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -376,6 +379,23 @@ class SessionManager:
             "runtime_validation_summary": executed.get("runtime_validation_summary"),
             "evidence_alignment": executed.get("evidence_alignment"),
             "why_this_validation_state": executed.get("why_this_validation_state"),
+            "session_snapshot_state": executed.get("session_snapshot_state"),
+            "session_snapshot_summary": executed.get("session_snapshot_summary"),
+            "behavioral_diff_state": executed.get("behavioral_diff_state"),
+            "behavioral_diff_reasoning": executed.get("behavioral_diff_reasoning"),
+            "retrieval_shift": executed.get("retrieval_shift"),
+            "scaffold_shift": executed.get("scaffold_shift"),
+            "continuity_shift": executed.get("continuity_shift"),
+            "pacing_shift": executed.get("pacing_shift"),
+            "compression_shift": executed.get("compression_shift"),
+            "stabilization_shift": executed.get("stabilization_shift"),
+            "overlap_shift": executed.get("overlap_shift"),
+            "modulation_shift": executed.get("modulation_shift"),
+            "validation_shift": executed.get("validation_shift"),
+            "convergence_summary": executed.get("convergence_summary"),
+            "divergence_summary": executed.get("divergence_summary"),
+            "runtime_behavior_delta": executed.get("runtime_behavior_delta"),
+            "why_this_behavioral_diff": executed.get("why_this_behavioral_diff"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

@@ -559,6 +559,35 @@ def test_execute_study_block_exposes_validation_harness_metadata():
     assert "why_this_validation_state" in payload
 
 
+def test_execute_study_block_exposes_session_snapshot_diff_metadata():
+    topic_node = build_topic_node(
+        title="Snapshot Runtime",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="snapshot-runtime", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="snapshot-runtime",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["session_snapshot_state"]
+    assert payload["session_snapshot_summary"]
+    assert payload["behavioral_diff_state"]
+    assert "behavioral_diff_reasoning" in payload
+    assert "why_this_behavioral_diff" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

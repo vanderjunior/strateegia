@@ -17,6 +17,7 @@ from app.services.runtime_traceability import resolve_runtime_traceability
 from app.services.runtime_signal_normalization import normalize_runtime_signal_families
 from app.services.pedagogical_tuning_profiles import resolve_pedagogical_tuning_profile
 from app.services.session_stability_metrics import resolve_session_stability_metrics
+from app.services.session_snapshot_diff import build_session_snapshot, compare_session_snapshots
 from app.services.validation_harness import resolve_validation_harness
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
@@ -187,6 +188,15 @@ def execute_study_block(block: StudyBlock) -> dict:
         normalized_signal_profile,
     )
     validation_harness_metadata = _validation_harness_metadata(validation_harness_profile)
+    session_snapshot_profile, behavioral_diff_profile = _resolve_session_snapshot_diff_profiles(
+        block,
+        session_stability_profile,
+        validation_harness_profile,
+    )
+    session_snapshot_diff_metadata = _session_snapshot_diff_metadata(
+        session_snapshot_profile,
+        behavioral_diff_profile,
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -220,6 +230,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **session_stability_metadata,
             **tuning_metadata,
             **validation_harness_metadata,
+            **session_snapshot_diff_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -252,6 +263,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **session_stability_metadata,
             **tuning_metadata,
             **validation_harness_metadata,
+            **session_snapshot_diff_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1339,6 +1351,36 @@ def _resolve_validation_harness_profile(
     )
 
 
+def _resolve_session_snapshot_diff_profiles(
+    block: StudyBlock,
+    session_stability_profile,
+    validation_harness_profile,
+):
+    current_snapshot = build_session_snapshot(
+        [
+            {
+                "type": block.type,
+                "retrieval_density_metric": session_stability_profile.retrieval_density_metric,
+                "scaffold_load_metric": session_stability_profile.scaffold_load_metric,
+                "continuity_smoothness_metric": session_stability_profile.continuity_smoothness_metric,
+                "reconstruction_pressure_metric": session_stability_profile.reconstruction_pressure_metric,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "modulation_convergence_metric": session_stability_profile.modulation_convergence_metric,
+                "stabilization_sustainability_metric": session_stability_profile.stabilization_sustainability_metric,
+                "pacing_stability_metric": session_stability_profile.pacing_stability_metric,
+                "cognitive_balance_metric": session_stability_profile.cognitive_balance_metric,
+                "support_density": session_stability_profile.support_density,
+                "adaptive_overlap_signal": validation_harness_profile.adaptive_overlap_signal,
+                "validation_confidence": validation_harness_profile.validation_confidence,
+                "session_stability_state": session_stability_profile.session_stability_state,
+                "validation_harness_state": validation_harness_profile.validation_harness_state,
+            }
+        ]
+    )
+    behavioral_diff = compare_session_snapshots(None, current_snapshot)
+    return current_snapshot, behavioral_diff
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1585,6 +1627,28 @@ def _validation_harness_metadata(profile) -> dict[str, object]:
         "runtime_validation_summary": profile.runtime_validation_summary,
         "evidence_alignment": profile.evidence_alignment,
         "why_this_validation_state": profile.why_this_validation_state,
+    }
+
+
+def _session_snapshot_diff_metadata(snapshot_profile, diff_profile) -> dict[str, object]:
+    return {
+        "session_snapshot_state": snapshot_profile.session_snapshot_state,
+        "session_snapshot_summary": snapshot_profile.session_snapshot_summary,
+        "behavioral_diff_state": diff_profile.behavioral_diff_state,
+        "behavioral_diff_reasoning": diff_profile.behavioral_diff_reasoning,
+        "retrieval_shift": diff_profile.retrieval_shift,
+        "scaffold_shift": diff_profile.scaffold_shift,
+        "continuity_shift": diff_profile.continuity_shift,
+        "pacing_shift": diff_profile.pacing_shift,
+        "compression_shift": diff_profile.compression_shift,
+        "stabilization_shift": diff_profile.stabilization_shift,
+        "overlap_shift": diff_profile.overlap_shift,
+        "modulation_shift": diff_profile.modulation_shift,
+        "validation_shift": diff_profile.validation_shift,
+        "convergence_summary": diff_profile.convergence_summary,
+        "divergence_summary": diff_profile.divergence_summary,
+        "runtime_behavior_delta": diff_profile.runtime_behavior_delta,
+        "why_this_behavioral_diff": diff_profile.why_this_behavioral_diff,
     }
 
 

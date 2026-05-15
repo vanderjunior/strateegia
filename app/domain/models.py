@@ -504,6 +504,41 @@ class ValidationHarnessProfile(BaseModel):
     why_this_validation_state: str = ""
 
 
+class SessionSnapshotProfile(BaseModel):
+    session_snapshot_state: str
+    session_snapshot_summary: str = ""
+    retrieval_density: float = 0.0
+    scaffold_load: float = 0.0
+    continuity_smoothness: float = 0.0
+    reconstruction_pressure: float = 0.0
+    compression_safety: float = 0.0
+    modulation_overlap: float = 0.0
+    stabilization_sustainability: float = 0.0
+    pacing_stability: float = 0.0
+    cognitive_balance: float = 0.0
+    support_density: float = 0.0
+    adaptive_overlap: float = 0.0
+    validation_confidence: float = 0.0
+
+
+class BehavioralDiffProfile(BaseModel):
+    behavioral_diff_state: str
+    behavioral_diff_reasoning: list[str] = Field(default_factory=list)
+    retrieval_shift: float = 0.0
+    scaffold_shift: float = 0.0
+    continuity_shift: float = 0.0
+    pacing_shift: float = 0.0
+    compression_shift: float = 0.0
+    stabilization_shift: float = 0.0
+    overlap_shift: float = 0.0
+    modulation_shift: float = 0.0
+    validation_shift: float = 0.0
+    convergence_summary: str = ""
+    divergence_summary: str = ""
+    runtime_behavior_delta: float = 0.0
+    why_this_behavioral_diff: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0
