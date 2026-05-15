@@ -226,6 +226,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "scientific_validation_state" in summary_block
     assert "runtime_benchmark_summary" in summary_block
     assert "reproducibility_summary" in summary_block
+    assert "comparative_session_state" in summary_block
+    assert "comparative_runtime_summary" in summary_block
+    assert "baseline_session_signature" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -286,6 +289,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "scientific_validation_state" in question_block
     assert "regression_detection_state" in question_block
     assert "comparative_runtime_alignment" in question_block
+    assert "comparative_session_state" in question_block
+    assert "pedagogical_regression_signal" in question_block
+    assert "candidate_session_signature" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

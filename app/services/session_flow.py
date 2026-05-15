@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.domain.models import LearningPlan, LearningPlanEntry, StudySession
 from app.services.content_execution import execute_study_block
+from app.services.comparative_session_analytics import ComparativeSessionAnalyticsLayer
 from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
 from app.services.pedagogical_observability import PedagogicalObservabilityLayer
@@ -109,6 +110,7 @@ class SessionManager:
         export_debug = SessionExportDebugLayer()
         validation_dataset_awareness = ValidationDatasetAwarenessLayer()
         scientific_runtime_validation = ScientificRuntimeValidationLayer()
+        comparative_analytics = ComparativeSessionAnalyticsLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -147,7 +149,8 @@ class SessionManager:
         runtime_blocks = snapshot_diff.annotate(runtime_blocks)
         runtime_blocks = export_debug.annotate(runtime_blocks)
         runtime_blocks = validation_dataset_awareness.annotate(runtime_blocks)
-        return scientific_runtime_validation.annotate(runtime_blocks)
+        runtime_blocks = scientific_runtime_validation.annotate(runtime_blocks)
+        return comparative_analytics.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -457,6 +460,24 @@ class SessionManager:
             "comparative_runtime_alignment": executed.get("comparative_runtime_alignment"),
             "reproducibility_summary": executed.get("reproducibility_summary"),
             "why_this_validation_profile": executed.get("why_this_validation_profile"),
+            "comparative_session_state": executed.get("comparative_session_state"),
+            "comparative_session_reasoning": executed.get("comparative_session_reasoning"),
+            "comparative_runtime_summary": executed.get("comparative_runtime_summary"),
+            "session_comparison_profile": executed.get("session_comparison_profile"),
+            "baseline_session_signature": executed.get("baseline_session_signature"),
+            "candidate_session_signature": executed.get("candidate_session_signature"),
+            "retrieval_delta": executed.get("retrieval_delta"),
+            "scaffold_delta": executed.get("scaffold_delta"),
+            "compression_delta": executed.get("compression_delta"),
+            "continuity_delta": executed.get("continuity_delta"),
+            "reconstruction_delta": executed.get("reconstruction_delta"),
+            "pacing_delta": executed.get("pacing_delta"),
+            "validation_delta": executed.get("validation_delta"),
+            "sustainability_delta": executed.get("sustainability_delta"),
+            "behavioral_drift_signal": executed.get("behavioral_drift_signal"),
+            "pedagogical_regression_signal": executed.get("pedagogical_regression_signal"),
+            "comparative_validation_alignment": executed.get("comparative_validation_alignment"),
+            "why_this_comparison_state": executed.get("why_this_comparison_state"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

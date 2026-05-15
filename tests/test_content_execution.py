@@ -677,6 +677,35 @@ def test_execute_study_block_exposes_scientific_runtime_validation_metadata():
     assert payload["reproducibility_summary"]
 
 
+def test_execute_study_block_exposes_comparative_session_analytics_metadata():
+    topic_node = build_topic_node(
+        title="Comparative Session Analytics",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="comparative-session", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="comparative-session",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["comparative_session_state"]
+    assert payload["comparative_runtime_summary"]
+    assert payload["baseline_session_signature"]
+    assert payload["candidate_session_signature"]
+    assert "why_this_comparison_state" in payload
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

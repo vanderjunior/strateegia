@@ -11,6 +11,7 @@ from app.services.conceptual_relationships import (
     build_relationship_signals,
 )
 from app.services.cognitive_compression import resolve_cognitive_compression
+from app.services.comparative_session_analytics import compare_session_analytics
 from app.services.pedagogical_observability import resolve_pedagogical_observability
 from app.services.pedagogical_validation import resolve_pedagogical_validation
 from app.services.runtime_traceability import resolve_runtime_traceability
@@ -230,6 +231,17 @@ def execute_study_block(block: StudyBlock) -> dict:
     scientific_runtime_validation_metadata = _scientific_runtime_validation_metadata(
         scientific_runtime_validation_profile
     )
+    comparative_session_analytics_profile = _resolve_comparative_session_analytics_profile(
+        block,
+        session_stability_profile,
+        validation_harness_profile,
+        session_export_snapshot,
+        validation_dataset_awareness_profile,
+        scientific_runtime_validation_profile,
+    )
+    comparative_session_analytics_metadata = _comparative_session_analytics_metadata(
+        comparative_session_analytics_profile
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -267,6 +279,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **session_export_metadata,
             **validation_dataset_awareness_metadata,
             **scientific_runtime_validation_metadata,
+            **comparative_session_analytics_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -303,6 +316,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **session_export_metadata,
             **validation_dataset_awareness_metadata,
             **scientific_runtime_validation_metadata,
+            **comparative_session_analytics_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1570,6 +1584,59 @@ def _resolve_scientific_runtime_validation_profile(
     )
 
 
+def _resolve_comparative_session_analytics_profile(
+    block: StudyBlock,
+    session_stability_profile,
+    validation_harness_profile,
+    session_export_snapshot,
+    validation_dataset_awareness_profile,
+    scientific_runtime_validation_profile,
+):
+    candidate_snapshot = {
+        **session_export_snapshot.model_dump(mode="json"),
+        "stability_snapshot": {
+            **session_export_snapshot.stability_snapshot,
+            "pacing_stability": session_stability_profile.pacing_stability_metric,
+        },
+        "validation_snapshot": {
+            **session_export_snapshot.validation_snapshot,
+            "validation_harness_state": validation_harness_profile.validation_harness_state,
+            "validation_confidence": validation_harness_profile.validation_confidence,
+        },
+        "support_snapshot": {
+            **session_export_snapshot.support_snapshot,
+            "support_density": session_stability_profile.support_density,
+        },
+        "retrieval_snapshot": {
+            **session_export_snapshot.retrieval_snapshot,
+            "density": session_stability_profile.retrieval_density_metric,
+        },
+        "behavioral_diff_snapshot": {
+            **session_export_snapshot.behavioral_diff_snapshot,
+            "state": "behavior_stable",
+            "delta": 0.0,
+        },
+    }
+    baseline_snapshot = {
+        **candidate_snapshot,
+        "behavioral_diff_snapshot": {
+            **candidate_snapshot["behavioral_diff_snapshot"],
+            "state": "behavior_stable",
+            "delta": 0.0,
+        },
+        "validation_snapshot": {
+            **candidate_snapshot["validation_snapshot"],
+            "validation_harness_state": validation_dataset_awareness_profile.validation_dataset_state,
+        },
+        "runtime_trace_snapshot": {
+            **session_export_snapshot.runtime_trace_snapshot,
+            "trace_summary": scientific_runtime_validation_profile.reproducibility_summary,
+        },
+    }
+    _ = block
+    return compare_session_analytics(baseline_snapshot, candidate_snapshot)
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1905,6 +1972,29 @@ def _scientific_runtime_validation_metadata(profile) -> dict[str, object]:
         "comparative_runtime_alignment": profile.comparative_runtime_alignment,
         "reproducibility_summary": profile.reproducibility_summary,
         "why_this_validation_profile": profile.why_this_validation_profile,
+    }
+
+
+def _comparative_session_analytics_metadata(profile) -> dict[str, object]:
+    return {
+        "comparative_session_state": profile.comparative_session_state,
+        "comparative_session_reasoning": profile.comparative_session_reasoning,
+        "comparative_runtime_summary": profile.comparative_runtime_summary,
+        "session_comparison_profile": profile.session_comparison_profile.model_dump(mode="json"),
+        "baseline_session_signature": profile.baseline_session_signature,
+        "candidate_session_signature": profile.candidate_session_signature,
+        "retrieval_delta": profile.retrieval_delta,
+        "scaffold_delta": profile.scaffold_delta,
+        "compression_delta": profile.compression_delta,
+        "continuity_delta": profile.continuity_delta,
+        "reconstruction_delta": profile.reconstruction_delta,
+        "pacing_delta": profile.pacing_delta,
+        "validation_delta": profile.validation_delta,
+        "sustainability_delta": profile.sustainability_delta,
+        "behavioral_drift_signal": profile.behavioral_drift_signal,
+        "pedagogical_regression_signal": profile.pedagogical_regression_signal,
+        "comparative_validation_alignment": profile.comparative_validation_alignment,
+        "why_this_comparison_state": profile.why_this_comparison_state,
     }
 
 

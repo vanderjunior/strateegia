@@ -570,6 +570,58 @@ class ScientificRuntimeValidationProfile(BaseModel):
     why_this_validation_profile: str = ""
 
 
+class ComparativeRuntimeSummary(BaseModel):
+    retrieval_level: float = 0.0
+    scaffold_level: float = 0.0
+    compression_level: float = 0.0
+    continuity_level: float = 0.0
+    pacing_level: float = 0.0
+    reconstruction_level: float = 0.0
+    validation_level: float = 0.0
+    sustainability_level: float = 0.0
+    balance_level: float = 0.0
+
+
+class SessionComparisonProfile(BaseModel):
+    baseline_session_signature: ComparativeRuntimeSummary = Field(default_factory=ComparativeRuntimeSummary)
+    candidate_session_signature: ComparativeRuntimeSummary = Field(default_factory=ComparativeRuntimeSummary)
+    comparison_context: str = ""
+
+
+class PedagogicalRegressionSignal(BaseModel):
+    retrieval_inflation_risk: float = 0.0
+    scaffold_dependency_delta: float = 0.0
+    compression_safety_delta: float = 0.0
+    continuity_degradation_delta: float = 0.0
+    reconstruction_pressure_delta: float = 0.0
+    pacing_instability_delta: float = 0.0
+    validation_confidence_delta: float = 0.0
+    sustainability_delta: float = 0.0
+    behavioral_drift_signal: float = 0.0
+    pedagogical_regression_signal: str = ""
+
+
+class ComparativeSessionAnalyticsProfile(BaseModel):
+    comparative_session_state: str
+    comparative_session_reasoning: list[str] = Field(default_factory=list)
+    comparative_runtime_summary: str = ""
+    session_comparison_profile: SessionComparisonProfile = Field(default_factory=SessionComparisonProfile)
+    baseline_session_signature: dict[str, float] = Field(default_factory=dict)
+    candidate_session_signature: dict[str, float] = Field(default_factory=dict)
+    retrieval_delta: float = 0.0
+    scaffold_delta: float = 0.0
+    compression_delta: float = 0.0
+    continuity_delta: float = 0.0
+    reconstruction_delta: float = 0.0
+    pacing_delta: float = 0.0
+    validation_delta: float = 0.0
+    sustainability_delta: float = 0.0
+    behavioral_drift_signal: float = 0.0
+    pedagogical_regression_signal: str = ""
+    comparative_validation_alignment: float = 0.0
+    why_this_comparison_state: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
