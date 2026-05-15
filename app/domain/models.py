@@ -405,6 +405,22 @@ class PedagogicalObservabilityProfile(BaseModel):
     why_this_observation_now: str = ""
 
 
+class RuntimeTraceProfile(BaseModel):
+    runtime_trace_state: str
+    behavioral_trace: list[str] = Field(default_factory=list)
+    trace_reasoning: list[str] = Field(default_factory=list)
+    signal_contributors: list[str] = Field(default_factory=list)
+    adaptation_stack: list[str] = Field(default_factory=list)
+    runtime_pressure_summary: str = ""
+    retrieval_density_trace: str = ""
+    support_overlap_trace: str = ""
+    continuity_transition_trace: str = ""
+    stabilization_trace: str = ""
+    modulation_trace: str = ""
+    trace_alignment: float = 0.0
+    why_this_trace_now: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0

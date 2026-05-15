@@ -12,6 +12,7 @@ from app.services.conceptual_relationships import (
 )
 from app.services.cognitive_compression import resolve_cognitive_compression
 from app.services.pedagogical_observability import resolve_pedagogical_observability
+from app.services.runtime_traceability import resolve_runtime_traceability
 from app.services.learning_engine import compute_microtopic_priority
 from app.services.micro_interventions import resolve_micro_intervention
 from app.services.microtopic_extractor import MicroTopicExtractor
@@ -115,6 +116,17 @@ def execute_study_block(block: StudyBlock) -> dict:
         consolidation_profile,
     )
     observability_metadata = _pedagogical_observability_metadata(observability_profile)
+    traceability_profile = _resolve_runtime_traceability_profile(
+        block,
+        pedagogical_profile,
+        micro_intervention,
+        trajectory_profile,
+        expression_profile,
+        compression_profile,
+        consolidation_profile,
+        observability_profile,
+    )
+    traceability_metadata = _runtime_traceability_metadata(traceability_profile)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -142,6 +154,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **compression_metadata,
             **consolidation_metadata,
             **observability_metadata,
+            **traceability_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -168,6 +181,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **compression_metadata,
             **consolidation_metadata,
             **observability_metadata,
+            **traceability_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1002,6 +1016,50 @@ def _resolve_pedagogical_observability_profile(
     )
 
 
+def _resolve_runtime_traceability_profile(
+    block: StudyBlock,
+    pedagogical_profile,
+    micro_intervention,
+    trajectory_profile,
+    expression_profile,
+    compression_profile,
+    consolidation_profile,
+    observability_profile,
+):
+    return resolve_runtime_traceability(
+        current_block={
+            "type": block.type,
+            "pedagogical_mode": pedagogical_profile.pedagogical_mode,
+            "micro_intervention": micro_intervention.intervention_type,
+            "pedagogical_expression_mode": expression_profile.pedagogical_expression_mode,
+            "cognitive_compression_mode": compression_profile.cognitive_compression_mode,
+            "adaptive_signal_state": consolidation_profile.adaptive_signal_state,
+            "pedagogical_observability_state": observability_profile.pedagogical_observability_state,
+            "cognitive_momentum": "retrieval_heavy"
+            if pedagogical_profile.retrieval_intensity == "high"
+            else "conceptually_dense"
+            if pedagogical_profile.cognitive_load == "high"
+            else "balanced",
+            "session_coherence_state": "stable_progression"
+            if trajectory_profile.longitudinal_consistency >= 0.5
+            else "pacing_fragile",
+            "trajectory_state": trajectory_profile.trajectory_state,
+            "retrieval_intensity": pedagogical_profile.retrieval_intensity,
+            "cognitive_load_score": pedagogical_profile.cognitive_load_score,
+            "reconstruction_fragility": trajectory_profile.reconstruction_fragility,
+            "transfer_fragility": trajectory_profile.transfer_fragility,
+            "progression_continuity": trajectory_profile.longitudinal_consistency,
+            "longitudinal_consistency": trajectory_profile.longitudinal_consistency,
+            "signal_overlap_density": observability_profile.signal_overlap_density,
+            "retrieval_pressure_accumulation": observability_profile.retrieval_pressure_accumulation,
+            "scaffold_density": observability_profile.scaffold_density,
+            "modulation_overlap": consolidation_profile.modulation_overlap,
+            "stabilization_stage": pedagogical_profile.stabilization_stage,
+        },
+        recent_blocks=[],
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1137,6 +1195,24 @@ def _pedagogical_observability_metadata(profile) -> dict[str, object]:
         "continuity_observation": profile.continuity_observation,
         "stability_profile": profile.stability_profile,
         "why_this_observation_now": profile.why_this_observation_now,
+    }
+
+
+def _runtime_traceability_metadata(profile) -> dict[str, object]:
+    return {
+        "runtime_trace_state": profile.runtime_trace_state,
+        "behavioral_trace": profile.behavioral_trace,
+        "trace_reasoning": profile.trace_reasoning,
+        "signal_contributors": profile.signal_contributors,
+        "adaptation_stack": profile.adaptation_stack,
+        "runtime_pressure_summary": profile.runtime_pressure_summary,
+        "retrieval_density_trace": profile.retrieval_density_trace,
+        "support_overlap_trace": profile.support_overlap_trace,
+        "continuity_transition_trace": profile.continuity_transition_trace,
+        "stabilization_trace": profile.stabilization_trace,
+        "modulation_trace": profile.modulation_trace,
+        "trace_alignment": profile.trace_alignment,
+        "why_this_trace_now": profile.why_this_trace_now,
     }
 
 

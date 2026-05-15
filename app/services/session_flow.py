@@ -7,6 +7,7 @@ from app.services.content_execution import execute_study_block
 from app.services.cognitive_momentum import CognitiveMomentumLayer
 from app.services.microtopic_session_composer import MicrotopicSessionComposer
 from app.services.pedagogical_observability import PedagogicalObservabilityLayer
+from app.services.runtime_traceability import RuntimeTraceabilityLayer
 from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_narrative import SessionNarrativeLayer
@@ -91,6 +92,7 @@ class SessionManager:
         momentum = CognitiveMomentumLayer()
         coherence = SessionCoherenceLayer()
         observability = PedagogicalObservabilityLayer()
+        traceability = RuntimeTraceabilityLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -120,7 +122,8 @@ class SessionManager:
         runtime_blocks = narrative.annotate(runtime_blocks)
         runtime_blocks = momentum.annotate(runtime_blocks)
         runtime_blocks = coherence.annotate(runtime_blocks)
-        return observability.annotate(runtime_blocks)
+        runtime_blocks = observability.annotate(runtime_blocks)
+        return traceability.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -280,6 +283,19 @@ class SessionManager:
             "continuity_observation": executed.get("continuity_observation"),
             "stability_profile": executed.get("stability_profile"),
             "why_this_observation_now": executed.get("why_this_observation_now"),
+            "runtime_trace_state": executed.get("runtime_trace_state"),
+            "behavioral_trace": executed.get("behavioral_trace"),
+            "trace_reasoning": executed.get("trace_reasoning"),
+            "signal_contributors": executed.get("signal_contributors"),
+            "adaptation_stack": executed.get("adaptation_stack"),
+            "runtime_pressure_summary": executed.get("runtime_pressure_summary"),
+            "retrieval_density_trace": executed.get("retrieval_density_trace"),
+            "support_overlap_trace": executed.get("support_overlap_trace"),
+            "continuity_transition_trace": executed.get("continuity_transition_trace"),
+            "stabilization_trace": executed.get("stabilization_trace"),
+            "modulation_trace": executed.get("modulation_trace"),
+            "trace_alignment": executed.get("trace_alignment"),
+            "why_this_trace_now": executed.get("why_this_trace_now"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),
