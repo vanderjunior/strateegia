@@ -19,6 +19,7 @@ from app.services.pedagogical_tuning_profiles import resolve_pedagogical_tuning_
 from app.services.session_export_debug import build_session_export_snapshot
 from app.services.session_stability_metrics import resolve_session_stability_metrics
 from app.services.session_snapshot_diff import build_session_snapshot, compare_session_snapshots
+from app.services.scientific_runtime_validation import resolve_scientific_runtime_validation
 from app.services.validation_dataset_awareness import resolve_validation_dataset_awareness
 from app.services.validation_harness import resolve_validation_harness
 from app.services.learning_engine import compute_microtopic_priority
@@ -217,6 +218,18 @@ def execute_study_block(block: StudyBlock) -> dict:
     validation_dataset_awareness_metadata = _validation_dataset_awareness_metadata(
         validation_dataset_awareness_profile
     )
+    scientific_runtime_validation_profile = _resolve_scientific_runtime_validation_profile(
+        block,
+        session_stability_profile,
+        validation_harness_profile,
+        validation_profile,
+        normalized_signal_profile,
+        behavioral_diff_profile,
+        validation_dataset_awareness_profile,
+    )
+    scientific_runtime_validation_metadata = _scientific_runtime_validation_metadata(
+        scientific_runtime_validation_profile
+    )
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -253,6 +266,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **session_snapshot_diff_metadata,
             **session_export_metadata,
             **validation_dataset_awareness_metadata,
+            **scientific_runtime_validation_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -288,6 +302,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **session_snapshot_diff_metadata,
             **session_export_metadata,
             **validation_dataset_awareness_metadata,
+            **scientific_runtime_validation_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1496,6 +1511,65 @@ def _resolve_validation_dataset_awareness_profile(
     )
 
 
+def _resolve_scientific_runtime_validation_profile(
+    block: StudyBlock,
+    session_stability_profile,
+    validation_harness_profile,
+    validation_profile,
+    normalized_signal_profile,
+    behavioral_diff_profile,
+    validation_dataset_awareness_profile,
+):
+    return resolve_scientific_runtime_validation(
+        [
+            {
+                "type": block.type,
+                "topic_id": block.topic_id,
+                "retrieval_pressure_accumulation": session_stability_profile.retrieval_density_metric,
+                "retrieval_density_metric": session_stability_profile.retrieval_density_metric,
+                "scaffold_density": session_stability_profile.scaffold_load_metric,
+                "scaffold_load_metric": session_stability_profile.scaffold_load_metric,
+                "continuity_smoothness_metric": session_stability_profile.continuity_smoothness_metric,
+                "continuity_sustainability_signal": validation_harness_profile.continuity_sustainability_signal,
+                "reconstruction_fragility": 1.0 - validation_harness_profile.reconstruction_sustainability_signal,
+                "reconstruction_pressure_metric": session_stability_profile.reconstruction_pressure_metric,
+                "reconstruction_sustainability_signal": validation_harness_profile.reconstruction_sustainability_signal,
+                "compression_safety_metric": session_stability_profile.compression_safety_metric,
+                "compression_safety_signal": validation_harness_profile.compression_safety_signal,
+                "transfer_fragility": 1.0 - validation_harness_profile.transfer_stability_signal,
+                "transfer_stability_signal": validation_harness_profile.transfer_stability_signal,
+                "stabilization_sustainability_metric": session_stability_profile.stabilization_sustainability_metric,
+                "stabilization_reliability_signal": validation_harness_profile.stabilization_reliability_signal,
+                "support_density": session_stability_profile.support_density,
+                "reinforcement_density_signal": validation_profile.reinforcement_density_signal,
+                "pacing_stability_metric": session_stability_profile.pacing_stability_metric,
+                "pacing_sustainability_signal": validation_harness_profile.pacing_sustainability_signal,
+                "modulation_overlap": session_stability_profile.modulation_convergence_metric,
+                "adaptive_overlap_signal": validation_harness_profile.adaptive_overlap_signal,
+                "signal_overlap_density": validation_profile.adaptation_overlap_signal,
+                "validation_confidence": validation_harness_profile.validation_confidence,
+                "false_fluency_risk": validation_profile.false_fluency_risk,
+                "longitudinal_validation_signal": validation_profile.longitudinal_validation_signal,
+                "retrieval_shift": behavioral_diff_profile.retrieval_shift,
+                "scaffold_shift": behavioral_diff_profile.scaffold_shift,
+                "continuity_shift": behavioral_diff_profile.continuity_shift,
+                "overlap_shift": behavioral_diff_profile.overlap_shift,
+                "runtime_behavior_delta": behavioral_diff_profile.runtime_behavior_delta,
+                "retrieval_family": normalized_signal_profile.retrieval_family,
+                "support_family": normalized_signal_profile.support_family,
+                "continuity_family": normalized_signal_profile.continuity_family,
+                "stabilization_family": normalized_signal_profile.stabilization_family,
+                "overlap_family": normalized_signal_profile.overlap_family,
+                "validation_dataset_state": validation_dataset_awareness_profile.validation_dataset_state,
+                "pedagogical_scenario_family": validation_dataset_awareness_profile.pedagogical_scenario_family,
+                "behavioral_diff_state": behavioral_diff_profile.behavioral_diff_state,
+                "validation_harness_state": validation_harness_profile.validation_harness_state,
+                "session_snapshot_state": behavioral_diff_profile.behavioral_diff_state,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1807,6 +1881,30 @@ def _validation_dataset_awareness_metadata(profile) -> dict[str, object]:
         "comparative_validation_alignment": profile.comparative_validation_alignment,
         "dataset_awareness_summary": profile.dataset_awareness_summary,
         "why_this_validation_context": profile.why_this_validation_context,
+    }
+
+
+def _scientific_runtime_validation_metadata(profile) -> dict[str, object]:
+    return {
+        "scientific_validation_state": profile.scientific_validation_state,
+        "scientific_validation_reasoning": profile.scientific_validation_reasoning,
+        "runtime_benchmark_state": profile.runtime_benchmark_state,
+        "regression_detection_state": profile.regression_detection_state,
+        "sustainability_validation_state": profile.sustainability_validation_state,
+        "cognitive_load_profile": profile.cognitive_load_profile,
+        "retrieval_reliability_profile": profile.retrieval_reliability_profile,
+        "scaffold_dependency_profile": profile.scaffold_dependency_profile,
+        "compression_safety_profile": profile.compression_safety_profile,
+        "overlap_inflation_profile": profile.overlap_inflation_profile,
+        "stabilization_reliability_profile": profile.stabilization_reliability_profile,
+        "continuity_reliability_profile": profile.continuity_reliability_profile,
+        "reinforcement_redundancy_profile": profile.reinforcement_redundancy_profile,
+        "pedagogical_regression_summary": profile.pedagogical_regression_summary,
+        "runtime_benchmark_summary": profile.runtime_benchmark_summary,
+        "empirical_validation_context": profile.empirical_validation_context,
+        "comparative_runtime_alignment": profile.comparative_runtime_alignment,
+        "reproducibility_summary": profile.reproducibility_summary,
+        "why_this_validation_profile": profile.why_this_validation_profile,
     }
 
 

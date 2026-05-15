@@ -223,6 +223,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "validation_dataset_state" in summary_block
     assert "runtime_validation_context" in summary_block
     assert "dataset_awareness_summary" in summary_block
+    assert "scientific_validation_state" in summary_block
+    assert "runtime_benchmark_summary" in summary_block
+    assert "reproducibility_summary" in summary_block
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -280,6 +283,9 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "validation_dataset_state" in question_block
     assert "pedagogical_scenario_family" in question_block
     assert "comparative_validation_alignment" in question_block
+    assert "scientific_validation_state" in question_block
+    assert "regression_detection_state" in question_block
+    assert "comparative_runtime_alignment" in question_block
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

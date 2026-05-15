@@ -648,6 +648,35 @@ def test_execute_study_block_exposes_validation_dataset_awareness_metadata():
     assert "why_this_validation_context" in payload
 
 
+def test_execute_study_block_exposes_scientific_runtime_validation_metadata():
+    topic_node = build_topic_node(
+        title="Scientific Runtime Validation",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="scientific-runtime", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="scientific-runtime",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["scientific_validation_state"]
+    assert payload["runtime_benchmark_state"]
+    assert payload["regression_detection_state"]
+    assert payload["comparative_runtime_alignment"] >= 0.0
+    assert payload["reproducibility_summary"]
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

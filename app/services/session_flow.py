@@ -13,6 +13,7 @@ from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
 from app.services.session_export_debug import SessionExportDebugLayer
 from app.services.session_narrative import SessionNarrativeLayer
+from app.services.scientific_runtime_validation import ScientificRuntimeValidationLayer
 from app.services.session_stability_metrics import SessionStabilityMetricsLayer
 from app.services.session_snapshot_diff import SessionSnapshotDiffLayer
 from app.services.validation_dataset_awareness import ValidationDatasetAwarenessLayer
@@ -107,6 +108,7 @@ class SessionManager:
         snapshot_diff = SessionSnapshotDiffLayer()
         export_debug = SessionExportDebugLayer()
         validation_dataset_awareness = ValidationDatasetAwarenessLayer()
+        scientific_runtime_validation = ScientificRuntimeValidationLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -144,7 +146,8 @@ class SessionManager:
         runtime_blocks = validation_harness.annotate(runtime_blocks)
         runtime_blocks = snapshot_diff.annotate(runtime_blocks)
         runtime_blocks = export_debug.annotate(runtime_blocks)
-        return validation_dataset_awareness.annotate(runtime_blocks)
+        runtime_blocks = validation_dataset_awareness.annotate(runtime_blocks)
+        return scientific_runtime_validation.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -418,6 +421,42 @@ class SessionManager:
             "export_reasoning": executed.get("export_reasoning"),
             "export_alignment": executed.get("export_alignment"),
             "export_trace_summary": executed.get("export_trace_summary"),
+            "validation_dataset_state": executed.get("validation_dataset_state"),
+            "validation_dataset_reasoning": executed.get("validation_dataset_reasoning"),
+            "pedagogical_scenario_family": executed.get("pedagogical_scenario_family"),
+            "retrieval_condition_profile": executed.get("retrieval_condition_profile"),
+            "scaffold_condition_profile": executed.get("scaffold_condition_profile"),
+            "continuity_condition_profile": executed.get("continuity_condition_profile"),
+            "reconstruction_condition_profile": executed.get("reconstruction_condition_profile"),
+            "compression_condition_profile": executed.get("compression_condition_profile"),
+            "transfer_condition_profile": executed.get("transfer_condition_profile"),
+            "stabilization_condition_profile": executed.get("stabilization_condition_profile"),
+            "overlap_condition_profile": executed.get("overlap_condition_profile"),
+            "pacing_condition_profile": executed.get("pacing_condition_profile"),
+            "reinforcement_condition_profile": executed.get("reinforcement_condition_profile"),
+            "runtime_validation_context": executed.get("runtime_validation_context"),
+            "comparative_validation_alignment": executed.get("comparative_validation_alignment"),
+            "dataset_awareness_summary": executed.get("dataset_awareness_summary"),
+            "why_this_validation_context": executed.get("why_this_validation_context"),
+            "scientific_validation_state": executed.get("scientific_validation_state"),
+            "scientific_validation_reasoning": executed.get("scientific_validation_reasoning"),
+            "runtime_benchmark_state": executed.get("runtime_benchmark_state"),
+            "regression_detection_state": executed.get("regression_detection_state"),
+            "sustainability_validation_state": executed.get("sustainability_validation_state"),
+            "cognitive_load_profile": executed.get("cognitive_load_profile"),
+            "retrieval_reliability_profile": executed.get("retrieval_reliability_profile"),
+            "scaffold_dependency_profile": executed.get("scaffold_dependency_profile"),
+            "compression_safety_profile": executed.get("compression_safety_profile"),
+            "overlap_inflation_profile": executed.get("overlap_inflation_profile"),
+            "stabilization_reliability_profile": executed.get("stabilization_reliability_profile"),
+            "continuity_reliability_profile": executed.get("continuity_reliability_profile"),
+            "reinforcement_redundancy_profile": executed.get("reinforcement_redundancy_profile"),
+            "pedagogical_regression_summary": executed.get("pedagogical_regression_summary"),
+            "runtime_benchmark_summary": executed.get("runtime_benchmark_summary"),
+            "empirical_validation_context": executed.get("empirical_validation_context"),
+            "comparative_runtime_alignment": executed.get("comparative_runtime_alignment"),
+            "reproducibility_summary": executed.get("reproducibility_summary"),
+            "why_this_validation_profile": executed.get("why_this_validation_profile"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

@@ -524,6 +524,52 @@ class ValidationDatasetAwarenessProfile(BaseModel):
     why_this_validation_context: str = ""
 
 
+class RuntimeBenchmarkProfile(BaseModel):
+    runtime_benchmark_state: str
+    runtime_benchmark_summary: str = ""
+    comparative_runtime_alignment: float = 0.0
+    reproducibility_summary: str = ""
+
+
+class RuntimeRegressionProfile(BaseModel):
+    regression_detection_state: str
+    pedagogical_regression_summary: str = ""
+    overlap_inflation_profile: str = ""
+    reinforcement_redundancy_profile: str = ""
+
+
+class CognitiveSustainabilityProfile(BaseModel):
+    sustainability_validation_state: str
+    cognitive_load_profile: str = ""
+    retrieval_reliability_profile: str = ""
+    scaffold_dependency_profile: str = ""
+    compression_safety_profile: str = ""
+    stabilization_reliability_profile: str = ""
+    continuity_reliability_profile: str = ""
+
+
+class ScientificRuntimeValidationProfile(BaseModel):
+    scientific_validation_state: str
+    scientific_validation_reasoning: list[str] = Field(default_factory=list)
+    runtime_benchmark_state: str = ""
+    regression_detection_state: str = ""
+    sustainability_validation_state: str = ""
+    cognitive_load_profile: str = ""
+    retrieval_reliability_profile: str = ""
+    scaffold_dependency_profile: str = ""
+    compression_safety_profile: str = ""
+    overlap_inflation_profile: str = ""
+    stabilization_reliability_profile: str = ""
+    continuity_reliability_profile: str = ""
+    reinforcement_redundancy_profile: str = ""
+    pedagogical_regression_summary: str = ""
+    runtime_benchmark_summary: str = ""
+    empirical_validation_context: str = ""
+    comparative_runtime_alignment: float = 0.0
+    reproducibility_summary: str = ""
+    why_this_validation_profile: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
