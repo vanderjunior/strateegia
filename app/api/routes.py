@@ -19,6 +19,9 @@ from app.services.learning_engine import LearningDecisionEngine
 from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
+from app.services.tuning_profile_benchmark_comparison import (
+    compare_tuning_profiles_against_benchmark,
+)
 
 
 router = APIRouter(prefix="/api")
@@ -37,6 +40,7 @@ def get_session_manager(request: Request) -> SessionManager:
 
 
 def _inspection_defaults() -> dict[str, object]:
+    registry = build_controlled_tuning_experiment_registry()
     return {
         "inspection_available": False,
         "inspection_label": "Internal Runtime Inspection Console — Read Only",
@@ -66,7 +70,10 @@ def _inspection_defaults() -> dict[str, object]:
         "session_export_debug": {},
         "stability_metrics": {},
         "validation_dataset_awareness": {},
-        "controlled_tuning_registry": build_controlled_tuning_experiment_registry().model_dump(mode="json"),
+        "controlled_tuning_registry": registry.model_dump(mode="json"),
+        "tuning_profile_benchmark_comparison": compare_tuning_profiles_against_benchmark(
+            registry=registry
+        ).model_dump(mode="json"),
         "raw_runtime_block": {},
     }
 
@@ -155,6 +162,12 @@ def _inspection_payload(session_manager: SessionManager) -> dict[str, object]:
         "comparative_validation_alignment": block.get("comparative_validation_alignment", 0.0),
         "dataset_awareness_summary": block.get("dataset_awareness_summary", ""),
     }
+    registry = build_controlled_tuning_experiment_registry()
+    payload["controlled_tuning_registry"] = registry.model_dump(mode="json")
+    payload["tuning_profile_benchmark_comparison"] = compare_tuning_profiles_against_benchmark(
+        registry=registry,
+        benchmark_result={"benchmark_case_reports": block.get("benchmark_case_reports", [])},
+    ).model_dump(mode="json")
     payload["raw_runtime_block"] = block
     return payload
 

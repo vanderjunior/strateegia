@@ -840,6 +840,64 @@ class ControlledTuningExperimentRegistry(BaseModel):
     why_this_registry_state: str = ""
 
 
+class TuningProfileCoverageReport(BaseModel):
+    covered_benchmark_cases: list[str] = Field(default_factory=list)
+    uncovered_priority_cases: list[str] = Field(default_factory=list)
+    coverage_count: int = 0
+    coverage_family_summary: str = ""
+
+
+class TuningProfileRiskTradeoff(BaseModel):
+    expected_benefits: list[str] = Field(default_factory=list)
+    expected_risks: list[str] = Field(default_factory=list)
+    possible_tradeoffs: list[str] = Field(default_factory=list)
+    affected_runtime_dimensions: list[str] = Field(default_factory=list)
+
+
+class TuningProfileBenchmarkAlignment(BaseModel):
+    alignment_state: str = ""
+    covered_regression_sensitive_cases: list[str] = Field(default_factory=list)
+    benchmark_available: bool = False
+    alignment_reasoning: list[str] = Field(default_factory=list)
+
+
+class TuningProfileComparisonResult(BaseModel):
+    experiment_id: str
+    experiment_name: str
+    comparison_state: str
+    covered_benchmark_cases: list[str] = Field(default_factory=list)
+    uncovered_priority_cases: list[str] = Field(default_factory=list)
+    shared_benchmark_cases: list[str] = Field(default_factory=list)
+    shared_tuning_dimensions: list[str] = Field(default_factory=list)
+    expected_benefits: list[str] = Field(default_factory=list)
+    expected_risks: list[str] = Field(default_factory=list)
+    possible_tradeoffs: list[str] = Field(default_factory=list)
+    profile_overlap_signal: float = 0.0
+    coverage_gap_signal: float = 0.0
+    benchmark_alignment: TuningProfileBenchmarkAlignment = Field(default_factory=TuningProfileBenchmarkAlignment)
+    profile_candidate_reasoning: list[str] = Field(default_factory=list)
+    why_this_profile_state: str = ""
+    read_only: bool = True
+    executable: bool = False
+
+
+class TuningProfileBenchmarkComparison(BaseModel):
+    tuning_profile_comparison_state: str
+    tuning_profile_comparison_summary: str = ""
+    tuning_profile_comparison_reasoning: list[str] = Field(default_factory=list)
+    profile_comparison_results: list[TuningProfileComparisonResult] = Field(default_factory=list)
+    total_profiles_compared: int = 0
+    high_coverage_profiles: list[str] = Field(default_factory=list)
+    redundant_profiles: list[str] = Field(default_factory=list)
+    complementary_profiles: list[str] = Field(default_factory=list)
+    tradeoff_sensitive_profiles: list[str] = Field(default_factory=list)
+    uncovered_benchmark_cases: list[str] = Field(default_factory=list)
+    profile_overlap_summary: str = ""
+    benchmark_case_coverage_summary: dict[str, list[str]] = Field(default_factory=dict)
+    comparison_readiness: str = "comparison_insufficient"
+    why_this_tuning_profile_comparison: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
