@@ -216,6 +216,7 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "session_snapshot_state" in summary_block
     assert "session_snapshot_summary" in summary_block
     assert "behavioral_diff_state" in summary_block
+    assert summary_block["session_stability_reasoning"][0].startswith("Estado agregado da sessao:")
     assert "micro_intervention" in summary_block
     assert "why_this_intervention" in summary_block
     assert "cognitive_momentum" in summary_block
@@ -266,6 +267,7 @@ def test_session_blocks_expose_pedagogical_metadata(tmp_path):
     assert "behavioral_diff_state" in question_block
     assert "runtime_behavior_delta" in question_block
     assert "why_this_behavioral_diff" in question_block
+    assert question_block["validation_harness_reasoning"][0].startswith("Estado da harness:")
     assert "micro_intervention" in question_block
     assert "why_this_intervention" in question_block
     assert "cognitive_momentum" in question_block

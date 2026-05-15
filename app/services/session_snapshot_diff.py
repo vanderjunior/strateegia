@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from app.domain.models import BehavioralDiffProfile, SessionSnapshotProfile
+from app.services.runtime_profile_utils import clamp_value, state_message, state_reasoning
 
 
 class SessionSnapshotDiffLayer:
@@ -127,11 +128,14 @@ def compare_session_snapshots(
 
     return BehavioralDiffProfile(
         behavioral_diff_state=state,
-        behavioral_diff_reasoning=[
-            f"Diff comportamental: {state}.",
-            f"retrieval={retrieval_shift:.2f}; scaffold={scaffold_shift:.2f}; continuity={continuity_shift:.2f}.",
-            f"compression={compression_shift:.2f}; stabilization={stabilization_shift:.2f}; overlap={overlap_shift:.2f}.",
-        ],
+        behavioral_diff_reasoning=state_reasoning(
+            "Diff comportamental",
+            state,
+            [
+                f"retrieval={retrieval_shift:.2f}; scaffold={scaffold_shift:.2f}; continuity={continuity_shift:.2f}.",
+                f"compression={compression_shift:.2f}; stabilization={stabilization_shift:.2f}; overlap={overlap_shift:.2f}.",
+            ],
+        ),
         retrieval_shift=round(_clamp(abs(retrieval_shift)), 4),
         scaffold_shift=round(scaffold_shift, 4),
         continuity_shift=round(continuity_shift, 4),
@@ -182,14 +186,18 @@ def _snapshot_state(
 
 
 def _snapshot_summary(state: str) -> str:
-    return {
-        "behavior_stable": "O snapshot atual permaneceu observacionalmente estavel.",
-        "retrieval_heavy": "O snapshot atual concentrou mais pressao de retrieval.",
-        "support_dense": "O snapshot atual concentrou mais suporte e scaffold.",
-        "compression_safe": "O snapshot atual manteve compressao segura e controlada.",
-        "pedagogically_consistent": "O snapshot atual parece pedagogicamente consistente e equilibrado.",
-        "behaviorally_divergent": "O snapshot atual sugere maior divergencia ou overlap local.",
-    }.get(state, "O snapshot atual permaneceu em faixa observacional neutra.")
+    return state_message(
+        state,
+        {
+            "behavior_stable": "O snapshot atual permaneceu observacionalmente estavel.",
+            "retrieval_heavy": "O snapshot atual concentrou mais pressao de retrieval.",
+            "support_dense": "O snapshot atual concentrou mais suporte e scaffold.",
+            "compression_safe": "O snapshot atual manteve compressao segura e controlada.",
+            "pedagogically_consistent": "O snapshot atual parece pedagogicamente consistente e equilibrado.",
+            "behaviorally_divergent": "O snapshot atual sugere maior divergencia ou overlap local.",
+        },
+        "O snapshot atual permaneceu em faixa observacional neutra.",
+    )
 
 
 def _diff_state(
@@ -234,51 +242,61 @@ def _diff_state(
 
 
 def _convergence_summary(state: str) -> str:
-    return {
-        "behavior_stable": "Os snapshots permaneceram muito proximos na janela observada.",
-        "pedagogically_consistent": "Os snapshots seguem convergindo para um perfil parecido.",
-        "continuity_improved": "A sessao ganhou continuidade entre os snapshots recentes.",
-        "compression_more_conservative": "A sessao passou a privilegiar compressao mais segura.",
-        "stabilization_strengthened": "A sustentacao de estabilizacao aumentou entre snapshots.",
-    }.get(state, "Nao houve uma convergencia dominante entre os snapshots.")
+    return state_message(
+        state,
+        {
+            "behavior_stable": "Os snapshots permaneceram muito proximos na janela observada.",
+            "pedagogically_consistent": "Os snapshots seguem convergindo para um perfil parecido.",
+            "continuity_improved": "A sessao ganhou continuidade entre os snapshots recentes.",
+            "compression_more_conservative": "A sessao passou a privilegiar compressao mais segura.",
+            "stabilization_strengthened": "A sustentacao de estabilizacao aumentou entre snapshots.",
+        },
+        "Nao houve uma convergencia dominante entre os snapshots.",
+    )
 
 
 def _divergence_summary(state: str) -> str:
-    return {
-        "retrieval_increased": "O principal desvio recente veio do aumento de retrieval.",
-        "retrieval_reduced": "O principal desvio recente veio da reducao de retrieval.",
-        "scaffold_accumulated": "O principal desvio recente veio do aculo de scaffold.",
-        "scaffold_reduced": "O principal desvio recente veio da reducao de scaffold.",
-        "continuity_fragile": "O principal desvio recente veio da perda de continuidade.",
-        "compression_more_aggressive": "O principal desvio recente veio de compressao mais agressiva.",
-        "overlap_increased": "O principal desvio recente veio do aumento de overlap adaptativo.",
-        "overlap_reduced": "O principal desvio recente veio da reducao de overlap adaptativo.",
-        "stabilization_fragile": "O principal desvio recente veio da queda de estabilizacao.",
-        "behaviorally_divergent": "Os snapshots recentes mostraram mudanca distribuida em varios eixos.",
-    }.get(state, "Nao houve divergencia dominante a destacar.")
+    return state_message(
+        state,
+        {
+            "retrieval_increased": "O principal desvio recente veio do aumento de retrieval.",
+            "retrieval_reduced": "O principal desvio recente veio da reducao de retrieval.",
+            "scaffold_accumulated": "O principal desvio recente veio do aculo de scaffold.",
+            "scaffold_reduced": "O principal desvio recente veio da reducao de scaffold.",
+            "continuity_fragile": "O principal desvio recente veio da perda de continuidade.",
+            "compression_more_aggressive": "O principal desvio recente veio de compressao mais agressiva.",
+            "overlap_increased": "O principal desvio recente veio do aumento de overlap adaptativo.",
+            "overlap_reduced": "O principal desvio recente veio da reducao de overlap adaptativo.",
+            "stabilization_fragile": "O principal desvio recente veio da queda de estabilizacao.",
+            "behaviorally_divergent": "Os snapshots recentes mostraram mudanca distribuida em varios eixos.",
+        },
+        "Nao houve divergencia dominante a destacar.",
+    )
 
 
 def _why_diff(state: str) -> str:
-    return {
-        "behavior_stable": "As metricas agregadas quase nao se moveram entre os snapshots.",
-        "retrieval_increased": "A densidade de retrieval subiu acima da faixa neutra de comparacao.",
-        "retrieval_reduced": "A densidade de retrieval caiu de forma perceptivel na comparacao local.",
-        "scaffold_accumulated": "A sessao passou a concentrar mais scaffold e suporte local.",
-        "scaffold_reduced": "A sessao passou a exigir menos scaffold na comparacao local.",
-        "continuity_improved": "A continuidade agregada melhorou entre os snapshots comparados.",
-        "continuity_fragile": "A continuidade agregada piorou na comparacao local.",
-        "compression_more_conservative": "A sessao ficou mais conservadora em compressao entre snapshots.",
-        "compression_more_aggressive": "A sessao ficou mais agressiva em compressao entre snapshots.",
-        "overlap_increased": "O overlap adaptativo cresceu acima da faixa neutra de comparacao.",
-        "overlap_reduced": "O overlap adaptativo diminuiu na comparacao local.",
-        "stabilization_strengthened": "A estabilidade agregada aumentou entre snapshots recentes.",
-        "stabilization_fragile": "A estabilidade agregada caiu na comparacao local.",
-        "pedagogically_consistent": "As mudancas foram pequenas e coerentes entre os snapshots.",
-        "behaviorally_divergent": "Houve drift distribuido em varios eixos observacionais.",
-    }.get(state, "O diff veio de uma comparacao curta e puramente observacional.")
+    return state_message(
+        state,
+        {
+            "behavior_stable": "As metricas agregadas quase nao se moveram entre os snapshots.",
+            "retrieval_increased": "A densidade de retrieval subiu acima da faixa neutra de comparacao.",
+            "retrieval_reduced": "A densidade de retrieval caiu de forma perceptivel na comparacao local.",
+            "scaffold_accumulated": "A sessao passou a concentrar mais scaffold e suporte local.",
+            "scaffold_reduced": "A sessao passou a exigir menos scaffold na comparacao local.",
+            "continuity_improved": "A continuidade agregada melhorou entre os snapshots comparados.",
+            "continuity_fragile": "A continuidade agregada piorou na comparacao local.",
+            "compression_more_conservative": "A sessao ficou mais conservadora em compressao entre snapshots.",
+            "compression_more_aggressive": "A sessao ficou mais agressiva em compressao entre snapshots.",
+            "overlap_increased": "O overlap adaptativo cresceu acima da faixa neutra de comparacao.",
+            "overlap_reduced": "O overlap adaptativo diminuiu na comparacao local.",
+            "stabilization_strengthened": "A estabilidade agregada aumentou entre snapshots recentes.",
+            "stabilization_fragile": "A estabilidade agregada caiu na comparacao local.",
+            "pedagogically_consistent": "As mudancas foram pequenas e coerentes entre os snapshots.",
+            "behaviorally_divergent": "Houve drift distribuido em varios eixos observacionais.",
+        },
+        "O diff veio de uma comparacao curta e puramente observacional.",
+    )
 
 
 def _clamp(value: float | int | None, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    if value is None:
-        return minimum
-    return max(minimum, min(float(value), maximum))
+    return clamp_value(value, minimum, maximum)

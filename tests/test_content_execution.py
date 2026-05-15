@@ -586,6 +586,8 @@ def test_execute_study_block_exposes_session_snapshot_diff_metadata():
     assert payload["behavioral_diff_state"]
     assert "behavioral_diff_reasoning" in payload
     assert "why_this_behavioral_diff" in payload
+    assert payload["session_stability_reasoning"][0].startswith("Estado agregado da sessao:")
+    assert payload["validation_harness_reasoning"][0].startswith("Estado da harness:")
 
 
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():

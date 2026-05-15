@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from app.domain.models import PedagogicalTuningProfile
+from app.services.runtime_profile_utils import clamp_value, state_message, state_reasoning
 
 
 class PedagogicalTuningProfilesLayer:
@@ -54,11 +55,14 @@ def resolve_pedagogical_tuning_profile(
     return PedagogicalTuningProfile(
         pedagogical_tuning_state=state,
         tuning_profile_summary=_summary(state),
-        tuning_reasoning=[
-            f"Perfil de tuning: {state}.",
-            f"Retrieval={retrieval_tolerance:.2f}; scaffold={scaffold_sensitivity:.2f}; compressao={compression_conservatism:.2f}.",
-            f"Continuidade={continuity_smoothing_strength:.2f}; estabilizacao={stabilization_threshold:.2f}; overlap={overlap_tolerance:.2f}.",
-        ],
+        tuning_reasoning=state_reasoning(
+            "Perfil de tuning",
+            state,
+            [
+                f"Retrieval={retrieval_tolerance:.2f}; scaffold={scaffold_sensitivity:.2f}; compressao={compression_conservatism:.2f}.",
+                f"Continuidade={continuity_smoothing_strength:.2f}; estabilizacao={stabilization_threshold:.2f}; overlap={overlap_tolerance:.2f}.",
+            ],
+        ),
         retrieval_tolerance=round(retrieval_tolerance, 4),
         scaffold_sensitivity=round(scaffold_sensitivity, 4),
         continuity_smoothing_strength=round(continuity_smoothing_strength, 4),
@@ -229,29 +233,37 @@ def _state(
 
 
 def _summary(state: str) -> str:
-    return {
-        "conservative_support": "O runtime atual explicita uma calibracao mais protetiva em suporte local.",
-        "balanced_support": "O runtime atual manteve calibracao de suporte em faixa equilibrada.",
-        "retrieval_sensitive": "O runtime atual parece calibrado para reagir cedo a acumulacao de retrieval.",
-        "continuity_relaxed": "O runtime atual mostra suavizacao de continuidade com baixa necessidade de alivio extra.",
-        "reconstruction_protective": "O runtime atual explicita protecao maior a fragilidade reconstrutiva.",
-        "compression_conservative": "O runtime atual manteve compressao mais conservadora e segura.",
-        "stabilization_balanced": "O runtime atual combina estabilizacao e densidade modular em faixa estavel.",
-        "modulation_stable": "O runtime atual manteve tolerancia estavel a overlap e rotacao local.",
-    }.get(state, "O runtime atual permaneceu em faixa calibracional neutra.")
+    return state_message(
+        state,
+        {
+            "conservative_support": "O runtime atual explicita uma calibracao mais protetiva em suporte local.",
+            "balanced_support": "O runtime atual manteve calibracao de suporte em faixa equilibrada.",
+            "retrieval_sensitive": "O runtime atual parece calibrado para reagir cedo a acumulacao de retrieval.",
+            "continuity_relaxed": "O runtime atual mostra suavizacao de continuidade com baixa necessidade de alivio extra.",
+            "reconstruction_protective": "O runtime atual explicita protecao maior a fragilidade reconstrutiva.",
+            "compression_conservative": "O runtime atual manteve compressao mais conservadora e segura.",
+            "stabilization_balanced": "O runtime atual combina estabilizacao e densidade modular em faixa estavel.",
+            "modulation_stable": "O runtime atual manteve tolerancia estavel a overlap e rotacao local.",
+        },
+        "O runtime atual permaneceu em faixa calibracional neutra.",
+    )
 
 
 def _why(state: str) -> str:
-    return {
-        "conservative_support": "A janela recente sugere tolerancia menor a perda de suporte explicativo.",
-        "balanced_support": "Nenhum eixo calibracional dominou o runtime atual.",
-        "retrieval_sensitive": "A acumulacao de retrieval sugere um perfil mais sensivel a essa pressao.",
-        "continuity_relaxed": "A continuidade permaneceu alta o bastante para um perfil de suavizacao leve.",
-        "reconstruction_protective": "A fragilidade reconstrutiva manteve a necessidade de suporte em faixa alta.",
-        "compression_conservative": "Compressao segura e estabilizacao consistente convergiram para um perfil conservador.",
-        "stabilization_balanced": "Os sinais de estabilizacao parecem suficientes sem excesso de densidade modular.",
-        "modulation_stable": "Overlap, rotacao e densidade modular permaneceram em faixa previsivel.",
-    }.get(state, "O perfil veio de uma agregacao local e bounded de sinais existentes.")
+    return state_message(
+        state,
+        {
+            "conservative_support": "A janela recente sugere tolerancia menor a perda de suporte explicativo.",
+            "balanced_support": "Nenhum eixo calibracional dominou o runtime atual.",
+            "retrieval_sensitive": "A acumulacao de retrieval sugere um perfil mais sensivel a essa pressao.",
+            "continuity_relaxed": "A continuidade permaneceu alta o bastante para um perfil de suavizacao leve.",
+            "reconstruction_protective": "A fragilidade reconstrutiva manteve a necessidade de suporte em faixa alta.",
+            "compression_conservative": "Compressao segura e estabilizacao consistente convergiram para um perfil conservador.",
+            "stabilization_balanced": "Os sinais de estabilizacao parecem suficientes sem excesso de densidade modular.",
+            "modulation_stable": "Overlap, rotacao e densidade modular permaneceram em faixa previsivel.",
+        },
+        "O perfil veio de uma agregacao local e bounded de sinais existentes.",
+    )
 
 
 def _average(values: list[float]) -> float:
@@ -261,6 +273,4 @@ def _average(values: list[float]) -> float:
 
 
 def _clamp(value: float | int | None, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    if value is None:
-        return minimum
-    return max(minimum, min(float(value), maximum))
+    return clamp_value(value, minimum, maximum)

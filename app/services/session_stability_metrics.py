@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from app.domain.models import SessionStabilityMetricsProfile
+from app.services.runtime_profile_utils import clamp_value, state_message, state_reasoning
 
 
 class SessionStabilityMetricsLayer:
@@ -67,11 +68,14 @@ def resolve_session_stability_metrics(
 
     return SessionStabilityMetricsProfile(
         session_stability_state=state,
-        session_stability_reasoning=[
-            f"Estado agregado da sessao: {state}.",
-            f"Densidade de retrieval: {retrieval_density_metric:.2f}; carga de scaffold: {scaffold_load_metric:.2f}.",
-            f"Continuidade: {continuity_smoothness_metric:.2f}; convergencia modular: {modulation_convergence_metric:.2f}.",
-        ],
+        session_stability_reasoning=state_reasoning(
+            "Estado agregado da sessao",
+            state,
+            [
+                f"Densidade de retrieval: {retrieval_density_metric:.2f}; carga de scaffold: {scaffold_load_metric:.2f}.",
+                f"Continuidade: {continuity_smoothness_metric:.2f}; convergencia modular: {modulation_convergence_metric:.2f}.",
+            ],
+        ),
         retrieval_density_metric=round(retrieval_density_metric, 4),
         scaffold_load_metric=round(scaffold_load_metric, 4),
         continuity_smoothness_metric=round(continuity_smoothness_metric, 4),
@@ -300,33 +304,41 @@ def _session_pressure_summary(
 
 
 def _session_stability_summary(state: str) -> str:
-    return {
-        "balanced": "A sessao permaneceu observacionalmente equilibrada e sem pressao dominante.",
-        "retrieval_heavy": "A sessao acumulou mais retrieval do que o restante das modulacoes.",
-        "support_dense": "A sessao concentrou suporte e scaffold acima da faixa mais leve.",
-        "reconstruction_loaded": "A sessao sustentou pressao reconstrutiva relevante na janela agregada.",
-        "continuity_stable": "A sessao manteve continuidade legivel e ritmo relativamente suave.",
-        "stabilization_progressive": "A sessao mostrou sinais consistentes de estabilizacao sustentavel.",
-        "modulation_convergent": "As modulacoes da sessao convergiram com pouca dispersao semantica.",
-        "compression_safe": "A compressao permaneceu segura para o contexto observado.",
-        "cognitively_balanced": "A combinacao de ritmo, continuidade e suporte ficou cognitivamente equilibrada.",
-        "observably_fragile": "Os sinais da sessao sugerem fragilidade observacional em mais de um eixo.",
-    }.get(state, "A sessao permaneceu em faixa observacional neutra.")
+    return state_message(
+        state,
+        {
+            "balanced": "A sessao permaneceu observacionalmente equilibrada e sem pressao dominante.",
+            "retrieval_heavy": "A sessao acumulou mais retrieval do que o restante das modulacoes.",
+            "support_dense": "A sessao concentrou suporte e scaffold acima da faixa mais leve.",
+            "reconstruction_loaded": "A sessao sustentou pressao reconstrutiva relevante na janela agregada.",
+            "continuity_stable": "A sessao manteve continuidade legivel e ritmo relativamente suave.",
+            "stabilization_progressive": "A sessao mostrou sinais consistentes de estabilizacao sustentavel.",
+            "modulation_convergent": "As modulacoes da sessao convergiram com pouca dispersao semantica.",
+            "compression_safe": "A compressao permaneceu segura para o contexto observado.",
+            "cognitively_balanced": "A combinacao de ritmo, continuidade e suporte ficou cognitivamente equilibrada.",
+            "observably_fragile": "Os sinais da sessao sugerem fragilidade observacional em mais de um eixo.",
+        },
+        "A sessao permaneceu em faixa observacional neutra.",
+    )
 
 
 def _why_this_session_state(state: str) -> str:
-    return {
-        "balanced": "Nenhum eixo agregado dominou a sessao de forma clara.",
-        "retrieval_heavy": "Os sinais de retrieval apareceram com mais frequencia e intensidade na sessao.",
-        "support_dense": "Os sinais de scaffold e suporte convergiram acima da faixa leve.",
-        "reconstruction_loaded": "A fragilidade reconstrutiva permaneceu suficientemente presente na agregacao.",
-        "continuity_stable": "A sessao manteve continuidade e ritmo sem quedas locais relevantes.",
-        "stabilization_progressive": "Os sinais de estabilidade longitudinal e qualidade de consolidacao convergiram bem.",
-        "modulation_convergent": "As camadas atuais apontaram para uma sessao semanticamente convergente.",
-        "compression_safe": "A compressao observada permaneceu alinhada ao contexto sem aumento forte de risco.",
-        "cognitively_balanced": "O equilibrio entre suporte, continuidade e pacing permaneceu saudavel.",
-        "observably_fragile": "A agregacao mostrou baixa folga em continuidade, compressao ou balanceamento cognitivo.",
-    }.get(state, "O estado veio de uma agregacao local sem dominancia forte.")
+    return state_message(
+        state,
+        {
+            "balanced": "Nenhum eixo agregado dominou a sessao de forma clara.",
+            "retrieval_heavy": "Os sinais de retrieval apareceram com mais frequencia e intensidade na sessao.",
+            "support_dense": "Os sinais de scaffold e suporte convergiram acima da faixa leve.",
+            "reconstruction_loaded": "A fragilidade reconstrutiva permaneceu suficientemente presente na agregacao.",
+            "continuity_stable": "A sessao manteve continuidade e ritmo sem quedas locais relevantes.",
+            "stabilization_progressive": "Os sinais de estabilidade longitudinal e qualidade de consolidacao convergiram bem.",
+            "modulation_convergent": "As camadas atuais apontaram para uma sessao semanticamente convergente.",
+            "compression_safe": "A compressao observada permaneceu alinhada ao contexto sem aumento forte de risco.",
+            "cognitively_balanced": "O equilibrio entre suporte, continuidade e pacing permaneceu saudavel.",
+            "observably_fragile": "A agregacao mostrou baixa folga em continuidade, compressao ou balanceamento cognitivo.",
+        },
+        "O estado veio de uma agregacao local sem dominancia forte.",
+    )
 
 
 def _average(values: list[float]) -> float:
@@ -336,6 +348,4 @@ def _average(values: list[float]) -> float:
 
 
 def _clamp(value: float | int | None, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    if value is None:
-        return minimum
-    return max(minimum, min(float(value), maximum))
+    return clamp_value(value, minimum, maximum)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from app.domain.models import ValidationHarnessProfile
+from app.services.runtime_profile_utils import clamp_value, state_message, state_reasoning
 
 
 class ValidationHarnessLayer:
@@ -77,11 +78,14 @@ def resolve_validation_harness(runtime_blocks: list[dict] | None) -> ValidationH
 
     return ValidationHarnessProfile(
         validation_harness_state=state,
-        validation_harness_reasoning=[
-            f"Estado da harness: {state}.",
-            f"Retrieval={retrieval_sustainability_signal:.2f}; scaffold={scaffold_dependency_signal:.2f}; reconstrucao={reconstruction_sustainability_signal:.2f}.",
-            f"Compressao={compression_safety_signal:.2f}; continuidade={continuity_sustainability_signal:.2f}; overlap={adaptive_overlap_signal:.2f}.",
-        ],
+        validation_harness_reasoning=state_reasoning(
+            "Estado da harness",
+            state,
+            [
+                f"Retrieval={retrieval_sustainability_signal:.2f}; scaffold={scaffold_dependency_signal:.2f}; reconstrucao={reconstruction_sustainability_signal:.2f}.",
+                f"Compressao={compression_safety_signal:.2f}; continuidade={continuity_sustainability_signal:.2f}; overlap={adaptive_overlap_signal:.2f}.",
+            ],
+        ),
         retrieval_sustainability_signal=round(retrieval_sustainability_signal, 4),
         scaffold_dependency_signal=round(scaffold_dependency_signal, 4),
         reconstruction_sustainability_signal=round(reconstruction_sustainability_signal, 4),
@@ -314,47 +318,55 @@ def _state(
 
 
 def _summary(state: str) -> str:
-    return {
-        "validation_stable": "A evidência atual permanece estável, mas sem dominância diagnóstica forte.",
-        "retrieval_sustainable": "A recuperação parece sustentável na janela observada.",
-        "retrieval_fragile": "A recuperação ainda parece frágil ou pouco eficiente localmente.",
-        "scaffold_dependency_risk": "Há indícios de dependência excessiva de scaffold na sessão.",
-        "support_overextended": "O suporte parece mais extenso do que o necessário na janela atual.",
-        "reconstruction_sustainable": "A reconstrução parece sustentada sem atrito elevado.",
-        "reconstruction_unstable": "A reconstrução ainda parece instável ou dependente de apoio.",
-        "transfer_supported": "A transferência conceitual parece bem sustentada na sessão.",
-        "transfer_fragile": "A transferência ainda mostra fragilidade observável.",
-        "resurfacing_effective": "O resurfacing parece contribuir para consolidação e estabilidade.",
-        "resurfacing_inconclusive": "O resurfacing atual ainda não mostra efeito claro o suficiente.",
-        "compression_safe": "A compressão permaneceu segura e compatível com os demais sinais.",
-        "compression_risky": "A compressão parece menos segura no contexto observado.",
-        "continuity_sustainable": "A continuidade e o ritmo permaneceram sustentáveis.",
-        "modulation_overlapping": "As camadas modulatórias parecem sobrepostas além da faixa leve.",
-        "cognitively_balanced": "A sessão parece cognitivamente equilibrada na janela observada.",
-        "pedagogically_inconclusive": "A evidência atual ainda é insuficiente para uma leitura clara.",
-    }.get(state, "A evidência atual ficou em faixa observacional neutra.")
+    return state_message(
+        state,
+        {
+            "validation_stable": "A evidência atual permanece estável, mas sem dominância diagnóstica forte.",
+            "retrieval_sustainable": "A recuperação parece sustentável na janela observada.",
+            "retrieval_fragile": "A recuperação ainda parece frágil ou pouco eficiente localmente.",
+            "scaffold_dependency_risk": "Há indícios de dependência excessiva de scaffold na sessão.",
+            "support_overextended": "O suporte parece mais extenso do que o necessário na janela atual.",
+            "reconstruction_sustainable": "A reconstrução parece sustentada sem atrito elevado.",
+            "reconstruction_unstable": "A reconstrução ainda parece instável ou dependente de apoio.",
+            "transfer_supported": "A transferência conceitual parece bem sustentada na sessão.",
+            "transfer_fragile": "A transferência ainda mostra fragilidade observável.",
+            "resurfacing_effective": "O resurfacing parece contribuir para consolidação e estabilidade.",
+            "resurfacing_inconclusive": "O resurfacing atual ainda não mostra efeito claro o suficiente.",
+            "compression_safe": "A compressão permaneceu segura e compatível com os demais sinais.",
+            "compression_risky": "A compressão parece menos segura no contexto observado.",
+            "continuity_sustainable": "A continuidade e o ritmo permaneceram sustentáveis.",
+            "modulation_overlapping": "As camadas modulatórias parecem sobrepostas além da faixa leve.",
+            "cognitively_balanced": "A sessão parece cognitivamente equilibrada na janela observada.",
+            "pedagogically_inconclusive": "A evidência atual ainda é insuficiente para uma leitura clara.",
+        },
+        "A evidência atual ficou em faixa observacional neutra.",
+    )
 
 
 def _why(state: str) -> str:
-    return {
-        "validation_stable": "Os sinais estão coerentes, mas sem um padrão dominante claro.",
-        "retrieval_sustainable": "Há boa eficácia de retrieval com baixa pressão acumulada.",
-        "retrieval_fragile": "A eficácia de retrieval ainda não compensou a pressão observada.",
-        "scaffold_dependency_risk": "Scaffold e dependência de suporte convergiram para uma faixa alta.",
-        "support_overextended": "O apoio parece mais denso do que a sessão precisa agora.",
-        "reconstruction_sustainable": "A reconstrução mostra melhora sem dependência excessiva.",
-        "reconstruction_unstable": "A reconstrução ainda enfrenta fragilidade ou baixa sustentabilidade.",
-        "transfer_supported": "A transferência está estável o suficiente na janela atual.",
-        "transfer_fragile": "Os sinais de transferência ainda são insuficientemente estáveis.",
-        "resurfacing_effective": "Os sinais de retenção e estabilização sustentaram o resurfacing.",
-        "resurfacing_inconclusive": "A reaparição ainda não acumulou evidência suficiente de benefício.",
-        "compression_safe": "A compressão está alinhada com estabilidade e continuidade suficientes.",
-        "compression_risky": "A compressão perdeu margem de segurança observacional nesta janela.",
-        "continuity_sustainable": "Continuidade e pacing seguiram estáveis ao longo da janela.",
-        "modulation_overlapping": "Overlap e convergência adaptativa ficaram altos demais localmente.",
-        "cognitively_balanced": "Os eixos observados mantiveram bom equilíbrio cognitivo.",
-        "pedagogically_inconclusive": "Os sinais ainda não se alinharam o bastante para uma conclusão clara.",
-    }.get(state, "O estado veio de uma agregação local e puramente observacional.")
+    return state_message(
+        state,
+        {
+            "validation_stable": "Os sinais estão coerentes, mas sem um padrão dominante claro.",
+            "retrieval_sustainable": "Há boa eficácia de retrieval com baixa pressão acumulada.",
+            "retrieval_fragile": "A eficácia de retrieval ainda não compensou a pressão observada.",
+            "scaffold_dependency_risk": "Scaffold e dependência de suporte convergiram para uma faixa alta.",
+            "support_overextended": "O apoio parece mais denso do que a sessão precisa agora.",
+            "reconstruction_sustainable": "A reconstrução mostra melhora sem dependência excessiva.",
+            "reconstruction_unstable": "A reconstrução ainda enfrenta fragilidade ou baixa sustentabilidade.",
+            "transfer_supported": "A transferência está estável o suficiente na janela atual.",
+            "transfer_fragile": "Os sinais de transferência ainda são insuficientemente estáveis.",
+            "resurfacing_effective": "Os sinais de retenção e estabilização sustentaram o resurfacing.",
+            "resurfacing_inconclusive": "A reaparição ainda não acumulou evidência suficiente de benefício.",
+            "compression_safe": "A compressão está alinhada com estabilidade e continuidade suficientes.",
+            "compression_risky": "A compressão perdeu margem de segurança observacional nesta janela.",
+            "continuity_sustainable": "Continuidade e pacing seguiram estáveis ao longo da janela.",
+            "modulation_overlapping": "Overlap e convergência adaptativa ficaram altos demais localmente.",
+            "cognitively_balanced": "Os eixos observados mantiveram bom equilíbrio cognitivo.",
+            "pedagogically_inconclusive": "Os sinais ainda não se alinharam o bastante para uma conclusão clara.",
+        },
+        "O estado veio de uma agregação local e puramente observacional.",
+    )
 
 
 def _average(values: list[float]) -> float:
@@ -364,6 +376,4 @@ def _average(values: list[float]) -> float:
 
 
 def _clamp(value: float | int | None, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    if value is None:
-        return minimum
-    return max(minimum, min(float(value), maximum))
+    return clamp_value(value, minimum, maximum)
