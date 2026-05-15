@@ -16,6 +16,7 @@ from app.services.pedagogical_validation import resolve_pedagogical_validation
 from app.services.runtime_traceability import resolve_runtime_traceability
 from app.services.runtime_signal_normalization import normalize_runtime_signal_families
 from app.services.pedagogical_tuning_profiles import resolve_pedagogical_tuning_profile
+from app.services.session_export_debug import build_session_export_snapshot
 from app.services.session_stability_metrics import resolve_session_stability_metrics
 from app.services.session_snapshot_diff import build_session_snapshot, compare_session_snapshots
 from app.services.validation_harness import resolve_validation_harness
@@ -197,6 +198,13 @@ def execute_study_block(block: StudyBlock) -> dict:
         session_snapshot_profile,
         behavioral_diff_profile,
     )
+    session_export_snapshot = _resolve_session_export_snapshot(
+        block,
+        session_snapshot_profile,
+        behavioral_diff_profile,
+        validation_harness_profile,
+    )
+    session_export_metadata = _session_export_debug_metadata(session_export_snapshot)
 
     if block.type == "summary":
         depth = block.depth or "light"
@@ -231,6 +239,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **tuning_metadata,
             **validation_harness_metadata,
             **session_snapshot_diff_metadata,
+            **session_export_metadata,
         }
     if block.type == "questions":
         quantity = max(1, int(block.quantity or 1))
@@ -264,6 +273,7 @@ def execute_study_block(block: StudyBlock) -> dict:
             **tuning_metadata,
             **validation_harness_metadata,
             **session_snapshot_diff_metadata,
+            **session_export_metadata,
         }
     raise ValueError(f"Unsupported study block type: {block.type}")
 
@@ -1381,6 +1391,47 @@ def _resolve_session_snapshot_diff_profiles(
     return current_snapshot, behavioral_diff
 
 
+def _resolve_session_export_snapshot(
+    block: StudyBlock,
+    session_snapshot_profile,
+    behavioral_diff_profile,
+    validation_harness_profile,
+):
+    return build_session_export_snapshot(
+        [
+            {
+                "type": block.type,
+                "topic_id": block.topic_id,
+                "pedagogical_mode": "",
+                "micro_intervention": "",
+                "trajectory_state": "",
+                "cognitive_compression_mode": "",
+                "pedagogical_expression_mode": "",
+                "session_coherence_state": "",
+                "session_stability_state": session_snapshot_profile.session_snapshot_state,
+                "pedagogical_tuning_state": "",
+                "validation_harness_state": validation_harness_profile.validation_harness_state,
+                "behavioral_diff_state": behavioral_diff_profile.behavioral_diff_state,
+                "runtime_trace_state": "",
+                "pedagogical_validation_state": "",
+                "retrieval_family": "",
+                "support_family": "",
+                "continuity_family": "",
+                "stabilization_family": "",
+                "overlap_family": "",
+                "retrieval_density_metric": session_snapshot_profile.retrieval_density,
+                "scaffold_load_metric": session_snapshot_profile.scaffold_load,
+                "continuity_smoothness_metric": session_snapshot_profile.continuity_smoothness,
+                "reconstruction_pressure_metric": session_snapshot_profile.reconstruction_pressure,
+                "compression_safety_metric": session_snapshot_profile.compression_safety,
+                "stabilization_sustainability_metric": session_snapshot_profile.stabilization_sustainability,
+                "validation_confidence": validation_harness_profile.validation_confidence,
+                "runtime_behavior_delta": behavioral_diff_profile.runtime_behavior_delta,
+            }
+        ]
+    )
+
+
 def _primary_relationship_signal(selected_profiles: list[dict[str, object]]) -> dict[str, object]:
     if not selected_profiles:
         return {}
@@ -1649,6 +1700,27 @@ def _session_snapshot_diff_metadata(snapshot_profile, diff_profile) -> dict[str,
         "divergence_summary": diff_profile.divergence_summary,
         "runtime_behavior_delta": diff_profile.runtime_behavior_delta,
         "why_this_behavioral_diff": diff_profile.why_this_behavioral_diff,
+    }
+
+
+def _session_export_debug_metadata(profile) -> dict[str, object]:
+    return {
+        "session_export_state": profile.session_export_state,
+        "runtime_export_summary": profile.runtime_export_summary,
+        "pedagogical_runtime_snapshot": profile.pedagogical_runtime_snapshot,
+        "validation_snapshot": profile.validation_snapshot,
+        "behavioral_diff_snapshot": profile.behavioral_diff_snapshot,
+        "runtime_trace_snapshot": profile.runtime_trace_snapshot,
+        "stability_snapshot": profile.stability_snapshot,
+        "tuning_snapshot": profile.tuning_snapshot,
+        "compression_snapshot": profile.compression_snapshot,
+        "continuity_snapshot": profile.continuity_snapshot,
+        "support_snapshot": profile.support_snapshot,
+        "retrieval_snapshot": profile.retrieval_snapshot,
+        "reconstruction_snapshot": profile.reconstruction_snapshot,
+        "export_reasoning": profile.export_reasoning,
+        "export_alignment": profile.export_alignment,
+        "export_trace_summary": profile.export_trace_summary,
     }
 
 

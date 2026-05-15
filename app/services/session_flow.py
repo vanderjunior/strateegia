@@ -11,6 +11,7 @@ from app.services.pedagogical_validation import PedagogicalValidationLayer
 from app.services.runtime_traceability import RuntimeTraceabilityLayer
 from app.services.session_coherence import SessionCoherenceLayer
 from app.services.session_equilibrium import SessionEquilibriumLayer
+from app.services.session_export_debug import SessionExportDebugLayer
 from app.services.session_narrative import SessionNarrativeLayer
 from app.services.session_stability_metrics import SessionStabilityMetricsLayer
 from app.services.session_snapshot_diff import SessionSnapshotDiffLayer
@@ -103,6 +104,7 @@ class SessionManager:
         tuning_profiles = PedagogicalTuningProfilesLayer()
         validation_harness = ValidationHarnessLayer()
         snapshot_diff = SessionSnapshotDiffLayer()
+        export_debug = SessionExportDebugLayer()
         candidates = composer.compose(entries)
         entry_index_by_topic = {entry.topic_id: index for index, entry in enumerate(entries)}
         summary_emitted: set[str] = set()
@@ -138,7 +140,8 @@ class SessionManager:
         runtime_blocks = session_stability.annotate(runtime_blocks)
         runtime_blocks = tuning_profiles.annotate(runtime_blocks)
         runtime_blocks = validation_harness.annotate(runtime_blocks)
-        return snapshot_diff.annotate(runtime_blocks)
+        runtime_blocks = snapshot_diff.annotate(runtime_blocks)
+        return export_debug.annotate(runtime_blocks)
 
     def _summary_block_for_topic(
         self,
@@ -396,6 +399,22 @@ class SessionManager:
             "divergence_summary": executed.get("divergence_summary"),
             "runtime_behavior_delta": executed.get("runtime_behavior_delta"),
             "why_this_behavioral_diff": executed.get("why_this_behavioral_diff"),
+            "session_export_state": executed.get("session_export_state"),
+            "runtime_export_summary": executed.get("runtime_export_summary"),
+            "pedagogical_runtime_snapshot": executed.get("pedagogical_runtime_snapshot"),
+            "validation_snapshot": executed.get("validation_snapshot"),
+            "behavioral_diff_snapshot": executed.get("behavioral_diff_snapshot"),
+            "runtime_trace_snapshot": executed.get("runtime_trace_snapshot"),
+            "stability_snapshot": executed.get("stability_snapshot"),
+            "tuning_snapshot": executed.get("tuning_snapshot"),
+            "compression_snapshot": executed.get("compression_snapshot"),
+            "continuity_snapshot": executed.get("continuity_snapshot"),
+            "support_snapshot": executed.get("support_snapshot"),
+            "retrieval_snapshot": executed.get("retrieval_snapshot"),
+            "reconstruction_snapshot": executed.get("reconstruction_snapshot"),
+            "export_reasoning": executed.get("export_reasoning"),
+            "export_alignment": executed.get("export_alignment"),
+            "export_trace_summary": executed.get("export_trace_summary"),
             "session_coherence_state": executed.get("session_coherence_state"),
             "coherence_reasoning": executed.get("coherence_reasoning"),
             "pacing_transition_reason": executed.get("pacing_transition_reason"),

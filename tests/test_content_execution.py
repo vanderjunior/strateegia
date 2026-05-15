@@ -590,6 +590,35 @@ def test_execute_study_block_exposes_session_snapshot_diff_metadata():
     assert payload["validation_harness_reasoning"][0].startswith("Estado da harness:")
 
 
+def test_execute_study_block_exposes_session_export_debug_metadata():
+    topic_node = build_topic_node(
+        title="Export Debug",
+        content=(
+            "Regra: confirme a base normativa.\n\n"
+            "Aplicacao: leve a regra ao caso com comparacao."
+        ),
+    )
+    probe = execute_study_block(
+        StudyBlock(type="questions", topic_id="export-debug", quantity=1, topic_node=topic_node)
+    )
+    target_id = probe["questions"][0]["microtopic_id"]
+    payload = execute_study_block(
+        StudyBlock(
+            type="questions",
+            topic_id="export-debug",
+            quantity=1,
+            topic_node=topic_node,
+            selected_microtopic_ids=[target_id],
+        )
+    )
+
+    assert payload["session_export_state"]
+    assert payload["runtime_export_summary"]
+    assert payload["pedagogical_runtime_snapshot"]
+    assert payload["behavioral_diff_snapshot"]
+    assert payload["export_trace_summary"]
+
+
 def test_execute_study_block_injects_prerequisite_reminder_before_application_question():
     topic_node = build_topic_node(
         title="RIPAM",

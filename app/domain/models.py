@@ -539,6 +539,57 @@ class BehavioralDiffProfile(BaseModel):
     why_this_behavioral_diff: str = ""
 
 
+class SessionExportSnapshot(BaseModel):
+    session_export_state: str
+    runtime_export_summary: str = ""
+    pedagogical_runtime_snapshot: dict[str, object] = Field(default_factory=dict)
+    validation_snapshot: dict[str, object] = Field(default_factory=dict)
+    behavioral_diff_snapshot: dict[str, object] = Field(default_factory=dict)
+    runtime_trace_snapshot: dict[str, object] = Field(default_factory=dict)
+    stability_snapshot: dict[str, object] = Field(default_factory=dict)
+    tuning_snapshot: dict[str, object] = Field(default_factory=dict)
+    compression_snapshot: dict[str, object] = Field(default_factory=dict)
+    continuity_snapshot: dict[str, object] = Field(default_factory=dict)
+    support_snapshot: dict[str, object] = Field(default_factory=dict)
+    retrieval_snapshot: dict[str, object] = Field(default_factory=dict)
+    reconstruction_snapshot: dict[str, object] = Field(default_factory=dict)
+    export_reasoning: list[str] = Field(default_factory=list)
+    export_alignment: float = 0.0
+    export_trace_summary: str = ""
+
+
+class RuntimeDebugEntry(BaseModel):
+    block_type: str
+    topic_id: str = ""
+    state_labels: list[str] = Field(default_factory=list)
+    signal_families: dict[str, str] = Field(default_factory=dict)
+    primary_summary: str = ""
+
+
+class BehavioralDiffExport(BaseModel):
+    behavioral_diff_state: str
+    retrieval_shift: float = 0.0
+    scaffold_shift: float = 0.0
+    continuity_shift: float = 0.0
+    pacing_shift: float = 0.0
+    compression_shift: float = 0.0
+    stabilization_shift: float = 0.0
+    overlap_shift: float = 0.0
+    modulation_shift: float = 0.0
+    validation_shift: float = 0.0
+    convergence_summary: str = ""
+    divergence_summary: str = ""
+    runtime_behavior_delta: float = 0.0
+    why_this_behavioral_diff: str = ""
+
+
+class SessionInspectionSummary(BaseModel):
+    dominant_runtime_pressures: list[str] = Field(default_factory=list)
+    dominant_runtime_states: list[str] = Field(default_factory=list)
+    validation_confidence: float = 0.0
+    inspection_summary: str = ""
+
+
 class CognitiveMomentumSignal(BaseModel):
     conceptual_density: float = 0.0
     abstraction_load: float = 0.0
