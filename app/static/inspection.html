@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Runtime Inspection Console</title>
+    <link rel="stylesheet" href="/static/inspection.css" />
+  </head>
+  <body>
+    <main class="inspection-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Internal Runtime Inspection Console — Read Only</p>
+          <h1>Runtime Science & Reliability</h1>
+          <p class="hero-copy">
+            Inspeção local de benchmark, validação e sinais de runtime sem mutação comportamental.
+          </p>
+        </div>
+        <button id="refresh-button" type="button">Refresh</button>
+      </header>
+
+      <section id="status-banner" class="status-banner">Loading inspection payload...</section>
+
+      <section class="card-grid" id="summary-cards"></section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Benchmark Case Reports</h2>
+          <input id="case-filter" type="search" placeholder="Filtrar casos..." />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Case</th>
+                <th>Categoria</th>
+                <th>Status</th>
+                <th>Alignment</th>
+                <th>Flags</th>
+                <th>Confidence</th>
+                <th>Resumo</th>
+              </tr>
+            </thead>
+            <tbody id="case-report-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="two-column">
+        <article class="panel">
+          <h2>Scientific Runtime Validation</h2>
+          <div id="scientific-validation"></div>
+        </article>
+        <article class="panel">
+          <h2>Session Stability Metrics</h2>
+          <div id="stability-metrics"></div>
+        </article>
+      </section>
+
+      <section class="two-column">
+        <article class="panel">
+          <h2>Comparative Session Analytics</h2>
+          <div id="comparative-analytics"></div>
+        </article>
+        <article class="panel">
+          <h2>Validation Dataset Awareness</h2>
+          <div id="dataset-awareness"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Session Export / Debug</h2>
+        <div id="session-export-debug"></div>
+      </section>
+
+      <section class="panel">
+        <details>
+          <summary>Raw JSON</summary>
+          <pre id="raw-json"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="/static/inspection.js"></script>
+  </body>
+</html>

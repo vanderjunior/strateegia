@@ -33,6 +33,128 @@ def get_session_manager(request: Request) -> SessionManager:
     return request.app.state.session_manager
 
 
+def _inspection_defaults() -> dict[str, object]:
+    return {
+        "inspection_available": False,
+        "inspection_label": "Internal Runtime Inspection Console — Read Only",
+        "session": {
+            "session_id": None,
+            "completed": None,
+            "current_block_index": None,
+            "total_blocks": 0,
+            "current_block_type": None,
+            "topic_id": None,
+        },
+        "benchmark_summary": {
+            "pedagogical_benchmark_state": "not_available",
+            "pedagogical_benchmark_summary": "No runtime data available.",
+            "benchmark_readiness": "benchmark_insufficient",
+            "benchmark_alignment_score": 0.0,
+            "benchmark_regression_severity": "none",
+            "benchmark_total_cases": 0,
+            "benchmark_passed_cases": [],
+            "benchmark_failed_cases": [],
+            "benchmark_inconclusive_cases": [],
+            "benchmark_regression_cases": [],
+        },
+        "benchmark_case_reports": [],
+        "scientific_runtime_validation": {},
+        "comparative_session_analytics": {},
+        "session_export_debug": {},
+        "stability_metrics": {},
+        "validation_dataset_awareness": {},
+        "raw_runtime_block": {},
+    }
+
+
+def _inspection_payload(session_manager: SessionManager) -> dict[str, object]:
+    payload = _inspection_defaults()
+    context = session_manager.latest_inspection_context()
+    if context is None:
+        return payload
+
+    block = dict(context.get("block") or {})
+    payload["inspection_available"] = True
+    payload["session"] = {
+        "session_id": context.get("session_id"),
+        "completed": context.get("completed"),
+        "current_block_index": context.get("current_block_index"),
+        "total_blocks": context.get("total_blocks", 0),
+        "current_block_type": block.get("type"),
+        "topic_id": block.get("topic_id"),
+    }
+    payload["benchmark_summary"] = {
+        "pedagogical_benchmark_state": block.get("pedagogical_benchmark_state", "not_available"),
+        "pedagogical_benchmark_summary": block.get("pedagogical_benchmark_summary", ""),
+        "benchmark_readiness": block.get("benchmark_readiness", "benchmark_insufficient"),
+        "benchmark_alignment_score": block.get("benchmark_alignment_score", 0.0),
+        "benchmark_regression_severity": block.get("benchmark_regression_severity", "none"),
+        "benchmark_total_cases": block.get("benchmark_total_cases", 0),
+        "benchmark_passed_cases": block.get("benchmark_passed_cases", []),
+        "benchmark_failed_cases": block.get("benchmark_failed_cases", []),
+        "benchmark_inconclusive_cases": block.get("benchmark_inconclusive_cases", []),
+        "benchmark_regression_cases": block.get("benchmark_regression_cases", []),
+    }
+    payload["benchmark_case_reports"] = list(block.get("benchmark_case_reports") or [])
+    payload["scientific_runtime_validation"] = {
+        "scientific_validation_state": block.get("scientific_validation_state", ""),
+        "runtime_benchmark_state": block.get("runtime_benchmark_state", ""),
+        "regression_detection_state": block.get("regression_detection_state", ""),
+        "sustainability_validation_state": block.get("sustainability_validation_state", ""),
+        "cognitive_load_profile": block.get("cognitive_load_profile", ""),
+        "retrieval_reliability_profile": block.get("retrieval_reliability_profile", ""),
+        "scaffold_dependency_profile": block.get("scaffold_dependency_profile", ""),
+        "compression_safety_profile": block.get("compression_safety_profile", ""),
+        "stabilization_reliability_profile": block.get("stabilization_reliability_profile", ""),
+        "continuity_reliability_profile": block.get("continuity_reliability_profile", ""),
+    }
+    payload["comparative_session_analytics"] = {
+        "comparative_session_state": block.get("comparative_session_state", ""),
+        "comparative_runtime_summary": block.get("comparative_runtime_summary", ""),
+        "retrieval_delta": block.get("retrieval_delta", 0.0),
+        "scaffold_delta": block.get("scaffold_delta", 0.0),
+        "compression_delta": block.get("compression_delta", 0.0),
+        "continuity_delta": block.get("continuity_delta", 0.0),
+        "reconstruction_delta": block.get("reconstruction_delta", 0.0),
+        "pacing_delta": block.get("pacing_delta", 0.0),
+        "validation_delta": block.get("validation_delta", 0.0),
+        "sustainability_delta": block.get("sustainability_delta", 0.0),
+        "pedagogical_regression_signal": block.get("pedagogical_regression_signal", ""),
+    }
+    payload["session_export_debug"] = {
+        "session_export_state": block.get("session_export_state", ""),
+        "runtime_export_summary": block.get("runtime_export_summary", ""),
+        "behavioral_diff_snapshot": block.get("behavioral_diff_snapshot", {}),
+        "runtime_trace_snapshot": block.get("runtime_trace_snapshot", {}),
+        "stability_snapshot": block.get("stability_snapshot", {}),
+        "tuning_snapshot": block.get("tuning_snapshot", {}),
+        "compression_snapshot": block.get("compression_snapshot", {}),
+        "continuity_snapshot": block.get("continuity_snapshot", {}),
+        "support_snapshot": block.get("support_snapshot", {}),
+        "retrieval_snapshot": block.get("retrieval_snapshot", {}),
+        "reconstruction_snapshot": block.get("reconstruction_snapshot", {}),
+    }
+    payload["stability_metrics"] = {
+        "session_stability_state": block.get("session_stability_state", ""),
+        "retrieval_density_metric": block.get("retrieval_density_metric", 0.0),
+        "scaffold_load_metric": block.get("scaffold_load_metric", 0.0),
+        "continuity_smoothness_metric": block.get("continuity_smoothness_metric", 0.0),
+        "reconstruction_pressure_metric": block.get("reconstruction_pressure_metric", 0.0),
+        "compression_safety_metric": block.get("compression_safety_metric", 0.0),
+        "pacing_stability_metric": block.get("pacing_stability_metric", 0.0),
+        "cognitive_balance_metric": block.get("cognitive_balance_metric", 0.0),
+    }
+    payload["validation_dataset_awareness"] = {
+        "validation_dataset_state": block.get("validation_dataset_state", ""),
+        "pedagogical_scenario_family": block.get("pedagogical_scenario_family", ""),
+        "runtime_validation_context": block.get("runtime_validation_context", ""),
+        "comparative_validation_alignment": block.get("comparative_validation_alignment", 0.0),
+        "dataset_awareness_summary": block.get("dataset_awareness_summary", ""),
+    }
+    payload["raw_runtime_block"] = block
+    return payload
+
+
 def _record_feedback_answer(
     repository: JsonStudyRepository,
     submission: FeedbackAnswerSubmission,
@@ -201,8 +323,17 @@ def get_latest_block_review(request: Request):
     return review
 
 
+@router.get("/inspection/runtime")
+def get_runtime_inspection(request: Request):
+    return _inspection_payload(get_session_manager(request))
+
+
 def ui_path() -> Path:
     return Path(__file__).resolve().parents[1] / "static" / "index.html"
+
+
+def inspection_ui_path() -> Path:
+    return Path(__file__).resolve().parents[1] / "static" / "inspection.html"
 
 
 @router.get("/", include_in_schema=False)

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import router
+from app.api.routes import inspection_ui_path, router
 from app.repositories.json_store import JsonStudyRepository
 from app.services.pipeline import StudyPipeline
 from app.services.session_flow import SessionManager
@@ -33,6 +33,10 @@ def create_app(
     @app.get("/", include_in_schema=False)
     def home():
         return FileResponse(Path(__file__).resolve().parent / "static" / "index.html")
+
+    @app.get("/inspection", include_in_schema=False)
+    def inspection():
+        return FileResponse(inspection_ui_path())
 
     return app
 

@@ -77,6 +77,31 @@ class SessionManager:
         self._sync_position(session, runtime_blocks[next_index])
         return session
 
+    def latest_inspection_context(self) -> dict[str, object] | None:
+        if not self._sessions:
+            return None
+        session_id = next(reversed(self._sessions))
+        session = self._sessions[session_id]
+        runtime_blocks = self._runtime_blocks.get(session_id, [])
+        if not runtime_blocks:
+            return None
+        current_index = self._current_runtime_index(session_id)
+        if current_index < len(runtime_blocks):
+            block = dict(runtime_blocks[current_index])
+        else:
+            current_index = max(len(runtime_blocks) - 1, 0)
+            block = dict(runtime_blocks[current_index])
+        block.pop("_entry_index", None)
+        block.pop("_block_index", None)
+        block.pop("_question_index", None)
+        return {
+            "session_id": session_id,
+            "completed": session.completed,
+            "current_block_index": current_index,
+            "total_blocks": len(runtime_blocks),
+            "block": block,
+        }
+
     def _current_runtime_index(self, session_id: str) -> int:
         session = self._sessions[session_id]
         runtime_blocks = self._runtime_blocks.get(session_id, [])
