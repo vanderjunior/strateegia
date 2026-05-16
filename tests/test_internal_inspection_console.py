@@ -88,6 +88,14 @@ def test_inspection_endpoint_returns_fallback_when_no_runtime_exists(tmp_path):
         "inspection_no_profiles",
         "inspection_no_comparison",
     }
+    assert payload["longitudinal_retention"]["longitudinal_retention_state"] in {
+        "retention_sustainable",
+        "retention_emerging",
+        "retention_fragile",
+        "retention_superficial",
+        "retention_inconclusive",
+        "retention_insufficient_evidence",
+    }
 
 
 def test_inspection_page_is_served_successfully(tmp_path):
@@ -138,6 +146,7 @@ def test_inspection_endpoint_returns_benchmark_and_validation_payload(tmp_path):
     assert payload["controlled_tuning_registry"]["total_experiments"] >= 1
     assert payload["tuning_profile_benchmark_comparison"]["total_profiles_compared"] >= 1
     assert payload["manual_experiment_inspection"]["inspection_readiness"]
+    assert payload["longitudinal_retention"]["longitudinal_retention_state"]
 
 
 def test_inspection_endpoint_is_deterministic_for_same_runtime_state(tmp_path):

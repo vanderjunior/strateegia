@@ -10,12 +10,15 @@ from app.api.schemas import (
     SessionAnswerRequest,
     SessionStartRequest,
 )
-from app.domain.models import AnswerSubmission, BoardStyle
+from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
 from app.services.controlled_tuning_experiments import (
     build_controlled_tuning_experiment_registry,
 )
 from app.services.learning_engine import LearningDecisionEngine
+from app.services.longitudinal_retention_observability import (
+    observe_longitudinal_retention,
+)
 from app.services.manual_experiment_inspection import (
     build_manual_experiment_inspection,
 )
@@ -80,14 +83,26 @@ def _inspection_defaults() -> dict[str, object]:
             registry=registry,
             comparison=comparison,
         ).model_dump(mode="json"),
+        "longitudinal_retention": observe_longitudinal_retention(
+            progress=ProgressState(),
+            runtime_block={},
+        ).model_dump(mode="json"),
         "raw_runtime_block": {},
     }
 
 
-def _inspection_payload(session_manager: SessionManager) -> dict[str, object]:
+def _inspection_payload(
+    session_manager: SessionManager,
+    repository: JsonStudyRepository,
+) -> dict[str, object]:
     payload = _inspection_defaults()
+    progress = repository.load_progress()
     context = session_manager.latest_inspection_context()
     if context is None:
+        payload["longitudinal_retention"] = observe_longitudinal_retention(
+            progress=progress,
+            runtime_block={},
+        ).model_dump(mode="json")
         return payload
 
     block = dict(context.get("block") or {})
@@ -178,6 +193,10 @@ def _inspection_payload(session_manager: SessionManager) -> dict[str, object]:
     payload["manual_experiment_inspection"] = build_manual_experiment_inspection(
         registry=registry,
         comparison=comparison,
+    ).model_dump(mode="json")
+    payload["longitudinal_retention"] = observe_longitudinal_retention(
+        progress=progress,
+        runtime_block=block,
     ).model_dump(mode="json")
     payload["raw_runtime_block"] = block
     return payload
@@ -353,7 +372,7 @@ def get_latest_block_review(request: Request):
 
 @router.get("/inspection/runtime")
 def get_runtime_inspection(request: Request):
-    return _inspection_payload(get_session_manager(request))
+    return _inspection_payload(get_session_manager(request), get_repository(request))
 
 
 def ui_path() -> Path:

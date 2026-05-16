@@ -958,6 +958,76 @@ class ManualExperimentInspectionProfile(BaseModel):
     why_this_manual_inspection_state: str = ""
 
 
+class RetentionSignalProfile(BaseModel):
+    retention_durability_state: str = "insufficient_evidence"
+    retention_durability_signal: float = 0.0
+    resurfacing_effectiveness_state: str = "not_enough_cycles"
+    resurfacing_effectiveness_signal: float = 0.0
+    reconstruction_retention_state: str = "reconstruction_insufficient_evidence"
+    reconstruction_retention_signal: float = 0.0
+    transfer_retention_state: str = "transfer_insufficient_evidence"
+    transfer_retention_signal: float = 0.0
+
+
+class RetentionRecoveryProfile(BaseModel):
+    recovery_state: str = "recovery_insufficient_evidence"
+    recovery_signal: float = 0.0
+    recovery_reasoning: list[str] = Field(default_factory=list)
+
+
+class RetentionRiskProfile(BaseModel):
+    false_fluency_retention_risk: float = 0.0
+    superficial_stability_signal: float = 0.0
+    retention_risk_flags: list[str] = Field(default_factory=list)
+
+
+class RetentionStabilitySummary(BaseModel):
+    longitudinal_retention_state: str = "retention_insufficient_evidence"
+    longitudinal_retention_summary: str = ""
+    longitudinal_retention_reasoning: list[str] = Field(default_factory=list)
+    retention_evidence_level: str = "insufficient"
+    retention_confidence_indicator: float = 0.0
+    why_this_retention_state: str = ""
+
+
+class RetentionObservabilitySummary(BaseModel):
+    reconstruction_retention_reasoning: list[str] = Field(default_factory=list)
+    transfer_retention_reasoning: list[str] = Field(default_factory=list)
+    retention_durability_reasoning: list[str] = Field(default_factory=list)
+
+
+class LongitudinalRetentionProfile(BaseModel):
+    longitudinal_retention_state: str
+    longitudinal_retention_summary: str = ""
+    longitudinal_retention_reasoning: list[str] = Field(default_factory=list)
+    retention_durability_state: str = "insufficient_evidence"
+    retention_durability_signal: float = 0.0
+    resurfacing_effectiveness_state: str = "not_enough_cycles"
+    resurfacing_effectiveness_signal: float = 0.0
+    recovery_state: str = "recovery_insufficient_evidence"
+    recovery_signal: float = 0.0
+    recovery_reasoning: list[str] = Field(default_factory=list)
+    reconstruction_retention_state: str = "reconstruction_insufficient_evidence"
+    reconstruction_retention_signal: float = 0.0
+    reconstruction_retention_reasoning: list[str] = Field(default_factory=list)
+    transfer_retention_state: str = "transfer_insufficient_evidence"
+    transfer_retention_signal: float = 0.0
+    transfer_retention_reasoning: list[str] = Field(default_factory=list)
+    false_fluency_retention_risk: float = 0.0
+    superficial_stability_signal: float = 0.0
+    retention_risk_flags: list[str] = Field(default_factory=list)
+    retention_evidence_level: str = "insufficient"
+    retention_confidence_indicator: float = 0.0
+    retention_signal_profile: RetentionSignalProfile = Field(default_factory=RetentionSignalProfile)
+    retention_recovery_profile: RetentionRecoveryProfile = Field(default_factory=RetentionRecoveryProfile)
+    retention_risk_profile: RetentionRiskProfile = Field(default_factory=RetentionRiskProfile)
+    retention_stability_summary: RetentionStabilitySummary = Field(default_factory=RetentionStabilitySummary)
+    retention_observability_summary: RetentionObservabilitySummary = Field(
+        default_factory=RetentionObservabilitySummary
+    )
+    why_this_retention_state: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
