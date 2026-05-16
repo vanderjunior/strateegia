@@ -25,6 +25,14 @@ from app.services.manual_experiment_inspection import (
 from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
+from app.services.scientific_tooling_contracts import (
+    json_safe_profile,
+    normalize_availability_state,
+    safe_dict,
+    safe_float,
+    safe_list,
+    scientific_payload_defaults,
+)
 from app.services.tuning_profile_benchmark_comparison import (
     compare_tuning_profiles_against_benchmark,
 )
@@ -48,47 +56,20 @@ def get_session_manager(request: Request) -> SessionManager:
 def _inspection_defaults() -> dict[str, object]:
     registry = build_controlled_tuning_experiment_registry()
     comparison = compare_tuning_profiles_against_benchmark(registry=registry)
-    return {
-        "inspection_available": False,
-        "inspection_label": "Internal Runtime Inspection Console — Read Only",
-        "session": {
-            "session_id": None,
-            "completed": None,
-            "current_block_index": None,
-            "total_blocks": 0,
-            "current_block_type": None,
-            "topic_id": None,
-        },
-        "benchmark_summary": {
-            "pedagogical_benchmark_state": "not_available",
-            "pedagogical_benchmark_summary": "No runtime data available.",
-            "benchmark_readiness": "benchmark_insufficient",
-            "benchmark_alignment_score": 0.0,
-            "benchmark_regression_severity": "none",
-            "benchmark_total_cases": 0,
-            "benchmark_passed_cases": [],
-            "benchmark_failed_cases": [],
-            "benchmark_inconclusive_cases": [],
-            "benchmark_regression_cases": [],
-        },
-        "benchmark_case_reports": [],
-        "scientific_runtime_validation": {},
-        "comparative_session_analytics": {},
-        "session_export_debug": {},
-        "stability_metrics": {},
-        "validation_dataset_awareness": {},
-        "controlled_tuning_registry": registry.model_dump(mode="json"),
-        "tuning_profile_benchmark_comparison": comparison.model_dump(mode="json"),
-        "manual_experiment_inspection": build_manual_experiment_inspection(
-            registry=registry,
-            comparison=comparison,
-        ).model_dump(mode="json"),
-        "longitudinal_retention": observe_longitudinal_retention(
-            progress=ProgressState(),
-            runtime_block={},
-        ).model_dump(mode="json"),
-        "raw_runtime_block": {},
-    }
+    manual = build_manual_experiment_inspection(
+        registry=registry,
+        comparison=comparison,
+    )
+    retention = observe_longitudinal_retention(
+        progress=ProgressState(),
+        runtime_block={},
+    )
+    return scientific_payload_defaults(
+        controlled_tuning_registry=registry,
+        tuning_profile_benchmark_comparison=comparison,
+        manual_experiment_inspection=manual,
+        longitudinal_retention=retention,
+    )
 
 
 def _inspection_payload(
@@ -99,13 +80,15 @@ def _inspection_payload(
     progress = repository.load_progress()
     context = session_manager.latest_inspection_context()
     if context is None:
-        payload["longitudinal_retention"] = observe_longitudinal_retention(
-            progress=progress,
-            runtime_block={},
-        ).model_dump(mode="json")
+        payload["longitudinal_retention"] = json_safe_profile(
+            observe_longitudinal_retention(
+                progress=progress,
+                runtime_block={},
+            )
+        )
         return payload
 
-    block = dict(context.get("block") or {})
+    block = safe_dict(context.get("block"))
     payload["inspection_available"] = True
     payload["session"] = {
         "session_id": context.get("session_id"),
@@ -116,18 +99,24 @@ def _inspection_payload(
         "topic_id": block.get("topic_id"),
     }
     payload["benchmark_summary"] = {
-        "pedagogical_benchmark_state": block.get("pedagogical_benchmark_state", "not_available"),
+        "pedagogical_benchmark_state": normalize_availability_state(
+            block.get("pedagogical_benchmark_state"),
+            "not_available",
+        ),
         "pedagogical_benchmark_summary": block.get("pedagogical_benchmark_summary", ""),
         "benchmark_readiness": block.get("benchmark_readiness", "benchmark_insufficient"),
-        "benchmark_alignment_score": block.get("benchmark_alignment_score", 0.0),
-        "benchmark_regression_severity": block.get("benchmark_regression_severity", "none"),
+        "benchmark_alignment_score": safe_float(block.get("benchmark_alignment_score"), 0.0),
+        "benchmark_regression_severity": normalize_availability_state(
+            block.get("benchmark_regression_severity"),
+            "none",
+        ),
         "benchmark_total_cases": block.get("benchmark_total_cases", 0),
-        "benchmark_passed_cases": block.get("benchmark_passed_cases", []),
-        "benchmark_failed_cases": block.get("benchmark_failed_cases", []),
-        "benchmark_inconclusive_cases": block.get("benchmark_inconclusive_cases", []),
-        "benchmark_regression_cases": block.get("benchmark_regression_cases", []),
+        "benchmark_passed_cases": safe_list(block.get("benchmark_passed_cases")),
+        "benchmark_failed_cases": safe_list(block.get("benchmark_failed_cases")),
+        "benchmark_inconclusive_cases": safe_list(block.get("benchmark_inconclusive_cases")),
+        "benchmark_regression_cases": safe_list(block.get("benchmark_regression_cases")),
     }
-    payload["benchmark_case_reports"] = list(block.get("benchmark_case_reports") or [])
+    payload["benchmark_case_reports"] = safe_list(block.get("benchmark_case_reports"))
     payload["scientific_runtime_validation"] = {
         "scientific_validation_state": block.get("scientific_validation_state", ""),
         "runtime_benchmark_state": block.get("runtime_benchmark_state", ""),
@@ -143,62 +132,69 @@ def _inspection_payload(
     payload["comparative_session_analytics"] = {
         "comparative_session_state": block.get("comparative_session_state", ""),
         "comparative_runtime_summary": block.get("comparative_runtime_summary", ""),
-        "retrieval_delta": block.get("retrieval_delta", 0.0),
-        "scaffold_delta": block.get("scaffold_delta", 0.0),
-        "compression_delta": block.get("compression_delta", 0.0),
-        "continuity_delta": block.get("continuity_delta", 0.0),
-        "reconstruction_delta": block.get("reconstruction_delta", 0.0),
-        "pacing_delta": block.get("pacing_delta", 0.0),
-        "validation_delta": block.get("validation_delta", 0.0),
-        "sustainability_delta": block.get("sustainability_delta", 0.0),
+        "retrieval_delta": safe_float(block.get("retrieval_delta"), 0.0),
+        "scaffold_delta": safe_float(block.get("scaffold_delta"), 0.0),
+        "compression_delta": safe_float(block.get("compression_delta"), 0.0),
+        "continuity_delta": safe_float(block.get("continuity_delta"), 0.0),
+        "reconstruction_delta": safe_float(block.get("reconstruction_delta"), 0.0),
+        "pacing_delta": safe_float(block.get("pacing_delta"), 0.0),
+        "validation_delta": safe_float(block.get("validation_delta"), 0.0),
+        "sustainability_delta": safe_float(block.get("sustainability_delta"), 0.0),
         "pedagogical_regression_signal": block.get("pedagogical_regression_signal", ""),
     }
     payload["session_export_debug"] = {
         "session_export_state": block.get("session_export_state", ""),
         "runtime_export_summary": block.get("runtime_export_summary", ""),
-        "behavioral_diff_snapshot": block.get("behavioral_diff_snapshot", {}),
-        "runtime_trace_snapshot": block.get("runtime_trace_snapshot", {}),
-        "stability_snapshot": block.get("stability_snapshot", {}),
-        "tuning_snapshot": block.get("tuning_snapshot", {}),
-        "compression_snapshot": block.get("compression_snapshot", {}),
-        "continuity_snapshot": block.get("continuity_snapshot", {}),
-        "support_snapshot": block.get("support_snapshot", {}),
-        "retrieval_snapshot": block.get("retrieval_snapshot", {}),
-        "reconstruction_snapshot": block.get("reconstruction_snapshot", {}),
+        "behavioral_diff_snapshot": safe_dict(block.get("behavioral_diff_snapshot")),
+        "runtime_trace_snapshot": safe_dict(block.get("runtime_trace_snapshot")),
+        "stability_snapshot": safe_dict(block.get("stability_snapshot")),
+        "tuning_snapshot": safe_dict(block.get("tuning_snapshot")),
+        "compression_snapshot": safe_dict(block.get("compression_snapshot")),
+        "continuity_snapshot": safe_dict(block.get("continuity_snapshot")),
+        "support_snapshot": safe_dict(block.get("support_snapshot")),
+        "retrieval_snapshot": safe_dict(block.get("retrieval_snapshot")),
+        "reconstruction_snapshot": safe_dict(block.get("reconstruction_snapshot")),
     }
     payload["stability_metrics"] = {
         "session_stability_state": block.get("session_stability_state", ""),
-        "retrieval_density_metric": block.get("retrieval_density_metric", 0.0),
-        "scaffold_load_metric": block.get("scaffold_load_metric", 0.0),
-        "continuity_smoothness_metric": block.get("continuity_smoothness_metric", 0.0),
-        "reconstruction_pressure_metric": block.get("reconstruction_pressure_metric", 0.0),
-        "compression_safety_metric": block.get("compression_safety_metric", 0.0),
-        "pacing_stability_metric": block.get("pacing_stability_metric", 0.0),
-        "cognitive_balance_metric": block.get("cognitive_balance_metric", 0.0),
+        "retrieval_density_metric": safe_float(block.get("retrieval_density_metric"), 0.0),
+        "scaffold_load_metric": safe_float(block.get("scaffold_load_metric"), 0.0),
+        "continuity_smoothness_metric": safe_float(block.get("continuity_smoothness_metric"), 0.0),
+        "reconstruction_pressure_metric": safe_float(block.get("reconstruction_pressure_metric"), 0.0),
+        "compression_safety_metric": safe_float(block.get("compression_safety_metric"), 0.0),
+        "pacing_stability_metric": safe_float(block.get("pacing_stability_metric"), 0.0),
+        "cognitive_balance_metric": safe_float(block.get("cognitive_balance_metric"), 0.0),
     }
     payload["validation_dataset_awareness"] = {
         "validation_dataset_state": block.get("validation_dataset_state", ""),
         "pedagogical_scenario_family": block.get("pedagogical_scenario_family", ""),
         "runtime_validation_context": block.get("runtime_validation_context", ""),
-        "comparative_validation_alignment": block.get("comparative_validation_alignment", 0.0),
+        "comparative_validation_alignment": safe_float(
+            block.get("comparative_validation_alignment"),
+            0.0,
+        ),
         "dataset_awareness_summary": block.get("dataset_awareness_summary", ""),
     }
     registry = build_controlled_tuning_experiment_registry()
-    payload["controlled_tuning_registry"] = registry.model_dump(mode="json")
+    payload["controlled_tuning_registry"] = json_safe_profile(registry)
     comparison = compare_tuning_profiles_against_benchmark(
         registry=registry,
-        benchmark_result={"benchmark_case_reports": block.get("benchmark_case_reports", [])},
+        benchmark_result={"benchmark_case_reports": safe_list(block.get("benchmark_case_reports"))},
     )
-    payload["tuning_profile_benchmark_comparison"] = comparison.model_dump(mode="json")
-    payload["manual_experiment_inspection"] = build_manual_experiment_inspection(
-        registry=registry,
-        comparison=comparison,
-    ).model_dump(mode="json")
-    payload["longitudinal_retention"] = observe_longitudinal_retention(
-        progress=progress,
-        runtime_block=block,
-    ).model_dump(mode="json")
-    payload["raw_runtime_block"] = block
+    payload["tuning_profile_benchmark_comparison"] = json_safe_profile(comparison)
+    payload["manual_experiment_inspection"] = json_safe_profile(
+        build_manual_experiment_inspection(
+            registry=registry,
+            comparison=comparison,
+        )
+    )
+    payload["longitudinal_retention"] = json_safe_profile(
+        observe_longitudinal_retention(
+            progress=progress,
+            runtime_block=block,
+        )
+    )
+    payload["raw_runtime_block"] = json_safe_profile(block)
     return payload
 
 
