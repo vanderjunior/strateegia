@@ -25,6 +25,7 @@ from app.services.manual_experiment_inspection import (
 from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
+from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
     normalize_availability_state,
@@ -369,6 +370,12 @@ def get_latest_block_review(request: Request):
 @router.get("/inspection/runtime")
 def get_runtime_inspection(request: Request):
     return _inspection_payload(get_session_manager(request), get_repository(request))
+
+
+@router.get("/inspection/runtime/export")
+def export_runtime_inspection_snapshot(request: Request):
+    payload = _inspection_payload(get_session_manager(request), get_repository(request))
+    return export_inspection_snapshot(payload).snapshot_envelope.model_dump(mode="json")
 
 
 def ui_path() -> Path:

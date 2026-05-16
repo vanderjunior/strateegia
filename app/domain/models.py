@@ -1028,6 +1028,62 @@ class LongitudinalRetentionProfile(BaseModel):
     why_this_retention_state: str = ""
 
 
+class OfflineSnapshotMetadata(BaseModel):
+    schema_version: str = ""
+    export_kind: str = ""
+    exported_at: str = ""
+    source: str = ""
+    inspection_available: bool = False
+    snapshot_id: str = ""
+    payload_keys: list[str] = Field(default_factory=list)
+
+
+class OfflineSnapshotEnvelope(BaseModel):
+    schema_version: str
+    export_kind: str
+    exported_at: str = ""
+    source: str = ""
+    inspection_available: bool = False
+    snapshot_id: str = ""
+    snapshot_payload: dict[str, object] = Field(default_factory=dict)
+    payload_keys: list[str] = Field(default_factory=list)
+    validation_state: str = "snapshot_invalid"
+    export_reasoning: list[str] = Field(default_factory=list)
+
+
+class OfflineSnapshotValidationResult(BaseModel):
+    validation_state: str
+    schema_version: str = ""
+    missing_required_keys: list[str] = Field(default_factory=list)
+    present_keys: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    is_valid: bool = False
+    validation_reasoning: list[str] = Field(default_factory=list)
+
+
+class OfflineSnapshotImportResult(BaseModel):
+    import_state: str
+    imported_payload: dict[str, object] = Field(default_factory=dict)
+    snapshot_metadata: OfflineSnapshotMetadata = Field(default_factory=OfflineSnapshotMetadata)
+    validation: OfflineSnapshotValidationResult = Field(
+        default_factory=lambda: OfflineSnapshotValidationResult(validation_state="snapshot_invalid")
+    )
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    import_reasoning: list[str] = Field(default_factory=list)
+
+
+class OfflineSnapshotExportResult(BaseModel):
+    export_state: str
+    snapshot_envelope: OfflineSnapshotEnvelope
+    snapshot_metadata: OfflineSnapshotMetadata
+    validation: OfflineSnapshotValidationResult
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    export_reasoning: list[str] = Field(default_factory=list)
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
