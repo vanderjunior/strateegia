@@ -96,6 +96,15 @@ def test_inspection_endpoint_returns_fallback_when_no_runtime_exists(tmp_path):
         "retention_inconclusive",
         "retention_insufficient_evidence",
     }
+    assert payload["aggregate_retention"]["aggregate_retention_state"] in {
+        "aggregate_retention_sustainable",
+        "aggregate_retention_emerging",
+        "aggregate_retention_fragile",
+        "aggregate_retention_superficial",
+        "aggregate_retention_mixed",
+        "aggregate_retention_inconclusive",
+        "aggregate_retention_insufficient_evidence",
+    }
 
 
 def test_inspection_page_is_served_successfully(tmp_path):
@@ -147,6 +156,7 @@ def test_inspection_endpoint_returns_benchmark_and_validation_payload(tmp_path):
     assert payload["tuning_profile_benchmark_comparison"]["total_profiles_compared"] >= 1
     assert payload["manual_experiment_inspection"]["inspection_readiness"]
     assert payload["longitudinal_retention"]["longitudinal_retention_state"]
+    assert payload["aggregate_retention"]["aggregate_retention_state"]
 
 
 def test_inspection_endpoint_is_deterministic_for_same_runtime_state(tmp_path):

@@ -91,6 +91,19 @@ def build_payload() -> dict[str, object]:
             "retention_evidence_level": "moderate",
             "retention_confidence_indicator": 0.71,
         },
+        "aggregate_retention": {
+            "aggregate_retention_state": "aggregate_retention_mixed",
+            "aggregate_retention_summary": "Aggregate retention is mixed across the observed population.",
+            "durable_microtopics_count": 1,
+            "fragile_microtopics_count": 1,
+            "superficial_microtopics_count": 1,
+            "insufficient_evidence_count": 0,
+            "false_fluency_count": 1,
+            "evidence_coverage_ratio": 0.75,
+            "durable_ratio": 0.33,
+            "fragile_ratio": 0.33,
+            "superficial_ratio": 0.33,
+        },
         "raw_runtime_block": {},
     }
 

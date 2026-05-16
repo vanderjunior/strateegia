@@ -95,6 +95,7 @@ function renderPayload(payload) {
   renderKv("tuning-profile-comparison", payload.tuning_profile_benchmark_comparison);
   renderKv("manual-experiment-inspection", payload.manual_experiment_inspection);
   renderKv("longitudinal-retention", payload.longitudinal_retention);
+  renderKv("aggregate-retention", payload.aggregate_retention);
   document.getElementById("raw-json").textContent = JSON.stringify(payload, null, 2);
 }
 

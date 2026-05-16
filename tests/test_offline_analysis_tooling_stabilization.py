@@ -171,6 +171,7 @@ def test_partial_and_legacy_snapshots_warn_and_compare_as_partial():
         "tuning_profile_benchmark_comparison": {},
         "manual_experiment_inspection": {},
         "longitudinal_retention": {},
+        "aggregate_retention": {},
         "raw_runtime_block": {},
     }
 
@@ -207,6 +208,7 @@ def test_schema_contract_and_payload_key_contract_remain_stable():
         "tuning_profile_benchmark_comparison": {},
         "manual_experiment_inspection": {},
         "longitudinal_retention": {},
+        "aggregate_retention": {},
         "raw_runtime_block": {},
     }
     exported = export_inspection_snapshot(payload)
@@ -261,13 +263,14 @@ def test_real_regressions_still_signal_while_missing_metadata_alone_does_not():
         },
         "controlled_tuning_registry": {},
         "tuning_profile_benchmark_comparison": {},
-        "manual_experiment_inspection": {"caution_flags": []},
-        "longitudinal_retention": {
-            "false_fluency_retention_risk": 0.16,
-            "longitudinal_retention_state": "retention_sustainable",
-        },
-        "raw_runtime_block": {},
-    }
+            "manual_experiment_inspection": {"caution_flags": []},
+            "longitudinal_retention": {
+                "false_fluency_retention_risk": 0.16,
+                "longitudinal_retention_state": "retention_sustainable",
+            },
+            "aggregate_retention": {},
+            "raw_runtime_block": {},
+        }
     candidate_payload = deepcopy(baseline_payload)
     candidate_payload["stability_metrics"]["scaffold_load_metric"] = 0.33
     candidate_payload["stability_metrics"]["compression_safety_metric"] = 0.51

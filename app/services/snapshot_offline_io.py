@@ -38,6 +38,7 @@ REQUIRED_INSPECTION_PAYLOAD_KEYS = {
     "tuning_profile_benchmark_comparison",
     "manual_experiment_inspection",
     "longitudinal_retention",
+    "aggregate_retention",
     "raw_runtime_block",
 }
 
@@ -245,6 +246,7 @@ def _build_snapshot_payload(payload: object) -> dict[str, object]:
         tuning_profile_benchmark_comparison={},
         manual_experiment_inspection={},
         longitudinal_retention={},
+        aggregate_retention={},
     )
     merged_payload = dict(base_payload)
     merged_payload.update(normalized)

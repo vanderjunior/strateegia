@@ -60,6 +60,7 @@ def scientific_payload_defaults(
     tuning_profile_benchmark_comparison: object,
     manual_experiment_inspection: object,
     longitudinal_retention: object,
+    aggregate_retention: object,
 ) -> dict[str, object]:
     return {
         "inspection_available": False,
@@ -96,6 +97,7 @@ def scientific_payload_defaults(
         ),
         "manual_experiment_inspection": json_safe_profile(manual_experiment_inspection),
         "longitudinal_retention": json_safe_profile(longitudinal_retention),
+        "aggregate_retention": json_safe_profile(aggregate_retention),
         "raw_runtime_block": {},
     }
 

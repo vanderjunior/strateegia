@@ -12,6 +12,7 @@ from app.services.controlled_tuning_experiments import (
 from app.services.empirical_validation_dataset import (
     evaluate_empirical_validation_dataset,
 )
+from app.services.aggregate_retention_observability import observe_aggregate_retention
 from app.services.longitudinal_retention_observability import (
     observe_longitudinal_retention,
 )
@@ -53,6 +54,7 @@ def test_scientific_profiles_serialize_to_json_safe_payloads():
         comparison,
         build_manual_experiment_inspection(registry=registry, comparison=comparison),
         observe_longitudinal_retention(progress=None, runtime_block={}),
+        observe_aggregate_retention(progress=None, runtime_block={}),
     ]
 
     serialized = [json_safe_profile(profile) for profile in profiles]
@@ -94,6 +96,9 @@ def test_scientific_payload_defaults_expose_stable_top_level_keys():
         longitudinal_retention=json_safe_profile(
             observe_longitudinal_retention(progress=None, runtime_block={})
         ),
+        aggregate_retention=json_safe_profile(
+            observe_aggregate_retention(progress=None, runtime_block={})
+        ),
     )
 
     assert sorted(payload) == sorted(
@@ -112,6 +117,7 @@ def test_scientific_payload_defaults_expose_stable_top_level_keys():
             "tuning_profile_benchmark_comparison",
             "manual_experiment_inspection",
             "longitudinal_retention",
+            "aggregate_retention",
             "raw_runtime_block",
         ]
     )

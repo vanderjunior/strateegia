@@ -82,6 +82,7 @@ def build_minimal_payload() -> dict[str, object]:
         "tuning_profile_benchmark_comparison": {},
         "manual_experiment_inspection": {},
         "longitudinal_retention": {},
+        "aggregate_retention": {},
         "raw_runtime_block": {},
     }
 

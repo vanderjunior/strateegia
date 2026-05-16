@@ -15,6 +15,7 @@ from app.repositories.json_store import JsonStudyRepository
 from app.services.controlled_tuning_experiments import (
     build_controlled_tuning_experiment_registry,
 )
+from app.services.aggregate_retention_observability import observe_aggregate_retention
 from app.services.learning_engine import LearningDecisionEngine
 from app.services.longitudinal_retention_observability import (
     observe_longitudinal_retention,
@@ -65,11 +66,16 @@ def _inspection_defaults() -> dict[str, object]:
         progress=ProgressState(),
         runtime_block={},
     )
+    aggregate_retention = observe_aggregate_retention(
+        progress=ProgressState(),
+        runtime_block={},
+    )
     return scientific_payload_defaults(
         controlled_tuning_registry=registry,
         tuning_profile_benchmark_comparison=comparison,
         manual_experiment_inspection=manual,
         longitudinal_retention=retention,
+        aggregate_retention=aggregate_retention,
     )
 
 
@@ -83,6 +89,12 @@ def _inspection_payload(
     if context is None:
         payload["longitudinal_retention"] = json_safe_profile(
             observe_longitudinal_retention(
+                progress=progress,
+                runtime_block={},
+            )
+        )
+        payload["aggregate_retention"] = json_safe_profile(
+            observe_aggregate_retention(
                 progress=progress,
                 runtime_block={},
             )
@@ -191,6 +203,12 @@ def _inspection_payload(
     )
     payload["longitudinal_retention"] = json_safe_profile(
         observe_longitudinal_retention(
+            progress=progress,
+            runtime_block=block,
+        )
+    )
+    payload["aggregate_retention"] = json_safe_profile(
+        observe_aggregate_retention(
             progress=progress,
             runtime_block=block,
         )

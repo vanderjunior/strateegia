@@ -1028,6 +1028,111 @@ class LongitudinalRetentionProfile(BaseModel):
     why_this_retention_state: str = ""
 
 
+class AggregateRetentionMetric(BaseModel):
+    metric_name: str
+    metric_value: float = 0.0
+    interpretation: str = ""
+
+
+class RetentionCohortSummary(BaseModel):
+    cohort_name: str
+    count: int = 0
+    ratio: float = 0.0
+
+
+class AggregateRetentionPopulationSummary(BaseModel):
+    total_microtopics_observed: int = 0
+    durable_microtopics_count: int = 0
+    emerging_microtopics_count: int = 0
+    fragile_microtopics_count: int = 0
+    superficial_microtopics_count: int = 0
+    insufficient_evidence_count: int = 0
+    false_fluency_count: int = 0
+    resurfacing_effective_count: int = 0
+    resurfacing_inconclusive_count: int = 0
+    resurfacing_ineffective_count: int = 0
+    no_resurfacing_evidence_count: int = 0
+    recovery_improving_count: int = 0
+    recovery_stalled_count: int = 0
+    recovery_unstable_count: int = 0
+    recovery_insufficient_evidence_count: int = 0
+    reconstruction_fragile_count: int = 0
+    reconstruction_durable_count: int = 0
+    reconstruction_improving_count: int = 0
+    transfer_fragile_count: int = 0
+    transfer_durable_count: int = 0
+    transfer_improving_count: int = 0
+    retention_population_reasoning: list[str] = Field(default_factory=list)
+    cohorts: list[RetentionCohortSummary] = Field(default_factory=list)
+
+
+class TopicRetentionRiskSummary(BaseModel):
+    topic_id: str
+    observed_microtopics: int = 0
+    durable_count: int = 0
+    fragile_count: int = 0
+    superficial_count: int = 0
+    insufficient_evidence_count: int = 0
+    false_fluency_count: int = 0
+    risk_flags: list[str] = Field(default_factory=list)
+    topic_retention_state: str = "topic_retention_insufficient_evidence"
+    topic_retention_reasoning: list[str] = Field(default_factory=list)
+
+
+class AggregateRetentionRiskProfile(BaseModel):
+    aggregate_retention_risk_flags: list[str] = Field(default_factory=list)
+    aggregate_false_fluency_risk: float = 0.0
+    aggregate_resurfacing_failure_risk: float = 0.0
+    aggregate_reconstruction_decay_risk: float = 0.0
+    aggregate_transfer_decay_risk: float = 0.0
+    aggregate_unstable_recovery_risk: float = 0.0
+    aggregate_superficial_stabilization_risk: float = 0.0
+    aggregate_topic_risk_concentration: float = 0.0
+
+
+class AggregateRetentionEvidenceSummary(BaseModel):
+    aggregate_retention_evidence_state: str = "evidence_insufficient"
+    aggregate_retention_evidence_reasoning: list[str] = Field(default_factory=list)
+    evidence_coverage_ratio: float = 0.0
+    observed_with_attempts: int = 0
+    observed_with_timestamps: int = 0
+    observed_with_resurfacing_cycles: int = 0
+    observed_with_retention_evidence: int = 0
+
+
+class AggregateRetentionProfile(BaseModel):
+    aggregate_retention_state: str
+    aggregate_retention_summary: str = ""
+    aggregate_retention_reasoning: list[str] = Field(default_factory=list)
+    retention_population_summary: AggregateRetentionPopulationSummary = Field(
+        default_factory=AggregateRetentionPopulationSummary
+    )
+    topic_retention_risk_summary: list[TopicRetentionRiskSummary] = Field(default_factory=list)
+    aggregate_retention_risk_profile: AggregateRetentionRiskProfile = Field(
+        default_factory=AggregateRetentionRiskProfile
+    )
+    aggregate_retention_evidence_summary: AggregateRetentionEvidenceSummary = Field(
+        default_factory=AggregateRetentionEvidenceSummary
+    )
+    aggregate_resurfacing_state: str = "aggregate_resurfacing_insufficient_evidence"
+    aggregate_recovery_state: str = "aggregate_recovery_insufficient_evidence"
+    aggregate_reconstruction_state: str = "aggregate_reconstruction_insufficient_evidence"
+    aggregate_transfer_state: str = "aggregate_transfer_insufficient_evidence"
+    aggregate_retention_metrics: list[AggregateRetentionMetric] = Field(default_factory=list)
+    aggregate_retention_risk_flags: list[str] = Field(default_factory=list)
+    total_microtopics_observed: int = 0
+    durable_microtopics_count: int = 0
+    fragile_microtopics_count: int = 0
+    superficial_microtopics_count: int = 0
+    insufficient_evidence_count: int = 0
+    false_fluency_count: int = 0
+    evidence_coverage_ratio: float = 0.0
+    durable_ratio: float = 0.0
+    fragile_ratio: float = 0.0
+    superficial_ratio: float = 0.0
+    why_this_aggregate_retention_state: str = ""
+
+
 class OfflineSnapshotMetadata(BaseModel):
     schema_version: str = ""
     export_kind: str = ""

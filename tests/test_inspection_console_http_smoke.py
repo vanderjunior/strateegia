@@ -23,6 +23,7 @@ EXPECTED_TOP_LEVEL_KEYS = {
     "tuning_profile_benchmark_comparison",
     "manual_experiment_inspection",
     "longitudinal_retention",
+    "aggregate_retention",
     "raw_runtime_block",
 }
 
@@ -110,6 +111,7 @@ def test_no_session_fallback_is_safe_and_serializable(tmp_path):
     assert isinstance(payload["controlled_tuning_registry"], dict)
     assert isinstance(payload["manual_experiment_inspection"], dict)
     assert isinstance(payload["longitudinal_retention"], dict)
+    assert isinstance(payload["aggregate_retention"], dict)
     json.dumps(payload, ensure_ascii=True)
 
 
