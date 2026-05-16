@@ -898,6 +898,66 @@ class TuningProfileBenchmarkComparison(BaseModel):
     why_this_tuning_profile_comparison: str = ""
 
 
+class ManualExperimentCautionFlag(BaseModel):
+    flag_id: str
+    flag_summary: str = ""
+    affected_profiles: list[str] = Field(default_factory=list)
+    reasoning: list[str] = Field(default_factory=list)
+
+
+class ManualExperimentRecommendation(BaseModel):
+    experiment_id: str
+    decision_state: str
+    candidate_readiness: str = ""
+    reasoning: list[str] = Field(default_factory=list)
+
+
+class ManualExperimentDecisionSummary(BaseModel):
+    decision_state: str
+    decision_summary: str = ""
+    recommended_profiles: list[str] = Field(default_factory=list)
+    blocked_profiles: list[str] = Field(default_factory=list)
+    caution_flags: list[str] = Field(default_factory=list)
+
+
+class ManualExperimentInspectionItem(BaseModel):
+    experiment_id: str
+    experiment_name: str
+    manual_inspection_state: str
+    candidate_status: str = ""
+    candidate_reasoning: list[str] = Field(default_factory=list)
+    caution_flags: list[str] = Field(default_factory=list)
+    readiness_blockers: list[str] = Field(default_factory=list)
+    benchmark_case_coverage: list[str] = Field(default_factory=list)
+    overlap_summary: str = ""
+    tradeoff_summary: str = ""
+    manual_review_summary: str = ""
+    recommendation: ManualExperimentRecommendation | None = None
+    caution_flag_details: list[ManualExperimentCautionFlag] = Field(default_factory=list)
+    why_this_candidate_status: str = ""
+    read_only: bool = True
+    executable: bool = False
+
+
+class ManualExperimentInspectionProfile(BaseModel):
+    manual_experiment_inspection_state: str
+    manual_experiment_inspection_summary: str = ""
+    manual_experiment_inspection_reasoning: list[str] = Field(default_factory=list)
+    promising_candidate_profiles: list[str] = Field(default_factory=list)
+    redundant_profiles: list[str] = Field(default_factory=list)
+    tradeoff_sensitive_profiles: list[str] = Field(default_factory=list)
+    low_coverage_profiles: list[str] = Field(default_factory=list)
+    not_ready_profiles: list[str] = Field(default_factory=list)
+    caution_flags: list[str] = Field(default_factory=list)
+    caution_flag_details: list[ManualExperimentCautionFlag] = Field(default_factory=list)
+    manual_decision_summary: ManualExperimentDecisionSummary = Field(
+        default_factory=lambda: ManualExperimentDecisionSummary(decision_state="inspection_inconclusive")
+    )
+    inspection_readiness: str = "inspection_insufficient"
+    experiment_review_items: list[ManualExperimentInspectionItem] = Field(default_factory=list)
+    why_this_manual_inspection_state: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""

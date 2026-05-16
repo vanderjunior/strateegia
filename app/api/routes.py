@@ -16,6 +16,9 @@ from app.services.controlled_tuning_experiments import (
     build_controlled_tuning_experiment_registry,
 )
 from app.services.learning_engine import LearningDecisionEngine
+from app.services.manual_experiment_inspection import (
+    build_manual_experiment_inspection,
+)
 from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
@@ -41,6 +44,7 @@ def get_session_manager(request: Request) -> SessionManager:
 
 def _inspection_defaults() -> dict[str, object]:
     registry = build_controlled_tuning_experiment_registry()
+    comparison = compare_tuning_profiles_against_benchmark(registry=registry)
     return {
         "inspection_available": False,
         "inspection_label": "Internal Runtime Inspection Console — Read Only",
@@ -71,8 +75,10 @@ def _inspection_defaults() -> dict[str, object]:
         "stability_metrics": {},
         "validation_dataset_awareness": {},
         "controlled_tuning_registry": registry.model_dump(mode="json"),
-        "tuning_profile_benchmark_comparison": compare_tuning_profiles_against_benchmark(
-            registry=registry
+        "tuning_profile_benchmark_comparison": comparison.model_dump(mode="json"),
+        "manual_experiment_inspection": build_manual_experiment_inspection(
+            registry=registry,
+            comparison=comparison,
         ).model_dump(mode="json"),
         "raw_runtime_block": {},
     }
@@ -164,9 +170,14 @@ def _inspection_payload(session_manager: SessionManager) -> dict[str, object]:
     }
     registry = build_controlled_tuning_experiment_registry()
     payload["controlled_tuning_registry"] = registry.model_dump(mode="json")
-    payload["tuning_profile_benchmark_comparison"] = compare_tuning_profiles_against_benchmark(
+    comparison = compare_tuning_profiles_against_benchmark(
         registry=registry,
         benchmark_result={"benchmark_case_reports": block.get("benchmark_case_reports", [])},
+    )
+    payload["tuning_profile_benchmark_comparison"] = comparison.model_dump(mode="json")
+    payload["manual_experiment_inspection"] = build_manual_experiment_inspection(
+        registry=registry,
+        comparison=comparison,
     ).model_dump(mode="json")
     payload["raw_runtime_block"] = block
     return payload

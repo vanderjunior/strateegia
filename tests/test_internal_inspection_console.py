@@ -81,6 +81,13 @@ def test_inspection_endpoint_returns_fallback_when_no_runtime_exists(tmp_path):
         "comparison_partial",
         "comparison_insufficient",
     }
+    assert payload["manual_experiment_inspection"]["inspection_readiness"] in {
+        "inspection_ready",
+        "inspection_partial",
+        "inspection_insufficient",
+        "inspection_no_profiles",
+        "inspection_no_comparison",
+    }
 
 
 def test_inspection_page_is_served_successfully(tmp_path):
@@ -130,6 +137,7 @@ def test_inspection_endpoint_returns_benchmark_and_validation_payload(tmp_path):
     assert payload["validation_dataset_awareness"]["validation_dataset_state"]
     assert payload["controlled_tuning_registry"]["total_experiments"] >= 1
     assert payload["tuning_profile_benchmark_comparison"]["total_profiles_compared"] >= 1
+    assert payload["manual_experiment_inspection"]["inspection_readiness"]
 
 
 def test_inspection_endpoint_is_deterministic_for_same_runtime_state(tmp_path):
