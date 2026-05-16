@@ -1084,6 +1084,74 @@ class OfflineSnapshotExportResult(BaseModel):
     export_reasoning: list[str] = Field(default_factory=list)
 
 
+class OfflineSnapshotMetricDelta(BaseModel):
+    path: str
+    baseline_value: float | None = None
+    candidate_value: float | None = None
+    delta: float | None = None
+    delta_direction: str = "unavailable"
+    interpretation: str = ""
+
+
+class OfflineSnapshotDeltaSummary(BaseModel):
+    path: str
+    baseline_value: object | None = None
+    candidate_value: object | None = None
+    delta_state: str = "unavailable"
+    added_items: list[str] = Field(default_factory=list)
+    removed_items: list[str] = Field(default_factory=list)
+    shared_items: list[str] = Field(default_factory=list)
+    changed_keys: list[str] = Field(default_factory=list)
+    interpretation: str = ""
+
+
+class OfflineSnapshotRegressionSignal(BaseModel):
+    signal_name: str
+    signal_state: str = "not_detected"
+    severity: str = "none"
+    reasoning: list[str] = Field(default_factory=list)
+
+
+class OfflineSnapshotComparisonInput(BaseModel):
+    baseline_snapshot_id: str = ""
+    candidate_snapshot_id: str = ""
+    baseline_schema_version: str = ""
+    candidate_schema_version: str = ""
+    baseline_import_state: str = ""
+    candidate_import_state: str = ""
+
+
+class OfflineSnapshotComparisonSummary(BaseModel):
+    total_metric_deltas: int = 0
+    total_state_changes: int = 0
+    total_list_changes: int = 0
+    total_regression_signals: int = 0
+    comparison_confidence: float = 0.0
+    comparison_limitations: list[str] = Field(default_factory=list)
+
+
+class OfflineSnapshotComparisonResult(BaseModel):
+    offline_comparison_state: str
+    offline_comparison_summary: str = ""
+    offline_comparison_reasoning: list[str] = Field(default_factory=list)
+    comparison_input: OfflineSnapshotComparisonInput = Field(default_factory=OfflineSnapshotComparisonInput)
+    comparison_summary: OfflineSnapshotComparisonSummary = Field(default_factory=OfflineSnapshotComparisonSummary)
+    baseline_snapshot_id: str = ""
+    candidate_snapshot_id: str = ""
+    baseline_schema_version: str = ""
+    candidate_schema_version: str = ""
+    metric_deltas: list[OfflineSnapshotMetricDelta] = Field(default_factory=list)
+    state_deltas: list[OfflineSnapshotDeltaSummary] = Field(default_factory=list)
+    list_deltas: list[OfflineSnapshotDeltaSummary] = Field(default_factory=list)
+    regression_signals: list[OfflineSnapshotRegressionSignal] = Field(default_factory=list)
+    added_payload_keys: list[str] = Field(default_factory=list)
+    removed_payload_keys: list[str] = Field(default_factory=list)
+    shared_payload_keys: list[str] = Field(default_factory=list)
+    comparison_confidence: float = 0.0
+    comparison_limitations: list[str] = Field(default_factory=list)
+    why_this_offline_comparison_state: str = ""
+
+
 class SessionSnapshotProfile(BaseModel):
     session_snapshot_state: str
     session_snapshot_summary: str = ""
