@@ -57,6 +57,15 @@ NUMERIC_PATHS = [
     "controlled_tuning_registry.total_experiments",
     "longitudinal_retention.false_fluency_retention_risk",
     "longitudinal_retention.retention_confidence_indicator",
+    "aggregate_retention.durable_microtopics_count",
+    "aggregate_retention.fragile_microtopics_count",
+    "aggregate_retention.superficial_microtopics_count",
+    "aggregate_retention.insufficient_evidence_count",
+    "aggregate_retention.false_fluency_count",
+    "aggregate_retention.durable_ratio",
+    "aggregate_retention.fragile_ratio",
+    "aggregate_retention.superficial_ratio",
+    "aggregate_retention.evidence_coverage_ratio",
 ]
 
 STATE_PATHS = [
@@ -89,6 +98,11 @@ STATE_PATHS = [
     "longitudinal_retention.reconstruction_retention_state",
     "longitudinal_retention.transfer_retention_state",
     "longitudinal_retention.retention_evidence_level",
+    "aggregate_retention.aggregate_retention_state",
+    "aggregate_retention.aggregate_resurfacing_state",
+    "aggregate_retention.aggregate_recovery_state",
+    "aggregate_retention.aggregate_reconstruction_state",
+    "aggregate_retention.aggregate_transfer_state",
 ]
 
 LIST_PATHS = [
@@ -102,6 +116,7 @@ LIST_PATHS = [
     "manual_experiment_inspection.tradeoff_sensitive_profiles",
     "manual_experiment_inspection.low_coverage_profiles",
     "manual_experiment_inspection.not_ready_profiles",
+    "aggregate_retention.aggregate_retention_risk_flags",
 ]
 
 
@@ -473,6 +488,87 @@ def _regression_signals(baseline: _PreparedSnapshot, candidate: _PreparedSnapsho
             or candidate.schema_version != SCHEMA_VERSION,
             "high",
             "Snapshot schema versions do not match the supported contract.",
+        ),
+        _signal_from_condition(
+            "aggregate_retention_fragility_increased",
+            _path_value(candidate.payload, "aggregate_retention.aggregate_retention_state")
+            in {"aggregate_retention_fragile", "aggregate_retention_superficial"}
+            and _path_value(baseline.payload, "aggregate_retention.aggregate_retention_state")
+            not in {"aggregate_retention_fragile", "aggregate_retention_superficial"},
+            "high",
+            "Aggregate retention shifted toward a more fragile or superficial state.",
+        ),
+        _signal_from_metric_path(
+            baseline.payload,
+            candidate.payload,
+            "aggregate_retention.false_fluency_count",
+            expected_direction="increased",
+            signal_name="aggregate_false_fluency_increased",
+            severity="high",
+            reason="Aggregate false fluency count increased.",
+        ),
+        _signal_from_metric_path(
+            baseline.payload,
+            candidate.payload,
+            "aggregate_retention.superficial_ratio",
+            expected_direction="increased",
+            signal_name="aggregate_superficial_stability_increased",
+            severity="medium",
+            reason="Aggregate superficial stability ratio increased.",
+        ),
+        _signal_from_metric_path(
+            baseline.payload,
+            candidate.payload,
+            "aggregate_retention.evidence_coverage_ratio",
+            expected_direction="decreased",
+            signal_name="aggregate_evidence_coverage_decreased",
+            severity="medium",
+            reason="Aggregate evidence coverage ratio decreased.",
+        ),
+        _signal_from_condition(
+            "aggregate_reconstruction_fragility_increased",
+            _path_value(candidate.payload, "aggregate_retention.aggregate_reconstruction_state")
+            == "aggregate_reconstruction_fragile"
+            and _path_value(baseline.payload, "aggregate_retention.aggregate_reconstruction_state")
+            != "aggregate_reconstruction_fragile",
+            "high",
+            "Aggregate reconstruction retention degraded into a fragile state.",
+        ),
+        _signal_from_condition(
+            "aggregate_transfer_fragility_increased",
+            _path_value(candidate.payload, "aggregate_retention.aggregate_transfer_state")
+            == "aggregate_transfer_fragile"
+            and _path_value(baseline.payload, "aggregate_retention.aggregate_transfer_state")
+            != "aggregate_transfer_fragile",
+            "high",
+            "Aggregate transfer retention degraded into a fragile state.",
+        ),
+        _signal_from_condition(
+            "aggregate_resurfacing_degraded",
+            _path_value(candidate.payload, "aggregate_retention.aggregate_resurfacing_state")
+            == "aggregate_resurfacing_fragile"
+            and _path_value(baseline.payload, "aggregate_retention.aggregate_resurfacing_state")
+            != "aggregate_resurfacing_fragile",
+            "medium",
+            "Aggregate resurfacing effectiveness degraded.",
+        ),
+        _signal_from_condition(
+            "aggregate_recovery_degraded",
+            _path_value(candidate.payload, "aggregate_retention.aggregate_recovery_state")
+            == "aggregate_recovery_unstable"
+            and _path_value(baseline.payload, "aggregate_retention.aggregate_recovery_state")
+            != "aggregate_recovery_unstable",
+            "medium",
+            "Aggregate recovery after error degraded.",
+        ),
+        _signal_from_condition(
+            "aggregate_topic_risk_concentration_increased",
+            "aggregate_topic_risk_concentration"
+            in _coerce_list(_path_value(candidate.payload, "aggregate_retention.aggregate_retention_risk_flags"))
+            and "aggregate_topic_risk_concentration"
+            not in _coerce_list(_path_value(baseline.payload, "aggregate_retention.aggregate_retention_risk_flags")),
+            "medium",
+            "Aggregate topic risk concentration increased.",
         ),
     ]
     return signals

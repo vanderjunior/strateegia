@@ -246,11 +246,44 @@ def _build_snapshot_payload(payload: object) -> dict[str, object]:
         tuning_profile_benchmark_comparison={},
         manual_experiment_inspection={},
         longitudinal_retention={},
-        aggregate_retention={},
+        aggregate_retention=_default_aggregate_retention_payload(),
     )
     merged_payload = dict(base_payload)
     merged_payload.update(normalized)
     return json_safe_profile(merged_payload, default={})
+
+
+def _default_aggregate_retention_payload() -> dict[str, object]:
+    return {
+        "aggregate_retention_state": "aggregate_retention_insufficient_evidence",
+        "aggregate_retention_summary": "Aggregate retention has insufficient evidence for a reliable summary.",
+        "aggregate_retention_reasoning": [],
+        "retention_population_summary": {},
+        "topic_retention_risk_summary": [],
+        "aggregate_retention_risk_profile": {},
+        "aggregate_retention_evidence_summary": {
+            "aggregate_retention_evidence_state": "evidence_insufficient",
+            "aggregate_retention_evidence_reasoning": [],
+            "evidence_coverage_ratio": 0.0,
+        },
+        "aggregate_resurfacing_state": "aggregate_resurfacing_insufficient_evidence",
+        "aggregate_recovery_state": "aggregate_recovery_insufficient_evidence",
+        "aggregate_reconstruction_state": "aggregate_reconstruction_insufficient_evidence",
+        "aggregate_transfer_state": "aggregate_transfer_insufficient_evidence",
+        "aggregate_retention_metrics": [],
+        "aggregate_retention_risk_flags": ["aggregate_insufficient_longitudinal_evidence"],
+        "total_microtopics_observed": 0,
+        "durable_microtopics_count": 0,
+        "fragile_microtopics_count": 0,
+        "superficial_microtopics_count": 0,
+        "insufficient_evidence_count": 0,
+        "false_fluency_count": 0,
+        "evidence_coverage_ratio": 0.0,
+        "durable_ratio": 0.0,
+        "fragile_ratio": 0.0,
+        "superficial_ratio": 0.0,
+        "why_this_aggregate_retention_state": "Aggregate retention evidence is insufficient to support a stronger conclusion.",
+    }
 
 
 def _snapshot_id_for_payload(payload: dict[str, object]) -> str:
