@@ -104,7 +104,7 @@ class ExamProfileService:
 
         warnings: list[ExamProfileWarning] = []
         family = self._detect_family(signal_text)
-        board = self._detect_board(signal_text, include_maritime_board=family["exam_family"] != "PSCPP")
+        board = self._detect_board(signal_text, include_maritime_board=False)
         format_info = self._detect_format(signal_text)
         scoring = self._detect_scoring(signal_text)
 
@@ -195,7 +195,7 @@ class ExamProfileService:
         available_components = [item for item in confidence_components if item > 0]
         final_confidence = _round_confidence(sum(available_components) / len(available_components)) if available_components else 0.0
 
-        if selected_profile_id is None and format_info["format_type"] == "unknown" and board["board_id"] is None and family["exam_family"] is None:
+        if selected_profile_id is None and format_info["format_type"] == "unknown" and board["board_id"] is None and family["exam_family"] is None and scoring["confidence"] <= 0.2:
             return ExamProfileSelectionCandidate(
                 confidence=0.0,
                 heuristic_confidence=0.0,
@@ -264,9 +264,21 @@ class ExamProfileService:
     def _match_keywords(self, signal_text: str, pairs: list[tuple[str, str]]) -> list[str]:
         matches: list[str] = []
         for keyword, evidence in pairs:
-            if _normalize_text(keyword) in signal_text and evidence not in matches:
+            normalized_keyword = _normalize_text(keyword)
+            if self._contains_non_negated_keyword(signal_text, normalized_keyword) and evidence not in matches:
                 matches.append(evidence)
         return matches
+
+    def _contains_non_negated_keyword(self, signal_text: str, normalized_keyword: str) -> bool:
+        search_start = 0
+        while True:
+            index = signal_text.find(normalized_keyword, search_start)
+            if index < 0:
+                return False
+            prefix = signal_text[max(0, index - 48):index]
+            if not any(marker in prefix for marker in [" sem ", " sem referencia a ", " sem mencao a ", " nao "]):
+                return True
+            search_start = index + len(normalized_keyword)
 
     def _detect_family(self, signal_text: str) -> dict[str, object]:
         evidence = self._match_keywords(
@@ -305,6 +317,27 @@ class ExamProfileService:
                 "profile_id": "exam-profile:fgv",
                 "profile_name": "FGV",
                 "keywords": [("fgv", "FGV"), ("fundacao getulio vargas", "Fundacao Getulio Vargas"), ("fundacao getulio", "Fundacao Getulio")],
+            },
+            {
+                "board_id": "board:quadrix",
+                "board_name": "QUADRIX",
+                "profile_id": None,
+                "profile_name": None,
+                "keywords": [("quadrix", "Quadrix")],
+            },
+            {
+                "board_id": "board:ibfc",
+                "board_name": "IBFC",
+                "profile_id": None,
+                "profile_name": None,
+                "keywords": [("ibfc", "IBFC")],
+            },
+            {
+                "board_id": "board:aocp",
+                "board_name": "AOCP",
+                "profile_id": None,
+                "profile_name": None,
+                "keywords": [("instituto aocp", "Instituto AOCP"), ("aocp", "AOCP")],
             },
         ]
         if include_maritime_board:
