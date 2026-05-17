@@ -36,6 +36,7 @@ from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
 from app.services.material_service import MaterialService
 from app.services.study_cycle_orchestrator import StudyCycleOrchestratorService
+from app.services.exam_profiles import ExamProfileService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -99,6 +100,10 @@ def get_curriculum_graph_builder_service(request: Request) -> CurriculumGraphBui
 
 def get_study_cycle_orchestrator_service(request: Request) -> StudyCycleOrchestratorService:
     return StudyCycleOrchestratorService(get_repository(request))
+
+
+def get_exam_profile_service(request: Request) -> ExamProfileService:
+    return ExamProfileService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -634,6 +639,43 @@ def get_study_cycle_by_id(cycle_id: str, request: Request):
     if result is None:
         raise HTTPException(status_code=404, detail="Study cycle plan not found.")
     return result
+
+
+@router.get("/exam-profiles")
+def list_exam_profiles(request: Request):
+    return get_exam_profile_service(request).list_exam_profiles()
+
+
+@router.get("/exam-profiles/{profile_id}")
+def get_exam_profile(profile_id: str, request: Request):
+    profile = get_exam_profile_service(request).get_exam_profile(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Exam profile not found.")
+    return profile
+
+
+@router.post("/edital/{edital_id}/exam-profile/suggest")
+def suggest_exam_profile(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    edital = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    suggestion = get_exam_profile_service(request).suggest_exam_profile_from_edital(edital)
+    if suggestion is None:
+        return {"profile_id": None, "exam_board": None, "profile_name": None, "confidence": 0.0, "reasoning": ["No stable exam board signal was found."], "warnings": [], "metadata": {"edital_id": edital_id}}
+    return suggestion
+
+
+@router.get("/edital/{edital_id}/exam-profile/suggestion")
+def get_exam_profile_suggestion(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    edital = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    suggestion = get_exam_profile_service(request).suggest_exam_profile_from_edital(edital)
+    if suggestion is None:
+        return {"profile_id": None, "exam_board": None, "profile_name": None, "confidence": 0.0, "reasoning": ["No stable exam board signal was found."], "warnings": [], "metadata": {"edital_id": edital_id}}
+    return suggestion
 
 
 @router.post("/session/start")

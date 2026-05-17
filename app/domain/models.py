@@ -2083,6 +2083,136 @@ class StudyCyclePlanState(BaseModel):
     cycle_version: str = "study-cycle-v1"
 
 
+class ExamQuestionFormatProfile(BaseModel):
+    format_type: str = "unknown"
+    answer_options: list[str] = Field(default_factory=list)
+    expected_question_count: int = 0
+    question_count_range: list[int] = Field(default_factory=list)
+    supports_true_false: bool = False
+    supports_multiple_choice: bool = False
+    supports_discursive: bool = False
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamTimingProfile(BaseModel):
+    total_duration_minutes: int = 0
+    estimated_minutes_per_question: float = 0.0
+    timing_pressure: str = "unknown"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamScoringProfile(BaseModel):
+    scoring_type: str = "unknown"
+    penalty_hint: bool = False
+    negative_marking_hint: bool = False
+    partial_credit_hint: bool = False
+    raw_scoring_notes: str = ""
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamContentDistributionHint(BaseModel):
+    hint_id: str
+    target_subject: str | None = None
+    target_topic: str | None = None
+    distribution_type: str = "unknown"
+    value: float = 0.0
+    source: str = "profile_default"
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamDifficultyProfile(BaseModel):
+    default_difficulty: str = "unknown"
+    difficulty_distribution: dict[str, float] = Field(default_factory=dict)
+    expected_variability: str = "unknown"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamCognitiveDemandProfile(BaseModel):
+    recall_demand: str = "unknown"
+    interpretation_demand: str = "unknown"
+    application_demand: str = "unknown"
+    trap_sensitivity: str = "unknown"
+    time_pressure_sensitivity: str = "unknown"
+    reading_precision_demand: str = "unknown"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamBoardBehaviorHint(BaseModel):
+    hint_id: str
+    behavior_type: str = "unknown"
+    description: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamProfileWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "info"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamProfileSummary(BaseModel):
+    exam_board: str
+    profile_name: str
+    format_summary: str = ""
+    timing_summary: str = ""
+    scoring_summary: str = ""
+    difficulty_summary: str = ""
+    cognitive_demand_summary: str = ""
+    limitation_summary: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamProfile(BaseModel):
+    profile_id: str
+    exam_board: str
+    profile_name: str
+    description: str = ""
+    question_format: ExamQuestionFormatProfile = Field(default_factory=ExamQuestionFormatProfile)
+    timing_profile: ExamTimingProfile = Field(default_factory=ExamTimingProfile)
+    scoring_profile: ExamScoringProfile = Field(default_factory=ExamScoringProfile)
+    content_distribution_hints: list[ExamContentDistributionHint] = Field(default_factory=list)
+    difficulty_profile: ExamDifficultyProfile = Field(default_factory=ExamDifficultyProfile)
+    cognitive_demand_profile: ExamCognitiveDemandProfile = Field(default_factory=ExamCognitiveDemandProfile)
+    board_behavior_hints: list[ExamBoardBehaviorHint] = Field(default_factory=list)
+    warnings: list[ExamProfileWarning] = Field(default_factory=list)
+    summary: ExamProfileSummary
+    profile_version: str = "exam-profiles-v1"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamProfileState(BaseModel):
+    profile_id: str
+    exam_board: str
+    profile_name: str
+    status: str = "available"
+    profile_version: str = "exam-profiles-v1"
+    supported: bool = True
+    warnings: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamProfileSelectionCandidate(BaseModel):
+    profile_id: str | None = None
+    exam_board: str | None = None
+    profile_name: str | None = None
+    confidence: float = 0.0
+    reasoning: list[str] = Field(default_factory=list)
+    warnings: list[ExamProfileWarning] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

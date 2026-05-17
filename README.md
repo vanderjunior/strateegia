@@ -232,6 +232,39 @@ Regras importantes:
 - ele nao substitui `CurriculumScheduler` nem `LearningDecisionEngine`
 - topicos ambiguos ou bloqueados continuam sinalizados para revisao manual
 
+## Fundacao dos exam profiles
+
+O app agora inclui perfis declarativos de banca para uso futuro em revisao manual, estabilizacao e simulados, sem qualquer ativacao no runtime atual.
+
+Perfis iniciais suportados:
+
+- `CEBRASPE`
+- `FGV`
+- `Marinha / PSCPP`
+
+Capacidades atuais desta etapa:
+
+- perfis declarativos e inspecionaveis de formato de prova
+- timing hints, scoring hints e difficulty hints conservadores
+- cognitive demand e board behavior hints
+- sugestao heuristica opcional a partir do edital ingerido
+- respostas JSON-safe e side-effect free
+
+Endpoints atuais de exam profiles:
+
+- `GET /api/exam-profiles`
+- `GET /api/exam-profiles/{profile_id}`
+- `POST /api/edital/{edital_id}/exam-profile/suggest`
+- `GET /api/edital/{edital_id}/exam-profile/suggestion`
+
+Regras importantes:
+
+- os perfis sao declarativos e candidate-based
+- eles nao geram simulados nem questoes
+- eles nao alteram study cycle, ranking, sessao ou scheduler do runtime
+- contagem de questoes, tempo e scoring continuam dependentes do edital real
+- a sugestao por edital pode exigir revisao manual em casos ambiguos
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:
