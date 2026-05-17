@@ -56,10 +56,13 @@ class _MaterialContext:
     chunks: list[object]
     sections: list[object]
     searchable_text: str
+    processed_text: str
     title_hint: str
     filename_tokens: set[str]
     text_tokens: set[str]
+    processed_text_tokens: set[str]
     ocr_required: bool
+    has_processed_text: bool
 
 
 class BibliographyAlignmentService:
@@ -194,9 +197,12 @@ class BibliographyAlignmentService:
         sections = self.repository.list_document_sections(material.metadata.document_id, user_id=user_id)
         title_hint = sections[0].title if sections else self._filename_stem(material.metadata.filename)
         text_parts = [self._filename_stem(material.metadata.filename), title_hint]
+        processed_parts = [section.title for section in sections[:5] if section.title]
         if extraction is not None and extraction.text:
             text_parts.append(extraction.text[:1200])
+            processed_parts.append(extraction.text[:1200])
         searchable_text = " ".join(part for part in text_parts if part)
+        processed_text = " ".join(part for part in processed_parts if part)
         requires_ocr = False
         if extraction is not None:
             requires_ocr = bool(extraction.metadata.get("requires_ocr")) or "ocr_required" in extraction.warnings
@@ -206,10 +212,13 @@ class BibliographyAlignmentService:
             chunks=chunks,
             sections=sections,
             searchable_text=searchable_text,
+            processed_text=processed_text,
             title_hint=title_hint,
             filename_tokens=self._tokens(material.metadata.filename),
             text_tokens=self._tokens(searchable_text),
+            processed_text_tokens=self._tokens(processed_text),
             ocr_required=requires_ocr,
+            has_processed_text=bool(processed_text.strip() or chunks),
         )
 
     def _align_bibliography(
@@ -351,14 +360,19 @@ class BibliographyAlignmentService:
             all_terms = base_terms | subtopic_terms
             matches: list[tuple[float, _MaterialContext, list[str], list[str], list[str]]] = []
             ocr_overlap: list[_MaterialContext] = []
+            missing_text_overlap: list[_MaterialContext] = []
             for context in contexts:
                 if context.ocr_required:
                     if all_terms & context.filename_tokens:
                         ocr_overlap.append(context)
                     continue
-                if not context.text_tokens:
+                if not context.has_processed_text:
+                    if all_terms & context.filename_tokens:
+                        missing_text_overlap.append(context)
                     continue
-                matched_terms = sorted(all_terms & context.text_tokens)
+                if not context.processed_text_tokens:
+                    continue
+                matched_terms = sorted(all_terms & context.processed_text_tokens)
                 if not matched_terms:
                     continue
                 section_ids: list[str] = []
@@ -377,7 +391,11 @@ class BibliographyAlignmentService:
                     if overlap >= 0.2:
                         chunk_ids.append(chunk.chunk_id)
                         best_chunk_score = max(best_chunk_score, overlap)
-                score = max(self._overlap_score(all_terms, context.text_tokens), best_section_score + 0.15, best_chunk_score + 0.1)
+                score = max(
+                    self._overlap_score(all_terms, context.processed_text_tokens),
+                    best_section_score + 0.15,
+                    best_chunk_score + 0.1,
+                )
                 score = min(score, 1.0)
                 matches.append((score, context, matched_terms, sorted(set(section_ids)), sorted(set(chunk_ids))))
             matches.sort(key=lambda entry: (-entry[0], entry[1].material.metadata.document_id))
@@ -491,6 +509,28 @@ class BibliographyAlignmentService:
                                 confidence=0.4,
                             )
                             for context in ocr_overlap[:2]
+                        ],
+                    )
+                )
+            if missing_text_overlap:
+                gaps.append(
+                    CoverageGap(
+                        gap_id=f"{topic.topic_id}:missing-text-gap",
+                        gap_type="missing_document_text",
+                        target_id=topic.topic_id,
+                        target_title=topic.title,
+                        reason="Potentially relevant material exists but has not produced processed text yet.",
+                        severity="medium",
+                        evidence=[
+                            AlignmentEvidence(
+                                source_type="material_filename",
+                                source_id=context.material.metadata.document_id,
+                                excerpt=self._excerpt(context.material.metadata.filename),
+                                matched_terms=sorted(all_terms & context.filename_tokens)[:8],
+                                reasoning="topic terms overlap with an uploaded material that lacks processed text",
+                                confidence=0.35,
+                            )
+                            for context in missing_text_overlap[:2]
                         ],
                     )
                 )
