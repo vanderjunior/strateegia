@@ -17,6 +17,18 @@ class BoardStyle(str, Enum):
     CEBRASPE = "cebraspe"
 
 
+class MaterialSourceType(str, Enum):
+    USER_UPLOAD = "user_upload"
+
+
+class DocumentIngestionStatus(str, Enum):
+    UPLOADED = "uploaded"
+    PENDING_EXTRACTION = "pending_extraction"
+    EXTRACTED = "extracted"
+    FAILED = "failed"
+    UNSUPPORTED = "unsupported"
+
+
 class ErrorType(str, Enum):
     KNOWLEDGE_GAP = "knowledge_gap"
     INTERPRETATION = "interpretation"
@@ -186,6 +198,7 @@ class StudyBlock(BaseModel):
 
 class StudySession(BaseModel):
     session_id: str
+    user_id: str | None = None
     entries: list["LearningPlanEntry"] = Field(default_factory=list)
     current_entry_index: int = 0
     current_block_index: int = 0
@@ -1443,6 +1456,39 @@ class Document(BaseModel):
             summaries=summaries,
             questions=questions,
         )
+
+
+class User(BaseModel):
+    user_id: str
+    username: str
+    email: str | None = None
+    display_name: str
+    password_hash: str
+    created_at: datetime = Field(default_factory=utc_now)
+    last_login_at: datetime | None = None
+    is_active: bool = True
+
+
+class DocumentMetadata(BaseModel):
+    document_id: str
+    user_id: str | None = None
+    filename: str
+    original_filename: str
+    content_type: str = ""
+    size_bytes: int = 0
+    storage_path: str = ""
+    source_type: str = MaterialSourceType.USER_UPLOAD.value
+    status: str = DocumentIngestionStatus.UPLOADED.value
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    extraction_status: str = DocumentIngestionStatus.UPLOADED.value
+    metadata: dict[str, object] = Field(default_factory=dict)
+    error_message: str | None = None
+
+
+class UploadedMaterial(BaseModel):
+    metadata: DocumentMetadata
+    extracted_text: str | None = None
 
 
 class AnswerSubmission(BaseModel):

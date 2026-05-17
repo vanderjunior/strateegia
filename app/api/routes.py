@@ -2,16 +2,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 
 from app.api.schemas import (
     AnswerSubmission as FeedbackAnswerSubmission,
     SessionAnswerRequest,
+    UserLoginRequest,
+    UserRegisterRequest,
     SessionStartRequest,
 )
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
+from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
 from app.services.controlled_tuning_experiments import (
     build_controlled_tuning_experiment_registry,
 )
@@ -26,6 +29,7 @@ from app.services.manual_experiment_inspection import (
 from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
+from app.services.material_service import MaterialService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -38,9 +42,11 @@ from app.services.scientific_tooling_contracts import (
 from app.services.tuning_profile_benchmark_comparison import (
     compare_tuning_profiles_against_benchmark,
 )
+from app.services.user_service import LocalUserService
 
 
 router = APIRouter(prefix="/api")
+SESSION_COOKIE_NAME = "studyflow_session"
 
 
 def get_repository(request: Request) -> JsonStudyRepository:
@@ -53,6 +59,51 @@ def get_pipeline(request: Request) -> StudyPipeline:
 
 def get_session_manager(request: Request) -> SessionManager:
     return request.app.state.session_manager
+
+
+def get_user_service(request: Request) -> LocalUserService:
+    return LocalUserService(get_repository(request))
+
+
+def get_material_service(request: Request) -> MaterialService:
+    return MaterialService(
+        get_repository(request),
+        storage_root=request.app.state.storage_root,
+    )
+
+
+def _auth_sessions(request: Request) -> dict[str, str]:
+    return request.app.state.auth_sessions
+
+
+def _current_user_id(request: Request) -> str | None:
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return None
+    return _auth_sessions(request).get(token)
+
+
+def _scoped_repository(request: Request):
+    return get_repository(request).for_user(_current_user_id(request))
+
+
+def _require_authenticated_user_id(request: Request) -> str:
+    user_id = _current_user_id(request)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    return user_id
+
+
+def _public_user_payload(user) -> dict[str, object]:
+    return {
+        "user_id": user.user_id,
+        "username": user.username,
+        "email": user.email,
+        "display_name": user.display_name,
+        "created_at": user.created_at,
+        "last_login_at": user.last_login_at,
+        "is_active": user.is_active,
+    }
 
 
 def _inspection_defaults() -> dict[str, object]:
@@ -82,10 +133,12 @@ def _inspection_defaults() -> dict[str, object]:
 def _inspection_payload(
     session_manager: SessionManager,
     repository: JsonStudyRepository,
+    *,
+    user_id: str | None = None,
 ) -> dict[str, object]:
     payload = _inspection_defaults()
-    progress = repository.load_progress()
-    context = session_manager.latest_inspection_context()
+    progress = repository.load_progress(user_id=user_id)
+    context = session_manager.latest_inspection_context(user_id=user_id)
     if context is None:
         payload["longitudinal_retention"] = json_safe_profile(
             observe_longitudinal_retention(
@@ -255,18 +308,18 @@ async def upload_document(
         board=board,
         exam_context=exam_context,
     )
-    get_repository(request).save_document(document)
+    _scoped_repository(request).save_document(document)
     return document
 
 
 @router.get("/documents")
 def list_documents(request: Request):
-    return get_repository(request).list_documents()
+    return _scoped_repository(request).list_documents()
 
 
 @router.get("/documents/{document_id}")
 def get_document(document_id: str, request: Request):
-    document = get_repository(request).get_document(document_id)
+    document = _scoped_repository(request).get_document(document_id)
     if document is None:
         raise HTTPException(status_code=404, detail="Documento nao encontrado.")
     return document
@@ -276,17 +329,89 @@ def get_document(document_id: str, request: Request):
 def submit_answer(question_id: str, submission: AnswerSubmission, request: Request):
     if submission.question_id != question_id:
         raise HTTPException(status_code=400, detail="Question ID inconsistente.")
-    get_repository(request).record_answer(submission)
+    _scoped_repository(request).record_answer(submission)
     return {"status": "recorded"}
 
 
 @router.post("/answers/submit")
 def submit_feedback_answer(submission: FeedbackAnswerSubmission, request: Request):
-    is_correct = _record_feedback_answer(get_repository(request), submission)
+    is_correct = _record_feedback_answer(_scoped_repository(request), submission)
     return {
         "correct": is_correct,
         "message": "Answer recorded",
     }
+
+
+@router.post("/auth/register", status_code=201)
+def register_user(payload: UserRegisterRequest, request: Request):
+    try:
+        user = get_user_service(request).register_user(
+            username=payload.username,
+            password=payload.password,
+            display_name=payload.display_name,
+            email=payload.email,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _public_user_payload(user)
+
+
+@router.post("/auth/login")
+def login_user(payload: UserLoginRequest, request: Request, response: Response):
+    user = get_user_service(request).authenticate(
+        username=payload.username,
+        password=payload.password,
+    )
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+    token = user.user_id + "." + user.username
+    _auth_sessions(request)[token] = user.user_id
+    response.set_cookie(
+        SESSION_COOKIE_NAME,
+        token,
+        httponly=True,
+        samesite="lax",
+    )
+    return {"authenticated": True, "user": _public_user_payload(user)}
+
+
+@router.post("/auth/logout")
+def logout_user(request: Request, response: Response):
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if token:
+        _auth_sessions(request).pop(token, None)
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    return {"authenticated": False, "user": None}
+
+
+@router.get("/auth/me")
+def current_user(request: Request):
+    user_id = _current_user_id(request)
+    if user_id is None:
+        return {"authenticated": False, "user": None}
+    user = get_repository(request).get_user(user_id)
+    if user is None or not user.is_active:
+        return {"authenticated": False, "user": None}
+    return {"authenticated": True, "user": _public_user_payload(user)}
+
+
+@router.post("/materials/upload", status_code=201)
+async def upload_material(request: Request, file: UploadFile = File(...)):
+    user_id = _require_authenticated_user_id(request)
+    original_name = file.filename or "material"
+    suffix = Path(original_name).suffix.lower()
+    if suffix not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Unsupported material type.")
+    payload = await file.read()
+    if len(payload) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(status_code=413, detail="Upload size exceeds the supported limit.")
+    material = get_material_service(request).register_upload(
+        user_id=user_id,
+        original_filename=original_name,
+        content_type=file.content_type or "",
+        payload=payload,
+    )
+    return material
 
 
 @router.post("/session/start")
@@ -294,24 +419,31 @@ def start_session(
     request: Request,
     payload: SessionStartRequest = Body(default_factory=SessionStartRequest),
 ):
-    repository = get_repository(request)
+    repository = _scoped_repository(request)
     plan = LearningDecisionEngine(repository).build_review_plan(
         title=payload.title,
         max_questions=payload.max_questions,
     )
-    session = get_session_manager(request).create_session(plan)
+    session = get_session_manager(request).create_session(
+        plan,
+        user_id=_current_user_id(request),
+    )
     return {
         "session_id": session.session_id,
-        "first_block": get_session_manager(request).current_block(session.session_id),
+        "first_block": get_session_manager(request).current_block(
+            session.session_id,
+            user_id=_current_user_id(request),
+        ),
     }
 
 
 @router.get("/session/{session_id}/current")
 def get_current_session_block(session_id: str, request: Request):
-    session = get_session_manager(request).get_session(session_id)
+    user_id = _current_user_id(request)
+    session = get_session_manager(request).get_session(session_id, user_id=user_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
-    current_block = get_session_manager(request).current_block(session_id)
+    current_block = get_session_manager(request).current_block(session_id, user_id=user_id)
     if current_block is None:
         return {"completed": True}
     return current_block
@@ -324,17 +456,18 @@ def submit_session_answer(
     submission: SessionAnswerRequest | None = None,
 ):
     session_manager = get_session_manager(request)
-    session = session_manager.get_session(session_id)
+    user_id = _current_user_id(request)
+    session = session_manager.get_session(session_id, user_id=user_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
 
-    current_block = session_manager.current_block(session_id)
+    current_block = session_manager.current_block(session_id, user_id=user_id)
     if current_block is None:
         return {"completed": True}
 
     if current_block["type"] == "summary":
-        session_manager.advance(session_id)
-        next_block = session_manager.current_block(session_id)
+        session_manager.advance(session_id, user_id=user_id)
+        next_block = session_manager.current_block(session_id, user_id=user_id)
         return {"completed": next_block is None, "next_block": next_block}
 
     if submission is None:
@@ -345,7 +478,7 @@ def submit_session_answer(
         raise HTTPException(status_code=400, detail="Incomplete answer payload.")
 
     is_correct = _record_feedback_answer(
-        get_repository(request),
+        _scoped_repository(request),
         FeedbackAnswerSubmission(
             topic_id=current_block["topic_id"],
             question_id=submission.question_id,
@@ -356,8 +489,8 @@ def submit_session_answer(
             error_type=submission.error_type,
         ),
     )
-    session_manager.advance(session_id)
-    next_block = session_manager.current_block(session_id)
+    session_manager.advance(session_id, user_id=user_id)
+    next_block = session_manager.current_block(session_id, user_id=user_id)
     if next_block is None:
         return {"correct": is_correct, "completed": True}
     return {
@@ -369,17 +502,17 @@ def submit_session_answer(
 
 @router.get("/progress")
 def get_progress(request: Request):
-    return get_repository(request).load_progress()
+    return _scoped_repository(request).load_progress()
 
 
 @router.get("/reviews/daily")
 def get_daily_review(request: Request):
-    return ReviewService(get_repository(request)).build_daily_review()
+    return ReviewService(_scoped_repository(request)).build_daily_review()
 
 
 @router.get("/reviews/blocks/latest")
 def get_latest_block_review(request: Request):
-    review = ReviewService(get_repository(request)).build_latest_block_review()
+    review = ReviewService(_scoped_repository(request)).build_latest_block_review()
     if review is None:
         raise HTTPException(status_code=404, detail="Ainda nao existem 3 PDFs processados.")
     return review
@@ -387,12 +520,20 @@ def get_latest_block_review(request: Request):
 
 @router.get("/inspection/runtime")
 def get_runtime_inspection(request: Request):
-    return _inspection_payload(get_session_manager(request), get_repository(request))
+    return _inspection_payload(
+        get_session_manager(request),
+        get_repository(request),
+        user_id=_current_user_id(request),
+    )
 
 
 @router.get("/inspection/runtime/export")
 def export_runtime_inspection_snapshot(request: Request):
-    payload = _inspection_payload(get_session_manager(request), get_repository(request))
+    payload = _inspection_payload(
+        get_session_manager(request),
+        get_repository(request),
+        user_id=_current_user_id(request),
+    )
     return export_inspection_snapshot(payload).snapshot_envelope.model_dump(mode="json")
 
 

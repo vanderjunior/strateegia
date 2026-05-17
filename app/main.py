@@ -23,6 +23,8 @@ def create_app(
     )
     app.state.pipeline = pipeline or StudyPipeline()
     app.state.session_manager = SessionManager()
+    app.state.auth_sessions = {}
+    app.state.storage_root = app.state.repository.path.parent / "uploads"
     app.include_router(router)
     app.mount(
         "/static",

@@ -24,3 +24,15 @@ class SessionAnswerRequest(BaseModel):
     correct_answer: bool | None = None
     error_type: str | None = None
     pedagogical_mode: str | None = None
+
+
+class UserRegisterRequest(BaseModel):
+    username: str
+    password: str
+    display_name: str
+    email: str | None = None
+
+
+class UserLoginRequest(BaseModel):
+    username: str
+    password: str

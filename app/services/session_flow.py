@@ -28,11 +28,12 @@ class SessionManager:
         self._sessions: dict[str, StudySession] = {}
         self._runtime_blocks: dict[str, list[dict]] = {}
 
-    def create_session(self, plan: LearningPlan) -> StudySession:
+    def create_session(self, plan: LearningPlan, *, user_id: str | None = None) -> StudySession:
         session_id = str(uuid4())
         runtime_blocks = self._build_runtime_blocks(plan.entries)
         session = StudySession(
             session_id=session_id,
+            user_id=user_id,
             entries=plan.entries,
             completed=not runtime_blocks,
         )
@@ -42,11 +43,16 @@ class SessionManager:
         self._runtime_blocks[session_id] = runtime_blocks
         return session
 
-    def get_session(self, session_id: str) -> StudySession | None:
-        return self._sessions.get(session_id)
+    def get_session(self, session_id: str, *, user_id: str | None = None) -> StudySession | None:
+        session = self._sessions.get(session_id)
+        if session is None:
+            return None
+        if user_id is not None and session.user_id != user_id:
+            return None
+        return session
 
-    def current_block(self, session_id: str) -> dict | None:
-        session = self.get_session(session_id)
+    def current_block(self, session_id: str, *, user_id: str | None = None) -> dict | None:
+        session = self.get_session(session_id, user_id=user_id)
         if session is None or session.completed:
             return None
         runtime_blocks = self._runtime_blocks.get(session_id, [])
@@ -61,8 +67,8 @@ class SessionManager:
         block.pop("_question_index", None)
         return block
 
-    def advance(self, session_id: str) -> StudySession | None:
-        session = self.get_session(session_id)
+    def advance(self, session_id: str, *, user_id: str | None = None) -> StudySession | None:
+        session = self.get_session(session_id, user_id=user_id)
         if session is None:
             return None
         if session.completed:
@@ -77,10 +83,17 @@ class SessionManager:
         self._sync_position(session, runtime_blocks[next_index])
         return session
 
-    def latest_inspection_context(self) -> dict[str, object] | None:
+    def latest_inspection_context(self, *, user_id: str | None = None) -> dict[str, object] | None:
         if not self._sessions:
             return None
-        session_id = next(reversed(self._sessions))
+        session_id = None
+        for candidate_session_id in reversed(self._sessions):
+            candidate = self._sessions[candidate_session_id]
+            if user_id is None or candidate.user_id == user_id:
+                session_id = candidate_session_id
+                break
+        if session_id is None:
+            return None
         session = self._sessions[session_id]
         runtime_blocks = self._runtime_blocks.get(session_id, [])
         if not runtime_blocks:
