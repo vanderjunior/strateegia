@@ -17,6 +17,7 @@ from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
 from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
 from app.services.bibliography_alignment import BibliographyAlignmentService
+from app.services.curriculum_graph_builder import CurriculumGraphBuilderService
 from app.services.document_pipeline import DocumentPipelineService
 from app.services.edital_ingestion import EditalIngestionService
 from app.services.controlled_tuning_experiments import (
@@ -89,6 +90,10 @@ def get_edital_ingestion_service(request: Request) -> EditalIngestionService:
 
 def get_bibliography_alignment_service(request: Request) -> BibliographyAlignmentService:
     return BibliographyAlignmentService(get_repository(request))
+
+
+def get_curriculum_graph_builder_service(request: Request) -> CurriculumGraphBuilderService:
+    return CurriculumGraphBuilderService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -551,6 +556,42 @@ def get_alignment_by_id(alignment_id: str, request: Request):
     result = get_repository(request).get_bibliography_alignment_by_id(alignment_id, user_id=user_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Bibliography alignment not found.")
+    return result
+
+
+@router.post("/edital/{edital_id}/curriculum-graph/build")
+def build_curriculum_graph(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    edital = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    state = get_curriculum_graph_builder_service(request).build_graph(edital_id, user_id=user_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Curriculum graph could not be built.")
+    result = get_repository(request).get_curriculum_graph(edital_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Curriculum graph not found.")
+    return result
+
+
+@router.get("/edital/{edital_id}/curriculum-graph")
+def get_curriculum_graph_for_edital(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    edital = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    result = get_repository(request).get_curriculum_graph(edital_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Curriculum graph not found.")
+    return result
+
+
+@router.get("/curriculum-graph/{graph_id}")
+def get_curriculum_graph_by_id(graph_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_repository(request).get_curriculum_graph_by_id(graph_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Curriculum graph not found.")
     return result
 
 

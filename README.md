@@ -179,6 +179,32 @@ Regras importantes:
 - esta etapa nao altera ranking, sessao ou progresso
 - materiais sem texto ou com `ocr_required` viram warning/gap, nao falso positivo forte
 
+## Fundacao do curriculum graph
+
+Artefatos de edital e alignment agora podem gerar um curriculum graph candidato, ainda separado do runtime ativo.
+
+Capacidades atuais desta etapa:
+
+- criacao de subject, topic e subtopic nodes a partir do edital ingerido
+- preservacao de coverage links vindos do alignment
+- anexacao de gaps e redundancias como referencias auditaveis
+- evidence, reasoning e review states para revisao manual
+- persistencia user-scoped de estado e resultado do graph
+
+Endpoints atuais do curriculum graph:
+
+- `POST /api/edital/{edital_id}/curriculum-graph/build`
+- `GET /api/edital/{edital_id}/curriculum-graph`
+- `GET /api/curriculum-graph/{graph_id}`
+
+Regras importantes:
+
+- o graph continua candidate-based e `ready_for_review`
+- ele nao substitui o curriculo ativo do runtime
+- ele nao cria ciclo de estudos, scheduler de revisao ou simulados
+- ele nao aplica exam profiles
+- gaps como `ocr_required` e `missing_document_text` continuam preservados
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:

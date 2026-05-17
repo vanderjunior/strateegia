@@ -1778,6 +1778,173 @@ class BibliographyAlignmentState(BaseModel):
     alignment_version: str = "bibliography-alignment-v1"
 
 
+class CurriculumSourceEvidence(BaseModel):
+    evidence_id: str
+    source_type: str
+    source_id: str
+    document_id: str | None = None
+    chunk_id: str | None = None
+    section_id: str | None = None
+    excerpt: str = ""
+    matched_terms: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumCoverageLink(BaseModel):
+    link_id: str
+    target_type: str
+    target_id: str
+    document_ids: list[str] = Field(default_factory=list)
+    chunk_ids: list[str] = Field(default_factory=list)
+    section_ids: list[str] = Field(default_factory=list)
+    coverage_state: str = "uncovered"
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[CurriculumSourceEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumSubjectNode(BaseModel):
+    subject_id: str
+    title: str
+    normalized_title: str
+    order_index: int = 0
+    source_section_ids: list[str] = Field(default_factory=list)
+    topic_ids: list[str] = Field(default_factory=list)
+    coverage_state: str = "uncovered"
+    review_state: str = "candidate"
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[CurriculumSourceEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumTopicNode(BaseModel):
+    topic_id: str
+    title: str
+    normalized_title: str
+    subject_id: str
+    source_topic_candidate_id: str
+    order_index: int = 0
+    subtopic_ids: list[str] = Field(default_factory=list)
+    coverage_state: str = "uncovered"
+    review_state: str = "candidate"
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[CurriculumSourceEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumSubtopicNode(BaseModel):
+    subtopic_id: str
+    title: str
+    normalized_title: str
+    parent_topic_id: str
+    source_subtopic_candidate_id: str
+    order_index: int = 0
+    coverage_state: str = "uncovered"
+    review_state: str = "candidate"
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[CurriculumSourceEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumGapReference(BaseModel):
+    gap_id: str
+    source_gap_id: str
+    gap_type: str
+    target_type: str
+    target_id: str
+    target_title: str
+    severity: str = "medium"
+    reason: str = ""
+    evidence: list[CurriculumSourceEvidence] = Field(default_factory=list)
+    review_state: str = "needs_review"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumRedundancyReference(BaseModel):
+    redundancy_id: str
+    source_redundancy_id: str
+    redundancy_type: str
+    target_type: str
+    target_id: str
+    target_title: str
+    overlapping_document_ids: list[str] = Field(default_factory=list)
+    severity: str = "low"
+    reason: str = ""
+    evidence: list[CurriculumSourceEvidence] = Field(default_factory=list)
+    review_state: str = "ambiguous"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumGraphWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "info"
+    target_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumGraphSummary(BaseModel):
+    subject_count: int = 0
+    topic_count: int = 0
+    subtopic_count: int = 0
+    covered_topics_count: int = 0
+    partially_covered_topics_count: int = 0
+    weakly_covered_topics_count: int = 0
+    uncovered_topics_count: int = 0
+    ambiguous_topics_count: int = 0
+    gap_count: int = 0
+    redundancy_count: int = 0
+    ocr_required_count: int = 0
+    needs_review_count: int = 0
+    confidence_summary: dict[str, object] = Field(default_factory=dict)
+    coverage_summary: dict[str, object] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumGraph(BaseModel):
+    graph_id: str
+    edital_id: str
+    alignment_id: str | None = None
+    user_id: str | None = None
+    subjects: list[CurriculumSubjectNode] = Field(default_factory=list)
+    topics: list[CurriculumTopicNode] = Field(default_factory=list)
+    subtopics: list[CurriculumSubtopicNode] = Field(default_factory=list)
+    coverage_links: list[CurriculumCoverageLink] = Field(default_factory=list)
+    gaps: list[CurriculumGapReference] = Field(default_factory=list)
+    redundancies: list[CurriculumRedundancyReference] = Field(default_factory=list)
+    warnings: list[CurriculumGraphWarning] = Field(default_factory=list)
+    summary: CurriculumGraphSummary = Field(default_factory=CurriculumGraphSummary)
+    build_method: str = "heuristic_curriculum_graph_builder"
+    graph_version: str = "curriculum-graph-v1"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CurriculumGraphState(BaseModel):
+    graph_id: str
+    edital_id: str
+    alignment_id: str | None = None
+    user_id: str | None = None
+    current_stage: str = "pending"
+    status: str = "pending"
+    subject_count: int = 0
+    topic_count: int = 0
+    subtopic_count: int = 0
+    coverage_links_count: int = 0
+    gaps_count: int = 0
+    redundancies_count: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    graph_version: str = "curriculum-graph-v1"
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

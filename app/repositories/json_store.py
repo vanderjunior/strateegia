@@ -10,6 +10,8 @@ from app.domain.models import (
     BibliographyAlignmentState,
     CoverageGap,
     CoverageRedundancy,
+    CurriculumGraph,
+    CurriculumGraphState,
     Document,
     DocumentChunk,
     DocumentExtractionResult,
@@ -153,6 +155,24 @@ class UserScopedStudyRepository:
     def get_bibliography_alignment_by_id(self, alignment_id: str) -> BibliographyAlignmentResult | None:
         return self._repository.get_bibliography_alignment_by_id(alignment_id, user_id=self.user_id)
 
+    def save_curriculum_graph_state(self, state: CurriculumGraphState) -> None:
+        self._repository.save_curriculum_graph_state(state, user_id=self.user_id)
+
+    def get_curriculum_graph_state(self, edital_id: str) -> CurriculumGraphState | None:
+        return self._repository.get_curriculum_graph_state(edital_id, user_id=self.user_id)
+
+    def save_curriculum_graph(self, graph: CurriculumGraph) -> None:
+        self._repository.save_curriculum_graph(graph, user_id=self.user_id)
+
+    def get_curriculum_graph(self, edital_id: str) -> CurriculumGraph | None:
+        return self._repository.get_curriculum_graph(edital_id, user_id=self.user_id)
+
+    def list_user_curriculum_graphs(self) -> list[CurriculumGraph]:
+        return self._repository.list_user_curriculum_graphs(user_id=self.user_id)
+
+    def get_curriculum_graph_by_id(self, graph_id: str) -> CurriculumGraph | None:
+        return self._repository.get_curriculum_graph_by_id(graph_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -203,6 +223,10 @@ class JsonStudyRepository:
                 "states": {},
                 "results": {},
             },
+            "curriculum_graph": {
+                "states": {},
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -245,6 +269,9 @@ class JsonStudyRepository:
             user_state["bibliography_alignment"] = self._normalize_bibliography_alignment_payload(
                 user_state.get("bibliography_alignment")
             )
+            user_state["curriculum_graph"] = self._normalize_curriculum_graph_payload(
+                user_state.get("curriculum_graph")
+            )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
         return normalized
@@ -284,6 +311,18 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_bibliography_alignment_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "states": {},
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("states", "results"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
+        return normalized
+
+    def _normalize_curriculum_graph_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "states": {},
             "results": {},
@@ -370,6 +409,9 @@ class JsonStudyRepository:
         )
         state["bibliography_alignment"] = self._normalize_bibliography_alignment_payload(
             state.get("bibliography_alignment")
+        )
+        state["curriculum_graph"] = self._normalize_curriculum_graph_payload(
+            state.get("curriculum_graph")
         )
         return state
 
@@ -552,6 +594,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_bibliography_alignment_payload({})
         return self._ensure_user_state(payload, user_id)["bibliography_alignment"]
+
+    def _curriculum_graph_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_curriculum_graph_payload({})
+        return self._ensure_user_state(payload, user_id)["curriculum_graph"]
 
     def save_document_pipeline_state(
         self,
@@ -870,6 +921,84 @@ class JsonStudyRepository:
     ) -> BibliographyAlignmentResult | None:
         for item in self.list_user_bibliography_alignments(user_id=user_id):
             if item.alignment_id == alignment_id:
+                return item
+        return None
+
+    def save_curriculum_graph_state(
+        self,
+        state: CurriculumGraphState,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Curriculum graph state requires user ownership.")
+        payload = self._read()
+        container = self._curriculum_graph_container(payload, user_id)
+        container["states"][state.edital_id] = state.model_dump(mode="json")
+        self._write(payload)
+
+    def get_curriculum_graph_state(
+        self,
+        edital_id: str,
+        *,
+        user_id: str | None,
+    ) -> CurriculumGraphState | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._curriculum_graph_container(payload, user_id)["states"].get(edital_id)
+        if raw is None:
+            return None
+        return CurriculumGraphState.model_validate(raw)
+
+    def save_curriculum_graph(
+        self,
+        graph: CurriculumGraph,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Curriculum graph requires user ownership.")
+        payload = self._read()
+        container = self._curriculum_graph_container(payload, user_id)
+        container["results"][graph.edital_id] = graph.model_dump(mode="json")
+        self._write(payload)
+
+    def get_curriculum_graph(
+        self,
+        edital_id: str,
+        *,
+        user_id: str | None,
+    ) -> CurriculumGraph | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._curriculum_graph_container(payload, user_id)["results"].get(edital_id)
+        if raw is None:
+            return None
+        return CurriculumGraph.model_validate(raw)
+
+    def list_user_curriculum_graphs(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[CurriculumGraph]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._curriculum_graph_container(payload, user_id)["results"].values()
+        items = [CurriculumGraph.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.edital_id)
+        return items
+
+    def get_curriculum_graph_by_id(
+        self,
+        graph_id: str,
+        *,
+        user_id: str | None,
+    ) -> CurriculumGraph | None:
+        for item in self.list_user_curriculum_graphs(user_id=user_id):
+            if item.graph_id == graph_id:
                 return item
         return None
 
