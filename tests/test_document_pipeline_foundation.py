@@ -1,5 +1,7 @@
 import json
 
+import fitz
+
 from app.repositories.json_store import JsonStudyRepository
 from app.services.document_pipeline import DocumentPipelineService
 from app.services.material_service import MaterialService
@@ -20,6 +22,17 @@ def upload_material(material_service: MaterialService, *, user_id: str, filename
         content_type=content_type,
         payload=payload,
     )
+
+
+def build_pdf_bytes(*pages: str) -> bytes:
+    document = fitz.open()
+    for page_text in pages or ("",):
+        page = document.new_page()
+        if page_text:
+            page.insert_text((72, 72), page_text)
+    payload = document.tobytes()
+    document.close()
+    return payload
 
 
 def test_txt_pipeline_creates_extraction_chunks_sections_and_metadata(tmp_path):
@@ -83,7 +96,7 @@ def test_pdf_pipeline_is_marked_pending_without_chunks_or_ocr(tmp_path):
         user_id="user-a",
         filename="material.pdf",
         content_type="application/pdf",
-        payload=b"%PDF-1.4 test",
+        payload=build_pdf_bytes(""),
     )
 
     state = pipeline_service.process_document(uploaded.metadata.document_id, user_id="user-a")
@@ -94,7 +107,7 @@ def test_pdf_pipeline_is_marked_pending_without_chunks_or_ocr(tmp_path):
     assert state.current_stage == "extraction_pending"
     assert state.extraction_status == "pending_extraction"
     assert extraction is not None
-    assert extraction.extraction_method == "pending_pdf_extraction"
+    assert extraction.extraction_method in {"pymupdf_text", "pdfplumber_text", "pending_pdf_extraction"}
     assert chunks == []
     assert sections == []
 

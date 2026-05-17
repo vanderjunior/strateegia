@@ -62,7 +62,8 @@ Regras atuais:
 - aplica limite de tamanho
 - salva o arquivo em pasta por usuario
 - para `TXT` e `MD`, faz extracao simples de texto
-- para `PDF`, registra `pending_extraction`
+- para `PDF` textual simples, tenta extracao basica de texto
+- para `PDF` escaneado ou sem texto utilizavel, registra `pending_extraction` com indicacao de OCR futuro
 
 Limitacoes importantes:
 
@@ -80,9 +81,10 @@ Capacidades atuais desta etapa:
 
 - `TXT`: extracao simples de texto
 - `MD`: extracao simples de texto com deteccao basica de headings `#`, `##` e `###`
+- `PDF` textual: extracao basica de texto com adapter leve e reaproveitamento do chunking/sectioning atual
 - chunking deterministico por texto/paragrafos para `TXT` e `MD`
-- sectioning simples para `TXT` e `MD`
-- `PDF`: registro em estado `pending_extraction` para etapas futuras
+- sectioning simples para `TXT`, `MD` e `PDF` textual com fallback `Document`
+- `PDF` escaneado/sem texto: registro em estado `pending_extraction` com `ocr_required`
 - persistencia JSON de estado, extracao, chunks, secoes e eventos de pipeline
 
 Estagios atuais do pipeline:
@@ -113,6 +115,12 @@ Regras importantes:
 - o pipeline atual nao faz parsing de edital
 - o pipeline atual nao cria embeddings, vetores ou busca semantica
 - `storage_path` em respostas continua relativo e seguro
+
+Comportamento atual para PDFs:
+
+- PDF textual simples: extrai texto, cria chunks deterministas, cria secao fallback e conclui em `metadata_ready`
+- PDF sem texto utilizavel ou escaneado: permanece em `extraction_pending` com warnings como `pdf_text_empty` e `ocr_required`
+- PDF invalido ou malformado: falha de forma segura e observavel, sem vazar caminhos absolutos
 
 ## Usuarios e persistencia
 
@@ -208,6 +216,7 @@ docs/
 Itens planejados, mas nao implementados nesta etapa:
 
 - pipeline robusto de PDF com OCR, chunking e secoes mais fortes
+- OCR futuro para livros e materiais escaneados, inclusive casos de praticagem
 - runtime edital-aware com topicos, pesos e exclusoes
 - alinhamento bibliografico e analise de cobertura
 - grafo curricular e orquestrador de ciclos de estudo

@@ -15,6 +15,7 @@ from app.domain.models import (
     utc_now,
 )
 from app.repositories.json_store import JsonStudyRepository
+from app.services.pdf_text_extraction import extract_text_from_pdf
 
 
 PIPELINE_VERSION = "document-pipeline-v1"
@@ -89,14 +90,33 @@ class DocumentPipelineService:
         )
 
         suffix = str(material.metadata.metadata.get("extension") or Path(material.metadata.filename).suffix).lower()
-        if suffix == ".pdf":
-            return self._finalize_pdf_pending(
-                material,
-                base_state,
-                events=events,
-                user_id=user_id,
-            )
         if suffix not in {".txt", ".md"}:
+            if suffix == ".pdf":
+                file_path = self._resolve_storage_path(material)
+                if file_path is None or not file_path.exists():
+                    error = DocumentProcessingError(
+                        code="document_file_missing",
+                        message="Stored document file could not be found.",
+                        stage=DocumentIngestionStatus.EXTRACTION_STARTED.value,
+                        recoverable=True,
+                        metadata={"document_id": document_id},
+                    )
+                    return self._finalize_failure(
+                        material,
+                        base_state,
+                        stage=DocumentIngestionStatus.FAILED.value,
+                        error=error,
+                        warnings=warnings,
+                        events=events,
+                        user_id=user_id,
+                    )
+                return self._process_pdf_material(
+                    material,
+                    base_state,
+                    file_path=file_path,
+                    events=events,
+                    user_id=user_id,
+                )
             error = DocumentProcessingError(
                 code="unsupported_material_type",
                 message="Unsupported material type for the current document pipeline foundation.",
@@ -165,6 +185,97 @@ class DocumentPipelineService:
         if "\ufffd" in text:
             warnings.append("Input contained invalid UTF-8 bytes and was decoded with replacement characters.")
 
+        return self._finalize_text_processing(
+            material,
+            base_state,
+            text=text,
+            extraction_method="markdown_text" if suffix == ".md" else "plain_text",
+            page_count=0,
+            pages_extracted=0,
+            warnings=warnings,
+            events=events,
+            user_id=user_id,
+            requires_ocr=False,
+        )
+
+    def _process_pdf_material(
+        self,
+        material: UploadedMaterial,
+        base_state: DocumentPipelineState,
+        *,
+        file_path: Path,
+        events: list[DocumentPipelineEvent],
+        user_id: str | None,
+    ) -> DocumentPipelineState:
+        events.append(
+            self._event(
+                material=material,
+                stage=DocumentIngestionStatus.EXTRACTION_STARTED.value,
+                status="ok",
+                message="PDF text extraction started.",
+            )
+        )
+        pdf_result = extract_text_from_pdf(file_path)
+        if pdf_result.extraction_status == DocumentIngestionStatus.EXTRACTED.value and pdf_result.text:
+            return self._finalize_text_processing(
+                material,
+                base_state,
+                text=pdf_result.text,
+                extraction_method=pdf_result.extraction_method,
+                page_count=pdf_result.page_count,
+                pages_extracted=pdf_result.pages_extracted,
+                warnings=pdf_result.warnings,
+                events=events,
+                user_id=user_id,
+                requires_ocr=pdf_result.requires_ocr,
+            )
+        if pdf_result.requires_ocr:
+            return self._finalize_pdf_pending(
+                material,
+                base_state,
+                events=events,
+                user_id=user_id,
+                extraction_method=pdf_result.extraction_method,
+                page_count=pdf_result.page_count,
+                pages_extracted=pdf_result.pages_extracted,
+                warnings=pdf_result.warnings,
+            )
+        error = pdf_result.errors[0] if pdf_result.errors else DocumentProcessingError(
+            code="pdf_text_extraction_failed",
+            message="PDF text extraction failed for the current file.",
+            stage=DocumentIngestionStatus.EXTRACTION_STARTED.value,
+            recoverable=True,
+            metadata={},
+        )
+        return self._finalize_failure(
+            material,
+            base_state,
+            stage=DocumentIngestionStatus.FAILED.value,
+            error=error,
+            warnings=pdf_result.warnings,
+            events=events,
+            user_id=user_id,
+            extraction_method=pdf_result.extraction_method or "pdf_text_extraction_failed",
+            page_count=pdf_result.page_count,
+            pages_extracted=pdf_result.pages_extracted,
+        )
+
+    def _finalize_text_processing(
+        self,
+        material: UploadedMaterial,
+        base_state: DocumentPipelineState,
+        *,
+        text: str,
+        extraction_method: str,
+        page_count: int,
+        pages_extracted: int,
+        warnings: list[str],
+        events: list[DocumentPipelineEvent],
+        user_id: str | None,
+        requires_ocr: bool,
+    ) -> DocumentPipelineState:
+        document_id = material.metadata.document_id
+        created_at = base_state.created_at
         section_payloads = self._build_sections(material, text, user_id=user_id)
         chunks = self._build_chunks(material, section_payloads, user_id=user_id)
         sections = [
@@ -187,8 +298,8 @@ class DocumentPipelineService:
             source_type=material.metadata.source_type,
             text=text,
             text_length=len(text),
-            page_count=0,
-            extraction_method="markdown_text" if suffix == ".md" else "plain_text",
+            page_count=page_count,
+            extraction_method=extraction_method,
             extraction_status=DocumentIngestionStatus.EXTRACTED.value,
             warnings=warnings,
             errors=[],
@@ -196,6 +307,8 @@ class DocumentPipelineService:
                 "filename": material.metadata.filename,
                 "content_type": material.metadata.content_type,
                 "pipeline_version": PIPELINE_VERSION,
+                "pages_extracted": pages_extracted,
+                "requires_ocr": requires_ocr,
             },
         )
         stages_completed = [
@@ -270,6 +383,10 @@ class DocumentPipelineService:
                 "text_length": len(text),
                 "chunk_count": len(chunks),
                 "section_count": len(sections),
+                "page_count": page_count,
+                "pages_extracted": pages_extracted,
+                "requires_ocr": requires_ocr,
+                "extraction_method": extraction_method,
                 "processing_warnings": warnings,
             },
             error_message=None,
@@ -284,6 +401,10 @@ class DocumentPipelineService:
         *,
         events: list[DocumentPipelineEvent],
         user_id: str | None,
+        extraction_method: str = "pending_pdf_extraction",
+        page_count: int = 0,
+        pages_extracted: int = 0,
+        warnings: list[str] | None = None,
     ) -> DocumentPipelineState:
         extraction = DocumentExtractionResult(
             document_id=material.metadata.document_id,
@@ -291,15 +412,17 @@ class DocumentPipelineService:
             source_type=material.metadata.source_type,
             text=None,
             text_length=0,
-            page_count=0,
-            extraction_method="pending_pdf_extraction",
+            page_count=page_count,
+            extraction_method=extraction_method,
             extraction_status=DocumentIngestionStatus.PENDING_EXTRACTION.value,
-            warnings=["PDF extraction is not implemented yet in the current foundation."],
+            warnings=warnings or ["pdf_text_empty", "ocr_required"],
             errors=[],
             metadata={
                 "filename": material.metadata.filename,
                 "content_type": material.metadata.content_type,
                 "pipeline_version": PIPELINE_VERSION,
+                "pages_extracted": pages_extracted,
+                "requires_ocr": True,
             },
         )
         state = base_state.model_copy(
@@ -333,7 +456,14 @@ class DocumentPipelineService:
             user_id=user_id,
             status=DocumentIngestionStatus.PENDING_EXTRACTION.value,
             extraction_status=DocumentIngestionStatus.PENDING_EXTRACTION.value,
-            metadata_updates={"pipeline_version": PIPELINE_VERSION},
+            metadata_updates={
+                "pipeline_version": PIPELINE_VERSION,
+                "page_count": page_count,
+                "pages_extracted": pages_extracted,
+                "requires_ocr": True,
+                "extraction_method": extraction_method,
+                "processing_warnings": warnings or ["pdf_text_empty", "ocr_required"],
+            },
             error_message=None,
         )
         self._persist_events(events, user_id=user_id)
@@ -349,6 +479,9 @@ class DocumentPipelineService:
         warnings: list[str],
         events: list[DocumentPipelineEvent],
         user_id: str | None,
+        extraction_method: str = "none",
+        page_count: int = 0,
+        pages_extracted: int = 0,
     ) -> DocumentPipelineState:
         state = base_state.model_copy(
             update={
@@ -369,8 +502,8 @@ class DocumentPipelineService:
             source_type=material.metadata.source_type,
             text=None,
             text_length=0,
-            page_count=0,
-            extraction_method="none",
+            page_count=page_count,
+            extraction_method=extraction_method,
             extraction_status=stage,
             warnings=warnings,
             errors=[error],
@@ -378,6 +511,8 @@ class DocumentPipelineService:
                 "filename": material.metadata.filename,
                 "content_type": material.metadata.content_type,
                 "pipeline_version": PIPELINE_VERSION,
+                "pages_extracted": pages_extracted,
+                "requires_ocr": False,
             },
         )
         events.append(
@@ -398,7 +533,14 @@ class DocumentPipelineService:
             user_id=user_id,
             status=stage,
             extraction_status=stage,
-            metadata_updates={"pipeline_version": PIPELINE_VERSION},
+            metadata_updates={
+                "pipeline_version": PIPELINE_VERSION,
+                "page_count": page_count,
+                "pages_extracted": pages_extracted,
+                "requires_ocr": False,
+                "extraction_method": extraction_method,
+                "processing_warnings": warnings,
+            },
             error_message=error.message,
         )
         self._persist_events(events, user_id=user_id)

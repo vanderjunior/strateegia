@@ -1504,6 +1504,17 @@ class DocumentProcessingError(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class PdfTextExtractionResult(BaseModel):
+    text: str | None = None
+    page_count: int = 0
+    pages_extracted: int = 0
+    extraction_method: str = ""
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    requires_ocr: bool = False
+    extraction_status: str = DocumentIngestionStatus.PENDING_EXTRACTION.value
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
