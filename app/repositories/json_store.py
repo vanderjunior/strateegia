@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 
 from app.domain.models import (
+    AlignmentWarning,
     AnswerSubmission,
+    BibliographyAlignmentResult,
+    BibliographyAlignmentState,
+    CoverageGap,
+    CoverageRedundancy,
     Document,
     DocumentChunk,
     DocumentExtractionResult,
@@ -130,6 +135,24 @@ class UserScopedStudyRepository:
     def list_edital_ingestion_events(self, document_id: str) -> list[EditalIngestionEvent]:
         return self._repository.list_edital_ingestion_events(document_id, user_id=self.user_id)
 
+    def save_bibliography_alignment_state(self, state: BibliographyAlignmentState) -> None:
+        self._repository.save_bibliography_alignment_state(state, user_id=self.user_id)
+
+    def get_bibliography_alignment_state(self, edital_id: str) -> BibliographyAlignmentState | None:
+        return self._repository.get_bibliography_alignment_state(edital_id, user_id=self.user_id)
+
+    def save_bibliography_alignment_result(self, result: BibliographyAlignmentResult) -> None:
+        self._repository.save_bibliography_alignment_result(result, user_id=self.user_id)
+
+    def get_bibliography_alignment_result(self, edital_id: str) -> BibliographyAlignmentResult | None:
+        return self._repository.get_bibliography_alignment_result(edital_id, user_id=self.user_id)
+
+    def list_user_bibliography_alignments(self) -> list[BibliographyAlignmentResult]:
+        return self._repository.list_user_bibliography_alignments(user_id=self.user_id)
+
+    def get_bibliography_alignment_by_id(self, alignment_id: str) -> BibliographyAlignmentResult | None:
+        return self._repository.get_bibliography_alignment_by_id(alignment_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -176,6 +199,10 @@ class JsonStudyRepository:
                 "results": {},
                 "events": {},
             },
+            "bibliography_alignment": {
+                "states": {},
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -215,6 +242,9 @@ class JsonStudyRepository:
             user_state["edital_ingestion"] = self._normalize_edital_ingestion_payload(
                 user_state.get("edital_ingestion")
             )
+            user_state["bibliography_alignment"] = self._normalize_bibliography_alignment_payload(
+                user_state.get("bibliography_alignment")
+            )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
         return normalized
@@ -249,6 +279,18 @@ class JsonStudyRepository:
         if isinstance(payload, dict):
             normalized.update(payload)
         for key in ("states", "results", "events"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
+        return normalized
+
+    def _normalize_bibliography_alignment_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "states": {},
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("states", "results"):
             if not isinstance(normalized.get(key), dict):
                 normalized[key] = {}
         return normalized
@@ -325,6 +367,9 @@ class JsonStudyRepository:
         )
         state["edital_ingestion"] = self._normalize_edital_ingestion_payload(
             state.get("edital_ingestion")
+        )
+        state["bibliography_alignment"] = self._normalize_bibliography_alignment_payload(
+            state.get("bibliography_alignment")
         )
         return state
 
@@ -498,6 +543,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_edital_ingestion_payload({})
         return self._ensure_user_state(payload, user_id)["edital_ingestion"]
+
+    def _bibliography_alignment_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_bibliography_alignment_payload({})
+        return self._ensure_user_state(payload, user_id)["bibliography_alignment"]
 
     def save_document_pipeline_state(
         self,
@@ -740,6 +794,84 @@ class JsonStudyRepository:
         payload = self._read()
         raw = self._edital_container(payload, user_id)["events"].get(document_id, [])
         return [EditalIngestionEvent.model_validate(item) for item in raw]
+
+    def save_bibliography_alignment_state(
+        self,
+        state: BibliographyAlignmentState,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Bibliography alignment state requires user ownership.")
+        payload = self._read()
+        container = self._bibliography_alignment_container(payload, user_id)
+        container["states"][state.edital_id] = state.model_dump(mode="json")
+        self._write(payload)
+
+    def get_bibliography_alignment_state(
+        self,
+        edital_id: str,
+        *,
+        user_id: str | None,
+    ) -> BibliographyAlignmentState | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._bibliography_alignment_container(payload, user_id)["states"].get(edital_id)
+        if raw is None:
+            return None
+        return BibliographyAlignmentState.model_validate(raw)
+
+    def save_bibliography_alignment_result(
+        self,
+        result: BibliographyAlignmentResult,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Bibliography alignment result requires user ownership.")
+        payload = self._read()
+        container = self._bibliography_alignment_container(payload, user_id)
+        container["results"][result.edital_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_bibliography_alignment_result(
+        self,
+        edital_id: str,
+        *,
+        user_id: str | None,
+    ) -> BibliographyAlignmentResult | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._bibliography_alignment_container(payload, user_id)["results"].get(edital_id)
+        if raw is None:
+            return None
+        return BibliographyAlignmentResult.model_validate(raw)
+
+    def list_user_bibliography_alignments(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[BibliographyAlignmentResult]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._bibliography_alignment_container(payload, user_id)["results"].values()
+        items = [BibliographyAlignmentResult.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.edital_id)
+        return items
+
+    def get_bibliography_alignment_by_id(
+        self,
+        alignment_id: str,
+        *,
+        user_id: str | None,
+    ) -> BibliographyAlignmentResult | None:
+        for item in self.list_user_bibliography_alignments(user_id=user_id):
+            if item.alignment_id == alignment_id:
+                return item
+        return None
 
     def save_document(self, document: Document, user_id: str | None = None) -> None:
         payload = self._read()

@@ -16,6 +16,7 @@ from app.config import inspection_enabled, inspection_requires_auth
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
 from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
+from app.services.bibliography_alignment import BibliographyAlignmentService
 from app.services.document_pipeline import DocumentPipelineService
 from app.services.edital_ingestion import EditalIngestionService
 from app.services.controlled_tuning_experiments import (
@@ -84,6 +85,10 @@ def get_document_pipeline_service(request: Request) -> DocumentPipelineService:
 
 def get_edital_ingestion_service(request: Request) -> EditalIngestionService:
     return EditalIngestionService(get_repository(request))
+
+
+def get_bibliography_alignment_service(request: Request) -> BibliographyAlignmentService:
+    return BibliographyAlignmentService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -510,6 +515,42 @@ def get_edital_by_id(edital_id: str, request: Request):
     result = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    return result
+
+
+@router.post("/edital/{edital_id}/align-bibliography")
+def align_edital_bibliography(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    edital = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    state = get_bibliography_alignment_service(request).align_edital(edital_id, user_id=user_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    result = get_repository(request).get_bibliography_alignment_result(edital_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Bibliography alignment not found.")
+    return result
+
+
+@router.get("/edital/{edital_id}/alignment")
+def get_edital_alignment(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    edital = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    result = get_repository(request).get_bibliography_alignment_result(edital_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Bibliography alignment not found.")
+    return result
+
+
+@router.get("/alignment/{alignment_id}")
+def get_alignment_by_id(alignment_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_repository(request).get_bibliography_alignment_by_id(alignment_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Bibliography alignment not found.")
     return result
 
 

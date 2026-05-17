@@ -1650,6 +1650,134 @@ class EditalIngestionState(BaseModel):
     ingestion_version: str = "edital-ingestion-v1"
 
 
+class AlignmentEvidence(BaseModel):
+    source_type: str
+    source_id: str
+    excerpt: str = ""
+    matched_terms: list[str] = Field(default_factory=list)
+    reasoning: str = ""
+    confidence: float = 0.0
+
+
+class AlignmentWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "info"
+    target_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class BibliographyItemAlignment(BaseModel):
+    bibliography_id: str
+    raw_reference: str
+    matched_document_ids: list[str] = Field(default_factory=list)
+    candidate_matches: list[str] = Field(default_factory=list)
+    match_state: str = "unmatched"
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[AlignmentEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DocumentCoverageCandidate(BaseModel):
+    document_id: str
+    material_id: str
+    filename: str
+    title_hint: str = ""
+    matched_bibliography_ids: list[str] = Field(default_factory=list)
+    covered_topic_ids: list[str] = Field(default_factory=list)
+    covered_subtopic_ids: list[str] = Field(default_factory=list)
+    matched_section_ids: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[AlignmentEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class TopicCoverageCandidate(BaseModel):
+    topic_id: str
+    topic_title: str
+    matched_document_ids: list[str] = Field(default_factory=list)
+    matched_chunk_ids: list[str] = Field(default_factory=list)
+    matched_section_ids: list[str] = Field(default_factory=list)
+    coverage_state: str = "uncovered"
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[AlignmentEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SectionCoverageCandidate(BaseModel):
+    section_id: str
+    section_title: str
+    document_id: str
+    matched_topic_ids: list[str] = Field(default_factory=list)
+    matched_terms: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    reasoning: str = ""
+    evidence: list[AlignmentEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CoverageGap(BaseModel):
+    gap_id: str
+    gap_type: str
+    target_id: str
+    target_title: str
+    reason: str
+    severity: str = "medium"
+    evidence: list[AlignmentEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CoverageRedundancy(BaseModel):
+    redundancy_id: str
+    redundancy_type: str
+    target_id: str
+    target_title: str
+    overlapping_document_ids: list[str] = Field(default_factory=list)
+    reason: str
+    severity: str = "low"
+    evidence: list[AlignmentEvidence] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class BibliographyAlignmentResult(BaseModel):
+    alignment_id: str
+    edital_id: str
+    user_id: str | None = None
+    bibliography_alignments: list[BibliographyItemAlignment] = Field(default_factory=list)
+    topic_coverage: list[TopicCoverageCandidate] = Field(default_factory=list)
+    document_coverage: list[DocumentCoverageCandidate] = Field(default_factory=list)
+    section_coverage: list[SectionCoverageCandidate] = Field(default_factory=list)
+    gaps: list[CoverageGap] = Field(default_factory=list)
+    redundancies: list[CoverageRedundancy] = Field(default_factory=list)
+    warnings: list[AlignmentWarning] = Field(default_factory=list)
+    confidence_summary: dict[str, object] = Field(default_factory=dict)
+    alignment_method: str = "heuristic_bibliography_alignment"
+    alignment_version: str = "bibliography-alignment-v1"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class BibliographyAlignmentState(BaseModel):
+    alignment_id: str
+    edital_id: str
+    user_id: str | None = None
+    current_stage: str = "pending"
+    status: str = "pending"
+    bibliography_items_total: int = 0
+    bibliography_items_matched: int = 0
+    topics_total: int = 0
+    topics_with_coverage: int = 0
+    gaps_detected: int = 0
+    redundancies_detected: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    alignment_version: str = "bibliography-alignment-v1"
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

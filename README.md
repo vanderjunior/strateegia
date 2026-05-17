@@ -152,6 +152,33 @@ Regras importantes:
 - esta etapa nao altera ranking, progresso ou sessao
 - documentos com pouco texto ou PDFs com `ocr_required` retornam estado seguro de texto insuficiente
 
+## Fundacao de alinhamento bibliografico e cobertura
+
+Extracoes candidatas de edital agora podem ser alinhadas contra os materiais processados do proprio usuario.
+
+Capacidades atuais desta etapa:
+
+- matching candidato entre bibliografia do edital e materiais enviados
+- estimativa candidata de cobertura de topicos e subtopicos
+- deteccao de gaps como bibliografia ausente, topico sem cobertura e material com `ocr_required`
+- deteccao conservadora de redundancias como multiplos materiais cobrindo o mesmo topico
+- evidencias, matched terms e reasoning para revisao manual
+
+Endpoints atuais do alinhamento:
+
+- `POST /api/edital/{edital_id}/align-bibliography`
+- `GET /api/edital/{edital_id}/alignment`
+- `GET /api/alignment/{alignment_id}`
+
+Regras importantes:
+
+- o alinhamento e heuristic-based e deterministic
+- o resultado continua candidate-based e review-friendly
+- esta etapa nao gera grafo curricular final
+- esta etapa nao cria ciclo de estudos
+- esta etapa nao altera ranking, sessao ou progresso
+- materiais sem texto ou com `ocr_required` viram warning/gap, nao falso positivo forte
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:
@@ -218,8 +245,8 @@ Outras notas de seguranca:
 
 - sem OCR
 - sem extracao robusta de PDF
-- sem extracao de edital
-- sem alinhamento bibliografico do edital
+- sem extracao final/validada de edital
+- sem alinhamento bibliografico final/validado do edital
 - sem grafo curricular final a partir do edital
 - sem ciclo de estudos derivado do edital
 - sem vetores, embeddings ou RAG
@@ -250,7 +277,7 @@ Itens planejados, mas nao implementados nesta etapa:
 - pipeline robusto de PDF com OCR, chunking e secoes mais fortes
 - OCR futuro para livros e materiais escaneados, inclusive casos de praticagem
 - estabilizacao de fixtures para extracao de edital
-- alinhamento bibliografico entre edital e materiais
+- alinhamento bibliografico entre edital e materiais com fixtures de estabilizacao
 - grafo curricular a partir de candidatos extraidos do edital
 - runtime edital-aware com topicos, pesos e exclusoes
 - alinhamento bibliografico e analise de cobertura
