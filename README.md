@@ -72,6 +72,48 @@ Limitacoes importantes:
 
 O endpoint legado `POST /api/documents/upload` foi preservado para o prototipo atual e para os testes existentes do pipeline PDF processado.
 
+## Fundacao do pipeline de documentos
+
+Materiais enviados agora podem entrar em um pipeline estruturado, user-scoped e observavel.
+
+Capacidades atuais desta etapa:
+
+- `TXT`: extracao simples de texto
+- `MD`: extracao simples de texto com deteccao basica de headings `#`, `##` e `###`
+- chunking deterministico por texto/paragrafos para `TXT` e `MD`
+- sectioning simples para `TXT` e `MD`
+- `PDF`: registro em estado `pending_extraction` para etapas futuras
+- persistencia JSON de estado, extracao, chunks, secoes e eventos de pipeline
+
+Estagios atuais do pipeline:
+
+- `uploaded`
+- `type_detected`
+- `extraction_pending`
+- `extraction_started`
+- `extracted`
+- `chunked`
+- `sectioned`
+- `metadata_ready`
+- `failed`
+- `unsupported`
+
+Endpoints atuais do pipeline:
+
+- `POST /api/materials/{document_id}/process`
+- `GET /api/materials/{document_id}/pipeline`
+- `GET /api/materials/{document_id}/chunks`
+- `GET /api/materials/{document_id}/sections`
+
+Regras importantes:
+
+- esses endpoints exigem autenticacao
+- cada usuario so pode processar e ler os proprios documentos
+- o pipeline atual nao executa OCR
+- o pipeline atual nao faz parsing de edital
+- o pipeline atual nao cria embeddings, vetores ou busca semantica
+- `storage_path` em respostas continua relativo e seguro
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:
@@ -130,13 +172,17 @@ Outras notas de seguranca:
 - uploads nao sao executados
 - nomes de arquivo sao saneados
 - uploads sao isolados por usuario
+- o pipeline de documentos nao segue caminhos fora do storage root previsto
+- erros de processamento sao persistidos de forma segura e sem expor caminhos absolutos
 - esta etapa ainda nao substitui um sistema de auth de producao
 
 ## Limitações atuais
 
 - sem OCR
+- sem extracao robusta de PDF
 - sem extracao de edital
 - sem alinhamento bibliografico
+- sem vetores, embeddings ou RAG
 - sem simulados
 - sem dashboard de produto
 - sem scheduler avancado de revisao
@@ -161,7 +207,7 @@ docs/
 
 Itens planejados, mas nao implementados nesta etapa:
 
-- pipeline robusto de PDF com OCR, chunking e secoes
+- pipeline robusto de PDF com OCR, chunking e secoes mais fortes
 - runtime edital-aware com topicos, pesos e exclusoes
 - alinhamento bibliografico e analise de cobertura
 - grafo curricular e orquestrador de ciclos de estudo

@@ -16,6 +16,7 @@ from app.config import inspection_enabled, inspection_requires_auth
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
 from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
+from app.services.document_pipeline import DocumentPipelineService
 from app.services.controlled_tuning_experiments import (
     build_controlled_tuning_experiment_registry,
 )
@@ -68,6 +69,13 @@ def get_user_service(request: Request) -> LocalUserService:
 
 def get_material_service(request: Request) -> MaterialService:
     return MaterialService(
+        get_repository(request),
+        storage_root=request.app.state.storage_root,
+    )
+
+
+def get_document_pipeline_service(request: Request) -> DocumentPipelineService:
+    return DocumentPipelineService(
         get_repository(request),
         storage_root=request.app.state.storage_root,
     )
@@ -420,6 +428,48 @@ async def upload_material(request: Request, file: UploadFile = File(...)):
         payload=payload,
     )
     return material
+
+
+@router.post("/materials/{document_id}/process")
+def process_material(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    material = get_repository(request).get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    try:
+        return get_document_pipeline_service(request).process_document(document_id, user_id=user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Material not found.") from exc
+
+
+@router.get("/materials/{document_id}/pipeline")
+def get_material_pipeline(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    material = get_repository(request).get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    state = get_repository(request).get_document_pipeline_state(document_id, user_id=user_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Pipeline state not found.")
+    return state
+
+
+@router.get("/materials/{document_id}/chunks")
+def get_material_chunks(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    material = get_repository(request).get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    return get_repository(request).list_document_chunks(document_id, user_id=user_id)
+
+
+@router.get("/materials/{document_id}/sections")
+def get_material_sections(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    material = get_repository(request).get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    return get_repository(request).list_document_sections(document_id, user_id=user_id)
 
 
 @router.post("/session/start")

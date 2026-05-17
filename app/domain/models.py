@@ -23,8 +23,13 @@ class MaterialSourceType(str, Enum):
 
 class DocumentIngestionStatus(str, Enum):
     UPLOADED = "uploaded"
+    TYPE_DETECTED = "type_detected"
     PENDING_EXTRACTION = "pending_extraction"
+    EXTRACTION_STARTED = "extraction_started"
     EXTRACTED = "extracted"
+    CHUNKED = "chunked"
+    SECTIONED = "sectioned"
+    METADATA_READY = "metadata_ready"
     FAILED = "failed"
     UNSUPPORTED = "unsupported"
 
@@ -1489,6 +1494,84 @@ class DocumentMetadata(BaseModel):
 class UploadedMaterial(BaseModel):
     metadata: DocumentMetadata
     extracted_text: str | None = None
+
+
+class DocumentProcessingError(BaseModel):
+    code: str
+    message: str
+    stage: str
+    recoverable: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DocumentPipelineEvent(BaseModel):
+    event_id: str
+    document_id: str
+    user_id: str | None = None
+    stage: str
+    status: str
+    message: str = ""
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DocumentExtractionResult(BaseModel):
+    document_id: str
+    user_id: str | None = None
+    source_type: str = MaterialSourceType.USER_UPLOAD.value
+    text: str | None = None
+    text_length: int = 0
+    page_count: int = 0
+    extraction_method: str = ""
+    extraction_status: str = DocumentIngestionStatus.UPLOADED.value
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DocumentChunk(BaseModel):
+    chunk_id: str
+    document_id: str
+    user_id: str | None = None
+    chunk_index: int = 0
+    text: str
+    text_length: int = 0
+    token_estimate: int = 0
+    section_id: str | None = None
+    page_start: int | None = None
+    page_end: int | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DocumentSection(BaseModel):
+    section_id: str
+    document_id: str
+    user_id: str | None = None
+    title: str
+    level: int = 1
+    order_index: int = 0
+    start_chunk_index: int = 0
+    end_chunk_index: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class DocumentPipelineState(BaseModel):
+    document_id: str
+    user_id: str | None = None
+    current_stage: str = DocumentIngestionStatus.UPLOADED.value
+    stages_completed: list[str] = Field(default_factory=list)
+    extraction_status: str = DocumentIngestionStatus.UPLOADED.value
+    chunking_status: str = "not_started"
+    sectioning_status: str = "not_started"
+    metadata_status: str = "not_ready"
+    error_count: int = 0
+    last_error: DocumentProcessingError | None = None
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    pipeline_version: str = "document-pipeline-v1"
+    text_length: int = 0
+    chunk_count: int = 0
+    section_count: int = 0
 
 
 class AnswerSubmission(BaseModel):

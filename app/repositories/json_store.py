@@ -6,6 +6,8 @@ from pathlib import Path
 from app.domain.models import (
     AnswerSubmission,
     Document,
+    DocumentChunk,
+    DocumentExtractionResult,
     ErrorType,
     ItemState,
     InterventionHistory,
@@ -13,6 +15,9 @@ from app.domain.models import (
     PedagogicalMemory,
     PedagogicalOutcome,
     ProgressState,
+    DocumentPipelineEvent,
+    DocumentPipelineState,
+    DocumentSection,
     TopicLearningState,
     UploadedMaterial,
     User,
@@ -60,6 +65,44 @@ class UserScopedStudyRepository:
     def load_progress(self) -> ProgressState:
         return self._repository.load_progress(user_id=self.user_id)
 
+    def get_uploaded_material(self, document_id: str) -> UploadedMaterial | None:
+        return self._repository.get_uploaded_material(document_id, user_id=self.user_id)
+
+    def save_uploaded_material(self, material: UploadedMaterial) -> None:
+        if self.user_id is None:
+            raise ValueError("User-scoped material persistence requires a user_id.")
+        self._repository.save_uploaded_material(material, user_id=self.user_id)
+
+    def save_document_pipeline_state(self, state: DocumentPipelineState) -> None:
+        self._repository.save_document_pipeline_state(state, user_id=self.user_id)
+
+    def get_document_pipeline_state(self, document_id: str) -> DocumentPipelineState | None:
+        return self._repository.get_document_pipeline_state(document_id, user_id=self.user_id)
+
+    def save_document_extraction_result(self, result: DocumentExtractionResult) -> None:
+        self._repository.save_document_extraction_result(result, user_id=self.user_id)
+
+    def get_document_extraction_result(self, document_id: str) -> DocumentExtractionResult | None:
+        return self._repository.get_document_extraction_result(document_id, user_id=self.user_id)
+
+    def save_document_chunks(self, document_id: str, chunks: list[DocumentChunk]) -> None:
+        self._repository.save_document_chunks(document_id, chunks, user_id=self.user_id)
+
+    def list_document_chunks(self, document_id: str) -> list[DocumentChunk]:
+        return self._repository.list_document_chunks(document_id, user_id=self.user_id)
+
+    def save_document_sections(self, document_id: str, sections: list[DocumentSection]) -> None:
+        self._repository.save_document_sections(document_id, sections, user_id=self.user_id)
+
+    def list_document_sections(self, document_id: str) -> list[DocumentSection]:
+        return self._repository.list_document_sections(document_id, user_id=self.user_id)
+
+    def append_document_pipeline_event(self, event: DocumentPipelineEvent) -> None:
+        self._repository.append_document_pipeline_event(event, user_id=self.user_id)
+
+    def list_document_pipeline_events(self, document_id: str) -> list[DocumentPipelineEvent]:
+        return self._repository.list_document_pipeline_events(document_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -94,6 +137,13 @@ class JsonStudyRepository:
             "answers": [],
             "progress": self._default_progress_payload(),
             "materials": [],
+            "document_pipeline": {
+                "states": {},
+                "extraction_results": {},
+                "chunks": {},
+                "sections": {},
+                "events": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -127,6 +177,9 @@ class JsonStudyRepository:
             user_state["answers"] = list(user_state.get("answers", []) or [])
             user_state["materials"] = list(user_state.get("materials", []) or [])
             user_state["progress"] = self._normalize_progress_payload(user_state.get("progress"))
+            user_state["document_pipeline"] = self._normalize_document_pipeline_payload(
+                user_state.get("document_pipeline")
+            )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
         return normalized
@@ -135,6 +188,21 @@ class JsonStudyRepository:
         normalized = self._default_progress_payload()
         if isinstance(payload, dict):
             normalized.update(payload)
+        return normalized
+
+    def _normalize_document_pipeline_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "states": {},
+            "extraction_results": {},
+            "chunks": {},
+            "sections": {},
+            "events": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("states", "extraction_results", "chunks", "sections", "events"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
         return normalized
 
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
@@ -204,6 +272,9 @@ class JsonStudyRepository:
             state["answers"] = []
         if "materials" not in state or not isinstance(state.get("materials"), list):
             state["materials"] = []
+        state["document_pipeline"] = self._normalize_document_pipeline_payload(
+            state.get("document_pipeline")
+        )
         return state
 
     def _default_error_distribution(self) -> dict[str, int]:
@@ -358,6 +429,154 @@ class JsonStudyRepository:
             UploadedMaterial.model_validate(item)
             for item in self._materials_container(payload, user_id)
         ]
+
+    def get_uploaded_material(self, document_id: str, *, user_id: str | None) -> UploadedMaterial | None:
+        if user_id is None:
+            return None
+        for material in self.list_uploaded_materials(user_id=user_id):
+            if material.metadata.document_id == document_id:
+                return material
+        return None
+
+    def _pipeline_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_document_pipeline_payload({})
+        return self._ensure_user_state(payload, user_id)["document_pipeline"]
+
+    def save_document_pipeline_state(
+        self,
+        state: DocumentPipelineState,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Document pipeline state requires user ownership.")
+        payload = self._read()
+        container = self._pipeline_container(payload, user_id)
+        container["states"][state.document_id] = state.model_dump(mode="json")
+        self._write(payload)
+
+    def get_document_pipeline_state(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> DocumentPipelineState | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._pipeline_container(payload, user_id)["states"].get(document_id)
+        if raw is None:
+            return None
+        return DocumentPipelineState.model_validate(raw)
+
+    def save_document_extraction_result(
+        self,
+        result: DocumentExtractionResult,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Document extraction results require user ownership.")
+        payload = self._read()
+        container = self._pipeline_container(payload, user_id)
+        container["extraction_results"][result.document_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_document_extraction_result(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> DocumentExtractionResult | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._pipeline_container(payload, user_id)["extraction_results"].get(document_id)
+        if raw is None:
+            return None
+        return DocumentExtractionResult.model_validate(raw)
+
+    def save_document_chunks(
+        self,
+        document_id: str,
+        chunks: list[DocumentChunk],
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Document chunks require user ownership.")
+        payload = self._read()
+        container = self._pipeline_container(payload, user_id)
+        container["chunks"][document_id] = [item.model_dump(mode="json") for item in chunks]
+        self._write(payload)
+
+    def list_document_chunks(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> list[DocumentChunk]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._pipeline_container(payload, user_id)["chunks"].get(document_id, [])
+        return [DocumentChunk.model_validate(item) for item in raw]
+
+    def save_document_sections(
+        self,
+        document_id: str,
+        sections: list[DocumentSection],
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Document sections require user ownership.")
+        payload = self._read()
+        container = self._pipeline_container(payload, user_id)
+        container["sections"][document_id] = [item.model_dump(mode="json") for item in sections]
+        self._write(payload)
+
+    def list_document_sections(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> list[DocumentSection]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._pipeline_container(payload, user_id)["sections"].get(document_id, [])
+        return [DocumentSection.model_validate(item) for item in raw]
+
+    def append_document_pipeline_event(
+        self,
+        event: DocumentPipelineEvent,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Document pipeline events require user ownership.")
+        payload = self._read()
+        container = self._pipeline_container(payload, user_id)
+        existing = container["events"].get(event.document_id, [])
+        filtered = [item for item in existing if item.get("event_id") != event.event_id]
+        filtered.append(event.model_dump(mode="json"))
+        filtered.sort(key=lambda item: item.get("created_at", ""))
+        container["events"][event.document_id] = filtered
+        self._write(payload)
+
+    def list_document_pipeline_events(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> list[DocumentPipelineEvent]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._pipeline_container(payload, user_id)["events"].get(document_id, [])
+        return [DocumentPipelineEvent.model_validate(item) for item in raw]
 
     def save_document(self, document: Document, user_id: str | None = None) -> None:
         payload = self._read()
