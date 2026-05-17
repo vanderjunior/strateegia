@@ -139,9 +139,13 @@ class CurriculumGraphBuilderService:
                     )
                     coverage_links.append(self._topic_coverage_link(topic, coverage))
                 else:
-                    topic.coverage_state = "insufficient_evidence"
-                    topic.review_state = "needs_review"
-                    topic.reasoning = "no topic coverage record was available in the alignment result"
+                    topic.coverage_state = self._coverage_state_from_gaps(topic_gaps)
+                    topic.review_state = self._review_state_for_topic(topic.coverage_state, topic_gaps, topic_redundancies)
+                    topic.reasoning = (
+                        "topic state was derived conservatively from alignment gaps because no direct topic coverage record was available"
+                        if topic_gaps
+                        else "no topic coverage record was available in the alignment result"
+                    )
                     topic.confidence = min(topic.confidence, 0.3)
                 for gap in topic_gaps:
                     gap_refs.append(self._gap_reference(gap, target_type="topic"))
@@ -487,6 +491,16 @@ class CurriculumGraphBuilderService:
         if coverage_state == "partially_covered":
             return "candidate"
         return "ready_for_review"
+
+    def _coverage_state_from_gaps(self, gaps: list[CoverageGap]) -> str:
+        gap_types = {item.gap_type for item in gaps}
+        if "ambiguous_reference" in gap_types:
+            return "ambiguous"
+        if "weak_topic_coverage" in gap_types:
+            return "weakly_covered"
+        if gap_types & {"uncovered_topic", "ocr_required", "missing_document_text", "missing_bibliography_material"}:
+            return "uncovered"
+        return "insufficient_evidence"
 
     def _aggregate_coverage_state(self, coverage_states: list[str]) -> str:
         if not coverage_states:
