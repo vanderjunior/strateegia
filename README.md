@@ -244,7 +244,7 @@ Perfis iniciais suportados:
 
 Capacidades atuais desta etapa:
 
-- perfis declarativos e inspecionaveis de formato de prova
+- perfis declarativos e inspecionaveis que separam banca, formato, familia especial e generation hints
 - timing hints, scoring hints e difficulty hints conservadores
 - cognitive demand e board behavior hints
 - sugestao heuristica opcional a partir do edital ingerido
@@ -260,6 +260,10 @@ Endpoints atuais de exam profiles:
 Regras importantes:
 
 - os perfis sao declarativos e candidate-based
+- nome da banca nao decide sozinho o formato da prova
+- formato explicito do edital tem prioridade sobre estilo historico da banca
+- PSCPP/Praticagem e tratado como familia especial e pode prevalecer sobre banca externa mencionada
+- negative marking so deve ser tratado como confirmado quando o edital trouxer sinal explicito
 - eles nao geram simulados nem questoes
 - eles nao alteram study cycle, ranking, sessao ou scheduler do runtime
 - contagem de questoes, tempo e scoring continuam dependentes do edital real

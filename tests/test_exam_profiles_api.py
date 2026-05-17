@@ -59,6 +59,8 @@ def test_exam_profile_endpoints_are_available_and_json_safe(tmp_path):
         "exam-profile:marinha-pscpp",
     ]
     assert cebraspe.json()["exam_board"] == "CEBRASPE"
+    assert cebraspe.json()["board_profile"]["board_id"] == "board:cebraspe"
+    assert cebraspe.json()["generation_profile"]["generation_style"] == "assertion_based"
     json.dumps(listed.json(), ensure_ascii=True)
     dumped = json.dumps(cebraspe.json(), ensure_ascii=True)
     assert "password_hash" not in dumped
@@ -88,6 +90,12 @@ def test_exam_profile_suggestion_endpoint_requires_owner_and_is_json_safe(tmp_pa
     assert suggested.json()["profile_id"] == "exam-profile:cebraspe"
     assert loaded.json()["profile_id"] == "exam-profile:cebraspe"
     assert loaded.json()["profile_name"]
+    assert loaded.json()["board_id"] == "board:cebraspe"
+    assert loaded.json()["format_type"] == "true_false"
+    assert loaded.json()["format_confidence"] >= 0.8
+    assert loaded.json()["board_evidence"]
+    assert loaded.json()["format_evidence"]
+    assert "selection_reasoning" in loaded.json()
     json.dumps(loaded.json(), ensure_ascii=True)
 
     assert anonymous.post(f"/api/edital/{edital_id}/exam-profile/suggest").status_code == 401

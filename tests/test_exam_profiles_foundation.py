@@ -25,15 +25,23 @@ def test_cebraspe_profile_is_conservative_and_declarative():
 
     assert profile is not None
     assert profile.exam_board == "CEBRASPE"
-    assert profile.question_format.format_type in {"true_false", "objective"}
-    assert profile.question_format.supports_true_false is True
-    assert profile.question_format.supports_multiple_choice is False
+    assert profile.board_profile.board_id == "board:cebraspe"
+    assert "CESPE" in profile.board_profile.aliases
+    assert profile.question_format.explicit_format_confirmed is False
+    assert profile.question_format.format_type in {"unknown", "objective", "true_false"}
+    assert profile.question_format.format_source in {"board_default", "unknown"}
+    assert profile.scoring_profile.explicit_scoring_confirmed is False
     assert profile.scoring_profile.scoring_type in {"right_wrong", "unknown"}
     assert profile.scoring_profile.penalty_hint is True
+    assert profile.scoring_profile.negative_marking is False
     assert profile.cognitive_demand_profile.reading_precision_demand == "high"
     assert profile.cognitive_demand_profile.trap_sensitivity == "high"
+    assert profile.generation_profile.generation_style == "assertion_based"
     assert profile.question_format.expected_question_count >= 0
     assert profile.question_format.question_count_range[0] <= profile.question_format.question_count_range[1]
+    warning_codes = {item.code for item in profile.warnings}
+    assert "confirm_ce_format_in_edital" in warning_codes
+    assert "confirm_negative_marking_in_edital" in warning_codes
     assert profile.summary.format_summary
     assert profile.summary.limitation_summary
 
@@ -43,13 +51,21 @@ def test_fgv_profile_is_conservative_and_declarative():
 
     assert profile is not None
     assert profile.exam_board == "FGV"
-    assert profile.question_format.format_type in {"multiple_choice", "objective"}
+    assert profile.board_profile.board_id == "board:fgv"
+    assert profile.question_format.format_type in {"multiple_choice_5", "multiple_choice", "objective"}
     assert profile.question_format.supports_multiple_choice is True
     assert profile.question_format.answer_options == ["A", "B", "C", "D", "E"]
+    assert profile.question_format.explicit_format_confirmed is False
     assert profile.question_format.supports_true_false is False
     assert profile.cognitive_demand_profile.interpretation_demand in {"medium", "high"}
     assert profile.cognitive_demand_profile.application_demand in {"medium", "high"}
     assert profile.cognitive_demand_profile.time_pressure_sensitivity in {"medium", "high"}
+    assert profile.generation_profile.generation_style == "interpretive"
+    assert profile.question_style_profile.case_based == "high"
+    assert profile.question_style_profile.distractor_similarity == "high"
+    warning_codes = {item.code for item in profile.warnings}
+    assert "confirm_option_count_in_edital" in warning_codes
+    assert "board_style_does_not_override_explicit_format" in warning_codes
     assert profile.summary.timing_summary
     assert profile.description
 
@@ -59,14 +75,24 @@ def test_marinha_pscpp_profile_is_conservative_and_declarative():
 
     assert profile is not None
     assert profile.exam_board == "MARINHA_PSCPP"
-    assert profile.question_format.format_type in {"objective", "mixed"}
+    assert profile.board_profile.board_id == "board:marinha-dpc"
+    assert profile.exam_family == "PSCPP"
+    assert profile.question_format.format_type in {"objective", "mixed", "unknown"}
     assert profile.question_format.supports_multiple_choice is True
+    assert profile.question_format.explicit_format_confirmed is False
     assert profile.question_format.question_count_range[0] == 50
     assert profile.question_format.question_count_range[1] == 100
     assert profile.cognitive_demand_profile.application_demand in {"medium", "high"}
     assert profile.cognitive_demand_profile.reading_precision_demand in {"medium", "high"}
+    assert profile.generation_profile.generation_style == "technical_maritime"
+    assert profile.generation_profile.allow_english_terms is True
+    assert profile.content_behavior_profile.bibliography_weight == "high"
+    assert profile.content_behavior_profile.technical_operational_weight == "high"
     behavior_types = {item.behavior_type for item in profile.board_behavior_hints}
     assert "jurisprudence_or_normative_detail" in behavior_types or "formula_or_data_recall" in behavior_types
+    warning_codes = {item.code for item in profile.warnings}
+    assert "pscpp_not_generic_military_exam" in warning_codes
+    assert "exam_family_over_board_when_needed" in warning_codes
     assert profile.summary.cognitive_demand_summary
 
 
@@ -121,19 +147,28 @@ def test_exam_profile_suggestion_is_safe_and_side_effect_free():
 
     assert cebraspe_selection is not None
     assert cebraspe_selection.profile_id == "exam-profile:cebraspe"
-    assert cebraspe_selection.confidence >= 0.7
-    assert cebraspe_selection.reasoning
+    assert cebraspe_selection.board_id == "board:cebraspe"
+    assert cebraspe_selection.format_type == "true_false"
+    assert cebraspe_selection.family_confidence == 0.0
+    assert cebraspe_selection.format_confidence >= 0.8
+    assert cebraspe_selection.selection_reasoning
+    assert cebraspe_selection.format_evidence
 
     assert fgv_selection is not None
     assert fgv_selection.profile_id == "exam-profile:fgv"
-    assert fgv_selection.confidence >= 0.7
+    assert fgv_selection.board_id == "board:fgv"
+    assert fgv_selection.format_type == "multiple_choice_5"
+    assert fgv_selection.format_confidence >= 0.8
 
     assert marinha_selection is not None
     assert marinha_selection.profile_id == "exam-profile:marinha-pscpp"
-    assert marinha_selection.confidence >= 0.7
+    assert marinha_selection.exam_family == "PSCPP"
+    assert marinha_selection.family_confidence >= 0.8
+    assert marinha_selection.family_evidence
 
     assert ambiguous_selection is not None
     assert ambiguous_selection.profile_id is None
+    assert ambiguous_selection.format_type in {"unknown", None}
     assert ambiguous_selection.confidence <= 0.5
     assert ambiguous_selection.warnings
 

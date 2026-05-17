@@ -2083,14 +2083,29 @@ class StudyCyclePlanState(BaseModel):
     cycle_version: str = "study-cycle-v1"
 
 
+class ExamBoardProfile(BaseModel):
+    board_id: str
+    board_name: str
+    aliases: list[str] = Field(default_factory=list)
+    default_style_hints: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class ExamQuestionFormatProfile(BaseModel):
     format_type: str = "unknown"
+    options_count: int = 0
     answer_options: list[str] = Field(default_factory=list)
     expected_question_count: int = 0
     question_count_range: list[int] = Field(default_factory=list)
+    single_correct_answer: bool = False
+    format_source: str = "unknown"
+    format_confidence: float = 0.0
+    explicit_format_confirmed: bool = False
     supports_true_false: bool = False
     supports_multiple_choice: bool = False
     supports_discursive: bool = False
+    supports_oral: bool = False
     reasoning: str = ""
     metadata: dict[str, object] = Field(default_factory=dict)
 
@@ -2105,9 +2120,17 @@ class ExamTimingProfile(BaseModel):
 
 class ExamScoringProfile(BaseModel):
     scoring_type: str = "unknown"
+    correct: float | None = None
+    wrong: float | None = None
+    blank: float | None = None
+    double_mark: float | None = None
+    negative_marking: bool = False
     penalty_hint: bool = False
     negative_marking_hint: bool = False
     partial_credit_hint: bool = False
+    scoring_source: str = "unknown"
+    explicit_scoring_confirmed: bool = False
+    scoring_confidence: float = 0.0
     raw_scoring_notes: str = ""
     reasoning: str = ""
     metadata: dict[str, object] = Field(default_factory=dict)
@@ -2144,6 +2167,46 @@ class ExamCognitiveDemandProfile(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ExamGenerationProfile(BaseModel):
+    generation_style: str = "unknown"
+    stem_style: str = "unknown"
+    distractor_quality: str = "unknown"
+    trap_patterns: list[str] = Field(default_factory=list)
+    command_patterns: list[str] = Field(default_factory=list)
+    allow_english_terms: bool = False
+    allow_multitopic_items: bool = False
+    require_source_topic_mapping: bool = True
+    avoid_unsupported_tricks: bool = True
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamQuestionStyleProfile(BaseModel):
+    stem_length: str = "unknown"
+    contextualization: str = "unknown"
+    literalness: str = "unknown"
+    case_based: str = "unknown"
+    technical_depth: str = "unknown"
+    distractor_similarity: str = "unknown"
+    reading_precision: str = "unknown"
+    technical_language: str = "unknown"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExamContentBehaviorProfile(BaseModel):
+    law_dry_text_weight: str = "unknown"
+    jurisprudence_weight: str = "unknown"
+    doctrine_weight: str = "unknown"
+    calculation_weight: str = "unknown"
+    technical_standard_weight: str = "unknown"
+    bibliography_weight: str = "unknown"
+    case_problem_weight: str = "unknown"
+    normative_detail_weight: str = "unknown"
+    technical_operational_weight: str = "unknown"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class ExamBoardBehaviorHint(BaseModel):
     hint_id: str
     behavior_type: str = "unknown"
@@ -2176,6 +2239,8 @@ class ExamProfile(BaseModel):
     profile_id: str
     exam_board: str
     profile_name: str
+    board_profile: ExamBoardProfile
+    exam_family: str = "generic"
     description: str = ""
     question_format: ExamQuestionFormatProfile = Field(default_factory=ExamQuestionFormatProfile)
     timing_profile: ExamTimingProfile = Field(default_factory=ExamTimingProfile)
@@ -2183,6 +2248,9 @@ class ExamProfile(BaseModel):
     content_distribution_hints: list[ExamContentDistributionHint] = Field(default_factory=list)
     difficulty_profile: ExamDifficultyProfile = Field(default_factory=ExamDifficultyProfile)
     cognitive_demand_profile: ExamCognitiveDemandProfile = Field(default_factory=ExamCognitiveDemandProfile)
+    generation_profile: ExamGenerationProfile = Field(default_factory=ExamGenerationProfile)
+    question_style_profile: ExamQuestionStyleProfile = Field(default_factory=ExamQuestionStyleProfile)
+    content_behavior_profile: ExamContentBehaviorProfile = Field(default_factory=ExamContentBehaviorProfile)
     board_behavior_hints: list[ExamBoardBehaviorHint] = Field(default_factory=list)
     warnings: list[ExamProfileWarning] = Field(default_factory=list)
     summary: ExamProfileSummary
@@ -2205,10 +2273,23 @@ class ExamProfileState(BaseModel):
 
 class ExamProfileSelectionCandidate(BaseModel):
     profile_id: str | None = None
+    board_id: str | None = None
     exam_board: str | None = None
     profile_name: str | None = None
+    exam_family: str | None = None
+    format_type: str | None = None
     confidence: float = 0.0
+    heuristic_confidence: float = 0.0
+    format_confidence: float = 0.0
+    board_confidence: float = 0.0
+    family_confidence: float = 0.0
+    scoring_confidence: float = 0.0
     reasoning: list[str] = Field(default_factory=list)
+    selection_reasoning: list[str] = Field(default_factory=list)
+    format_evidence: list[str] = Field(default_factory=list)
+    scoring_evidence: list[str] = Field(default_factory=list)
+    family_evidence: list[str] = Field(default_factory=list)
+    board_evidence: list[str] = Field(default_factory=list)
     warnings: list[ExamProfileWarning] = Field(default_factory=list)
     metadata: dict[str, object] = Field(default_factory=dict)
 

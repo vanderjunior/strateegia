@@ -662,7 +662,28 @@ def suggest_exam_profile(edital_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Edital extraction not found.")
     suggestion = get_exam_profile_service(request).suggest_exam_profile_from_edital(edital)
     if suggestion is None:
-        return {"profile_id": None, "exam_board": None, "profile_name": None, "confidence": 0.0, "reasoning": ["No stable exam board signal was found."], "warnings": [], "metadata": {"edital_id": edital_id}}
+        return {
+            "profile_id": None,
+            "board_id": None,
+            "exam_board": None,
+            "profile_name": None,
+            "exam_family": None,
+            "format_type": "unknown",
+            "confidence": 0.0,
+            "heuristic_confidence": 0.0,
+            "format_confidence": 0.0,
+            "board_confidence": 0.0,
+            "family_confidence": 0.0,
+            "scoring_confidence": 0.0,
+            "reasoning": ["No stable exam board, family or format signal was found."],
+            "selection_reasoning": ["No stable exam board, family or format signal was found."],
+            "format_evidence": [],
+            "scoring_evidence": [],
+            "family_evidence": [],
+            "board_evidence": [],
+            "warnings": [],
+            "metadata": {"edital_id": edital_id, "negative_marking_confirmed": False},
+        }
     return suggestion
 
 
@@ -674,7 +695,28 @@ def get_exam_profile_suggestion(edital_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Edital extraction not found.")
     suggestion = get_exam_profile_service(request).suggest_exam_profile_from_edital(edital)
     if suggestion is None:
-        return {"profile_id": None, "exam_board": None, "profile_name": None, "confidence": 0.0, "reasoning": ["No stable exam board signal was found."], "warnings": [], "metadata": {"edital_id": edital_id}}
+        return {
+            "profile_id": None,
+            "board_id": None,
+            "exam_board": None,
+            "profile_name": None,
+            "exam_family": None,
+            "format_type": "unknown",
+            "confidence": 0.0,
+            "heuristic_confidence": 0.0,
+            "format_confidence": 0.0,
+            "board_confidence": 0.0,
+            "family_confidence": 0.0,
+            "scoring_confidence": 0.0,
+            "reasoning": ["No stable exam board, family or format signal was found."],
+            "selection_reasoning": ["No stable exam board, family or format signal was found."],
+            "format_evidence": [],
+            "scoring_evidence": [],
+            "family_evidence": [],
+            "board_evidence": [],
+            "warnings": [],
+            "metadata": {"edital_id": edital_id, "negative_marking_confirmed": False},
+        }
     return suggestion
 
 
