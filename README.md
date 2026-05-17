@@ -205,6 +205,33 @@ Regras importantes:
 - ele nao aplica exam profiles
 - gaps como `ocr_required` e `missing_document_text` continuam preservados
 
+## Fundacao do study cycle
+
+O curriculum graph candidato agora pode gerar uma proposta inicial de ciclo de estudos, ainda separada do runtime ativo.
+
+Capacidades atuais desta etapa:
+
+- subject rotation candidata e deterministica
+- topic slots candidatos baseados em coverage/review state
+- review slots candidatos para topicos fracos, parciais, ambiguos ou bloqueados
+- gap slots para material ausente, OCR futuro e bloqueios de texto
+- fatigue/balance hints e rationale para revisao manual
+- persistencia user-scoped de estado e resultado do plano
+
+Endpoints atuais do study cycle:
+
+- `POST /api/curriculum-graph/{graph_id}/study-cycle/build`
+- `GET /api/curriculum-graph/{graph_id}/study-cycle`
+- `GET /api/study-cycle/{cycle_id}`
+
+Regras importantes:
+
+- o plano continua candidate-based e `ready_for_review`
+- ele nao ativa scheduling no runtime
+- ele nao cria calendario, scheduler de revisao ou simulados
+- ele nao substitui `CurriculumScheduler` nem `LearningDecisionEngine`
+- topicos ambiguos ou bloqueados continuam sinalizados para revisao manual
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:

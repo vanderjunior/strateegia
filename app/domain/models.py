@@ -1945,6 +1945,144 @@ class CurriculumGraphState(BaseModel):
     graph_version: str = "curriculum-graph-v1"
 
 
+class StudyCycleSubjectRotation(BaseModel):
+    rotation_id: str
+    subject_id: str
+    subject_title: str
+    order_index: int = 0
+    topic_ids: list[str] = Field(default_factory=list)
+    suggested_frequency: str = "low"
+    intensity_level: str = "light"
+    coverage_mix: dict[str, int] = Field(default_factory=dict)
+    review_need_level: str = "low"
+    fatigue_risk: str = "low"
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleTopicSlot(BaseModel):
+    slot_id: str
+    subject_id: str
+    topic_id: str
+    topic_title: str
+    order_index: int = 0
+    slot_type: str = "learn"
+    coverage_state: str = "uncovered"
+    review_state: str = "candidate"
+    suggested_action: str = "study_now_candidate"
+    intensity_level: str = "moderate"
+    source_evidence_ids: list[str] = Field(default_factory=list)
+    gap_ids: list[str] = Field(default_factory=list)
+    redundancy_ids: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleReviewSlot(BaseModel):
+    review_slot_id: str
+    topic_id: str
+    topic_title: str
+    reason: str
+    review_trigger: str
+    priority_hint: str = "medium"
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleGapSlot(BaseModel):
+    gap_slot_id: str
+    source_gap_id: str
+    gap_type: str
+    target_title: str
+    suggested_resolution: str
+    severity: str = "medium"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleFatigueProfile(BaseModel):
+    estimated_cycle_load: int = 0
+    high_intensity_topic_count: int = 0
+    gap_blocked_count: int = 0
+    weak_topic_count: int = 0
+    rotation_complexity: str = "unknown"
+    fatigue_risk_level: str = "unknown"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleBalanceSummary(BaseModel):
+    subject_count: int = 0
+    topic_slot_count: int = 0
+    learn_slot_count: int = 0
+    reinforce_slot_count: int = 0
+    review_needed_slot_count: int = 0
+    gap_blocked_slot_count: int = 0
+    ocr_blocked_slot_count: int = 0
+    ambiguous_slot_count: int = 0
+    covered_topic_count: int = 0
+    partially_covered_topic_count: int = 0
+    weak_topic_count: int = 0
+    uncovered_topic_count: int = 0
+    balance_state: str = "insufficient_graph"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "info"
+    target_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCycleRationale(BaseModel):
+    summary: str = ""
+    reasons: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    source_graph_id: str
+    confidence: float = 0.0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCyclePlan(BaseModel):
+    cycle_id: str
+    graph_id: str
+    user_id: str | None = None
+    subject_rotations: list[StudyCycleSubjectRotation] = Field(default_factory=list)
+    topic_slots: list[StudyCycleTopicSlot] = Field(default_factory=list)
+    review_slots: list[StudyCycleReviewSlot] = Field(default_factory=list)
+    gap_slots: list[StudyCycleGapSlot] = Field(default_factory=list)
+    fatigue_profile: StudyCycleFatigueProfile = Field(default_factory=StudyCycleFatigueProfile)
+    balance_summary: StudyCycleBalanceSummary = Field(default_factory=StudyCycleBalanceSummary)
+    warnings: list[StudyCycleWarning] = Field(default_factory=list)
+    rationale: StudyCycleRationale
+    build_method: str = "heuristic_study_cycle_orchestrator"
+    cycle_version: str = "study-cycle-v1"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class StudyCyclePlanState(BaseModel):
+    cycle_id: str
+    graph_id: str
+    user_id: str | None = None
+    current_stage: str = "pending"
+    status: str = "pending"
+    subject_count: int = 0
+    topic_slot_count: int = 0
+    review_slot_count: int = 0
+    gap_slot_count: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    cycle_version: str = "study-cycle-v1"
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

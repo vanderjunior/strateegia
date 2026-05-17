@@ -25,6 +25,8 @@ from app.domain.models import (
     PedagogicalMemory,
     PedagogicalOutcome,
     ProgressState,
+    StudyCyclePlan,
+    StudyCyclePlanState,
     DocumentPipelineEvent,
     DocumentPipelineState,
     DocumentSection,
@@ -173,6 +175,24 @@ class UserScopedStudyRepository:
     def get_curriculum_graph_by_id(self, graph_id: str) -> CurriculumGraph | None:
         return self._repository.get_curriculum_graph_by_id(graph_id, user_id=self.user_id)
 
+    def save_study_cycle_plan_state(self, state: StudyCyclePlanState) -> None:
+        self._repository.save_study_cycle_plan_state(state, user_id=self.user_id)
+
+    def get_study_cycle_plan_state(self, graph_id: str) -> StudyCyclePlanState | None:
+        return self._repository.get_study_cycle_plan_state(graph_id, user_id=self.user_id)
+
+    def save_study_cycle_plan(self, plan: StudyCyclePlan) -> None:
+        self._repository.save_study_cycle_plan(plan, user_id=self.user_id)
+
+    def get_study_cycle_plan(self, graph_id: str) -> StudyCyclePlan | None:
+        return self._repository.get_study_cycle_plan(graph_id, user_id=self.user_id)
+
+    def list_user_study_cycle_plans(self) -> list[StudyCyclePlan]:
+        return self._repository.list_user_study_cycle_plans(user_id=self.user_id)
+
+    def get_study_cycle_plan_by_id(self, cycle_id: str) -> StudyCyclePlan | None:
+        return self._repository.get_study_cycle_plan_by_id(cycle_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -227,6 +247,10 @@ class JsonStudyRepository:
                 "states": {},
                 "results": {},
             },
+            "study_cycle": {
+                "states": {},
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -271,6 +295,9 @@ class JsonStudyRepository:
             )
             user_state["curriculum_graph"] = self._normalize_curriculum_graph_payload(
                 user_state.get("curriculum_graph")
+            )
+            user_state["study_cycle"] = self._normalize_study_cycle_payload(
+                user_state.get("study_cycle")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -323,6 +350,18 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_curriculum_graph_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "states": {},
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("states", "results"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
+        return normalized
+
+    def _normalize_study_cycle_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "states": {},
             "results": {},
@@ -412,6 +451,9 @@ class JsonStudyRepository:
         )
         state["curriculum_graph"] = self._normalize_curriculum_graph_payload(
             state.get("curriculum_graph")
+        )
+        state["study_cycle"] = self._normalize_study_cycle_payload(
+            state.get("study_cycle")
         )
         return state
 
@@ -603,6 +645,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_curriculum_graph_payload({})
         return self._ensure_user_state(payload, user_id)["curriculum_graph"]
+
+    def _study_cycle_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_study_cycle_payload({})
+        return self._ensure_user_state(payload, user_id)["study_cycle"]
 
     def save_document_pipeline_state(
         self,
@@ -999,6 +1050,84 @@ class JsonStudyRepository:
     ) -> CurriculumGraph | None:
         for item in self.list_user_curriculum_graphs(user_id=user_id):
             if item.graph_id == graph_id:
+                return item
+        return None
+
+    def save_study_cycle_plan_state(
+        self,
+        state: StudyCyclePlanState,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Study cycle plan state requires user ownership.")
+        payload = self._read()
+        container = self._study_cycle_container(payload, user_id)
+        container["states"][state.graph_id] = state.model_dump(mode="json")
+        self._write(payload)
+
+    def get_study_cycle_plan_state(
+        self,
+        graph_id: str,
+        *,
+        user_id: str | None,
+    ) -> StudyCyclePlanState | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._study_cycle_container(payload, user_id)["states"].get(graph_id)
+        if raw is None:
+            return None
+        return StudyCyclePlanState.model_validate(raw)
+
+    def save_study_cycle_plan(
+        self,
+        plan: StudyCyclePlan,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Study cycle plan requires user ownership.")
+        payload = self._read()
+        container = self._study_cycle_container(payload, user_id)
+        container["results"][plan.graph_id] = plan.model_dump(mode="json")
+        self._write(payload)
+
+    def get_study_cycle_plan(
+        self,
+        graph_id: str,
+        *,
+        user_id: str | None,
+    ) -> StudyCyclePlan | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._study_cycle_container(payload, user_id)["results"].get(graph_id)
+        if raw is None:
+            return None
+        return StudyCyclePlan.model_validate(raw)
+
+    def list_user_study_cycle_plans(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[StudyCyclePlan]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._study_cycle_container(payload, user_id)["results"].values()
+        items = [StudyCyclePlan.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.graph_id)
+        return items
+
+    def get_study_cycle_plan_by_id(
+        self,
+        cycle_id: str,
+        *,
+        user_id: str | None,
+    ) -> StudyCyclePlan | None:
+        for item in self.list_user_study_cycle_plans(user_id=user_id):
+            if item.cycle_id == cycle_id:
                 return item
         return None
 

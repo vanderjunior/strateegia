@@ -35,6 +35,7 @@ from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
 from app.services.material_service import MaterialService
+from app.services.study_cycle_orchestrator import StudyCycleOrchestratorService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -94,6 +95,10 @@ def get_bibliography_alignment_service(request: Request) -> BibliographyAlignmen
 
 def get_curriculum_graph_builder_service(request: Request) -> CurriculumGraphBuilderService:
     return CurriculumGraphBuilderService(get_repository(request))
+
+
+def get_study_cycle_orchestrator_service(request: Request) -> StudyCycleOrchestratorService:
+    return StudyCycleOrchestratorService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -592,6 +597,42 @@ def get_curriculum_graph_by_id(graph_id: str, request: Request):
     result = get_repository(request).get_curriculum_graph_by_id(graph_id, user_id=user_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Curriculum graph not found.")
+    return result
+
+
+@router.post("/curriculum-graph/{graph_id}/study-cycle/build")
+def build_study_cycle(graph_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    graph = get_repository(request).get_curriculum_graph_by_id(graph_id, user_id=user_id)
+    if graph is None:
+        raise HTTPException(status_code=404, detail="Curriculum graph not found.")
+    state = get_study_cycle_orchestrator_service(request).build_cycle(graph_id, user_id=user_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Study cycle could not be built.")
+    result = get_repository(request).get_study_cycle_plan(graph_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Study cycle plan not found.")
+    return result
+
+
+@router.get("/curriculum-graph/{graph_id}/study-cycle")
+def get_study_cycle_for_graph(graph_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    graph = get_repository(request).get_curriculum_graph_by_id(graph_id, user_id=user_id)
+    if graph is None:
+        raise HTTPException(status_code=404, detail="Curriculum graph not found.")
+    result = get_repository(request).get_study_cycle_plan(graph_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Study cycle plan not found.")
+    return result
+
+
+@router.get("/study-cycle/{cycle_id}")
+def get_study_cycle_by_id(cycle_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_repository(request).get_study_cycle_plan_by_id(cycle_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Study cycle plan not found.")
     return result
 
 
