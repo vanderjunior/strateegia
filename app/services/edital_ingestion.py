@@ -26,6 +26,7 @@ from app.repositories.json_store import JsonStudyRepository
 
 EDITAL_INGESTION_VERSION = "edital-ingestion-v1"
 FINAL_EDITAL_STATUSES = {"ready_for_review", "insufficient_text", "failed"}
+MIN_EDITAL_TEXT_LENGTH = 20
 
 
 class EditalIngestionService:
@@ -69,8 +70,9 @@ class EditalIngestionService:
         document_id = material.metadata.document_id
         edital_id = f"edital:{document_id}"
         created_at = utc_now()
+        normalized_source_text = " ".join((extraction.text or "").split()) if extraction is not None else ""
 
-        if extraction is None or not (extraction.text or "").strip():
+        if extraction is None or len(normalized_source_text) < MIN_EDITAL_TEXT_LENGTH:
             warning_codes = ["insufficient_text_for_edital_ingestion"]
             if extraction is not None and (
                 extraction.metadata.get("requires_ocr") is True or "ocr_required" in extraction.warnings
@@ -460,7 +462,7 @@ class EditalIngestionService:
         )
 
     def _meaningful_lines(self, text: str) -> list[str]:
-        return [line.strip(" -\t") for line in text.splitlines() if line.strip(" -\t")]
+        return [line.strip() for line in text.splitlines() if line.strip()]
 
     def _split_inline_items(self, text: str) -> list[str]:
         parts = [item.strip(" -\t.") for item in re.split(r"[;,]", text) if item.strip(" -\t.")]
