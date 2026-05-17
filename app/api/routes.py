@@ -12,6 +12,7 @@ from app.api.schemas import (
     UserRegisterRequest,
     SessionStartRequest,
 )
+from app.config import inspection_enabled, inspection_requires_auth
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
 from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
@@ -104,6 +105,13 @@ def _public_user_payload(user) -> dict[str, object]:
         "last_login_at": user.last_login_at,
         "is_active": user.is_active,
     }
+
+
+def require_inspection_access(request: Request) -> None:
+    if not inspection_enabled():
+        raise HTTPException(status_code=404, detail="Not Found")
+    if inspection_requires_auth() and _current_user_id(request) is None:
+        raise HTTPException(status_code=401, detail="Authentication required.")
 
 
 def _inspection_defaults() -> dict[str, object]:
@@ -520,6 +528,7 @@ def get_latest_block_review(request: Request):
 
 @router.get("/inspection/runtime")
 def get_runtime_inspection(request: Request):
+    require_inspection_access(request)
     return _inspection_payload(
         get_session_manager(request),
         get_repository(request),
@@ -529,6 +538,7 @@ def get_runtime_inspection(request: Request):
 
 @router.get("/inspection/runtime/export")
 def export_runtime_inspection_snapshot(request: Request):
+    require_inspection_access(request)
     payload = _inspection_payload(
         get_session_manager(request),
         get_repository(request),

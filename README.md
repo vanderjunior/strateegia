@@ -86,13 +86,43 @@ Quando nao ha usuario autenticado, o app continua operando no modo legado single
 
 ## Inspection e seguranca
 
-Rotas internas que expõem dados sensiveis de runtime e debug:
+Rotas internas que expõem dados sensiveis de runtime e debug. Elas devem ser tratadas como tooling `internal`/debug:
 
 - `/inspection`
 - `/api/inspection/runtime`
 - `/api/inspection/runtime/export`
 
 Essas rotas sao internas e read-only, mas **devem ser protegidas antes de qualquer deploy em producao**. Hoje elas continuam acessiveis em dev/test para preservar o ferramental cientifico existente.
+
+Configuracao de server mode para inspection:
+
+- `APP_ENV`
+  - `development`
+  - `test`
+  - `production`
+- `ENABLE_INSPECTION`
+  - aceita `true/false`, `1/0`, `yes/no`, `on/off`
+- `REQUIRE_AUTH_FOR_INSPECTION`
+  - aceita `true/false`, `1/0`, `yes/no`, `on/off`
+- `INSPECTION_ALLOWED_IN_PRODUCTION`
+  - aceita `true/false`, `1/0`, `yes/no`, `on/off`
+
+Defaults atuais:
+
+- em `development` e `test`, inspection fica habilitada por padrao
+- em `development` e `test`, auth para inspection fica desabilitada por padrao
+- em `production`, inspection fica bloqueada por padrao
+- em `production`, inspection so pode ser exposta com opt-in explicito
+- em `production`, se inspection for habilitada, auth e exigida por padrao
+
+Exemplo de configuracao para producao com inspection explicitamente habilitada:
+
+```bash
+export APP_ENV=production
+export ENABLE_INSPECTION=true
+export INSPECTION_ALLOWED_IN_PRODUCTION=true
+export REQUIRE_AUTH_FOR_INSPECTION=true
+```
 
 Outras notas de seguranca:
 
@@ -111,7 +141,7 @@ Outras notas de seguranca:
 - sem dashboard de produto
 - sem scheduler avancado de revisao
 - sem banco SQL
-- sem protecao de producao para rotas internas
+- sem hardening completo de producao para auth e rotas internas
 
 ## Estrutura
 

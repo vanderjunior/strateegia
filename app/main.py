@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import inspection_ui_path, router
+from app.api.routes import inspection_ui_path, require_inspection_access, router
 from app.repositories.json_store import JsonStudyRepository
 from app.services.pipeline import StudyPipeline
 from app.services.session_flow import SessionManager
@@ -37,7 +37,8 @@ def create_app(
         return FileResponse(Path(__file__).resolve().parent / "static" / "index.html")
 
     @app.get("/inspection", include_in_schema=False)
-    def inspection():
+    def inspection(request: Request):
+        require_inspection_access(request)
         return FileResponse(inspection_ui_path())
 
     return app
