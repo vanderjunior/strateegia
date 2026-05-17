@@ -122,6 +122,36 @@ Comportamento atual para PDFs:
 - PDF sem texto utilizavel ou escaneado: permanece em `extraction_pending` com warnings como `pdf_text_empty` e `ocr_required`
 - PDF invalido ou malformado: falha de forma segura e observavel, sem vazar caminhos absolutos
 
+## Fundacao de ingestao de edital
+
+Documentos ja processados pelo pipeline agora podem ser ingeridos como edital de forma deterministica e auditavel.
+
+Capacidades atuais desta etapa:
+
+- deteccao de secoes candidatas como conteudo programatico, bibliografia, exclusoes e estrutura da prova
+- extracao heuristica e local de topicos candidatos
+- extracao heuristica de subtopicos candidatos
+- extracao de candidatos de bibliografia
+- extracao de candidatos de exclusoes
+- extracao de weight hints como questoes, pontos e porcentagens
+- persistencia user-scoped de estado, resultado e eventos de ingestao
+
+Endpoints atuais da ingestao de edital:
+
+- `POST /api/materials/{document_id}/edital/ingest`
+- `GET /api/materials/{document_id}/edital`
+- `GET /api/edital/{edital_id}`
+
+Regras importantes:
+
+- a ingestao usa apenas heuristicas deterministicas locais
+- o resultado e sempre tratado como `candidate` e `ready_for_review`
+- esta etapa nao gera grafo curricular final
+- esta etapa nao faz alinhamento bibliografico
+- esta etapa nao cria ciclo de estudos
+- esta etapa nao altera ranking, progresso ou sessao
+- documentos com pouco texto ou PDFs com `ocr_required` retornam estado seguro de texto insuficiente
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:
@@ -189,7 +219,9 @@ Outras notas de seguranca:
 - sem OCR
 - sem extracao robusta de PDF
 - sem extracao de edital
-- sem alinhamento bibliografico
+- sem alinhamento bibliografico do edital
+- sem grafo curricular final a partir do edital
+- sem ciclo de estudos derivado do edital
 - sem vetores, embeddings ou RAG
 - sem simulados
 - sem dashboard de produto
@@ -217,6 +249,9 @@ Itens planejados, mas nao implementados nesta etapa:
 
 - pipeline robusto de PDF com OCR, chunking e secoes mais fortes
 - OCR futuro para livros e materiais escaneados, inclusive casos de praticagem
+- estabilizacao de fixtures para extracao de edital
+- alinhamento bibliografico entre edital e materiais
+- grafo curricular a partir de candidatos extraidos do edital
 - runtime edital-aware com topicos, pesos e exclusoes
 - alinhamento bibliografico e analise de cobertura
 - grafo curricular e orquestrador de ciclos de estudo

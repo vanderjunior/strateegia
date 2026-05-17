@@ -17,6 +17,7 @@ from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
 from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
 from app.services.document_pipeline import DocumentPipelineService
+from app.services.edital_ingestion import EditalIngestionService
 from app.services.controlled_tuning_experiments import (
     build_controlled_tuning_experiment_registry,
 )
@@ -79,6 +80,10 @@ def get_document_pipeline_service(request: Request) -> DocumentPipelineService:
         get_repository(request),
         storage_root=request.app.state.storage_root,
     )
+
+
+def get_edital_ingestion_service(request: Request) -> EditalIngestionService:
+    return EditalIngestionService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -470,6 +475,42 @@ def get_material_sections(document_id: str, request: Request):
     if material is None:
         raise HTTPException(status_code=404, detail="Material not found.")
     return get_repository(request).list_document_sections(document_id, user_id=user_id)
+
+
+@router.post("/materials/{document_id}/edital/ingest")
+def ingest_edital(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    material = get_repository(request).get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    state = get_edital_ingestion_service(request).ingest_document(document_id, user_id=user_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    result = get_repository(request).get_edital_extraction_result(document_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    return result
+
+
+@router.get("/materials/{document_id}/edital")
+def get_material_edital(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    material = get_repository(request).get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    result = get_repository(request).get_edital_extraction_result(document_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    return result
+
+
+@router.get("/edital/{edital_id}")
+def get_edital_by_id(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_repository(request).get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    return result
 
 
 @router.post("/session/start")

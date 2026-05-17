@@ -8,6 +8,9 @@ from app.domain.models import (
     Document,
     DocumentChunk,
     DocumentExtractionResult,
+    EditalExtractionResult,
+    EditalIngestionEvent,
+    EditalIngestionState,
     ErrorType,
     ItemState,
     InterventionHistory,
@@ -103,6 +106,30 @@ class UserScopedStudyRepository:
     def list_document_pipeline_events(self, document_id: str) -> list[DocumentPipelineEvent]:
         return self._repository.list_document_pipeline_events(document_id, user_id=self.user_id)
 
+    def save_edital_ingestion_state(self, state: EditalIngestionState) -> None:
+        self._repository.save_edital_ingestion_state(state, user_id=self.user_id)
+
+    def get_edital_ingestion_state(self, document_id: str) -> EditalIngestionState | None:
+        return self._repository.get_edital_ingestion_state(document_id, user_id=self.user_id)
+
+    def save_edital_extraction_result(self, result: EditalExtractionResult) -> None:
+        self._repository.save_edital_extraction_result(result, user_id=self.user_id)
+
+    def get_edital_extraction_result(self, document_id: str) -> EditalExtractionResult | None:
+        return self._repository.get_edital_extraction_result(document_id, user_id=self.user_id)
+
+    def list_user_edital_extractions(self) -> list[EditalExtractionResult]:
+        return self._repository.list_user_edital_extractions(user_id=self.user_id)
+
+    def get_edital_extraction_by_id(self, edital_id: str) -> EditalExtractionResult | None:
+        return self._repository.get_edital_extraction_by_id(edital_id, user_id=self.user_id)
+
+    def append_edital_ingestion_event(self, event: EditalIngestionEvent) -> None:
+        self._repository.append_edital_ingestion_event(event, user_id=self.user_id)
+
+    def list_edital_ingestion_events(self, document_id: str) -> list[EditalIngestionEvent]:
+        return self._repository.list_edital_ingestion_events(document_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -144,6 +171,11 @@ class JsonStudyRepository:
                 "sections": {},
                 "events": {},
             },
+            "edital_ingestion": {
+                "states": {},
+                "results": {},
+                "events": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -180,6 +212,9 @@ class JsonStudyRepository:
             user_state["document_pipeline"] = self._normalize_document_pipeline_payload(
                 user_state.get("document_pipeline")
             )
+            user_state["edital_ingestion"] = self._normalize_edital_ingestion_payload(
+                user_state.get("edital_ingestion")
+            )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
         return normalized
@@ -201,6 +236,19 @@ class JsonStudyRepository:
         if isinstance(payload, dict):
             normalized.update(payload)
         for key in ("states", "extraction_results", "chunks", "sections", "events"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
+        return normalized
+
+    def _normalize_edital_ingestion_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "states": {},
+            "results": {},
+            "events": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("states", "results", "events"):
             if not isinstance(normalized.get(key), dict):
                 normalized[key] = {}
         return normalized
@@ -274,6 +322,9 @@ class JsonStudyRepository:
             state["materials"] = []
         state["document_pipeline"] = self._normalize_document_pipeline_payload(
             state.get("document_pipeline")
+        )
+        state["edital_ingestion"] = self._normalize_edital_ingestion_payload(
+            state.get("edital_ingestion")
         )
         return state
 
@@ -443,6 +494,11 @@ class JsonStudyRepository:
             return self._normalize_document_pipeline_payload({})
         return self._ensure_user_state(payload, user_id)["document_pipeline"]
 
+    def _edital_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_edital_ingestion_payload({})
+        return self._ensure_user_state(payload, user_id)["edital_ingestion"]
+
     def save_document_pipeline_state(
         self,
         state: DocumentPipelineState,
@@ -577,6 +633,113 @@ class JsonStudyRepository:
         payload = self._read()
         raw = self._pipeline_container(payload, user_id)["events"].get(document_id, [])
         return [DocumentPipelineEvent.model_validate(item) for item in raw]
+
+    def save_edital_ingestion_state(
+        self,
+        state: EditalIngestionState,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Edital ingestion state requires user ownership.")
+        payload = self._read()
+        container = self._edital_container(payload, user_id)
+        container["states"][state.document_id] = state.model_dump(mode="json")
+        self._write(payload)
+
+    def get_edital_ingestion_state(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> EditalIngestionState | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._edital_container(payload, user_id)["states"].get(document_id)
+        if raw is None:
+            return None
+        return EditalIngestionState.model_validate(raw)
+
+    def save_edital_extraction_result(
+        self,
+        result: EditalExtractionResult,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Edital extraction results require user ownership.")
+        payload = self._read()
+        container = self._edital_container(payload, user_id)
+        container["results"][result.document_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_edital_extraction_result(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> EditalExtractionResult | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._edital_container(payload, user_id)["results"].get(document_id)
+        if raw is None:
+            return None
+        return EditalExtractionResult.model_validate(raw)
+
+    def list_user_edital_extractions(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[EditalExtractionResult]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._edital_container(payload, user_id)["results"].values()
+        items = [EditalExtractionResult.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.document_id)
+        return items
+
+    def get_edital_extraction_by_id(
+        self,
+        edital_id: str,
+        *,
+        user_id: str | None,
+    ) -> EditalExtractionResult | None:
+        for item in self.list_user_edital_extractions(user_id=user_id):
+            if item.edital_id == edital_id:
+                return item
+        return None
+
+    def append_edital_ingestion_event(
+        self,
+        event: EditalIngestionEvent,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Edital ingestion events require user ownership.")
+        payload = self._read()
+        container = self._edital_container(payload, user_id)
+        existing = container["events"].get(event.document_id, [])
+        filtered = [item for item in existing if item.get("event_id") != event.event_id]
+        filtered.append(event.model_dump(mode="json"))
+        filtered.sort(key=lambda item: item.get("created_at", ""))
+        container["events"][event.document_id] = filtered
+        self._write(payload)
+
+    def list_edital_ingestion_events(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> list[EditalIngestionEvent]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._edital_container(payload, user_id)["events"].get(document_id, [])
+        return [EditalIngestionEvent.model_validate(item) for item in raw]
 
     def save_document(self, document: Document, user_id: str | None = None) -> None:
         payload = self._read()

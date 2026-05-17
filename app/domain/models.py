@@ -1515,6 +1515,141 @@ class PdfTextExtractionResult(BaseModel):
     extraction_status: str = DocumentIngestionStatus.PENDING_EXTRACTION.value
 
 
+class EditalExtractionWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "info"
+    source_section_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalSectionCandidate(BaseModel):
+    section_id: str
+    title: str
+    normalized_title: str
+    section_type: str = "unknown"
+    order_index: int = 0
+    source_chunk_ids: list[str] = Field(default_factory=list)
+    text_excerpt: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalTopicCandidate(BaseModel):
+    topic_id: str
+    title: str
+    normalized_title: str
+    subject_hint: str | None = None
+    parent_section_id: str | None = None
+    order_index: int = 0
+    source_chunk_ids: list[str] = Field(default_factory=list)
+    source_excerpt: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalSubtopicCandidate(BaseModel):
+    subtopic_id: str
+    parent_topic_id: str
+    title: str
+    normalized_title: str
+    order_index: int = 0
+    source_chunk_ids: list[str] = Field(default_factory=list)
+    source_excerpt: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalBibliographyCandidate(BaseModel):
+    bibliography_id: str
+    title: str = ""
+    authors: list[str] = Field(default_factory=list)
+    publisher: str | None = None
+    edition: str | None = None
+    year: str | None = None
+    raw_reference: str
+    source_section_id: str | None = None
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalExclusionCandidate(BaseModel):
+    exclusion_id: str
+    text: str
+    normalized_text: str
+    source_section_id: str | None = None
+    source_excerpt: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalWeightHint(BaseModel):
+    weight_id: str
+    target_type: str = "section"
+    target_id: str | None = None
+    target_title: str = ""
+    weight_type: str = "unknown"
+    value: float = 0.0
+    raw_text: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalIngestionEvent(BaseModel):
+    event_id: str
+    edital_id: str
+    document_id: str
+    user_id: str | None = None
+    stage: str
+    status: str
+    message: str = ""
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalExtractionResult(BaseModel):
+    edital_id: str
+    document_id: str
+    user_id: str | None = None
+    source_text_length: int = 0
+    sections: list[EditalSectionCandidate] = Field(default_factory=list)
+    topics: list[EditalTopicCandidate] = Field(default_factory=list)
+    subtopics: list[EditalSubtopicCandidate] = Field(default_factory=list)
+    bibliography: list[EditalBibliographyCandidate] = Field(default_factory=list)
+    exclusions: list[EditalExclusionCandidate] = Field(default_factory=list)
+    weight_hints: list[EditalWeightHint] = Field(default_factory=list)
+    warnings: list[EditalExtractionWarning] = Field(default_factory=list)
+    confidence_summary: dict[str, object] = Field(default_factory=dict)
+    extraction_method: str = "heuristic_edital_ingestion"
+    ingestion_version: str = "edital-ingestion-v1"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class EditalIngestionState(BaseModel):
+    edital_id: str
+    document_id: str
+    user_id: str | None = None
+    current_stage: str = "pending"
+    status: str = "pending"
+    sections_detected: int = 0
+    topics_detected: int = 0
+    subtopics_detected: int = 0
+    bibliography_items_detected: int = 0
+    exclusions_detected: int = 0
+    weight_hints_detected: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    ingestion_version: str = "edital-ingestion-v1"
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
