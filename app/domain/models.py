@@ -2498,6 +2498,87 @@ class SimuladoBlueprintState(BaseModel):
     blueprint_version: str = "simulado-blueprint-v1"
 
 
+class QuestionSourceEvidence(BaseModel):
+    evidence_id: str
+    document_id: str | None = None
+    material_id: str | None = None
+    section_id: str | None = None
+    chunk_id: str | None = None
+    topic_id: str | None = None
+    subtopic_id: str | None = None
+    evidence_role: str = "source_evidence"
+    evidence_strength: str = "unknown"
+    coverage_state: str = "unknown"
+    source_title: str | None = None
+    source_type: str = "unknown"
+    safe_snippet: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionGenerationConstraint(BaseModel):
+    constraint_id: str
+    constraint_type: str
+    severity: str = "warning"
+    description: str
+    source: str = "question_generation_blueprint"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionGenerationWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionGenerationBlueprint(BaseModel):
+    blueprint_id: str
+    user_id: str | None = None
+    source_simulado_blueprint_id: str
+    source_question_slot_id: str
+    readiness_state: str = "needs_review"
+    format_type: str = "unknown"
+    board_id: str | None = None
+    exam_family: str | None = None
+    target_subject_id: str
+    target_topic_id: str
+    target_subtopic_ids: list[str] = Field(default_factory=list)
+    difficulty_hint: str = "unknown"
+    cognitive_demand: str = "unknown"
+    question_kind: str = "review_prompt_placeholder"
+    style_hints: list[str] = Field(default_factory=list)
+    source_evidence: list[QuestionSourceEvidence] = Field(default_factory=list)
+    constraints: list[QuestionGenerationConstraint] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[QuestionGenerationWarning] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionGenerationBlueprintSet(BaseModel):
+    blueprint_set_id: str
+    user_id: str | None = None
+    source_simulado_blueprint_id: str
+    status: str = "no_slots"
+    readiness_state: str = "no_slots"
+    total_slots: int = 0
+    ready_slots: int = 0
+    blocked_slots: int = 0
+    needs_review_slots: int = 0
+    slot_blueprints: list[QuestionGenerationBlueprint] = Field(default_factory=list)
+    constraints: list[QuestionGenerationConstraint] = Field(default_factory=list)
+    warnings: list[QuestionGenerationWarning] = Field(default_factory=list)
+    no_question_text_generated: bool = True
+    no_alternatives_generated: bool = True
+    no_distractors_generated: bool = True
+    no_answer_key_generated: bool = True
+    no_explanations_generated: bool = True
+    build_method: str = "heuristic_question_generation_blueprint_builder"
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

@@ -25,6 +25,7 @@ from app.domain.models import (
     PedagogicalMemory,
     PedagogicalOutcome,
     ProgressState,
+    QuestionGenerationBlueprintSet,
     SimuladoBlueprint,
     SimuladoBlueprintState,
     StudyCyclePlan,
@@ -213,6 +214,18 @@ class UserScopedStudyRepository:
     def get_simulado_blueprint_by_id(self, blueprint_id: str) -> SimuladoBlueprint | None:
         return self._repository.get_simulado_blueprint_by_id(blueprint_id, user_id=self.user_id)
 
+    def save_question_generation_blueprint(self, blueprint_set: QuestionGenerationBlueprintSet) -> None:
+        self._repository.save_question_generation_blueprint(blueprint_set, user_id=self.user_id)
+
+    def get_question_generation_blueprint(self, source_simulado_blueprint_id: str) -> QuestionGenerationBlueprintSet | None:
+        return self._repository.get_question_generation_blueprint(source_simulado_blueprint_id, user_id=self.user_id)
+
+    def list_user_question_generation_blueprints(self) -> list[QuestionGenerationBlueprintSet]:
+        return self._repository.list_user_question_generation_blueprints(user_id=self.user_id)
+
+    def get_question_generation_blueprint_by_id(self, blueprint_set_id: str) -> QuestionGenerationBlueprintSet | None:
+        return self._repository.get_question_generation_blueprint_by_id(blueprint_set_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -275,6 +288,9 @@ class JsonStudyRepository:
                 "states": {},
                 "results": {},
             },
+            "question_generation_blueprint": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -325,6 +341,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_blueprint"] = self._normalize_simulado_blueprint_payload(
                 user_state.get("simulado_blueprint")
+            )
+            user_state["question_generation_blueprint"] = self._normalize_question_generation_blueprint_payload(
+                user_state.get("question_generation_blueprint")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -412,6 +431,16 @@ class JsonStudyRepository:
                 normalized[key] = {}
         return normalized
 
+    def _normalize_question_generation_blueprint_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -496,6 +525,9 @@ class JsonStudyRepository:
         )
         state["simulado_blueprint"] = self._normalize_simulado_blueprint_payload(
             state.get("simulado_blueprint")
+        )
+        state["question_generation_blueprint"] = self._normalize_question_generation_blueprint_payload(
+            state.get("question_generation_blueprint")
         )
         return state
 
@@ -705,6 +737,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_blueprint_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_blueprint"]
+
+    def _question_generation_blueprint_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_question_generation_blueprint_payload({})
+        return self._ensure_user_state(payload, user_id)["question_generation_blueprint"]
 
     def save_document_pipeline_state(
         self,
@@ -1257,6 +1298,57 @@ class JsonStudyRepository:
     ) -> SimuladoBlueprint | None:
         for item in self.list_user_simulado_blueprints(user_id=user_id):
             if item.blueprint_id == blueprint_id:
+                return item
+        return None
+
+    def save_question_generation_blueprint(
+        self,
+        blueprint_set: QuestionGenerationBlueprintSet,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Question generation blueprint requires user ownership.")
+        payload = self._read()
+        container = self._question_generation_blueprint_container(payload, user_id)
+        container["results"][blueprint_set.source_simulado_blueprint_id] = blueprint_set.model_dump(mode="json")
+        self._write(payload)
+
+    def get_question_generation_blueprint(
+        self,
+        source_simulado_blueprint_id: str,
+        *,
+        user_id: str | None,
+    ) -> QuestionGenerationBlueprintSet | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._question_generation_blueprint_container(payload, user_id)["results"].get(source_simulado_blueprint_id)
+        if raw is None:
+            return None
+        return QuestionGenerationBlueprintSet.model_validate(raw)
+
+    def list_user_question_generation_blueprints(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[QuestionGenerationBlueprintSet]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._question_generation_blueprint_container(payload, user_id)["results"].values()
+        items = [QuestionGenerationBlueprintSet.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_simulado_blueprint_id)
+        return items
+
+    def get_question_generation_blueprint_by_id(
+        self,
+        blueprint_set_id: str,
+        *,
+        user_id: str | None,
+    ) -> QuestionGenerationBlueprintSet | None:
+        for item in self.list_user_question_generation_blueprints(user_id=user_id):
+            if item.blueprint_set_id == blueprint_set_id:
                 return item
         return None
 

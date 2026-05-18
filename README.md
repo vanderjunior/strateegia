@@ -25,6 +25,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `study cycle`
 -> `exam profile`
 -> `simulado blueprint`
+-> `question generation blueprint`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -49,6 +50,7 @@ Regras importantes desta cadeia:
 - fundacao de study cycle candidato
 - fundacao de exam profiles declarativos e candidate-based
 - fundacao de simulado blueprint candidate-based e read-only
+- fundacao de question generation blueprint source-grounded, candidate-based e planning-only
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
@@ -342,6 +344,34 @@ Regras importantes:
 - topicos com `ocr_required`, `missing_document_text` ou ambiguidade continuam bloqueados ou marcados para revisao
 - PSCPP/Praticagem preserva technical maritime hints e source-topic mapping como constraints, nao como geracao ativa
 
+## Fundacao de question generation blueprint
+
+Cada slot candidato do simulado agora pode ser mapeado para um artifact de planejamento source-grounded, user-scoped e review-friendly para uma futura etapa de draft.
+
+Capacidades atuais desta etapa:
+
+- mapeamento deterministico de slots do simulado para blueprints de geracao de questao
+- readiness conservador por slot como `ready_for_draft`, `needs_review`, `blocked_by_ocr`, `blocked_by_material_gap` e `blocked_by_insufficient_coverage`
+- source evidence bounded com referencias a `document_id`, `section_id` e `chunk_id` quando disponiveis
+- style hints declarativos a partir de exam profile e simulado blueprint
+- constraints explicitas para impedir geracao sem evidencia, com OCR pendente, com material faltante ou com formato/perfil ambiguos
+- persistencia user-scoped do conjunto de blueprints e leitura owner-only
+
+Endpoints atuais de question generation blueprint:
+
+- `POST /api/simulado-blueprint/{blueprint_id}/question-generation-blueprint/build`
+- `GET /api/simulado-blueprint/{blueprint_id}/question-generation-blueprint`
+- `GET /api/question-generation-blueprint/{question_generation_blueprint_id}`
+
+Regras importantes:
+
+- esta etapa produz planning artifacts apenas, nao questoes finais
+- nao gera `question_text`, `stem`, `statement`, alternativas, distratores, respostas, explicacoes ou gabarito
+- nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+- usa apenas artifacts ja persistidos como simulado blueprint, curriculum graph, chunks, secoes, alignment e exam profile
+- snippets continuam bounded e sanitizados, sem corpo bruto completo do documento nem caminhos absolutos
+- build e deterministico e user-scoped; leituras por `GET` nao constroem nem mutam nada
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -460,7 +490,7 @@ Outras notas de seguranca:
 - sem grafo curricular final/aprovado a partir do edital; o graph atual continua candidate-based e review-friendly
 - sem ativacao automatica do ciclo de estudos derivado do edital no runtime pedagogico
 - sem vetores, embeddings ou RAG
-- sem geracao final de questoes
+- question generation blueprint existe apenas como fundacao de planejamento; sem geracao final de questoes
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -506,10 +536,10 @@ Itens planejados, mas nao implementados nesta etapa:
 - refinamento e validacao do alinhamento bibliografico e da analise de coverage
 - evolucao do curriculum graph candidato para fluxo de revisao/aprovacao
 - evolucao do study cycle candidato sem ativacao automatica no runtime
-- pass de hardening/readiness de produto e servidor antes de geracao de questoes mais avancada
 - runtime edital-aware com topicos, pesos, exclusoes e fonte de coverage revisada
-- fundacao de question generation blueprint
-- fixtures de estabilizacao para question generation
+- fixtures de estabilizacao para question generation blueprint
+- fundacao de question draft generation
+- fixtures de estabilizacao para question draft generation
 - montagem futura de questoes de simulado a partir de blueprint
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito

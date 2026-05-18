@@ -38,6 +38,7 @@ from app.services.material_service import MaterialService
 from app.services.simulado_blueprint_builder import SimuladoBlueprintBuilderService
 from app.services.study_cycle_orchestrator import StudyCycleOrchestratorService
 from app.services.exam_profiles import ExamProfileService
+from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -114,6 +115,10 @@ def get_simulado_blueprint_builder_service(request: Request) -> SimuladoBlueprin
 
 def get_user_dashboard_service(request: Request) -> UserDashboardService:
     return UserDashboardService(get_repository(request))
+
+
+def get_question_generation_blueprint_service(request: Request) -> QuestionGenerationBlueprintService:
+    return QuestionGenerationBlueprintService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -695,6 +700,48 @@ def get_simulado_blueprint_by_id(blueprint_id: str, request: Request):
     result = get_repository(request).get_simulado_blueprint_by_id(blueprint_id, user_id=user_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    return result
+
+
+@router.post("/simulado-blueprint/{blueprint_id}/question-generation-blueprint/build")
+def build_question_generation_blueprint(blueprint_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    blueprint = get_repository(request).get_simulado_blueprint_by_id(blueprint_id, user_id=user_id)
+    if blueprint is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    result = get_question_generation_blueprint_service(request).build_blueprint_set(
+        blueprint_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Question generation blueprint could not be built.")
+    return result
+
+
+@router.get("/simulado-blueprint/{blueprint_id}/question-generation-blueprint")
+def get_question_generation_blueprint_for_simulado(blueprint_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    blueprint = get_repository(request).get_simulado_blueprint_by_id(blueprint_id, user_id=user_id)
+    if blueprint is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    result = get_question_generation_blueprint_service(request).get_blueprint_set(
+        blueprint_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Question generation blueprint not found.")
+    return result
+
+
+@router.get("/question-generation-blueprint/{question_generation_blueprint_id}")
+def get_question_generation_blueprint_by_id(question_generation_blueprint_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_question_generation_blueprint_service(request).get_blueprint_set_by_id(
+        question_generation_blueprint_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Question generation blueprint not found.")
     return result
 
 
