@@ -25,6 +25,8 @@ from app.domain.models import (
     PedagogicalMemory,
     PedagogicalOutcome,
     ProgressState,
+    SimuladoBlueprint,
+    SimuladoBlueprintState,
     StudyCyclePlan,
     StudyCyclePlanState,
     DocumentPipelineEvent,
@@ -193,6 +195,24 @@ class UserScopedStudyRepository:
     def get_study_cycle_plan_by_id(self, cycle_id: str) -> StudyCyclePlan | None:
         return self._repository.get_study_cycle_plan_by_id(cycle_id, user_id=self.user_id)
 
+    def save_simulado_blueprint_state(self, state: SimuladoBlueprintState) -> None:
+        self._repository.save_simulado_blueprint_state(state, user_id=self.user_id)
+
+    def get_simulado_blueprint_state(self, cycle_id: str) -> SimuladoBlueprintState | None:
+        return self._repository.get_simulado_blueprint_state(cycle_id, user_id=self.user_id)
+
+    def save_simulado_blueprint(self, blueprint: SimuladoBlueprint) -> None:
+        self._repository.save_simulado_blueprint(blueprint, user_id=self.user_id)
+
+    def get_simulado_blueprint(self, cycle_id: str) -> SimuladoBlueprint | None:
+        return self._repository.get_simulado_blueprint(cycle_id, user_id=self.user_id)
+
+    def list_user_simulado_blueprints(self) -> list[SimuladoBlueprint]:
+        return self._repository.list_user_simulado_blueprints(user_id=self.user_id)
+
+    def get_simulado_blueprint_by_id(self, blueprint_id: str) -> SimuladoBlueprint | None:
+        return self._repository.get_simulado_blueprint_by_id(blueprint_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -251,6 +271,10 @@ class JsonStudyRepository:
                 "states": {},
                 "results": {},
             },
+            "simulado_blueprint": {
+                "states": {},
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -298,6 +322,9 @@ class JsonStudyRepository:
             )
             user_state["study_cycle"] = self._normalize_study_cycle_payload(
                 user_state.get("study_cycle")
+            )
+            user_state["simulado_blueprint"] = self._normalize_simulado_blueprint_payload(
+                user_state.get("simulado_blueprint")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -362,6 +389,18 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_study_cycle_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "states": {},
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("states", "results"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
+        return normalized
+
+    def _normalize_simulado_blueprint_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "states": {},
             "results": {},
@@ -454,6 +493,9 @@ class JsonStudyRepository:
         )
         state["study_cycle"] = self._normalize_study_cycle_payload(
             state.get("study_cycle")
+        )
+        state["simulado_blueprint"] = self._normalize_simulado_blueprint_payload(
+            state.get("simulado_blueprint")
         )
         return state
 
@@ -654,6 +696,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_study_cycle_payload({})
         return self._ensure_user_state(payload, user_id)["study_cycle"]
+
+    def _simulado_blueprint_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_blueprint_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_blueprint"]
 
     def save_document_pipeline_state(
         self,
@@ -1128,6 +1179,84 @@ class JsonStudyRepository:
     ) -> StudyCyclePlan | None:
         for item in self.list_user_study_cycle_plans(user_id=user_id):
             if item.cycle_id == cycle_id:
+                return item
+        return None
+
+    def save_simulado_blueprint_state(
+        self,
+        state: SimuladoBlueprintState,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado blueprint state requires user ownership.")
+        payload = self._read()
+        container = self._simulado_blueprint_container(payload, user_id)
+        container["states"][state.cycle_id] = state.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_blueprint_state(
+        self,
+        cycle_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoBlueprintState | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_blueprint_container(payload, user_id)["states"].get(cycle_id)
+        if raw is None:
+            return None
+        return SimuladoBlueprintState.model_validate(raw)
+
+    def save_simulado_blueprint(
+        self,
+        blueprint: SimuladoBlueprint,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado blueprint requires user ownership.")
+        payload = self._read()
+        container = self._simulado_blueprint_container(payload, user_id)
+        container["results"][blueprint.cycle_id] = blueprint.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_blueprint(
+        self,
+        cycle_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoBlueprint | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_blueprint_container(payload, user_id)["results"].get(cycle_id)
+        if raw is None:
+            return None
+        return SimuladoBlueprint.model_validate(raw)
+
+    def list_user_simulado_blueprints(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoBlueprint]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_blueprint_container(payload, user_id)["results"].values()
+        items = [SimuladoBlueprint.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.cycle_id)
+        return items
+
+    def get_simulado_blueprint_by_id(
+        self,
+        blueprint_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoBlueprint | None:
+        for item in self.list_user_simulado_blueprints(user_id=user_id):
+            if item.blueprint_id == blueprint_id:
                 return item
         return None
 

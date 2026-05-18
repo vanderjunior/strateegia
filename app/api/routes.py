@@ -35,6 +35,7 @@ from app.services.pipeline import StudyPipeline
 from app.services.reviews import ReviewService
 from app.services.session_flow import SessionManager
 from app.services.material_service import MaterialService
+from app.services.simulado_blueprint_builder import SimuladoBlueprintBuilderService
 from app.services.study_cycle_orchestrator import StudyCycleOrchestratorService
 from app.services.exam_profiles import ExamProfileService
 from app.services.snapshot_offline_io import export_inspection_snapshot
@@ -104,6 +105,10 @@ def get_study_cycle_orchestrator_service(request: Request) -> StudyCycleOrchestr
 
 def get_exam_profile_service(request: Request) -> ExamProfileService:
     return ExamProfileService(get_repository(request))
+
+
+def get_simulado_blueprint_builder_service(request: Request) -> SimuladoBlueprintBuilderService:
+    return SimuladoBlueprintBuilderService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -638,6 +643,53 @@ def get_study_cycle_by_id(cycle_id: str, request: Request):
     result = get_repository(request).get_study_cycle_plan_by_id(cycle_id, user_id=user_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Study cycle plan not found.")
+    return result
+
+
+@router.post("/study-cycle/{cycle_id}/simulado-blueprint/build")
+def build_simulado_blueprint(
+    cycle_id: str,
+    request: Request,
+    payload: dict[str, object] = Body(default_factory=dict),
+):
+    user_id = _require_authenticated_user_id(request)
+    cycle = get_repository(request).get_study_cycle_plan_by_id(cycle_id, user_id=user_id)
+    if cycle is None:
+        raise HTTPException(status_code=404, detail="Study cycle plan not found.")
+    profile_id = payload.get("profile_id")
+    if profile_id is not None:
+        profile_id = str(profile_id)
+    state = get_simulado_blueprint_builder_service(request).build_blueprint(
+        cycle_id,
+        user_id=user_id,
+        profile_id=profile_id,
+    )
+    if state is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint could not be built.")
+    result = get_repository(request).get_simulado_blueprint(cycle_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    return result
+
+
+@router.get("/study-cycle/{cycle_id}/simulado-blueprint")
+def get_simulado_blueprint_for_cycle(cycle_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    cycle = get_repository(request).get_study_cycle_plan_by_id(cycle_id, user_id=user_id)
+    if cycle is None:
+        raise HTTPException(status_code=404, detail="Study cycle plan not found.")
+    result = get_repository(request).get_simulado_blueprint(cycle_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    return result
+
+
+@router.get("/simulado-blueprint/{blueprint_id}")
+def get_simulado_blueprint_by_id(blueprint_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_repository(request).get_simulado_blueprint_by_id(blueprint_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
     return result
 
 

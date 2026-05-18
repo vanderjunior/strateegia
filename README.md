@@ -269,6 +269,34 @@ Regras importantes:
 - contagem de questoes, tempo e scoring continuam dependentes do edital real
 - a sugestao por edital pode exigir revisao manual em casos ambiguos
 
+## Fundacao dos simulados
+
+O app agora consegue gerar um simulado candidato em formato de blueprint, usando study cycle, curriculum graph e exam profile como entradas declarativas, sem gerar questoes finais e sem ativar qualquer comportamento de runtime.
+
+Capacidades atuais desta etapa:
+
+- resolucao conservadora de formato, timing e scoring do simulado
+- sections candidatas como `true_false_block`, `multiple_choice_block`, `technical_maritime_block` e `discursive_hint`
+- question slots candidatos com topic/subtopic target, readiness state e generation hints
+- distribution plan, coverage plan, readiness profile e generation constraints
+- warnings e rationale auditaveis para revisao manual
+- persistencia user-scoped de estado e resultado do blueprint
+
+Endpoints atuais de simulado blueprint:
+
+- `POST /api/study-cycle/{cycle_id}/simulado-blueprint/build`
+- `GET /api/study-cycle/{cycle_id}/simulado-blueprint`
+- `GET /api/simulado-blueprint/{blueprint_id}`
+
+Regras importantes:
+
+- o blueprint continua candidate-based e `ready_for_review`
+- esta etapa nao gera pergunta final, alternativa, resposta, distrator, explicacao ou gabarito
+- ela nao ativa agenda de prova nem altera study cycle, ranking, sessao ou scheduler
+- negative marking so entra como confirmado quando o edital/profile suggestion trouxer evidencia explicita
+- topicos com `ocr_required`, `missing_document_text` ou ambiguidade continuam bloqueados ou marcados para revisao
+- PSCPP/Praticagem preserva technical maritime hints e source-topic mapping como constraints, nao como geracao ativa
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:

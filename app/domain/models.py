@@ -2294,6 +2294,181 @@ class ExamProfileSelectionCandidate(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class SimuladoSectionBlueprint(BaseModel):
+    section_id: str
+    section_title: str
+    section_type: str = "unknown"
+    order_index: int = 0
+    target_subject_ids: list[str] = Field(default_factory=list)
+    target_topic_ids: list[str] = Field(default_factory=list)
+    planned_question_count: int = 0
+    format_type: str = "unknown"
+    timing_minutes: int = 0
+    scoring_notes: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoQuestionSlot(BaseModel):
+    slot_id: str
+    section_id: str
+    order_index: int = 0
+    target_subject_id: str
+    target_topic_id: str
+    target_subtopic_ids: list[str] = Field(default_factory=list)
+    format_type: str = "unknown"
+    cognitive_demand: str = "unknown"
+    difficulty_hint: str = "unknown"
+    generation_style: str = "unknown"
+    source_evidence_ids: list[str] = Field(default_factory=list)
+    required_coverage_state: str = "uncovered"
+    blocked_by_gap_ids: list[str] = Field(default_factory=list)
+    readiness_state: str = "needs_review"
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoDistributionPlan(BaseModel):
+    total_question_count: int = 0
+    question_count_source: str = "insufficient_evidence"
+    section_distribution: dict[str, int] = Field(default_factory=dict)
+    subject_distribution: dict[str, int] = Field(default_factory=dict)
+    topic_distribution: dict[str, int] = Field(default_factory=dict)
+    weak_topic_allocation: list[str] = Field(default_factory=list)
+    gap_exclusions: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoTimingPlan(BaseModel):
+    total_duration_minutes: int = 0
+    duration_source: str = "unknown"
+    estimated_minutes_per_question: float = 0.0
+    timing_pressure: str = "unknown"
+    section_timing: dict[str, int] = Field(default_factory=dict)
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoScoringPlan(BaseModel):
+    scoring_type: str = "unknown"
+    negative_marking: bool = False
+    scoring_source: str = "unknown"
+    correct_value: float | None = None
+    wrong_value: float | None = None
+    blank_value: float | None = None
+    double_mark_value: float | None = None
+    section_scoring: dict[str, dict[str, object]] = Field(default_factory=dict)
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoCoveragePlan(BaseModel):
+    covered_topic_slots: int = 0
+    partially_covered_topic_slots: int = 0
+    weak_topic_slots: int = 0
+    uncovered_topic_slots: int = 0
+    ocr_blocked_slots: int = 0
+    ambiguous_slots: int = 0
+    excluded_gap_ids: list[str] = Field(default_factory=list)
+    readiness_summary: str = ""
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoReadinessProfile(BaseModel):
+    readiness_state: str = "blueprint_not_ready"
+    ready_slot_count: int = 0
+    blocked_slot_count: int = 0
+    review_needed_slot_count: int = 0
+    ocr_blocked_count: int = 0
+    material_gap_count: int = 0
+    ambiguity_count: int = 0
+    warnings_count: int = 0
+    confidence: float = 0.0
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoGenerationConstraint(BaseModel):
+    constraint_id: str
+    constraint_type: str
+    target_id: str | None = None
+    description: str
+    severity: str = "warning"
+    reasoning: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoBlueprintWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "info"
+    target_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoBlueprintRationale(BaseModel):
+    summary: str = ""
+    priorities: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    source_graph_id: str
+    source_cycle_id: str
+    source_exam_profile_id: str | None = None
+    confidence: float = 0.0
+    reasoning: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoBlueprint(BaseModel):
+    blueprint_id: str
+    graph_id: str
+    cycle_id: str
+    exam_profile_id: str | None = None
+    user_id: str | None = None
+    exam_board: str | None = None
+    exam_family: str | None = None
+    format_type: str = "unknown"
+    sections: list[SimuladoSectionBlueprint] = Field(default_factory=list)
+    question_slots: list[SimuladoQuestionSlot] = Field(default_factory=list)
+    distribution_plan: SimuladoDistributionPlan = Field(default_factory=SimuladoDistributionPlan)
+    timing_plan: SimuladoTimingPlan = Field(default_factory=SimuladoTimingPlan)
+    scoring_plan: SimuladoScoringPlan = Field(default_factory=SimuladoScoringPlan)
+    coverage_plan: SimuladoCoveragePlan = Field(default_factory=SimuladoCoveragePlan)
+    readiness_profile: SimuladoReadinessProfile = Field(default_factory=SimuladoReadinessProfile)
+    generation_constraints: list[SimuladoGenerationConstraint] = Field(default_factory=list)
+    warnings: list[SimuladoBlueprintWarning] = Field(default_factory=list)
+    rationale: SimuladoBlueprintRationale
+    build_method: str = "heuristic_simulado_blueprint_builder"
+    blueprint_version: str = "simulado-blueprint-v1"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoBlueprintState(BaseModel):
+    blueprint_id: str
+    graph_id: str
+    cycle_id: str
+    exam_profile_id: str | None = None
+    user_id: str | None = None
+    current_stage: str = "pending"
+    status: str = "pending"
+    section_count: int = 0
+    question_slot_count: int = 0
+    coverage_gap_count: int = 0
+    readiness_state: str = "blueprint_not_ready"
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    blueprint_version: str = "simulado-blueprint-v1"
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
