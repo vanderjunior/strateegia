@@ -12,6 +12,28 @@ Aplicacao web de estudos com runtime pedagogico deterministico, sessoes adaptati
 - mantem fundacoes deterministicas para fluxo edital-aware: ingestao candidata de edital, alinhamento bibliografico, curriculum graph, study cycle, exam profiles e simulado blueprint
 - oferece um dashboard minimo de estudo, read-only e user-scoped, para o usuario acompanhar o estado da pipeline
 
+## Cadeia atual da pipeline
+
+Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candidatas e review-friendly:
+
+`upload/material`
+-> `document pipeline`
+-> `OCR optional fallback`
+-> `edital ingestion`
+-> `bibliography alignment`
+-> `curriculum graph`
+-> `study cycle`
+-> `exam profile`
+-> `simulado blueprint`
+-> `dashboard`
+
+Regras importantes desta cadeia:
+
+- continua textual-PDF-first
+- OCR e opcional, bounded e desabilitado por padrao
+- etapas edital-aware continuam candidate-based e nao sao autoridade final de runtime
+- dashboard e apenas superficie de overview, nao um executor de acoes
+
 ## Capacidades atuais
 
 - sessoes adaptativas com revisao cumulativa
@@ -128,8 +150,10 @@ Regras importantes:
 - cada usuario so pode processar e ler os proprios documentos
 - OCR e desabilitado por padrao
 - OCR depende de engine externa, como Tesseract, quando configurado
+- a aplicacao continua funcionando sem Tesseract instalado
 - OCR respeita limite de paginas e DPI
 - OCR nao roda no upload, dashboard ou endpoints GET
+- OCR nao roda em `/inspection` nem em `/api/inspection/runtime`
 - OCR nao roda antes da extracao textual normal do PDF
 - o pipeline atual nao faz parsing de edital
 - o pipeline atual nao cria embeddings, vetores ou busca semantica
@@ -476,14 +500,17 @@ docs/
 
 Itens planejados, mas nao implementados nesta etapa:
 
-- OCR stabilization fixtures e smoke HTTP especifico do fluxo OCR
 - pipeline robusto de PDF com OCR, layout parsing, chunking e secoes mais fortes
 - OCR futuro para livros e materiais escaneados, inclusive casos de praticagem
 - estabilizacao e validacao mais forte da extracao de edital
 - refinamento e validacao do alinhamento bibliografico e da analise de coverage
 - evolucao do curriculum graph candidato para fluxo de revisao/aprovacao
 - evolucao do study cycle candidato sem ativacao automatica no runtime
+- pass de hardening/readiness de produto e servidor antes de geracao de questoes mais avancada
 - runtime edital-aware com topicos, pesos, exclusoes e fonte de coverage revisada
+- fundacao de question generation blueprint
+- fixtures de estabilizacao para question generation
+- montagem futura de questoes de simulado a partir de blueprint
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito
 - execucao e correcao futura de simulados
