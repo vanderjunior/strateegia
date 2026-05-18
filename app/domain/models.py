@@ -1515,6 +1515,35 @@ class PdfTextExtractionResult(BaseModel):
     extraction_status: str = DocumentIngestionStatus.PENDING_EXTRACTION.value
 
 
+class OcrPageResult(BaseModel):
+    page_index: int = 0
+    text: str | None = None
+    confidence: float = 0.0
+    status: str = "ocr_required"
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class OcrExtractionResult(BaseModel):
+    text: str | None = None
+    page_count: int = 0
+    pages_attempted: int = 0
+    pages_succeeded: int = 0
+    pages_failed: int = 0
+    requires_ocr: bool = True
+    ocr_attempted: bool = False
+    ocr_available: bool = False
+    ocr_enabled: bool = False
+    ocr_engine: str = "tesseract"
+    ocr_language: str = "por+eng"
+    extraction_method: str = "ocr_unavailable"
+    extraction_status: str = "ocr_required"
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[DocumentProcessingError] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class EditalExtractionWarning(BaseModel):
     code: str
     message: str

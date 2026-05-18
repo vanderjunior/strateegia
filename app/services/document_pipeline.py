@@ -15,6 +15,7 @@ from app.domain.models import (
     utc_now,
 )
 from app.repositories.json_store import JsonStudyRepository
+from app.services.ocr_adapter import extract_text_with_ocr
 from app.services.pdf_text_extraction import extract_text_from_pdf
 
 
@@ -230,15 +231,63 @@ class DocumentPipelineService:
                 requires_ocr=pdf_result.requires_ocr,
             )
         if pdf_result.requires_ocr:
+            ocr_result = extract_text_with_ocr(file_path)
+            if ocr_result.text and bool(ocr_result.metadata.get("ocr_text_useful")):
+                return self._finalize_text_processing(
+                    material,
+                    base_state,
+                    text=ocr_result.text,
+                    extraction_method=ocr_result.extraction_method,
+                    page_count=ocr_result.page_count,
+                    pages_extracted=ocr_result.pages_succeeded,
+                    warnings=ocr_result.warnings,
+                    events=events,
+                    user_id=user_id,
+                    requires_ocr=False,
+                    extraction_status=ocr_result.extraction_status,
+                    extraction_metadata={
+                        "ocr_required": False,
+                        "ocr_attempted": ocr_result.ocr_attempted,
+                        "ocr_available": ocr_result.ocr_available,
+                        "ocr_enabled": ocr_result.ocr_enabled,
+                        "ocr_engine": ocr_result.ocr_engine,
+                        "ocr_language": ocr_result.ocr_language,
+                        "ocr_pages_attempted": ocr_result.pages_attempted,
+                        "ocr_pages_succeeded": ocr_result.pages_succeeded,
+                        "ocr_pages_failed": ocr_result.pages_failed,
+                        "ocr_warnings": ocr_result.warnings,
+                        "ocr_text_useful": bool(ocr_result.metadata.get("ocr_text_useful")),
+                        "ocr_usefulness_threshold": ocr_result.metadata.get("ocr_usefulness_threshold", {}),
+                    },
+                )
             return self._finalize_pdf_pending(
                 material,
                 base_state,
                 events=events,
                 user_id=user_id,
-                extraction_method=pdf_result.extraction_method,
+                extraction_method=(
+                    ocr_result.extraction_method
+                    if ocr_result.ocr_attempted and ocr_result.extraction_method
+                    else pdf_result.extraction_method
+                ),
                 page_count=pdf_result.page_count,
-                pages_extracted=pdf_result.pages_extracted,
-                warnings=pdf_result.warnings,
+                pages_extracted=max(pdf_result.pages_extracted, ocr_result.pages_succeeded),
+                warnings=self._merge_warning_codes(pdf_result.warnings, ocr_result.warnings),
+                extraction_status=ocr_result.extraction_status,
+                metadata_updates={
+                    "ocr_required": True,
+                    "ocr_attempted": ocr_result.ocr_attempted,
+                    "ocr_available": ocr_result.ocr_available,
+                    "ocr_enabled": ocr_result.ocr_enabled,
+                    "ocr_engine": ocr_result.ocr_engine,
+                    "ocr_language": ocr_result.ocr_language,
+                    "ocr_pages_attempted": ocr_result.pages_attempted,
+                    "ocr_pages_succeeded": ocr_result.pages_succeeded,
+                    "ocr_pages_failed": ocr_result.pages_failed,
+                    "ocr_warnings": ocr_result.warnings,
+                    "ocr_text_useful": bool(ocr_result.metadata.get("ocr_text_useful")),
+                    "ocr_usefulness_threshold": ocr_result.metadata.get("ocr_usefulness_threshold", {}),
+                },
             )
         error = pdf_result.errors[0] if pdf_result.errors else DocumentProcessingError(
             code="pdf_text_extraction_failed",
@@ -273,6 +322,8 @@ class DocumentPipelineService:
         events: list[DocumentPipelineEvent],
         user_id: str | None,
         requires_ocr: bool,
+        extraction_status: str = DocumentIngestionStatus.EXTRACTED.value,
+        extraction_metadata: dict[str, object] | None = None,
     ) -> DocumentPipelineState:
         document_id = material.metadata.document_id
         created_at = base_state.created_at
@@ -300,7 +351,7 @@ class DocumentPipelineService:
             text_length=len(text),
             page_count=page_count,
             extraction_method=extraction_method,
-            extraction_status=DocumentIngestionStatus.EXTRACTED.value,
+            extraction_status=extraction_status,
             warnings=warnings,
             errors=[],
             metadata={
@@ -309,6 +360,7 @@ class DocumentPipelineService:
                 "pipeline_version": PIPELINE_VERSION,
                 "pages_extracted": pages_extracted,
                 "requires_ocr": requires_ocr,
+                **(extraction_metadata or {}),
             },
         )
         stages_completed = [
@@ -405,6 +457,8 @@ class DocumentPipelineService:
         page_count: int = 0,
         pages_extracted: int = 0,
         warnings: list[str] | None = None,
+        extraction_status: str = DocumentIngestionStatus.PENDING_EXTRACTION.value,
+        metadata_updates: dict[str, object] | None = None,
     ) -> DocumentPipelineState:
         extraction = DocumentExtractionResult(
             document_id=material.metadata.document_id,
@@ -414,7 +468,7 @@ class DocumentPipelineService:
             text_length=0,
             page_count=page_count,
             extraction_method=extraction_method,
-            extraction_status=DocumentIngestionStatus.PENDING_EXTRACTION.value,
+            extraction_status=extraction_status,
             warnings=warnings or ["pdf_text_empty", "ocr_required"],
             errors=[],
             metadata={
@@ -423,6 +477,7 @@ class DocumentPipelineService:
                 "pipeline_version": PIPELINE_VERSION,
                 "pages_extracted": pages_extracted,
                 "requires_ocr": True,
+                **(metadata_updates or {}),
             },
         )
         state = base_state.model_copy(
@@ -463,6 +518,7 @@ class DocumentPipelineService:
                 "requires_ocr": True,
                 "extraction_method": extraction_method,
                 "processing_warnings": warnings or ["pdf_text_empty", "ocr_required"],
+                **(metadata_updates or {}),
             },
             error_message=None,
         )
@@ -572,6 +628,14 @@ class DocumentPipelineService:
     ) -> None:
         for event in events:
             self.repository.append_document_pipeline_event(event, user_id=user_id)
+
+    def _merge_warning_codes(self, *warning_lists: list[str]) -> list[str]:
+        merged: list[str] = []
+        for warnings in warning_lists:
+            for item in warnings:
+                if item not in merged:
+                    merged.append(item)
+        return merged
 
     def _build_sections(
         self,

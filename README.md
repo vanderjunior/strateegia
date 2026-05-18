@@ -75,13 +75,13 @@ Regras atuais:
 - salva o arquivo em pasta por usuario
 - para `TXT` e `MD`, faz extracao simples de texto
 - para `PDF` textual simples, tenta extracao basica de texto
-- para `PDF` escaneado ou sem texto utilizavel, registra `pending_extraction` com indicacao de OCR futuro
+- para `PDF` escaneado ou sem texto utilizavel, registra `pending_extraction` com indicacao de OCR-required; quando OCR estiver explicitamente habilitado e as dependencias estiverem disponiveis, o pipeline pode tentar OCR de forma limitada e segura
 
 Limitacoes importantes:
 
-- nao existe OCR ainda
-- a extracao de PDF ainda e basica e textual, sem OCR e sem layout parsing robusto
-- PDFs escaneados ou sem texto utilizavel continuam aguardando OCR futuro
+- OCR existe apenas como foundation opcional e limitada, desabilitada por padrao e dependente de engine externa
+- a extracao de PDF ainda e basica e textual, com OCR apenas como fallback opcional e sem layout parsing robusto
+- PDFs escaneados ou sem texto utilizavel continuam OCR-required quando OCR estiver desabilitado, indisponivel ou insuficiente
 - a ingestao edital-aware existe como fundacao candidata e deterministica, mas ainda nao e uma extracao final/validada
 - upload, processamento documental e ingestao de edital continuam sendo etapas separadas
 
@@ -96,9 +96,10 @@ Capacidades atuais desta etapa:
 - `TXT`: extracao simples de texto
 - `MD`: extracao simples de texto com deteccao basica de headings `#`, `##` e `###`
 - `PDF` textual: extracao basica de texto com adapter leve e reaproveitamento do chunking/sectioning atual
+- OCR Adapter Foundation opcional para PDFs sem texto embutido utilizavel
 - chunking deterministico por texto/paragrafos para `TXT` e `MD`
 - sectioning simples para `TXT`, `MD` e `PDF` textual com fallback `Document`
-- `PDF` escaneado/sem texto: registro em estado `pending_extraction` com `ocr_required`
+- `PDF` escaneado/sem texto: registro em estado `pending_extraction` com `ocr_required`; quando OCR estiver habilitado e disponivel, o pipeline pode tentar OCR antes de manter o fallback seguro
 - persistencia JSON de estado, extracao, chunks, secoes e eventos de pipeline
 
 Estagios atuais do pipeline:
@@ -125,7 +126,11 @@ Regras importantes:
 
 - esses endpoints exigem autenticacao
 - cada usuario so pode processar e ler os proprios documentos
-- o pipeline atual nao executa OCR
+- OCR e desabilitado por padrao
+- OCR depende de engine externa, como Tesseract, quando configurado
+- OCR respeita limite de paginas e DPI
+- OCR nao roda no upload, dashboard ou endpoints GET
+- OCR nao roda antes da extracao textual normal do PDF
 - o pipeline atual nao faz parsing de edital
 - o pipeline atual nao cria embeddings, vetores ou busca semantica
 - `storage_path` em respostas continua relativo e seguro
@@ -133,7 +138,9 @@ Regras importantes:
 Comportamento atual para PDFs:
 
 - PDF textual simples: extrai texto, cria chunks deterministas, cria secao fallback e conclui em `metadata_ready`
-- PDF sem texto utilizavel ou escaneado: permanece em `extraction_pending` com warnings como `pdf_text_empty` e `ocr_required`
+- PDF sem texto utilizavel ou escaneado: primeiro permanece em `extraction_pending` com warnings como `pdf_text_empty` e `ocr_required`; quando OCR estiver habilitado e disponivel, o pipeline pode tentar OCR de forma limitada
+- OCR util: reaproveita o chunking e o sectioning existentes sem criar uma pipeline paralela
+- OCR vazio, insuficiente, indisponivel ou com falha: preserva o fallback seguro de `ocr_required` ou estado conservador equivalente
 - PDF invalido ou malformado: falha de forma segura e observavel, sem vazar caminhos absolutos
 
 ## Fundacao de ingestao de edital
@@ -340,7 +347,7 @@ Regras importantes:
 - ele nao chama, encapsula ou reaproveita `/api/inspection/runtime`
 - ele nao expõe payload bruto de runtime/debug nem dados cientificos internos
 - ele nao mostra caminhos absolutos, `password_hash`, texto bruto extraido, chunks ou paginas
-- ele nao executa OCR, nao gera questoes e nao executa simulados
+- ele nao dispara OCR, nao gera questoes e nao executa simulados
 - ele nao altera study cycle, ranking, sessao, scheduler ou runtime pedagogico
 - o resumo do dashboard e deterministico e template-based, sem chamada a LLM
 - o console `/inspection` continua separado para tooling interno
@@ -421,7 +428,8 @@ Outras notas de seguranca:
 
 ## Limitações atuais
 
-- sem OCR
+- OCR existe apenas como foundation opcional e limitada; desabilitado por padrao e dependente de engine externa
+- sem pipeline robusto de OCR para livros escaneados, layout parsing, tabelas ou correcao semantica
 - sem extracao robusta de PDF com layout parsing forte
 - sem extracao final/validada de edital
 - sem alinhamento bibliografico final/validado do edital
@@ -468,6 +476,7 @@ docs/
 
 Itens planejados, mas nao implementados nesta etapa:
 
+- OCR stabilization fixtures e smoke HTTP especifico do fluxo OCR
 - pipeline robusto de PDF com OCR, layout parsing, chunking e secoes mais fortes
 - OCR futuro para livros e materiais escaneados, inclusive casos de praticagem
 - estabilizacao e validacao mais forte da extracao de edital
