@@ -8,8 +8,9 @@ Aplicacao web de estudos com runtime pedagogico deterministico, sessoes adaptati
 - acompanha microtopicos, erros, cumulatividade e revisao
 - mantem observabilidade longitudinal e agregada de retencao
 - expõe console interno de inspecao e ferramental cientifico offline
-- permite upload inicial de materiais por usuario
-- prepara a base para futura ingestao robusta de PDF e fluxo edital-aware
+- permite upload e processamento inicial de materiais por usuario
+- mantem fundacoes deterministicas para fluxo edital-aware: ingestao candidata de edital, alinhamento bibliografico, curriculum graph, study cycle, exam profiles e simulado blueprint
+- oferece um dashboard minimo de estudo, read-only e user-scoped, para o usuario acompanhar o estado da pipeline
 
 ## Capacidades atuais
 
@@ -19,7 +20,14 @@ Aplicacao web de estudos com runtime pedagogico deterministico, sessoes adaptati
 - export/import de snapshots e comparacao offline
 - fundacao de usuarios, login local e progresso isolado por usuario
 - fundacao de upload seguro para `PDF`, `TXT` e `Markdown`
-- dashboard minimo de estudo, read-only e user-scoped
+- fundacao de pipeline documental user-scoped com extracao `TXT`/`MD`, PDF textual basico e fallback `ocr_required`
+- fundacao de ingestao de edital candidata, deterministica e review-friendly
+- fundacao de alinhamento bibliografico e coverage candidata
+- fundacao de curriculum graph candidato
+- fundacao de study cycle candidato
+- fundacao de exam profiles declarativos e candidate-based
+- fundacao de simulado blueprint candidate-based e read-only
+- dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
 
@@ -72,8 +80,10 @@ Regras atuais:
 Limitacoes importantes:
 
 - nao existe OCR ainda
-- nao existe pipeline robusto de extracao de PDF ainda
-- nao existe extracao edital-aware ainda
+- a extracao de PDF ainda e basica e textual, sem OCR e sem layout parsing robusto
+- PDFs escaneados ou sem texto utilizavel continuam aguardando OCR futuro
+- a ingestao edital-aware existe como fundacao candidata e deterministica, mas ainda nao e uma extracao final/validada
+- upload, processamento documental e ingestao de edital continuam sendo etapas separadas
 
 O endpoint legado `POST /api/documents/upload` foi preservado para o prototipo atual e para os testes existentes do pipeline PDF processado.
 
@@ -231,7 +241,7 @@ Endpoints atuais do study cycle:
 Regras importantes:
 
 - o plano continua candidate-based e `ready_for_review`
-- ele nao ativa scheduling no runtime
+- ele nao ativa scheduling no runtime nem substitui automaticamente o plano pedagogico vivo
 - ele nao cria calendario, scheduler de revisao ou simulados
 - ele nao substitui `CurriculumScheduler` nem `LearningDecisionEngine`
 - topicos ambiguos ou bloqueados continuam sinalizados para revisao manual
@@ -323,11 +333,16 @@ O que o dashboard mostra hoje:
 
 Regras importantes:
 
+- `/dashboard` e a superficie product-facing autenticada e user-scoped
+- `/api/dashboard/overview` e a API read-only de overview do dashboard
 - o dashboard e read-only e nao aciona processamento, ingestao, alignment ou builders
-- ele nao chama `/api/inspection/runtime` e nao expõe payload bruto de debug
+- ele usa pending actions e `primary_next_step` apenas como orientacao visual, sem disparar qualquer acao
+- ele nao chama, encapsula ou reaproveita `/api/inspection/runtime`
+- ele nao expõe payload bruto de runtime/debug nem dados cientificos internos
 - ele nao mostra caminhos absolutos, `password_hash`, texto bruto extraido, chunks ou paginas
 - ele nao executa OCR, nao gera questoes e nao executa simulados
 - ele nao altera study cycle, ranking, sessao, scheduler ou runtime pedagogico
+- o resumo do dashboard e deterministico e template-based, sem chamada a LLM
 - o console `/inspection` continua separado para tooling interno
 
 ## Usuarios e persistencia
@@ -342,6 +357,11 @@ A fundacao atual inclui:
 
 Quando nao ha usuario autenticado, o app continua operando no modo legado single-user para preservar compatibilidade do prototipo e do runtime atual.
 
+Observacao:
+
+- o modo legado single-user existe para preservar compatibilidade do prototipo e do runtime atual
+- o dashboard de estudo e as APIs user-scoped novas exigem autenticacao e retornam apenas dados do usuario autenticado
+
 ## Inspection e seguranca
 
 Rotas internas que expõem dados sensiveis de runtime e debug. Elas devem ser tratadas como tooling `internal`/debug:
@@ -349,6 +369,13 @@ Rotas internas que expõem dados sensiveis de runtime e debug. Elas devem ser tr
 - `/inspection`
 - `/api/inspection/runtime`
 - `/api/inspection/runtime/export`
+
+Separacao de superficies:
+
+- `/inspection` e tooling interno, cientifico e de debug
+- `/dashboard` e a superficie de produto para o usuario autenticado
+- `/dashboard` nao reutiliza payload bruto de inspection
+- `/api/inspection/runtime` permanece interno e deve ser protegido em producao
 
 Essas rotas sao internas e read-only, mas **devem ser protegidas antes de qualquer deploy em producao**. Hoje elas continuam acessiveis em dev/test para preservar o ferramental cientifico existente.
 
@@ -395,17 +422,33 @@ Outras notas de seguranca:
 ## Limitações atuais
 
 - sem OCR
-- sem extracao robusta de PDF
+- sem extracao robusta de PDF com layout parsing forte
 - sem extracao final/validada de edital
 - sem alinhamento bibliografico final/validado do edital
-- sem grafo curricular final a partir do edital
-- sem ciclo de estudos derivado do edital
+- sem grafo curricular final/aprovado a partir do edital; o graph atual continua candidate-based e review-friendly
+- sem ativacao automatica do ciclo de estudos derivado do edital no runtime pedagogico
 - sem vetores, embeddings ou RAG
-- sem geracao final de simulados, questoes, alternativas ou gabarito
+- sem geracao final de questoes
+- sem alternativas, distratores, respostas, explicacoes ou gabarito
+- sem execucao/correcao de simulados
+- sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
 - sem dashboard mutavel ou com acoes de build
 - sem scheduler avancado de revisao
 - sem banco SQL
 - sem hardening completo de producao para auth e rotas internas
+
+## Direcao de produto
+
+A aplicacao caminha para um fluxo de estudos edital-aware em que o usuario:
+
+1. cria ou seleciona um objetivo de estudo, como PSCPP, Perito PF ou Receita Federal
+2. envia materiais, apostilas, livros e editais
+3. processa documentos e identifica lacunas de OCR/material
+4. ingere edital e alinha bibliografia contra os materiais
+5. gera curriculum graph e study cycle candidatos para revisao
+6. estuda por ciclos, com resumos, questoes e revisoes
+7. gera simulados conforme perfil de banca/prova
+8. revisa pontos fracos e, futuramente, gera um resumao pre-prova
 
 ## Estrutura
 
@@ -425,14 +468,16 @@ docs/
 
 Itens planejados, mas nao implementados nesta etapa:
 
-- pipeline robusto de PDF com OCR, chunking e secoes mais fortes
+- pipeline robusto de PDF com OCR, layout parsing, chunking e secoes mais fortes
 - OCR futuro para livros e materiais escaneados, inclusive casos de praticagem
-- estabilizacao de fixtures para extracao de edital
-- alinhamento bibliografico entre edital e materiais com fixtures de estabilizacao
-- grafo curricular a partir de candidatos extraidos do edital
-- runtime edital-aware com topicos, pesos e exclusoes
-- alinhamento bibliografico e analise de cobertura
-- grafo curricular e orquestrador de ciclos de estudo
-- perfis de banca e simulados
-- estabilizacao HTTP e refinamento do dashboard de progresso e retencao
+- estabilizacao e validacao mais forte da extracao de edital
+- refinamento e validacao do alinhamento bibliografico e da analise de coverage
+- evolucao do curriculum graph candidato para fluxo de revisao/aprovacao
+- evolucao do study cycle candidato sem ativacao automatica no runtime
+- runtime edital-aware com topicos, pesos, exclusoes e fonte de coverage revisada
+- geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
+- geracao futura de alternativas, distratores, respostas, explicacoes e gabarito
+- execucao e correcao futura de simulados
+- refinamento do dashboard de progresso, continuacao e retencao
+- resumao pre-prova baseado no material ja estudado
 - scheduler avancado de revisao
