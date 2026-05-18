@@ -50,6 +50,7 @@ from app.services.scientific_tooling_contracts import (
 from app.services.tuning_profile_benchmark_comparison import (
     compare_tuning_profiles_against_benchmark,
 )
+from app.services.user_dashboard import UserDashboardService
 from app.services.user_service import LocalUserService
 
 
@@ -109,6 +110,10 @@ def get_exam_profile_service(request: Request) -> ExamProfileService:
 
 def get_simulado_blueprint_builder_service(request: Request) -> SimuladoBlueprintBuilderService:
     return SimuladoBlueprintBuilderService(get_repository(request))
+
+
+def get_user_dashboard_service(request: Request) -> UserDashboardService:
+    return UserDashboardService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -691,6 +696,12 @@ def get_simulado_blueprint_by_id(blueprint_id: str, request: Request):
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
     return result
+
+
+@router.get("/dashboard/overview")
+def get_dashboard_overview(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    return get_user_dashboard_service(request).build_overview(user_id)
 
 
 @router.get("/exam-profiles")

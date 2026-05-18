@@ -19,6 +19,7 @@ Aplicacao web de estudos com runtime pedagogico deterministico, sessoes adaptati
 - export/import de snapshots e comparacao offline
 - fundacao de usuarios, login local e progresso isolado por usuario
 - fundacao de upload seguro para `PDF`, `TXT` e `Markdown`
+- dashboard minimo de estudo, read-only e user-scoped
 
 ## Como instalar
 
@@ -37,6 +38,9 @@ PYTHONPATH=./.python_packages /Users/vjr/.cache/codex-runtimes/codex-primary-run
 
 Aplicacao principal:
 - [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+
+Dashboard de estudo:
+- [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
 
 Console interno de inspection:
 - [http://127.0.0.1:8000/inspection](http://127.0.0.1:8000/inspection)
@@ -297,6 +301,35 @@ Regras importantes:
 - topicos com `ocr_required`, `missing_document_text` ou ambiguidade continuam bloqueados ou marcados para revisao
 - PSCPP/Praticagem preserva technical maritime hints e source-topic mapping como constraints, nao como geracao ativa
 
+## Dashboard minimo do usuario
+
+O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
+
+Rotas atuais do dashboard:
+
+- `GET /dashboard`
+- `GET /api/dashboard/overview`
+
+O que o dashboard mostra hoje:
+
+- identidade do usuario autenticado
+- resumo futuro-compativel de projeto ativo, quando disponivel
+- materiais enviados e pipeline de documentos
+- status de edital, alignment, curriculum graph, study cycle e exam profile
+- readiness do simulado blueprint
+- pending actions e `primary_next_step`
+- resumo descritivo de progresso e continuacao, quando houver dados seguros
+- JSON compacto do mesmo overview seguro
+
+Regras importantes:
+
+- o dashboard e read-only e nao aciona processamento, ingestao, alignment ou builders
+- ele nao chama `/api/inspection/runtime` e nao expõe payload bruto de debug
+- ele nao mostra caminhos absolutos, `password_hash`, texto bruto extraido, chunks ou paginas
+- ele nao executa OCR, nao gera questoes e nao executa simulados
+- ele nao altera study cycle, ranking, sessao, scheduler ou runtime pedagogico
+- o console `/inspection` continua separado para tooling interno
+
 ## Usuarios e persistencia
 
 A fundacao atual inclui:
@@ -368,8 +401,8 @@ Outras notas de seguranca:
 - sem grafo curricular final a partir do edital
 - sem ciclo de estudos derivado do edital
 - sem vetores, embeddings ou RAG
-- sem simulados
-- sem dashboard de produto
+- sem geracao final de simulados, questoes, alternativas ou gabarito
+- sem dashboard mutavel ou com acoes de build
 - sem scheduler avancado de revisao
 - sem banco SQL
 - sem hardening completo de producao para auth e rotas internas
@@ -401,5 +434,5 @@ Itens planejados, mas nao implementados nesta etapa:
 - alinhamento bibliografico e analise de cobertura
 - grafo curricular e orquestrador de ciclos de estudo
 - perfis de banca e simulados
-- dashboard de progresso e retencao
+- estabilizacao HTTP e refinamento do dashboard de progresso e retencao
 - scheduler avancado de revisao

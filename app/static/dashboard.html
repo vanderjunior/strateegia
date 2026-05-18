@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body>
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div>
+          <p class="eyebrow">StudyFlow AI</p>
+          <h1>Study Dashboard</h1>
+          <p id="dashboard-summary" class="summary-text">Loading your study overview...</p>
+        </div>
+        <div class="header-badges">
+          <span class="badge badge-muted">read-only</span>
+          <span id="user-label" class="badge badge-primary">authenticated user</span>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <article class="hero-card">
+          <h2>Primary Next Step</h2>
+          <div id="primary-next-step" class="empty-state">Loading next step...</div>
+        </article>
+        <article class="hero-card">
+          <h2>Progress and Continuation</h2>
+          <div id="continuation-summary" class="empty-state">Not enough data yet.</div>
+        </article>
+      </section>
+
+      <section>
+        <h2>Status Overview</h2>
+        <div id="status-cards" class="status-grid"></div>
+      </section>
+
+      <section class="detail-grid">
+        <article class="panel-card">
+          <h2>Pending Actions</h2>
+          <div id="pending-actions" class="stack-list"></div>
+        </article>
+        <article class="panel-card">
+          <h2>Blockers and Warnings</h2>
+          <div id="warnings-list" class="stack-list"></div>
+        </article>
+      </section>
+
+      <section class="detail-grid">
+        <article class="panel-card">
+          <h2>Recent Materials</h2>
+          <div id="recent-materials" class="stack-list"></div>
+        </article>
+        <article class="panel-card">
+          <h2>Latest Pipeline States</h2>
+          <div id="pipeline-states" class="stack-list"></div>
+        </article>
+      </section>
+
+      <section class="detail-grid">
+        <article class="panel-card">
+          <h2>Progress</h2>
+          <div id="progress-summary" class="stack-list"></div>
+        </article>
+        <article class="panel-card">
+          <h2>Retention</h2>
+          <div id="retention-summary" class="empty-state">Not enough data yet.</div>
+        </article>
+      </section>
+
+      <section class="panel-card">
+        <details>
+          <summary>Raw compact JSON</summary>
+          <pre id="raw-json" class="raw-json">Loading safe overview...</pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="/static/dashboard.js"></script>
+  </body>
+</html>

@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import inspection_ui_path, require_inspection_access, router
+from app.api.routes import SESSION_COOKIE_NAME, inspection_ui_path, require_inspection_access, router
 from app.repositories.json_store import JsonStudyRepository
 from app.services.pipeline import StudyPipeline
 from app.services.session_flow import SessionManager
@@ -40,6 +41,15 @@ def create_app(
     def inspection(request: Request):
         require_inspection_access(request)
         return FileResponse(inspection_ui_path())
+
+    @app.get("/dashboard", include_in_schema=False)
+    def dashboard(request: Request):
+        token = request.cookies.get(SESSION_COOKIE_NAME)
+        user_id = request.app.state.auth_sessions.get(token) if token else None
+        user = app.state.repository.get_user(user_id) if user_id else None
+        if user is None or not user.is_active:
+            raise HTTPException(status_code=401, detail="Authentication required.")
+        return FileResponse(Path(__file__).resolve().parent / "static" / "dashboard.html")
 
     return app
 
