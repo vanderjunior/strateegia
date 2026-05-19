@@ -30,6 +30,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `answer/explanation guardrails`
 -> `simulado question assembly`
 -> `simulado attempt shell`
+-> `simulado finalization/approval guardrails`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -59,6 +60,7 @@ Regras importantes desta cadeia:
 - fundacao de answer key / explanation guardrails source-grounded, candidate-only e finalization-blocked
 - fundacao de simulado question assembly source-grounded, guardrail-aware, non-executable e non-scoreable
 - fundacao de simulado execution readiness / attempt shell assembly-aware, non-executable e sem submissions
+- fundacao de finalization / approval guardrails assembly-aware, attempt-shell-aware, non-executable e sem aprovacao real
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
@@ -493,6 +495,37 @@ Regras importantes:
 - nao cria questoes finais, answer keys finais ou explanations finais
 - a etapa usa apenas `SimuladoQuestionAssembly` ja persistido e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
 
+## Fundacao de finalization / approval guardrails
+
+Attempt shells agora podem gerar um artifact user-scoped de readiness chamado `SimuladoFinalizationGuardrail`, ainda estritamente nao aprovador, nao finalizador e nao executavel.
+
+Capacidades atuais desta etapa:
+
+- avaliacao deterministica de readiness futura para finalization/approval review a partir de `SimuladoQuestionAssembly` e `SimuladoAttemptShell`
+- contagem conservadora de candidates `ready_for_review`, bloqueados e em revisao, sem transformar isso em candidates finalizaveis
+- blockers explicitos para assembly nao final, attempt shell nao executavel, questoes finais ausentes, answer keys finais ausentes, explanations finais ausentes e revisao humana obrigatoria
+- candidate finalization summaries bounded com estados, blockers e flags booleanas sem expor conteudo final
+- flags declarativas para manter approval, execution, correction, scoring, submissions e progress mutation desligados
+- persistencia owner-only do guardrail por attempt shell de origem
+
+Endpoints atuais de finalization / approval guardrails:
+
+- `POST /api/simulado-attempt-shell/{attempt_shell_id}/finalization-guardrail/build`
+- `GET /api/simulado-attempt-shell/{attempt_shell_id}/finalization-guardrail`
+- `GET /api/simulado-finalization-guardrail/{finalization_guardrail_id}`
+
+Regras importantes:
+
+- esta etapa produz artifacts de readiness para approval/finalization review apenas
+- `candidate_ready_for_review` nao significa candidate finalizavel
+- readiness do attempt shell nao significa simulado executavel
+- `approval_required` e `human_review_required` permanecem `true`
+- `execution_enabled`, `correction_enabled`, `scoring_enabled`, `student_submission_enabled` e `progress_mutation_enabled` permanecem `false`
+- nao aprova nem finaliza simulados
+- nao cria student attempts reais, answer submissions, correction results, scores ou mutacao de progresso
+- nao cria questoes finais, answer keys finais ou explanations finais
+- a etapa usa apenas `SimuladoQuestionAssembly` e `SimuladoAttemptShell` ja persistidos e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -616,6 +649,7 @@ Outras notas de seguranca:
 - answer key / explanation guardrails existem apenas como assessment/candidate layer, sem answer key final, explanation final, scoring ou correction
 - simulado question assembly existe apenas como pacote de revisao nao executavel e nao scoreable
 - simulado execution readiness / attempt shell existe apenas como artifact de readiness nao executavel, sem attempts, submissions, correction ou scoring
+- finalization / approval guardrails existem apenas como assessment layer para readiness futura, sem aprovacao real, finalizacao real, execucao, correction ou scoring
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -667,10 +701,10 @@ Itens planejados, mas nao implementados nesta etapa:
 - fixtures de estabilizacao para answer key / explanation guardrails
 - fixtures de estabilizacao para simulado question assembly
 - fixtures de estabilizacao para simulado execution readiness / attempt shell
-- guardrails futuros de finalizacao/aprovacao antes de qualquer tentativa real
+- fixtures de estabilizacao para finalization / approval guardrails
+- execucao e correcao futura de simulados, somente apos camadas futuras de finalizacao/aprovacao reais
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito
-- execucao e correcao futura de simulados
 - refinamento do dashboard de progresso, continuacao e retencao
 - resumao pre-prova baseado no material ja estudado
 - scheduler avancado de revisao

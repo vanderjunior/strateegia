@@ -2943,6 +2943,88 @@ class SimuladoAttemptShell(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class CandidateFinalizationSummary(BaseModel):
+    candidate_id: str
+    source_question_candidate_id: str | None = None
+    source_question_draft_id: str | None = None
+    source_guardrail_id: str | None = None
+    readiness_state: str = "candidate_finalization_blocked"
+    review_required: bool = True
+    finalization_blocked: bool = True
+    has_final_question: bool = False
+    has_final_answer_key: bool = False
+    has_final_explanation: bool = False
+    approval_state: str = "approval_required"
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalizationBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalizationValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalizationWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoFinalizationGuardrail(BaseModel):
+    finalization_guardrail_id: str
+    user_id: str | None = None
+    source_assembly_id: str
+    source_attempt_shell_id: str
+    source_simulado_blueprint_id: str
+    status: str = "finalization_not_available"
+    readiness_state: str = "blocked_by_non_final_assembly"
+    total_candidates: int = 0
+    review_ready_candidates: int = 0
+    blocked_candidates: int = 0
+    needs_review_candidates: int = 0
+    finalizable_candidates_count: int = 0
+    approved_candidates_count: int = 0
+    missing_final_questions_count: int = 0
+    missing_final_answer_keys_count: int = 0
+    missing_final_explanations_count: int = 0
+    candidate_summaries: list[CandidateFinalizationSummary] = Field(default_factory=list)
+    blockers: list[FinalizationBlocker] = Field(default_factory=list)
+    validation_findings: list[FinalizationValidationFinding] = Field(default_factory=list)
+    warnings: list[FinalizationWarning] = Field(default_factory=list)
+    approval_required: bool = True
+    human_review_required: bool = True
+    execution_enabled: bool = False
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    student_submission_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    no_student_attempt_created: bool = True
+    no_answer_submission_enabled: bool = True
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

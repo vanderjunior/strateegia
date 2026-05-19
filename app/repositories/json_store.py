@@ -25,6 +25,9 @@ from app.domain.models import (
     EditalIngestionEvent,
     EditalIngestionState,
     ErrorType,
+    FinalizationBlocker,
+    FinalizationValidationFinding,
+    FinalizationWarning,
     ItemState,
     InterventionHistory,
     MicroTopicPerformance,
@@ -39,6 +42,7 @@ from app.domain.models import (
     SimuladoAttemptShellValidationFinding,
     SimuladoAttemptShellWarning,
     SimuladoExecutionBlocker,
+    SimuladoFinalizationGuardrail,
     SimuladoQuestionAssembly,
     StudyCyclePlan,
     StudyCyclePlanState,
@@ -289,6 +293,27 @@ class UserScopedStudyRepository:
     def get_simulado_attempt_shell_by_id(self, attempt_shell_id: str) -> SimuladoAttemptShell | None:
         return self._repository.get_simulado_attempt_shell_by_id(attempt_shell_id, user_id=self.user_id)
 
+    def save_simulado_finalization_guardrail(self, guardrail: SimuladoFinalizationGuardrail) -> None:
+        self._repository.save_simulado_finalization_guardrail(guardrail, user_id=self.user_id)
+
+    def get_simulado_finalization_guardrail(self, source_attempt_shell_id: str) -> SimuladoFinalizationGuardrail | None:
+        return self._repository.get_simulado_finalization_guardrail(
+            source_attempt_shell_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_finalization_guardrails(self) -> list[SimuladoFinalizationGuardrail]:
+        return self._repository.list_user_simulado_finalization_guardrails(user_id=self.user_id)
+
+    def get_simulado_finalization_guardrail_by_id(
+        self,
+        finalization_guardrail_id: str,
+    ) -> SimuladoFinalizationGuardrail | None:
+        return self._repository.get_simulado_finalization_guardrail_by_id(
+            finalization_guardrail_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -366,6 +391,9 @@ class JsonStudyRepository:
             "simulado_attempt_shell": {
                 "results": {},
             },
+            "simulado_finalization_guardrail": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -431,6 +459,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_attempt_shell"] = self._normalize_simulado_attempt_shell_payload(
                 user_state.get("simulado_attempt_shell")
+            )
+            user_state["simulado_finalization_guardrail"] = self._normalize_simulado_finalization_guardrail_payload(
+                user_state.get("simulado_finalization_guardrail")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -568,6 +599,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_finalization_guardrail_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -667,6 +708,9 @@ class JsonStudyRepository:
         )
         state["simulado_attempt_shell"] = self._normalize_simulado_attempt_shell_payload(
             state.get("simulado_attempt_shell")
+        )
+        state["simulado_finalization_guardrail"] = self._normalize_simulado_finalization_guardrail_payload(
+            state.get("simulado_finalization_guardrail")
         )
         return state
 
@@ -921,6 +965,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_attempt_shell_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_attempt_shell"]
+
+    def _simulado_finalization_guardrail_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_finalization_guardrail_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_finalization_guardrail"]
 
     def save_document_pipeline_state(
         self,
@@ -1734,6 +1787,59 @@ class JsonStudyRepository:
     ) -> SimuladoAttemptShell | None:
         for item in self.list_user_simulado_attempt_shells(user_id=user_id):
             if item.attempt_shell_id == attempt_shell_id:
+                return item
+        return None
+
+    def save_simulado_finalization_guardrail(
+        self,
+        guardrail: SimuladoFinalizationGuardrail,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado finalization guardrail requires user ownership.")
+        payload = self._read()
+        container = self._simulado_finalization_guardrail_container(payload, user_id)
+        container["results"][guardrail.source_attempt_shell_id] = guardrail.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_finalization_guardrail(
+        self,
+        source_attempt_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoFinalizationGuardrail | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_finalization_guardrail_container(payload, user_id)["results"].get(
+            source_attempt_shell_id
+        )
+        if raw is None:
+            return None
+        return SimuladoFinalizationGuardrail.model_validate(raw)
+
+    def list_user_simulado_finalization_guardrails(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoFinalizationGuardrail]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_finalization_guardrail_container(payload, user_id)["results"].values()
+        items = [SimuladoFinalizationGuardrail.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_attempt_shell_id)
+        return items
+
+    def get_simulado_finalization_guardrail_by_id(
+        self,
+        finalization_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoFinalizationGuardrail | None:
+        for item in self.list_user_simulado_finalization_guardrails(user_id=user_id):
+            if item.finalization_guardrail_id == finalization_guardrail_id:
                 return item
         return None
 
