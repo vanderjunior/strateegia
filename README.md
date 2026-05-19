@@ -27,6 +27,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `simulado blueprint`
 -> `question generation blueprint`
 -> `question draft`
+-> `answer/explanation guardrails`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -53,6 +54,7 @@ Regras importantes desta cadeia:
 - fundacao de simulado blueprint candidate-based e read-only
 - fundacao de question generation blueprint source-grounded, candidate-based e planning-only
 - fundacao de question draft generation provisoria, bounded e review-required
+- fundacao de answer key / explanation guardrails source-grounded, candidate-only e finalization-blocked
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
@@ -403,6 +405,35 @@ Regras importantes:
 - drafts nao executam simulados nem alteram study cycle, runtime, ranking, sessao ou scheduler
 - a etapa nao chama LLM, RAG, vector DB, embeddings ou servicos externos
 
+## Fundacao de answer key / explanation guardrails
+
+Question drafts agora podem receber uma avaliacao deterministica e user-scoped de prontidao para futuros candidatos de answer key e explanation.
+
+Capacidades atuais desta etapa:
+
+- criacao de guardrail assessments source-grounded e auditaveis a partir de `QuestionDrafts` existentes
+- avaliacao separada de `answer_key_state`, `explanation_state` e `source_support_assessment`
+- candidatos nao finais de answer key com `candidate_value` normalmente nulo e `allowed_values` apenas quando seguro
+- explanation outlines curtos, bounded e ancorados em `safe_snippets`, quando houver suporte suficiente
+- findings e warnings para draft ambiguo, evidencia ausente, formato nao suportado e necessidade de revisao humana
+- persistencia user-scoped e owner-only do guardrail por draft
+
+Endpoints atuais de answer key / explanation guardrails:
+
+- `POST /api/question-drafts/{draft_id}/answer-explanation-guardrail/build`
+- `GET /api/question-drafts/{draft_id}/answer-explanation-guardrail`
+- `GET /api/answer-explanation-guardrail/{guardrail_id}`
+
+Regras importantes:
+
+- esta etapa produz assessment/candidate artifacts apenas, nao answer keys ou explanations finais
+- `candidate_answer_key` nao e `final_answer_key`
+- `candidate_explanation` nao e `final_explanation`
+- tudo continua `review_required = true` e `finalization_blocked = true`
+- a etapa nao finaliza questoes, nao monta simulados, nao corrige respostas e nao gera score/correction rules
+- a etapa usa apenas `QuestionDrafts` e referencias de fonte ja persistidas
+- a etapa nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -523,6 +554,7 @@ Outras notas de seguranca:
 - sem vetores, embeddings ou RAG
 - question generation blueprint existe apenas como fundacao de planejamento
 - question draft generation existe apenas como artifact provisiorio e review-required; sem geracao final de questoes
+- answer key / explanation guardrails existem apenas como assessment/candidate layer, sem answer key final, explanation final, scoring ou correction
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -571,7 +603,7 @@ Itens planejados, mas nao implementados nesta etapa:
 - runtime edital-aware com topicos, pesos, exclusoes e fonte de coverage revisada
 - fixtures de estabilizacao para question generation blueprint
 - fixtures de estabilizacao para question draft generation
-- fundacao de answer key / explanation guardrails
+- fixtures de estabilizacao para answer key / explanation guardrails
 - montagem futura de questoes de simulado a partir de blueprint
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito

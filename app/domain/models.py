@@ -2693,6 +2693,87 @@ class QuestionDraftSet(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class AnswerKeyCandidate(BaseModel):
+    candidate_id: str
+    format_type: str = "unknown"
+    candidate_value: str | None = None
+    allowed_values: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    support_state: str = "unknown"
+    requires_review: bool = True
+    finalization_blocked: bool = True
+    rationale_summary: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplanationCandidate(BaseModel):
+    candidate_id: str
+    explanation_outline: str | None = None
+    source_anchor_ids: list[str] = Field(default_factory=list)
+    support_state: str = "unknown"
+    confidence: float = 0.0
+    requires_review: bool = True
+    finalization_blocked: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SourceSupportAssessment(BaseModel):
+    assessment_id: str
+    source_evidence_count: int = 0
+    primary_source_available: bool = False
+    source_coverage_state: str = "missing"
+    source_conflict_detected: bool = False
+    ocr_blocked: bool = False
+    missing_source: bool = False
+    ambiguous_support: bool = False
+    safe_snippets: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "warning"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AnswerExplanationWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AnswerExplanationGuardrail(BaseModel):
+    guardrail_id: str
+    user_id: str | None = None
+    source_question_draft_id: str
+    source_question_draft_set_id: str
+    source_question_generation_blueprint_id: str
+    source_question_generation_blueprint_set_id: str
+    source_simulado_blueprint_id: str
+    status: str = "needs_review"
+    answer_key_state: str = "answer_key_needs_human_review"
+    explanation_state: str = "explanation_needs_human_review"
+    candidate_answer_key: AnswerKeyCandidate
+    candidate_explanation: ExplanationCandidate
+    source_support_assessment: SourceSupportAssessment
+    validation_findings: list[ValidationFinding] = Field(default_factory=list)
+    warnings: list[AnswerExplanationWarning] = Field(default_factory=list)
+    review_required: bool = True
+    finalization_blocked: bool = True
+    no_final_answer_key_generated: bool = True
+    no_final_explanation_generated: bool = True
+    no_simulado_execution_enabled: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

@@ -38,6 +38,7 @@ from app.services.material_service import MaterialService
 from app.services.simulado_blueprint_builder import SimuladoBlueprintBuilderService
 from app.services.study_cycle_orchestrator import StudyCycleOrchestratorService
 from app.services.exam_profiles import ExamProfileService
+from app.services.answer_explanation_guardrails import AnswerExplanationGuardrailService
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.snapshot_offline_io import export_inspection_snapshot
@@ -124,6 +125,10 @@ def get_question_generation_blueprint_service(request: Request) -> QuestionGener
 
 def get_question_draft_generation_service(request: Request) -> QuestionDraftGenerationService:
     return QuestionDraftGenerationService(get_repository(request))
+
+
+def get_answer_explanation_guardrail_service(request: Request) -> AnswerExplanationGuardrailService:
+    return AnswerExplanationGuardrailService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -795,6 +800,42 @@ def get_question_draft_set_by_id(draft_set_id: str, request: Request):
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Question draft set not found.")
+    return result
+
+
+@router.post("/question-drafts/{draft_id}/answer-explanation-guardrail/build")
+def build_answer_explanation_guardrail(draft_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_answer_explanation_guardrail_service(request).build_guardrail(
+        draft_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Answer explanation guardrail could not be built.")
+    return result
+
+
+@router.get("/question-drafts/{draft_id}/answer-explanation-guardrail")
+def get_answer_explanation_guardrail_for_draft(draft_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_answer_explanation_guardrail_service(request).get_guardrail(
+        draft_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Answer explanation guardrail not found.")
+    return result
+
+
+@router.get("/answer-explanation-guardrail/{guardrail_id}")
+def get_answer_explanation_guardrail_by_id(guardrail_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_answer_explanation_guardrail_service(request).get_guardrail_by_id(
+        guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Answer explanation guardrail not found.")
     return result
 
 

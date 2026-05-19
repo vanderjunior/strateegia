@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from app.domain.models import (
+    AnswerExplanationGuardrail,
     AlignmentWarning,
     AnswerSubmission,
     BibliographyAlignmentResult,
@@ -242,6 +243,18 @@ class UserScopedStudyRepository:
     def get_question_draft_set_by_id(self, draft_set_id: str) -> QuestionDraftSet | None:
         return self._repository.get_question_draft_set_by_id(draft_set_id, user_id=self.user_id)
 
+    def save_answer_explanation_guardrail(self, guardrail: AnswerExplanationGuardrail) -> None:
+        self._repository.save_answer_explanation_guardrail(guardrail, user_id=self.user_id)
+
+    def get_answer_explanation_guardrail(self, source_question_draft_id: str) -> AnswerExplanationGuardrail | None:
+        return self._repository.get_answer_explanation_guardrail(source_question_draft_id, user_id=self.user_id)
+
+    def list_user_answer_explanation_guardrails(self) -> list[AnswerExplanationGuardrail]:
+        return self._repository.list_user_answer_explanation_guardrails(user_id=self.user_id)
+
+    def get_answer_explanation_guardrail_by_id(self, guardrail_id: str) -> AnswerExplanationGuardrail | None:
+        return self._repository.get_answer_explanation_guardrail_by_id(guardrail_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -310,6 +323,9 @@ class JsonStudyRepository:
             "question_draft": {
                 "results": {},
             },
+            "answer_explanation_guardrail": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -366,6 +382,9 @@ class JsonStudyRepository:
             )
             user_state["question_draft"] = self._normalize_question_draft_payload(
                 user_state.get("question_draft")
+            )
+            user_state["answer_explanation_guardrail"] = self._normalize_answer_explanation_guardrail_payload(
+                user_state.get("answer_explanation_guardrail")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -473,6 +492,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_answer_explanation_guardrail_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -563,6 +592,9 @@ class JsonStudyRepository:
         )
         state["question_draft"] = self._normalize_question_draft_payload(
             state.get("question_draft")
+        )
+        state["answer_explanation_guardrail"] = self._normalize_answer_explanation_guardrail_payload(
+            state.get("answer_explanation_guardrail")
         )
         return state
 
@@ -790,6 +822,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_question_draft_payload({})
         return self._ensure_user_state(payload, user_id)["question_draft"]
+
+    def _answer_explanation_guardrail_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_answer_explanation_guardrail_payload({})
+        return self._ensure_user_state(payload, user_id)["answer_explanation_guardrail"]
 
     def save_document_pipeline_state(
         self,
@@ -1446,6 +1487,59 @@ class JsonStudyRepository:
     ) -> QuestionDraftSet | None:
         for item in self.list_user_question_draft_sets(user_id=user_id):
             if item.draft_set_id == draft_set_id:
+                return item
+        return None
+
+    def save_answer_explanation_guardrail(
+        self,
+        guardrail: AnswerExplanationGuardrail,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Answer explanation guardrail requires user ownership.")
+        payload = self._read()
+        container = self._answer_explanation_guardrail_container(payload, user_id)
+        container["results"][guardrail.source_question_draft_id] = guardrail.model_dump(mode="json")
+        self._write(payload)
+
+    def get_answer_explanation_guardrail(
+        self,
+        source_question_draft_id: str,
+        *,
+        user_id: str | None,
+    ) -> AnswerExplanationGuardrail | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._answer_explanation_guardrail_container(payload, user_id)["results"].get(
+            source_question_draft_id
+        )
+        if raw is None:
+            return None
+        return AnswerExplanationGuardrail.model_validate(raw)
+
+    def list_user_answer_explanation_guardrails(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[AnswerExplanationGuardrail]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._answer_explanation_guardrail_container(payload, user_id)["results"].values()
+        items = [AnswerExplanationGuardrail.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_question_draft_id)
+        return items
+
+    def get_answer_explanation_guardrail_by_id(
+        self,
+        guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> AnswerExplanationGuardrail | None:
+        for item in self.list_user_answer_explanation_guardrails(user_id=user_id):
+            if item.guardrail_id == guardrail_id:
                 return item
         return None
 
