@@ -2579,6 +2579,120 @@ class QuestionGenerationBlueprintSet(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class QuestionDraftSourceReference(BaseModel):
+    evidence_id: str
+    document_id: str | None = None
+    material_id: str | None = None
+    section_id: str | None = None
+    chunk_id: str | None = None
+    topic_id: str | None = None
+    subtopic_id: str | None = None
+    evidence_role: str = "source_evidence"
+    evidence_strength: str = "unknown"
+    source_title: str | None = None
+    safe_snippet: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionDraftConstraint(BaseModel):
+    constraint_id: str
+    constraint_type: str
+    severity: str = "warning"
+    description: str
+    source: str = "question_draft_generation"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionDraftWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionDraftValidationSummary(BaseModel):
+    source_grounded: bool = False
+    has_required_source_evidence: bool = False
+    format_supported: bool = False
+    profile_supported: bool = False
+    needs_human_review: bool = True
+    final_answer_absent: bool = True
+    final_alternatives_absent: bool = True
+    final_explanation_absent: bool = True
+    warnings_count: int = 0
+    blockers_count: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionDraftProvenance(BaseModel):
+    build_method: str = "heuristic_question_draft_generator"
+    source_blueprint_id: str
+    source_evidence_count: int = 0
+    source_constraints_count: int = 0
+    template_family: str = "unknown"
+    deterministic_template_id: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionDraft(BaseModel):
+    draft_id: str
+    user_id: str | None = None
+    source_question_generation_blueprint_id: str
+    source_question_generation_slot_id: str
+    source_simulado_blueprint_id: str
+    source_question_slot_id: str
+    draft_status: str = "draft_created"
+    draft_readiness: str = "draft_for_review"
+    format_type: str = "unknown"
+    question_kind: str = "review_prompt_placeholder"
+    board_id: str | None = None
+    exam_family: str | None = None
+    target_subject_id: str
+    target_topic_id: str
+    target_subtopic_ids: list[str] = Field(default_factory=list)
+    draft_stem: str | None = None
+    draft_command: str | None = None
+    draft_statement: str | None = None
+    draft_scenario: str | None = None
+    draft_option_placeholders: list[str] = Field(default_factory=list)
+    source_references: list[QuestionDraftSourceReference] = Field(default_factory=list)
+    constraints: list[QuestionDraftConstraint] = Field(default_factory=list)
+    warnings: list[QuestionDraftWarning] = Field(default_factory=list)
+    validation_summary: QuestionDraftValidationSummary = Field(default_factory=QuestionDraftValidationSummary)
+    provenance: QuestionDraftProvenance
+    review_required: bool = True
+    finalization_blocked: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class QuestionDraftSet(BaseModel):
+    draft_set_id: str
+    user_id: str | None = None
+    source_question_generation_blueprint_set_id: str
+    source_simulado_blueprint_id: str
+    status: str = "no_ready_blueprints"
+    readiness_state: str = "no_ready_blueprints"
+    total_blueprint_slots: int = 0
+    draft_count: int = 0
+    skipped_count: int = 0
+    blocked_count: int = 0
+    needs_review_count: int = 0
+    drafts: list[QuestionDraft] = Field(default_factory=list)
+    skipped_blueprint_ids: list[str] = Field(default_factory=list)
+    warnings: list[QuestionDraftWarning] = Field(default_factory=list)
+    no_final_question_generated: bool = True
+    no_answer_key_generated: bool = True
+    no_final_alternatives_generated: bool = True
+    no_distractors_generated: bool = True
+    no_final_explanations_generated: bool = True
+    review_required: bool = True
+    build_method: str = "heuristic_question_draft_generator"
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

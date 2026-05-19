@@ -38,6 +38,7 @@ from app.services.material_service import MaterialService
 from app.services.simulado_blueprint_builder import SimuladoBlueprintBuilderService
 from app.services.study_cycle_orchestrator import StudyCycleOrchestratorService
 from app.services.exam_profiles import ExamProfileService
+from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
@@ -119,6 +120,10 @@ def get_user_dashboard_service(request: Request) -> UserDashboardService:
 
 def get_question_generation_blueprint_service(request: Request) -> QuestionGenerationBlueprintService:
     return QuestionGenerationBlueprintService(get_repository(request))
+
+
+def get_question_draft_generation_service(request: Request) -> QuestionDraftGenerationService:
+    return QuestionDraftGenerationService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -742,6 +747,54 @@ def get_question_generation_blueprint_by_id(question_generation_blueprint_id: st
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Question generation blueprint not found.")
+    return result
+
+
+@router.post("/question-generation-blueprint/{blueprint_set_id}/question-drafts/build")
+def build_question_drafts(blueprint_set_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    blueprint_set = get_question_generation_blueprint_service(request).get_blueprint_set_by_id(
+        blueprint_set_id,
+        user_id=user_id,
+    )
+    if blueprint_set is None:
+        raise HTTPException(status_code=404, detail="Question generation blueprint not found.")
+    result = get_question_draft_generation_service(request).build_draft_set(
+        blueprint_set_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Question draft set could not be built.")
+    return result
+
+
+@router.get("/question-generation-blueprint/{blueprint_set_id}/question-drafts")
+def get_question_drafts_for_blueprint(blueprint_set_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    blueprint_set = get_question_generation_blueprint_service(request).get_blueprint_set_by_id(
+        blueprint_set_id,
+        user_id=user_id,
+    )
+    if blueprint_set is None:
+        raise HTTPException(status_code=404, detail="Question generation blueprint not found.")
+    result = get_question_draft_generation_service(request).get_draft_set(
+        blueprint_set_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Question draft set not found.")
+    return result
+
+
+@router.get("/question-draft-set/{draft_set_id}")
+def get_question_draft_set_by_id(draft_set_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_question_draft_generation_service(request).get_draft_set_by_id(
+        draft_set_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Question draft set not found.")
     return result
 
 

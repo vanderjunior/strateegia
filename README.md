@@ -26,6 +26,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `exam profile`
 -> `simulado blueprint`
 -> `question generation blueprint`
+-> `question draft`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -51,6 +52,7 @@ Regras importantes desta cadeia:
 - fundacao de exam profiles declarativos e candidate-based
 - fundacao de simulado blueprint candidate-based e read-only
 - fundacao de question generation blueprint source-grounded, candidate-based e planning-only
+- fundacao de question draft generation provisoria, bounded e review-required
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
@@ -372,6 +374,35 @@ Regras importantes:
 - snippets continuam bounded e sanitizados, sem corpo bruto completo do documento nem caminhos absolutos
 - build e deterministico e user-scoped; leituras por `GET` nao constroem nem mutam nada
 
+## Fundacao de question draft generation
+
+Question drafts agora podem ser criados apenas a partir de `QuestionGenerationBlueprints` com `readiness_state = ready_for_draft`.
+
+Capacidades atuais desta etapa:
+
+- criacao deterministica de drafts provisiorios e auditaveis a partir de blueprints prontos
+- drafts source-grounded com referencias a evidencias ja persistidas
+- templates bounded por `question_kind`, `format_type`, `board_id` e `exam_family`
+- suporte inicial para drafts `assertion_judgement`, `case_based_multiple_choice`, `technical_maritime_scenario` e `direct_multiple_choice`
+- placeholders de alternativas apenas quando o draft for de multipla escolha
+- provenance, validation summary, constraints e warnings preservados no artifact
+- persistencia user-scoped e owner-only do draft set
+
+Endpoints atuais de question draft generation:
+
+- `POST /api/question-generation-blueprint/{blueprint_set_id}/question-drafts/build`
+- `GET /api/question-generation-blueprint/{blueprint_set_id}/question-drafts`
+- `GET /api/question-draft-set/{draft_set_id}`
+
+Regras importantes:
+
+- drafts sao sempre provisiorios, `review_required = true` e `finalization_blocked = true`
+- drafts so sao criados a partir de blueprints `ready_for_draft`
+- drafts permanecem bounded e source-grounded
+- drafts nao incluem `answer_key`, `gabarito`, alternativas finais, distractors ou explicacoes finais
+- drafts nao executam simulados nem alteram study cycle, runtime, ranking, sessao ou scheduler
+- a etapa nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -490,7 +521,8 @@ Outras notas de seguranca:
 - sem grafo curricular final/aprovado a partir do edital; o graph atual continua candidate-based e review-friendly
 - sem ativacao automatica do ciclo de estudos derivado do edital no runtime pedagogico
 - sem vetores, embeddings ou RAG
-- question generation blueprint existe apenas como fundacao de planejamento; sem geracao final de questoes
+- question generation blueprint existe apenas como fundacao de planejamento
+- question draft generation existe apenas como artifact provisiorio e review-required; sem geracao final de questoes
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -538,8 +570,8 @@ Itens planejados, mas nao implementados nesta etapa:
 - evolucao do study cycle candidato sem ativacao automatica no runtime
 - runtime edital-aware com topicos, pesos, exclusoes e fonte de coverage revisada
 - fixtures de estabilizacao para question generation blueprint
-- fundacao de question draft generation
 - fixtures de estabilizacao para question draft generation
+- fundacao de answer key / explanation guardrails
 - montagem futura de questoes de simulado a partir de blueprint
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito

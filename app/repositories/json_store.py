@@ -25,6 +25,7 @@ from app.domain.models import (
     PedagogicalMemory,
     PedagogicalOutcome,
     ProgressState,
+    QuestionDraftSet,
     QuestionGenerationBlueprintSet,
     SimuladoBlueprint,
     SimuladoBlueprintState,
@@ -226,6 +227,21 @@ class UserScopedStudyRepository:
     def get_question_generation_blueprint_by_id(self, blueprint_set_id: str) -> QuestionGenerationBlueprintSet | None:
         return self._repository.get_question_generation_blueprint_by_id(blueprint_set_id, user_id=self.user_id)
 
+    def save_question_draft_set(self, draft_set: QuestionDraftSet) -> None:
+        self._repository.save_question_draft_set(draft_set, user_id=self.user_id)
+
+    def get_question_draft_set(self, source_question_generation_blueprint_set_id: str) -> QuestionDraftSet | None:
+        return self._repository.get_question_draft_set(
+            source_question_generation_blueprint_set_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_question_draft_sets(self) -> list[QuestionDraftSet]:
+        return self._repository.list_user_question_draft_sets(user_id=self.user_id)
+
+    def get_question_draft_set_by_id(self, draft_set_id: str) -> QuestionDraftSet | None:
+        return self._repository.get_question_draft_set_by_id(draft_set_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -291,6 +307,9 @@ class JsonStudyRepository:
             "question_generation_blueprint": {
                 "results": {},
             },
+            "question_draft": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -344,6 +363,9 @@ class JsonStudyRepository:
             )
             user_state["question_generation_blueprint"] = self._normalize_question_generation_blueprint_payload(
                 user_state.get("question_generation_blueprint")
+            )
+            user_state["question_draft"] = self._normalize_question_draft_payload(
+                user_state.get("question_draft")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -441,6 +463,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_question_draft_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -528,6 +560,9 @@ class JsonStudyRepository:
         )
         state["question_generation_blueprint"] = self._normalize_question_generation_blueprint_payload(
             state.get("question_generation_blueprint")
+        )
+        state["question_draft"] = self._normalize_question_draft_payload(
+            state.get("question_draft")
         )
         return state
 
@@ -746,6 +781,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_question_generation_blueprint_payload({})
         return self._ensure_user_state(payload, user_id)["question_generation_blueprint"]
+
+    def _question_draft_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_question_draft_payload({})
+        return self._ensure_user_state(payload, user_id)["question_draft"]
 
     def save_document_pipeline_state(
         self,
@@ -1349,6 +1393,59 @@ class JsonStudyRepository:
     ) -> QuestionGenerationBlueprintSet | None:
         for item in self.list_user_question_generation_blueprints(user_id=user_id):
             if item.blueprint_set_id == blueprint_set_id:
+                return item
+        return None
+
+    def save_question_draft_set(
+        self,
+        draft_set: QuestionDraftSet,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Question draft set requires user ownership.")
+        payload = self._read()
+        container = self._question_draft_container(payload, user_id)
+        container["results"][draft_set.source_question_generation_blueprint_set_id] = draft_set.model_dump(mode="json")
+        self._write(payload)
+
+    def get_question_draft_set(
+        self,
+        source_question_generation_blueprint_set_id: str,
+        *,
+        user_id: str | None,
+    ) -> QuestionDraftSet | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._question_draft_container(payload, user_id)["results"].get(
+            source_question_generation_blueprint_set_id
+        )
+        if raw is None:
+            return None
+        return QuestionDraftSet.model_validate(raw)
+
+    def list_user_question_draft_sets(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[QuestionDraftSet]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._question_draft_container(payload, user_id)["results"].values()
+        items = [QuestionDraftSet.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_question_generation_blueprint_set_id)
+        return items
+
+    def get_question_draft_set_by_id(
+        self,
+        draft_set_id: str,
+        *,
+        user_id: str | None,
+    ) -> QuestionDraftSet | None:
+        for item in self.list_user_question_draft_sets(user_id=user_id):
+            if item.draft_set_id == draft_set_id:
                 return item
         return None
 
