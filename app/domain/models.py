@@ -2774,6 +2774,117 @@ class AnswerExplanationGuardrail(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class CandidateDraftSummary(BaseModel):
+    source_question_draft_id: str
+    draft_status: str = "unknown"
+    draft_readiness: str = "unknown"
+    review_required: bool = True
+    finalization_blocked: bool = True
+    draft_stem_preview: str | None = None
+    draft_command_preview: str | None = None
+    draft_type: str = "unknown"
+    placeholder_count: int = 0
+    source_reference_count: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CandidateGuardrailSummary(BaseModel):
+    source_guardrail_id: str | None = None
+    guardrail_status: str = "missing"
+    answer_key_state: str = "unknown"
+    explanation_state: str = "unknown"
+    review_required: bool = True
+    finalization_blocked: bool = True
+    no_final_answer_key_generated: bool = True
+    no_final_explanation_generated: bool = True
+    no_simulado_execution_enabled: bool = True
+    source_support_state: str = "unknown"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CandidateSourceEvidenceSummary(BaseModel):
+    source_reference_count: int = 0
+    primary_source_available: bool = False
+    missing_source: bool = False
+    ambiguous_support: bool = False
+    ocr_blocked: bool = False
+    material_gap: bool = False
+    safe_snippets: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AssemblyValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "warning"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AssemblyWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoQuestionCandidate(BaseModel):
+    candidate_id: str
+    source_simulado_slot_id: str
+    source_question_generation_blueprint_id: str | None = None
+    source_question_generation_slot_id: str | None = None
+    source_question_draft_id: str | None = None
+    source_guardrail_id: str | None = None
+    format_type: str = "unknown"
+    question_kind: str = "unknown"
+    board_id: str | None = None
+    exam_family: str | None = None
+    target_subject_id: str
+    target_topic_id: str
+    target_subtopic_ids: list[str] = Field(default_factory=list)
+    readiness_state: str = "candidate_blocked_by_missing_draft"
+    draft_summary: CandidateDraftSummary
+    guardrail_summary: CandidateGuardrailSummary
+    source_evidence_summary: CandidateSourceEvidenceSummary
+    validation_findings: list[AssemblyValidationFinding] = Field(default_factory=list)
+    warnings: list[AssemblyWarning] = Field(default_factory=list)
+    requires_human_review: bool = True
+    not_executable: bool = True
+    not_scoreable: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoQuestionAssembly(BaseModel):
+    assembly_id: str
+    user_id: str | None = None
+    source_simulado_blueprint_id: str
+    source_question_generation_blueprint_set_id: str | None = None
+    source_question_draft_set_id: str | None = None
+    status: str = "assembly_no_candidates"
+    readiness_state: str = "assembly_no_candidates"
+    total_candidates: int = 0
+    ready_for_review_count: int = 0
+    blocked_count: int = 0
+    needs_review_count: int = 0
+    candidates: list[SimuladoQuestionCandidate] = Field(default_factory=list)
+    validation_findings: list[AssemblyValidationFinding] = Field(default_factory=list)
+    warnings: list[AssemblyWarning] = Field(default_factory=list)
+    requires_human_review: bool = True
+    not_executable: bool = True
+    not_scoreable: bool = True
+    no_student_attempts_enabled: bool = True
+    no_progress_mutation: bool = True
+    no_final_questions_created: bool = True
+    no_final_answer_keys_created: bool = True
+    no_final_explanations_created: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

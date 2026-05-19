@@ -28,6 +28,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `question generation blueprint`
 -> `question draft`
 -> `answer/explanation guardrails`
+-> `simulado question assembly`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -55,6 +56,7 @@ Regras importantes desta cadeia:
 - fundacao de question generation blueprint source-grounded, candidate-based e planning-only
 - fundacao de question draft generation provisoria, bounded e review-required
 - fundacao de answer key / explanation guardrails source-grounded, candidate-only e finalization-blocked
+- fundacao de simulado question assembly source-grounded, guardrail-aware, non-executable e non-scoreable
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
@@ -434,6 +436,33 @@ Regras importantes:
 - a etapa usa apenas `QuestionDrafts` e referencias de fonte ja persistidas
 - a etapa nao chama LLM, RAG, vector DB, embeddings ou servicos externos
 
+## Fundacao de simulado question assembly
+
+Um `SimuladoBlueprint` agora pode produzir um assembly candidate-only, source-grounded e guardrail-aware que organiza drafts e guardrails existentes em um pacote de revisao humana.
+
+Capacidades atuais desta etapa:
+
+- montagem deterministica e user-scoped de candidates a partir de `SimuladoBlueprint`, `QuestionGenerationBlueprintSet`, `QuestionDraftSet` e `AnswerExplanationGuardrail`
+- readiness conservador por candidate como `candidate_ready_for_review`, `candidate_needs_review` e blockers para draft ausente, guardrail ausente, fonte fraca, OCR, material gap ou formato nao suportado
+- resumos bounded de draft, guardrail e source evidence, sem expor texto bruto completo nem conteudo executavel
+- findings e warnings explicitos para explicar por que o assembly continua nao executavel e nao scoreable
+- persistencia owner-only do assembly por simulado blueprint
+
+Endpoints atuais de simulado question assembly:
+
+- `POST /api/simulado-blueprint/{blueprint_id}/question-assembly/build`
+- `GET /api/simulado-blueprint/{blueprint_id}/question-assembly`
+- `GET /api/simulado-question-assembly/{assembly_id}`
+
+Regras importantes:
+
+- esta etapa produz candidate assemblies nao executaveis apenas
+- nao cria questoes finais, answer keys finais, explanations finais, alternativas finais ou distratores
+- nao cria correction rules, scoring rules, student attempts ou resultados de simulado
+- todo assembly continua `requires_human_review = true`, `not_executable = true` e `not_scoreable = true`
+- a etapa usa apenas artifacts ja persistidos e nao rebuilda simulado blueprint, question drafts ou guardrails
+- a etapa nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -555,6 +584,7 @@ Outras notas de seguranca:
 - question generation blueprint existe apenas como fundacao de planejamento
 - question draft generation existe apenas como artifact provisiorio e review-required; sem geracao final de questoes
 - answer key / explanation guardrails existem apenas como assessment/candidate layer, sem answer key final, explanation final, scoring ou correction
+- simulado question assembly existe apenas como pacote de revisao nao executavel e nao scoreable
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -604,7 +634,7 @@ Itens planejados, mas nao implementados nesta etapa:
 - fixtures de estabilizacao para question generation blueprint
 - fixtures de estabilizacao para question draft generation
 - fixtures de estabilizacao para answer key / explanation guardrails
-- montagem futura de questoes de simulado a partir de blueprint
+- fixtures de estabilizacao para simulado question assembly
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito
 - execucao e correcao futura de simulados

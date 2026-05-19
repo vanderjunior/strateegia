@@ -4,9 +4,14 @@ import json
 from pathlib import Path
 
 from app.domain.models import (
+    AssemblyWarning,
+    AssemblyValidationFinding,
     AnswerExplanationGuardrail,
     AlignmentWarning,
     AnswerSubmission,
+    CandidateDraftSummary,
+    CandidateGuardrailSummary,
+    CandidateSourceEvidenceSummary,
     BibliographyAlignmentResult,
     BibliographyAlignmentState,
     CoverageGap,
@@ -30,6 +35,7 @@ from app.domain.models import (
     QuestionGenerationBlueprintSet,
     SimuladoBlueprint,
     SimuladoBlueprintState,
+    SimuladoQuestionAssembly,
     StudyCyclePlan,
     StudyCyclePlanState,
     DocumentPipelineEvent,
@@ -255,6 +261,18 @@ class UserScopedStudyRepository:
     def get_answer_explanation_guardrail_by_id(self, guardrail_id: str) -> AnswerExplanationGuardrail | None:
         return self._repository.get_answer_explanation_guardrail_by_id(guardrail_id, user_id=self.user_id)
 
+    def save_simulado_question_assembly(self, assembly: SimuladoQuestionAssembly) -> None:
+        self._repository.save_simulado_question_assembly(assembly, user_id=self.user_id)
+
+    def get_simulado_question_assembly(self, source_simulado_blueprint_id: str) -> SimuladoQuestionAssembly | None:
+        return self._repository.get_simulado_question_assembly(source_simulado_blueprint_id, user_id=self.user_id)
+
+    def list_user_simulado_question_assemblies(self) -> list[SimuladoQuestionAssembly]:
+        return self._repository.list_user_simulado_question_assemblies(user_id=self.user_id)
+
+    def get_simulado_question_assembly_by_id(self, assembly_id: str) -> SimuladoQuestionAssembly | None:
+        return self._repository.get_simulado_question_assembly_by_id(assembly_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -326,6 +344,9 @@ class JsonStudyRepository:
             "answer_explanation_guardrail": {
                 "results": {},
             },
+            "simulado_question_assembly": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -385,6 +406,9 @@ class JsonStudyRepository:
             )
             user_state["answer_explanation_guardrail"] = self._normalize_answer_explanation_guardrail_payload(
                 user_state.get("answer_explanation_guardrail")
+            )
+            user_state["simulado_question_assembly"] = self._normalize_simulado_question_assembly_payload(
+                user_state.get("simulado_question_assembly")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -502,6 +526,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_question_assembly_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -595,6 +629,9 @@ class JsonStudyRepository:
         )
         state["answer_explanation_guardrail"] = self._normalize_answer_explanation_guardrail_payload(
             state.get("answer_explanation_guardrail")
+        )
+        state["simulado_question_assembly"] = self._normalize_simulado_question_assembly_payload(
+            state.get("simulado_question_assembly")
         )
         return state
 
@@ -831,6 +868,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_answer_explanation_guardrail_payload({})
         return self._ensure_user_state(payload, user_id)["answer_explanation_guardrail"]
+
+    def _simulado_question_assembly_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_question_assembly_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_question_assembly"]
 
     def save_document_pipeline_state(
         self,
@@ -1540,6 +1586,59 @@ class JsonStudyRepository:
     ) -> AnswerExplanationGuardrail | None:
         for item in self.list_user_answer_explanation_guardrails(user_id=user_id):
             if item.guardrail_id == guardrail_id:
+                return item
+        return None
+
+    def save_simulado_question_assembly(
+        self,
+        assembly: SimuladoQuestionAssembly,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado question assembly requires user ownership.")
+        payload = self._read()
+        container = self._simulado_question_assembly_container(payload, user_id)
+        container["results"][assembly.source_simulado_blueprint_id] = assembly.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_question_assembly(
+        self,
+        source_simulado_blueprint_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoQuestionAssembly | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_question_assembly_container(payload, user_id)["results"].get(
+            source_simulado_blueprint_id
+        )
+        if raw is None:
+            return None
+        return SimuladoQuestionAssembly.model_validate(raw)
+
+    def list_user_simulado_question_assemblies(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoQuestionAssembly]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_question_assembly_container(payload, user_id)["results"].values()
+        items = [SimuladoQuestionAssembly.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_simulado_blueprint_id)
+        return items
+
+    def get_simulado_question_assembly_by_id(
+        self,
+        assembly_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoQuestionAssembly | None:
+        for item in self.list_user_simulado_question_assemblies(user_id=user_id):
+            if item.assembly_id == assembly_id:
                 return item
         return None
 

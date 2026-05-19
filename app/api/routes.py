@@ -41,6 +41,7 @@ from app.services.exam_profiles import ExamProfileService
 from app.services.answer_explanation_guardrails import AnswerExplanationGuardrailService
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
+from app.services.simulado_question_assembly import SimuladoQuestionAssemblyService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -129,6 +130,10 @@ def get_question_draft_generation_service(request: Request) -> QuestionDraftGene
 
 def get_answer_explanation_guardrail_service(request: Request) -> AnswerExplanationGuardrailService:
     return AnswerExplanationGuardrailService(get_repository(request))
+
+
+def get_simulado_question_assembly_service(request: Request) -> SimuladoQuestionAssemblyService:
+    return SimuladoQuestionAssemblyService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -836,6 +841,54 @@ def get_answer_explanation_guardrail_by_id(guardrail_id: str, request: Request):
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Answer explanation guardrail not found.")
+    return result
+
+
+@router.post("/simulado-blueprint/{blueprint_id}/question-assembly/build")
+def build_simulado_question_assembly(blueprint_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    blueprint = get_repository(request).get_simulado_blueprint_by_id(
+        blueprint_id,
+        user_id=user_id,
+    )
+    if blueprint is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    result = get_simulado_question_assembly_service(request).build_assembly(
+        blueprint_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado question assembly could not be built.")
+    return result
+
+
+@router.get("/simulado-blueprint/{blueprint_id}/question-assembly")
+def get_simulado_question_assembly_for_blueprint(blueprint_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    blueprint = get_repository(request).get_simulado_blueprint_by_id(
+        blueprint_id,
+        user_id=user_id,
+    )
+    if blueprint is None:
+        raise HTTPException(status_code=404, detail="Simulado blueprint not found.")
+    result = get_simulado_question_assembly_service(request).get_assembly(
+        blueprint_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado question assembly not found.")
+    return result
+
+
+@router.get("/simulado-question-assembly/{assembly_id}")
+def get_simulado_question_assembly_by_id(assembly_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_question_assembly_service(request).get_assembly_by_id(
+        assembly_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado question assembly not found.")
     return result
 
 
