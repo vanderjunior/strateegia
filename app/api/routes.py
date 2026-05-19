@@ -41,6 +41,7 @@ from app.services.exam_profiles import ExamProfileService
 from app.services.answer_explanation_guardrails import AnswerExplanationGuardrailService
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
+from app.services.simulado_attempt_shell import SimuladoAttemptShellService
 from app.services.simulado_question_assembly import SimuladoQuestionAssemblyService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
@@ -134,6 +135,10 @@ def get_answer_explanation_guardrail_service(request: Request) -> AnswerExplanat
 
 def get_simulado_question_assembly_service(request: Request) -> SimuladoQuestionAssemblyService:
     return SimuladoQuestionAssemblyService(get_repository(request))
+
+
+def get_simulado_attempt_shell_service(request: Request) -> SimuladoAttemptShellService:
+    return SimuladoAttemptShellService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -889,6 +894,54 @@ def get_simulado_question_assembly_by_id(assembly_id: str, request: Request):
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado question assembly not found.")
+    return result
+
+
+@router.post("/simulado-question-assembly/{assembly_id}/attempt-shell/build")
+def build_simulado_attempt_shell(assembly_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    assembly = get_simulado_question_assembly_service(request).get_assembly_by_id(
+        assembly_id,
+        user_id=user_id,
+    )
+    if assembly is None:
+        raise HTTPException(status_code=404, detail="Simulado question assembly not found.")
+    result = get_simulado_attempt_shell_service(request).build_attempt_shell(
+        assembly_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt shell could not be built.")
+    return result
+
+
+@router.get("/simulado-question-assembly/{assembly_id}/attempt-shell")
+def get_simulado_attempt_shell_for_assembly(assembly_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    assembly = get_simulado_question_assembly_service(request).get_assembly_by_id(
+        assembly_id,
+        user_id=user_id,
+    )
+    if assembly is None:
+        raise HTTPException(status_code=404, detail="Simulado question assembly not found.")
+    result = get_simulado_attempt_shell_service(request).get_attempt_shell(
+        assembly_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt shell not found.")
+    return result
+
+
+@router.get("/simulado-attempt-shell/{attempt_shell_id}")
+def get_simulado_attempt_shell_by_id(attempt_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_attempt_shell_service(request).get_attempt_shell_by_id(
+        attempt_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt shell not found.")
     return result
 
 

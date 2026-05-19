@@ -29,6 +29,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `question draft`
 -> `answer/explanation guardrails`
 -> `simulado question assembly`
+-> `simulado attempt shell`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -57,6 +58,7 @@ Regras importantes desta cadeia:
 - fundacao de question draft generation provisoria, bounded e review-required
 - fundacao de answer key / explanation guardrails source-grounded, candidate-only e finalization-blocked
 - fundacao de simulado question assembly source-grounded, guardrail-aware, non-executable e non-scoreable
+- fundacao de simulado execution readiness / attempt shell assembly-aware, non-executable e sem submissions
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Como instalar
@@ -463,6 +465,34 @@ Regras importantes:
 - a etapa usa apenas artifacts ja persistidos e nao rebuilda simulado blueprint, question drafts ou guardrails
 - a etapa nao chama LLM, RAG, vector DB, embeddings ou servicos externos
 
+## Fundacao de simulado execution readiness / attempt shell
+
+Assemblies de simulado agora podem gerar um artifact user-scoped de readiness chamado `SimuladoAttemptShell`, ainda estritamente nao executavel e sem qualquer tentativa real de aluno.
+
+Capacidades atuais desta etapa:
+
+- avaliacao deterministica de readiness futura a partir de `SimuladoQuestionAssembly`
+- contagem de candidates `ready_for_review`, bloqueados e em revisao, sem transformar isso em questoes executaveis
+- blockers explicitos para assembly nao final, questoes nao finalizadas, answer keys finais ausentes, explanations finais ausentes e necessidade de finalizacao humana
+- flags declarativas para manter execution, correction, scoring, submissions e progress mutation desligados
+- persistencia owner-only do shell por assembly de origem
+
+Endpoints atuais de simulado execution readiness / attempt shell:
+
+- `POST /api/simulado-question-assembly/{assembly_id}/attempt-shell/build`
+- `GET /api/simulado-question-assembly/{assembly_id}/attempt-shell`
+- `GET /api/simulado-attempt-shell/{attempt_shell_id}`
+
+Regras importantes:
+
+- esta etapa produz readiness/shell artifacts nao executaveis apenas
+- `candidate_ready_for_review` nao significa simulado executavel
+- `assembly_ready_for_review` nao significa tentativa liberada
+- `execution_enabled`, `correction_enabled`, `scoring_enabled` e `student_submission_enabled` permanecem `false`
+- nao cria student attempts reais, answer submissions, correction results, scores ou mutacao de progresso
+- nao cria questoes finais, answer keys finais ou explanations finais
+- a etapa usa apenas `SimuladoQuestionAssembly` ja persistido e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -585,6 +615,7 @@ Outras notas de seguranca:
 - question draft generation existe apenas como artifact provisiorio e review-required; sem geracao final de questoes
 - answer key / explanation guardrails existem apenas como assessment/candidate layer, sem answer key final, explanation final, scoring ou correction
 - simulado question assembly existe apenas como pacote de revisao nao executavel e nao scoreable
+- simulado execution readiness / attempt shell existe apenas como artifact de readiness nao executavel, sem attempts, submissions, correction ou scoring
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -635,6 +666,8 @@ Itens planejados, mas nao implementados nesta etapa:
 - fixtures de estabilizacao para question draft generation
 - fixtures de estabilizacao para answer key / explanation guardrails
 - fixtures de estabilizacao para simulado question assembly
+- fixtures de estabilizacao para simulado execution readiness / attempt shell
+- guardrails futuros de finalizacao/aprovacao antes de qualquer tentativa real
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito
 - execucao e correcao futura de simulados

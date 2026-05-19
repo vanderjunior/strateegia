@@ -35,6 +35,10 @@ from app.domain.models import (
     QuestionGenerationBlueprintSet,
     SimuladoBlueprint,
     SimuladoBlueprintState,
+    SimuladoAttemptShell,
+    SimuladoAttemptShellValidationFinding,
+    SimuladoAttemptShellWarning,
+    SimuladoExecutionBlocker,
     SimuladoQuestionAssembly,
     StudyCyclePlan,
     StudyCyclePlanState,
@@ -273,6 +277,18 @@ class UserScopedStudyRepository:
     def get_simulado_question_assembly_by_id(self, assembly_id: str) -> SimuladoQuestionAssembly | None:
         return self._repository.get_simulado_question_assembly_by_id(assembly_id, user_id=self.user_id)
 
+    def save_simulado_attempt_shell(self, attempt_shell: SimuladoAttemptShell) -> None:
+        self._repository.save_simulado_attempt_shell(attempt_shell, user_id=self.user_id)
+
+    def get_simulado_attempt_shell(self, source_assembly_id: str) -> SimuladoAttemptShell | None:
+        return self._repository.get_simulado_attempt_shell(source_assembly_id, user_id=self.user_id)
+
+    def list_user_simulado_attempt_shells(self) -> list[SimuladoAttemptShell]:
+        return self._repository.list_user_simulado_attempt_shells(user_id=self.user_id)
+
+    def get_simulado_attempt_shell_by_id(self, attempt_shell_id: str) -> SimuladoAttemptShell | None:
+        return self._repository.get_simulado_attempt_shell_by_id(attempt_shell_id, user_id=self.user_id)
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -347,6 +363,9 @@ class JsonStudyRepository:
             "simulado_question_assembly": {
                 "results": {},
             },
+            "simulado_attempt_shell": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -409,6 +428,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_question_assembly"] = self._normalize_simulado_question_assembly_payload(
                 user_state.get("simulado_question_assembly")
+            )
+            user_state["simulado_attempt_shell"] = self._normalize_simulado_attempt_shell_payload(
+                user_state.get("simulado_attempt_shell")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -536,6 +558,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_attempt_shell_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -632,6 +664,9 @@ class JsonStudyRepository:
         )
         state["simulado_question_assembly"] = self._normalize_simulado_question_assembly_payload(
             state.get("simulado_question_assembly")
+        )
+        state["simulado_attempt_shell"] = self._normalize_simulado_attempt_shell_payload(
+            state.get("simulado_attempt_shell")
         )
         return state
 
@@ -877,6 +912,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_question_assembly_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_question_assembly"]
+
+    def _simulado_attempt_shell_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_attempt_shell_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_attempt_shell"]
 
     def save_document_pipeline_state(
         self,
@@ -1639,6 +1683,57 @@ class JsonStudyRepository:
     ) -> SimuladoQuestionAssembly | None:
         for item in self.list_user_simulado_question_assemblies(user_id=user_id):
             if item.assembly_id == assembly_id:
+                return item
+        return None
+
+    def save_simulado_attempt_shell(
+        self,
+        attempt_shell: SimuladoAttemptShell,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado attempt shell requires user ownership.")
+        payload = self._read()
+        container = self._simulado_attempt_shell_container(payload, user_id)
+        container["results"][attempt_shell.source_assembly_id] = attempt_shell.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_attempt_shell(
+        self,
+        source_assembly_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAttemptShell | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_attempt_shell_container(payload, user_id)["results"].get(source_assembly_id)
+        if raw is None:
+            return None
+        return SimuladoAttemptShell.model_validate(raw)
+
+    def list_user_simulado_attempt_shells(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoAttemptShell]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_attempt_shell_container(payload, user_id)["results"].values()
+        items = [SimuladoAttemptShell.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_assembly_id)
+        return items
+
+    def get_simulado_attempt_shell_by_id(
+        self,
+        attempt_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAttemptShell | None:
+        for item in self.list_user_simulado_attempt_shells(user_id=user_id):
+            if item.attempt_shell_id == attempt_shell_id:
                 return item
         return None
 

@@ -2885,6 +2885,64 @@ class SimuladoQuestionAssembly(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class SimuladoExecutionBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAttemptShellValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAttemptShellWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAttemptShell(BaseModel):
+    attempt_shell_id: str
+    user_id: str | None = None
+    source_assembly_id: str
+    source_simulado_blueprint_id: str
+    status: str = "execution_not_enabled"
+    readiness_state: str = "blocked_by_non_final_assembly"
+    total_candidates: int = 0
+    review_ready_candidates: int = 0
+    blocked_candidates: int = 0
+    needs_review_candidates: int = 0
+    executable_questions_count: int = 0
+    execution_enabled: bool = False
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    student_submission_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    requires_human_finalization: bool = True
+    no_student_attempt_created: bool = True
+    no_answer_submission_enabled: bool = True
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    validation_findings: list[SimuladoAttemptShellValidationFinding] = Field(default_factory=list)
+    blockers: list[SimuladoExecutionBlocker] = Field(default_factory=list)
+    warnings: list[SimuladoAttemptShellWarning] = Field(default_factory=list)
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
