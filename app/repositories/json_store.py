@@ -28,6 +28,11 @@ from app.domain.models import (
     FinalizationBlocker,
     FinalizationValidationFinding,
     FinalizationWarning,
+    FinalApprovalAuditTrailEntry,
+    FinalApprovalCandidateRecord,
+    FinalApprovalDecision,
+    FinalApprovalValidationFinding,
+    FinalApprovalWarning,
     ItemState,
     InterventionHistory,
     MicroTopicPerformance,
@@ -42,6 +47,7 @@ from app.domain.models import (
     SimuladoAttemptShellValidationFinding,
     SimuladoAttemptShellWarning,
     SimuladoExecutionBlocker,
+    SimuladoFinalApprovalArtifact,
     SimuladoFinalizationGuardrail,
     SimuladoQuestionAssembly,
     StudyCyclePlan,
@@ -314,6 +320,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_final_approval_artifact(self, artifact: SimuladoFinalApprovalArtifact) -> None:
+        self._repository.save_simulado_final_approval_artifact(artifact, user_id=self.user_id)
+
+    def get_simulado_final_approval_artifact(
+        self,
+        source_finalization_guardrail_id: str,
+    ) -> SimuladoFinalApprovalArtifact | None:
+        return self._repository.get_simulado_final_approval_artifact(
+            source_finalization_guardrail_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_final_approval_artifacts(self) -> list[SimuladoFinalApprovalArtifact]:
+        return self._repository.list_user_simulado_final_approval_artifacts(user_id=self.user_id)
+
+    def get_simulado_final_approval_artifact_by_id(
+        self,
+        approval_artifact_id: str,
+    ) -> SimuladoFinalApprovalArtifact | None:
+        return self._repository.get_simulado_final_approval_artifact_by_id(
+            approval_artifact_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -394,6 +424,9 @@ class JsonStudyRepository:
             "simulado_finalization_guardrail": {
                 "results": {},
             },
+            "simulado_final_approval": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -462,6 +495,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_finalization_guardrail"] = self._normalize_simulado_finalization_guardrail_payload(
                 user_state.get("simulado_finalization_guardrail")
+            )
+            user_state["simulado_final_approval"] = self._normalize_simulado_final_approval_payload(
+                user_state.get("simulado_final_approval")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -609,6 +645,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_final_approval_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -711,6 +757,9 @@ class JsonStudyRepository:
         )
         state["simulado_finalization_guardrail"] = self._normalize_simulado_finalization_guardrail_payload(
             state.get("simulado_finalization_guardrail")
+        )
+        state["simulado_final_approval"] = self._normalize_simulado_final_approval_payload(
+            state.get("simulado_final_approval")
         )
         return state
 
@@ -974,6 +1023,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_finalization_guardrail_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_finalization_guardrail"]
+
+    def _simulado_final_approval_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_final_approval_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_final_approval"]
 
     def save_document_pipeline_state(
         self,
@@ -1840,6 +1898,59 @@ class JsonStudyRepository:
     ) -> SimuladoFinalizationGuardrail | None:
         for item in self.list_user_simulado_finalization_guardrails(user_id=user_id):
             if item.finalization_guardrail_id == finalization_guardrail_id:
+                return item
+        return None
+
+    def save_simulado_final_approval_artifact(
+        self,
+        artifact: SimuladoFinalApprovalArtifact,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado final approval artifact requires user ownership.")
+        payload = self._read()
+        container = self._simulado_final_approval_container(payload, user_id)
+        container["results"][artifact.source_finalization_guardrail_id] = artifact.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_final_approval_artifact(
+        self,
+        source_finalization_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoFinalApprovalArtifact | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_final_approval_container(payload, user_id)["results"].get(
+            source_finalization_guardrail_id
+        )
+        if raw is None:
+            return None
+        return SimuladoFinalApprovalArtifact.model_validate(raw)
+
+    def list_user_simulado_final_approval_artifacts(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoFinalApprovalArtifact]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_final_approval_container(payload, user_id)["results"].values()
+        items = [SimuladoFinalApprovalArtifact.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_finalization_guardrail_id)
+        return items
+
+    def get_simulado_final_approval_artifact_by_id(
+        self,
+        approval_artifact_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoFinalApprovalArtifact | None:
+        for item in self.list_user_simulado_final_approval_artifacts(user_id=user_id):
+            if item.approval_artifact_id == approval_artifact_id:
                 return item
         return None
 

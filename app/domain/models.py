@@ -3025,6 +3025,98 @@ class SimuladoFinalizationGuardrail(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class FinalApprovalCandidateRecord(BaseModel):
+    record_id: str
+    source_candidate_id: str | None = None
+    source_question_draft_id: str | None = None
+    source_guardrail_id: str | None = None
+    approval_state: str = "candidate_not_reviewed"
+    decision_id: str | None = None
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    final_question_ready: bool = False
+    final_answer_key_ready: bool = False
+    final_explanation_ready: bool = False
+    requires_human_review: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalApprovalDecision(BaseModel):
+    decision_id: str
+    source_candidate_id: str | None = None
+    decision_type: str
+    decision_state: str = "decision_recorded"
+    reviewer_id: str | None = None
+    reason: str | None = None
+    approved_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalApprovalAuditTrailEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalApprovalValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalApprovalWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoFinalApprovalArtifact(BaseModel):
+    approval_artifact_id: str
+    user_id: str | None = None
+    source_finalization_guardrail_id: str
+    source_attempt_shell_id: str
+    source_assembly_id: str
+    source_simulado_blueprint_id: str
+    status: str = "approval_needs_review"
+    readiness_state: str = "needs_human_review"
+    total_candidates: int = 0
+    approved_candidate_count: int = 0
+    blocked_candidate_count: int = 0
+    needs_review_candidate_count: int = 0
+    rejected_candidate_count: int = 0
+    not_reviewed_candidate_count: int = 0
+    candidate_records: list[FinalApprovalCandidateRecord] = Field(default_factory=list)
+    decisions: list[FinalApprovalDecision] = Field(default_factory=list)
+    audit_trail: list[FinalApprovalAuditTrailEntry] = Field(default_factory=list)
+    validation_findings: list[FinalApprovalValidationFinding] = Field(default_factory=list)
+    warnings: list[FinalApprovalWarning] = Field(default_factory=list)
+    approval_recorded: bool = False
+    human_approved: bool = False
+    human_reviewer_id: str | None = None
+    human_review_required: bool = True
+    execution_enabled: bool = False
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    student_submission_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    no_student_attempt_created: bool = True
+    no_answer_submission_enabled: bool = True
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

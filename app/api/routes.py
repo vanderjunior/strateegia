@@ -42,6 +42,7 @@ from app.services.answer_explanation_guardrails import AnswerExplanationGuardrai
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.simulado_attempt_shell import SimuladoAttemptShellService
+from app.services.simulado_final_approval import SimuladoFinalApprovalService
 from app.services.simulado_finalization_guardrails import SimuladoFinalizationGuardrailsService
 from app.services.simulado_question_assembly import SimuladoQuestionAssemblyService
 from app.services.snapshot_offline_io import export_inspection_snapshot
@@ -146,6 +147,10 @@ def get_simulado_finalization_guardrails_service(
     request: Request,
 ) -> SimuladoFinalizationGuardrailsService:
     return SimuladoFinalizationGuardrailsService(get_repository(request))
+
+
+def get_simulado_final_approval_service(request: Request) -> SimuladoFinalApprovalService:
+    return SimuladoFinalApprovalService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -997,6 +1002,59 @@ def get_simulado_finalization_guardrail_by_id(finalization_guardrail_id: str, re
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado finalization guardrail not found.")
+    return result
+
+
+@router.post("/simulado-finalization-guardrail/{finalization_guardrail_id}/final-approval/build")
+def build_simulado_final_approval_artifact(
+    finalization_guardrail_id: str,
+    request: Request,
+    payload: dict[str, object] | None = Body(default=None),
+):
+    user_id = _require_authenticated_user_id(request)
+    guardrail = get_simulado_finalization_guardrails_service(request).get_guardrail_by_id(
+        finalization_guardrail_id,
+        user_id=user_id,
+    )
+    if guardrail is None:
+        raise HTTPException(status_code=404, detail="Simulado finalization guardrail not found.")
+    result = get_simulado_final_approval_service(request).build_approval_artifact(
+        finalization_guardrail_id,
+        user_id=user_id,
+        decision_payload=payload,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado final approval artifact could not be built.")
+    return result
+
+
+@router.get("/simulado-finalization-guardrail/{finalization_guardrail_id}/final-approval")
+def get_simulado_final_approval_artifact_for_guardrail(finalization_guardrail_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    guardrail = get_simulado_finalization_guardrails_service(request).get_guardrail_by_id(
+        finalization_guardrail_id,
+        user_id=user_id,
+    )
+    if guardrail is None:
+        raise HTTPException(status_code=404, detail="Simulado finalization guardrail not found.")
+    result = get_simulado_final_approval_service(request).get_approval_artifact(
+        finalization_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado final approval artifact not found.")
+    return result
+
+
+@router.get("/simulado-final-approval/{approval_artifact_id}")
+def get_simulado_final_approval_artifact_by_id(approval_artifact_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_final_approval_service(request).get_approval_artifact_by_id(
+        approval_artifact_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado final approval artifact not found.")
     return result
 
 
