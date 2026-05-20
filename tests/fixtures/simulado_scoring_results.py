@@ -180,6 +180,60 @@ def mixed_score_fixture(
     return _wrap_fixture(_mixed_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
+def no_scoreable_records_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_mixed_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def blocked_records_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_selected_option_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def missing_score_policy_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_selected_option_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def safe_policy_snapshot_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_selected_option_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def mixed_score_result_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_mixed_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def score_summary_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_mixed_correction_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
 def no_public_key_gabarito_safety_fixture(
     tmp_path,
     *,
@@ -199,6 +253,15 @@ def no_scoring_safety_fixture(
 
 
 def no_progress_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoScoreResultFixture:
+    return _wrap_fixture(_no_progress_mutation_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def no_runtime_mutation_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
