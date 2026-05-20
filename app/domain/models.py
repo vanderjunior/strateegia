@@ -3462,6 +3462,121 @@ class SimuladoCorrectionShell(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class CorrectionInputContract(BaseModel):
+    contract_id: str
+    contract_available: bool = True
+    internal_only: bool = True
+    public_exposure_allowed: bool = False
+    supported_formats: list[str] = Field(default_factory=list)
+    supported_answer_kinds: list[str] = Field(default_factory=list)
+    unsupported_answer_kinds: list[str] = Field(default_factory=list)
+    requires_final_answer_key: bool = True
+    requires_correction_rule: bool = True
+    requires_score_rule: bool = True
+    correction_allowed_now: bool = False
+    scoring_allowed_now: bool = False
+    future_correction_possible: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionInputAnswerRecord(BaseModel):
+    record_id: str
+    source_correction_shell_answer_record_id: str
+    source_submitted_answer_id: str
+    source_session_item_id: str
+    source_candidate_id: str | None = None
+    answer_kind: str = "blank"
+    format_type: str = "unknown"
+    boundary_readiness_state: str = "answer_not_corrected"
+    has_internal_answer_key_reference: bool = False
+    has_public_answer_key_content: bool = False
+    answer_key_publicly_exposed: bool = False
+    has_correction_rule_reference: bool = False
+    has_score_rule_reference: bool = False
+    future_correction_supported: bool = False
+    correction_allowed_now: bool = False
+    scoring_allowed_now: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class InternalAnswerKeyReference(BaseModel):
+    reference_id: str
+    source_candidate_id: str | None = None
+    source_guardrail_id: str | None = None
+    source_approval_artifact_id: str | None = None
+    source_finalization_artifact_id: str | None = None
+    answer_key_reference_available: bool = False
+    answer_key_value_stored: bool = False
+    answer_key_value_publicly_exposed: bool = False
+    answer_key_value_hash: str | None = None
+    answer_key_value_redacted: bool = True
+    allowed_values: list[str] = Field(default_factory=list)
+    reference_state: str = "missing_internal_answer_key_reference"
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AnswerKeyBoundaryBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AnswerKeyBoundaryValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AnswerKeyBoundaryWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAnswerKeyBoundary(BaseModel):
+    answer_key_boundary_id: str
+    user_id: str | None = None
+    source_correction_shell_id: str
+    source_answer_submission_id: str
+    source_attempt_session_id: str
+    source_simulado_blueprint_id: str
+    status: str = "answer_key_boundary_blocked"
+    readiness_state: str = "blocked_by_missing_correction_shell"
+    total_answer_records: int = 0
+    supported_answer_record_count: int = 0
+    blocked_answer_record_count: int = 0
+    internal_answer_key_reference_count: int = 0
+    correction_input_contract: CorrectionInputContract
+    answer_records: list[CorrectionInputAnswerRecord] = Field(default_factory=list)
+    internal_answer_key_references: list[InternalAnswerKeyReference] = Field(default_factory=list)
+    blockers: list[AnswerKeyBoundaryBlocker] = Field(default_factory=list)
+    validation_findings: list[AnswerKeyBoundaryValidationFinding] = Field(default_factory=list)
+    warnings: list[AnswerKeyBoundaryWarning] = Field(default_factory=list)
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    no_progress_mutation: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

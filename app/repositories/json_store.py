@@ -7,6 +7,9 @@ from app.domain.models import (
     AssemblyWarning,
     AssemblyValidationFinding,
     AnswerExplanationGuardrail,
+    AnswerKeyBoundaryBlocker,
+    AnswerKeyBoundaryValidationFinding,
+    AnswerKeyBoundaryWarning,
     AnswerSubmissionValidationFinding,
     AnswerSubmissionWarning,
     AttemptSessionBlocker,
@@ -32,6 +35,8 @@ from app.domain.models import (
     EditalIngestionState,
     ErrorType,
     CorrectionReadinessSummary,
+    CorrectionInputAnswerRecord,
+    CorrectionInputContract,
     CorrectionShellAnswerRecord,
     CorrectionShellBlocker,
     CorrectionShellValidationFinding,
@@ -51,6 +56,7 @@ from app.domain.models import (
     ExecutionShellWarning,
     ItemState,
     InterventionHistory,
+    InternalAnswerKeyReference,
     MicroTopicPerformance,
     PedagogicalMemory,
     PedagogicalOutcome,
@@ -65,6 +71,7 @@ from app.domain.models import (
     SimuladoAttemptShell,
     SimuladoAttemptShellValidationFinding,
     SimuladoAttemptShellWarning,
+    SimuladoAnswerKeyBoundary,
     SimuladoExecutionBlocker,
     SimuladoExecutionShell,
     SimuladoFinalApprovalArtifact,
@@ -462,6 +469,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_answer_key_boundary(self, boundary: SimuladoAnswerKeyBoundary) -> None:
+        self._repository.save_simulado_answer_key_boundary(boundary, user_id=self.user_id)
+
+    def get_simulado_answer_key_boundary(
+        self,
+        source_correction_shell_id: str,
+    ) -> SimuladoAnswerKeyBoundary | None:
+        return self._repository.get_simulado_answer_key_boundary(
+            source_correction_shell_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_answer_key_boundaries(self) -> list[SimuladoAnswerKeyBoundary]:
+        return self._repository.list_user_simulado_answer_key_boundaries(user_id=self.user_id)
+
+    def get_simulado_answer_key_boundary_by_id(
+        self,
+        answer_key_boundary_id: str,
+    ) -> SimuladoAnswerKeyBoundary | None:
+        return self._repository.get_simulado_answer_key_boundary_by_id(
+            answer_key_boundary_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -557,6 +588,9 @@ class JsonStudyRepository:
             "simulado_correction_shell": {
                 "results": {},
             },
+            "simulado_answer_key_boundary": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -640,6 +674,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_correction_shell"] = self._normalize_simulado_correction_shell_payload(
                 user_state.get("simulado_correction_shell")
+            )
+            user_state["simulado_answer_key_boundary"] = self._normalize_simulado_answer_key_boundary_payload(
+                user_state.get("simulado_answer_key_boundary")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -837,6 +874,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_answer_key_boundary_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -954,6 +1001,9 @@ class JsonStudyRepository:
         )
         state["simulado_correction_shell"] = self._normalize_simulado_correction_shell_payload(
             state.get("simulado_correction_shell")
+        )
+        state["simulado_answer_key_boundary"] = self._normalize_simulado_answer_key_boundary_payload(
+            state.get("simulado_answer_key_boundary")
         )
         return state
 
@@ -1262,6 +1312,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_correction_shell_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_correction_shell"]
+
+    def _simulado_answer_key_boundary_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_answer_key_boundary_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_answer_key_boundary"]
 
     def save_document_pipeline_state(
         self,
@@ -2393,6 +2452,59 @@ class JsonStudyRepository:
     ) -> SimuladoCorrectionShell | None:
         for item in self.list_user_simulado_correction_shells(user_id=user_id):
             if item.correction_shell_id == correction_shell_id:
+                return item
+        return None
+
+    def save_simulado_answer_key_boundary(
+        self,
+        boundary: SimuladoAnswerKeyBoundary,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado answer key boundary requires user ownership.")
+        payload = self._read()
+        container = self._simulado_answer_key_boundary_container(payload, user_id)
+        container["results"][boundary.source_correction_shell_id] = boundary.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_answer_key_boundary(
+        self,
+        source_correction_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAnswerKeyBoundary | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_answer_key_boundary_container(payload, user_id)["results"].get(
+            source_correction_shell_id
+        )
+        if raw is None:
+            return None
+        return SimuladoAnswerKeyBoundary.model_validate(raw)
+
+    def list_user_simulado_answer_key_boundaries(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoAnswerKeyBoundary]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_answer_key_boundary_container(payload, user_id)["results"].values()
+        items = [SimuladoAnswerKeyBoundary.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_correction_shell_id)
+        return items
+
+    def get_simulado_answer_key_boundary_by_id(
+        self,
+        answer_key_boundary_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAnswerKeyBoundary | None:
+        for item in self.list_user_simulado_answer_key_boundaries(user_id=user_id):
+            if item.answer_key_boundary_id == answer_key_boundary_id:
                 return item
         return None
 

@@ -36,6 +36,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `simulado attempt session`
 -> `answer submission`
 -> `correction shell`
+-> `answer key boundary`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -71,6 +72,7 @@ Regras importantes desta cadeia:
 - fundacao de simulado attempt session execution-shell-aware, prepared-only e non-submittable
 - fundacao de answer submission attempt-session-aware, bounded-input-only, non-correcting e non-scoring
 - fundacao de correction readiness / correction shell answer-submission-aware, readiness-only, non-correcting e non-scoring
+- fundacao de final answer key exposure boundary / correction input contract correction-shell-aware, internal-only, non-correcting e non-scoring
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Fundacao de answer submission
@@ -136,6 +138,39 @@ Trabalho futuro desta trilha:
 
 - Correction Shell Stabilization Fixtures
 - real Simulado Execution/Correction Foundation
+
+## Fundacao de final answer key exposure boundary / correction input contract
+
+Correction shells agora podem gerar um artifact separado de `answer key boundary`, sempre user-scoped, deterministico e internal-only.
+
+Capacidades atuais desta etapa:
+
+- cria um correction input contract interno a partir de um `SimuladoCorrectionShell`
+- registra readiness por resposta para correcao futura sem expor answer key ou gabarito
+- persiste metadados redacted/hash-only de referencia interna quando necessario, sem retornar valor bruto de answer key
+- registra indisponibilidade de internal answer key references, correction rules e score rules
+- mantem correction, scoring e progress mutation desabilitados
+
+Endpoints atuais de answer key boundary:
+
+- `POST /api/simulado-correction-shell/{correction_shell_id}/answer-key-boundary/build`
+- `GET /api/simulado-correction-shell/{correction_shell_id}/answer-key-boundary`
+- `GET /api/simulado-answer-key-boundary/{answer_key_boundary_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas contracts internos de correcao futura
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+- esta etapa nao corrige respostas
+- esta etapa nao calcula score, grade ou simulado result
+- esta etapa nao muta progresso, ranking, retention ou scheduler
+
+Trabalho futuro desta trilha:
+
+- Correction Result Foundation
+- Scoring Foundation
+- Progress Mutation Guardrails
+- Integrated Execution/Correction Foundation
 
 ## Como instalar
 

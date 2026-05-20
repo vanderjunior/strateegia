@@ -44,6 +44,7 @@ from app.services.question_generation_blueprint import QuestionGenerationBluepri
 from app.services.simulado_attempt_shell import SimuladoAttemptShellService
 from app.services.simulado_answer_submission import SimuladoAnswerSubmissionService
 from app.services.simulado_attempt_session import SimuladoAttemptSessionService
+from app.services.simulado_answer_key_boundary import SimuladoAnswerKeyBoundaryService
 from app.services.simulado_correction_shell import SimuladoCorrectionShellService
 from app.services.simulado_execution_shell import SimuladoExecutionShellService
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
@@ -171,6 +172,10 @@ def get_simulado_answer_submission_service(request: Request) -> SimuladoAnswerSu
 
 def get_simulado_correction_shell_service(request: Request) -> SimuladoCorrectionShellService:
     return SimuladoCorrectionShellService(get_repository(request))
+
+
+def get_simulado_answer_key_boundary_service(request: Request) -> SimuladoAnswerKeyBoundaryService:
+    return SimuladoAnswerKeyBoundaryService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1272,6 +1277,54 @@ def get_simulado_correction_shell_by_id(correction_shell_id: str, request: Reque
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado correction shell not found.")
+    return result
+
+
+@router.post("/simulado-correction-shell/{correction_shell_id}/answer-key-boundary/build")
+def build_simulado_answer_key_boundary_for_correction_shell(correction_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    correction_shell = get_simulado_correction_shell_service(request).get_correction_shell_by_id(
+        correction_shell_id,
+        user_id=user_id,
+    )
+    if correction_shell is None:
+        raise HTTPException(status_code=404, detail="Simulado correction shell not found.")
+    result = get_simulado_answer_key_boundary_service(request).build_answer_key_boundary(
+        correction_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado answer key boundary could not be built.")
+    return result
+
+
+@router.get("/simulado-correction-shell/{correction_shell_id}/answer-key-boundary")
+def get_simulado_answer_key_boundary_for_correction_shell(correction_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    correction_shell = get_simulado_correction_shell_service(request).get_correction_shell_by_id(
+        correction_shell_id,
+        user_id=user_id,
+    )
+    if correction_shell is None:
+        raise HTTPException(status_code=404, detail="Simulado correction shell not found.")
+    result = get_simulado_answer_key_boundary_service(request).get_answer_key_boundary(
+        correction_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado answer key boundary not found.")
+    return result
+
+
+@router.get("/simulado-answer-key-boundary/{answer_key_boundary_id}")
+def get_simulado_answer_key_boundary_by_id(answer_key_boundary_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_answer_key_boundary_service(request).get_answer_key_boundary_by_id(
+        answer_key_boundary_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado answer key boundary not found.")
     return result
 
 
