@@ -105,6 +105,51 @@ def no_scoreable_items_fixture(
     return _wrap_fixture(_no_scoreable_records_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
+def incomplete_score_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_mixed_score_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def score_needs_review_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_mixed_score_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def missing_topic_mapping_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_no_scoreable_records_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def missing_policy_confirmation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_missing_score_policy_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def runtime_mutation_disabled_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_no_runtime_mutation_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
 def blocked_score_fixture(
     tmp_path,
     *,
@@ -166,6 +211,24 @@ def mixed_guardrail_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoProgressGuardrailFixture:
     return _wrap_fixture(_mixed_score_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def candidate_progress_target_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_mixed_score_result_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def score_completeness_assessment_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoProgressGuardrailFixture:
+    return _wrap_fixture(_score_summary_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
 def score_summary_fixture(
