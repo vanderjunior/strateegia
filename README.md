@@ -75,6 +75,7 @@ Regras importantes desta cadeia:
 - fundacao de correction readiness / correction shell answer-submission-aware, readiness-only, non-correcting e non-scoring
 - fundacao de final answer key exposure boundary / correction input contract correction-shell-aware, internal-only, non-correcting e non-scoring
 - fundacao de correction result answer-key-boundary-aware, non-scoreable e sem final simulado result
+- fundacao de scoring result correction-result-aware, sem mutacao de progresso/ranking/retention/scheduler e sem exposicao publica de answer key/gabarito
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Fundacao de answer submission
@@ -202,7 +203,39 @@ Regras importantes:
 Trabalho futuro desta trilha:
 
 - Correction Result Stabilization Fixtures
-- Scoring Foundation
+- Progress Mutation Guardrails
+- Integrated Execution/Correction Foundation
+
+## Fundacao de scoring
+
+Correction results agora podem gerar um artifact separado de `score result`, sempre user-scoped, deterministico e isolado do runtime pedagogico.
+
+Capacidades atuais desta etapa:
+
+- cria um score result a partir de um `SimuladoCorrectionResult`
+- registra item-level score records, score summary e score policy metadata conservadora
+- preserva blockers, needs-review counts e itens nao scoreable sem inventar corretude ou gabarito
+- persiste um artifact proprio de scoring, sem mutar correction result, answer key boundary, correction shell ou answer submission de origem
+- mantem progress, ranking, retention, scheduler, study cycle e curriculum graph sem mutacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de scoring:
+
+- `POST /api/simulado-correction-result/{correction_result_id}/score/build`
+- `GET /api/simulado-correction-result/{correction_result_id}/score`
+- `GET /api/simulado-score-result/{score_result_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas score result artifacts
+- esta etapa nao aplica score ao runtime pedagogico
+- esta etapa nao muta progresso, ranking, retention, scheduler, study cycle ou curriculum graph
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+- score so e computado quando correction records e policy persistida forem explicitamente seguros; caso contrario o artifact permanece blocked/no_scoreable_items
+
+Trabalho futuro desta trilha:
+
+- Scoring Stabilization Fixtures
 - Progress Mutation Guardrails
 - Integrated Execution/Correction Foundation
 

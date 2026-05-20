@@ -3675,6 +3675,121 @@ class SimuladoCorrectionResult(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ScoreItemRecord(BaseModel):
+    record_id: str
+    source_correction_result_answer_record_id: str
+    source_submitted_answer_id: str
+    source_session_item_id: str
+    source_candidate_id: str | None = None
+    answer_kind: str = "blank"
+    correction_state: str = "answer_not_corrected"
+    score_state: str = "item_not_scoreable"
+    scoreable: bool = False
+    scored: bool = False
+    points_awarded: float = 0.0
+    max_points: float = 0.0
+    scoring_blockers: list[str] = Field(default_factory=list)
+    requires_review: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ScoreSummary(BaseModel):
+    summary_id: str
+    raw_score: float = 0.0
+    max_score: float = 0.0
+    percentage_score: float | None = None
+    score_computable: bool = False
+    score_complete: bool = False
+    score_partial: bool = False
+    no_scoreable_items: bool = True
+    blocked_items_present: bool = True
+    needs_review_present: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ScorePolicySnapshot(BaseModel):
+    policy_id: str
+    policy_source: str | None = None
+    policy_available: bool = False
+    per_item_default_points: float | None = None
+    negative_marking_enabled: bool = False
+    negative_marking_source: str | None = None
+    blank_penalty_enabled: bool = False
+    unsupported_items_scoreable: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ScoreBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ScoreValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ScoreWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoScoreResult(BaseModel):
+    score_result_id: str
+    user_id: str | None = None
+    source_correction_result_id: str
+    source_answer_key_boundary_id: str
+    source_correction_shell_id: str
+    source_answer_submission_id: str
+    source_attempt_session_id: str
+    source_simulado_blueprint_id: str
+    status: str = "score_result_blocked"
+    readiness_state: str = "blocked_by_missing_correction_result"
+    total_answer_records: int = 0
+    scoreable_item_count: int = 0
+    scored_item_count: int = 0
+    blocked_item_count: int = 0
+    needs_review_item_count: int = 0
+    blank_item_count: int = 0
+    unsupported_item_count: int = 0
+    item_records: list[ScoreItemRecord] = Field(default_factory=list)
+    score_summary: ScoreSummary
+    score_policy: ScorePolicySnapshot
+    blockers: list[ScoreBlocker] = Field(default_factory=list)
+    validation_findings: list[ScoreValidationFinding] = Field(default_factory=list)
+    warnings: list[ScoreWarning] = Field(default_factory=list)
+    progress_mutation_enabled: bool = False
+    ranking_mutation_enabled: bool = False
+    retention_mutation_enabled: bool = False
+    scheduler_mutation_enabled: bool = False
+    study_cycle_mutation_enabled: bool = False
+    curriculum_graph_mutation_enabled: bool = False
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
