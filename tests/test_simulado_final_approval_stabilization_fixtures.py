@@ -119,43 +119,54 @@ def test_final_approval_fixtures_are_deterministic_and_json_safe(tmp_path):
 
 
 def test_no_automatic_approval_and_explicit_manual_decisions_remain_non_executable(tmp_path):
-    no_decision = build_approval_artifact(no_decision_payload_fixture(tmp_path / "no-decision"))
+    no_decision_fixture = no_decision_payload_fixture(tmp_path / "no-decision")
+    no_decision = build_approval_artifact(no_decision_fixture)
+
+    approve_fixture = explicit_approve_for_future_execution_review_fixture(tmp_path / "approve")
     approve = build_approval_artifact(
-        explicit_approve_for_future_execution_review_fixture(tmp_path / "approve"),
+        approve_fixture,
         decision_payload=single_decision_payload(
-            explicit_approve_for_future_execution_review_fixture(tmp_path / "approve"),
+            approve_fixture,
             decision_type="approve_for_future_execution_review",
             reason="Approved only for future execution review.",
         ),
     )
+
+    reject_fixture = reject_decision_fixture(tmp_path / "reject")
     reject = build_approval_artifact(
-        reject_decision_fixture(tmp_path / "reject"),
+        reject_fixture,
         decision_payload=single_decision_payload(
-            reject_decision_fixture(tmp_path / "reject"),
+            reject_fixture,
             decision_type="reject",
             reason="Rejected in deterministic fixture review.",
         ),
     )
+
+    revision_fixture = request_revision_decision_fixture(tmp_path / "revision")
     revision = build_approval_artifact(
-        request_revision_decision_fixture(tmp_path / "revision"),
+        revision_fixture,
         decision_payload=single_decision_payload(
-            request_revision_decision_fixture(tmp_path / "revision"),
+            revision_fixture,
             decision_type="request_revision",
             reason="Needs revision before any future review stage.",
         ),
     )
+
+    blocked_fixture = block_decision_fixture(tmp_path / "blocked")
     blocked = build_approval_artifact(
-        block_decision_fixture(tmp_path / "blocked"),
+        blocked_fixture,
         decision_payload=single_decision_payload(
-            block_decision_fixture(tmp_path / "blocked"),
+            blocked_fixture,
             decision_type="block",
             reason="Blocked in deterministic fixture review.",
         ),
     )
+
+    not_reviewed_fixture = mark_not_reviewed_decision_fixture(tmp_path / "not-reviewed")
     not_reviewed = build_approval_artifact(
-        mark_not_reviewed_decision_fixture(tmp_path / "not-reviewed"),
+        not_reviewed_fixture,
         decision_payload=single_decision_payload(
-            mark_not_reviewed_decision_fixture(tmp_path / "not-reviewed"),
+            not_reviewed_fixture,
             decision_type="mark_not_reviewed",
             reason="Explicitly marked not reviewed.",
         ),
@@ -209,18 +220,22 @@ def test_mixed_decisions_blocked_guardrails_and_final_readiness_flags_stay_conse
         mixed_fixture,
         decision_payload=mixed_decision_payload(mixed_fixture),
     )
+
+    blocked_fixture = blocked_guardrail_fixture(tmp_path / "blocked-guardrail")
     blocked_guardrail = build_approval_artifact(
-        blocked_guardrail_fixture(tmp_path / "blocked-guardrail"),
+        blocked_fixture,
         decision_payload=single_decision_payload(
-            blocked_guardrail_fixture(tmp_path / "blocked-guardrail"),
+            blocked_fixture,
             decision_type="approve_for_future_execution_review",
             reason="Even explicit approval must remain blocked here.",
         ),
     )
+
+    readiness_fixture = final_readiness_flags_false_fixture(tmp_path / "readiness")
     readiness = build_approval_artifact(
-        final_readiness_flags_false_fixture(tmp_path / "readiness"),
+        readiness_fixture,
         decision_payload=single_decision_payload(
-            final_readiness_flags_false_fixture(tmp_path / "readiness"),
+            readiness_fixture,
             decision_type="approve_for_future_execution_review",
             reason="Approved for future review only.",
         ),
@@ -236,7 +251,8 @@ def test_mixed_decisions_blocked_guardrails_and_final_readiness_flags_stay_conse
     assert mixed.needs_review_candidate_count >= 0
     assert mixed.blocked_candidate_count >= 0
     assert mixed.not_reviewed_candidate_count >= 0
-    assert len(mixed.decisions) == len(mixed.audit_trail) - 1
+    assert len(mixed.decisions) >= 3
+    assert len(mixed.audit_trail) == len(mixed.decisions) + 1
     assert_disabled_flags(mixed)
 
     assert blocked_guardrail.status in {"approval_blocked", "approval_needs_review", "approval_partially_recorded"}
@@ -261,14 +277,14 @@ def test_no_execution_submission_score_safety_and_bounded_audit_hold(tmp_path):
             reason="Safe audit-only approval record.",
         ),
     )
+
     bounded_fixture = bounded_audit_reason_fixture(tmp_path / "bounded")
-    long_reason = "A" * 600
     bounded = build_approval_artifact(
         bounded_fixture,
         decision_payload=single_decision_payload(
             bounded_fixture,
             decision_type="approve_for_future_execution_review",
-            reason=long_reason,
+            reason="A" * 600,
         ),
     )
 
@@ -303,6 +319,7 @@ def test_final_approval_persistence_idempotency_and_different_payload_behavior_a
         decision_type="approve_for_future_execution_review",
         reason="Approved for future execution review only.",
     )
+
     first = build_approval_artifact(fixture, decision_payload=mark_not_reviewed_payload)
     second = build_approval_artifact(fixture, decision_payload=mark_not_reviewed_payload)
     changed = build_approval_artifact(fixture, decision_payload=approve_payload)
@@ -436,4 +453,3 @@ def test_final_approval_build_and_get_do_not_mutate_source_finalization_guardrai
     assert after_guardrail is not None
     assert built.model_dump(mode="json") == loaded.model_dump(mode="json") == by_id.model_dump(mode="json")
     assert before_guardrail.model_dump(mode="json") == after_guardrail.model_dump(mode="json")
-

@@ -7,7 +7,6 @@ from app.repositories.json_store import JsonStudyRepository
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
 from tests.fixtures.simulado_finalization_guardrails import (
     SimuladoFinalizationGuardrailFixture,
-    all_blocked_candidates_fixture as _all_blocked_candidates_fixture,
     assembly_json_keys,
     bounded_summary_fixture as _bounded_summary_fixture,
     build_finalization_guardrail,
@@ -83,23 +82,18 @@ def single_decision_payload(
 ) -> dict[str, object]:
     candidate_id = source_candidate_id or first_candidate_id(fixture)
     assert candidate_id is not None
-    payload: dict[str, object] = {
-        "decisions": [
-            {
-                "source_candidate_id": candidate_id,
-                "decision_type": decision_type,
-                "reason": reason,
-            }
-        ]
+    decision: dict[str, object] = {
+        "source_candidate_id": candidate_id,
+        "decision_type": decision_type,
+        "reason": reason,
     }
     if reviewer_id is not None:
-        payload["decisions"][0]["reviewer_id"] = reviewer_id
-    return payload
+        decision["reviewer_id"] = reviewer_id
+    return {"decisions": [decision]}
 
 
 def mixed_decision_payload(fixture: SimuladoFinalApprovalFixture) -> dict[str, object]:
-    ids = candidate_ids(fixture)
-    assert ids
+    decisions: list[dict[str, object]] = []
     decision_types = [
         "approve_for_future_execution_review",
         "reject",
@@ -107,14 +101,12 @@ def mixed_decision_payload(fixture: SimuladoFinalApprovalFixture) -> dict[str, o
         "block",
         "mark_not_reviewed",
     ]
-    decisions: list[dict[str, object]] = []
-    for index, candidate_id in enumerate(ids):
-        decision_type = decision_types[index % len(decision_types)]
+    for index, candidate_id in enumerate(candidate_ids(fixture)):
         decisions.append(
             {
                 "source_candidate_id": candidate_id,
-                "decision_type": decision_type,
-                "reason": f"Deterministic fixture decision {index} for {decision_type}.",
+                "decision_type": decision_types[index % len(decision_types)],
+                "reason": f"Deterministic fixture decision {index}.",
             }
         )
     return {"decisions": decisions}
@@ -259,4 +251,3 @@ def idempotency_fixture(
     return _wrap_fixture(
         _idempotency_fixture(tmp_path, user_id=user_id, repository=repository)
     )
-
