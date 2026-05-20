@@ -3117,6 +3117,106 @@ class SimuladoFinalApprovalArtifact(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ExecutionShellCandidateRecord(BaseModel):
+    record_id: str
+    source_candidate_id: str | None = None
+    source_approval_record_id: str | None = None
+    approval_state: str = "candidate_not_reviewed"
+    execution_readiness_state: str = "candidate_execution_blocked"
+    order_index: int = 0
+    display_position: int = 1
+    has_final_question: bool = False
+    has_final_answer_key: bool = False
+    has_final_explanation: bool = False
+    can_be_presented_to_student: bool = False
+    can_accept_answer: bool = False
+    can_be_corrected: bool = False
+    can_be_scored: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExecutionShellOperationalSummary(BaseModel):
+    summary_id: str
+    has_final_approval_artifact: bool = True
+    has_approved_candidates: bool = False
+    has_final_questions: bool = False
+    has_final_answer_keys: bool = False
+    has_final_explanations: bool = False
+    has_execution_session: bool = False
+    future_execution_possible_after_finalization: bool = False
+    execution_disabled_reason: str = ""
+    candidate_ordering_strategy: str = "stable_source_candidate_id"
+    estimated_question_count: int = 0
+    estimated_duration_minutes: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExecutionShellBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExecutionShellValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExecutionShellWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoExecutionShell(BaseModel):
+    execution_shell_id: str
+    user_id: str | None = None
+    source_final_approval_artifact_id: str
+    source_finalization_guardrail_id: str
+    source_attempt_shell_id: str
+    source_assembly_id: str
+    source_simulado_blueprint_id: str
+    status: str = "execution_shell_blocked"
+    readiness_state: str = "blocked_by_missing_final_approval"
+    total_candidates: int = 0
+    approved_candidate_count: int = 0
+    blocked_candidate_count: int = 0
+    needs_review_candidate_count: int = 0
+    executable_candidate_count: int = 0
+    candidate_records: list[ExecutionShellCandidateRecord] = Field(default_factory=list)
+    operational_summary: ExecutionShellOperationalSummary
+    blockers: list[ExecutionShellBlocker] = Field(default_factory=list)
+    validation_findings: list[ExecutionShellValidationFinding] = Field(default_factory=list)
+    warnings: list[ExecutionShellWarning] = Field(default_factory=list)
+    execution_shell_active: bool = False
+    execution_started: bool = False
+    attempt_created: bool = False
+    student_submission_enabled: bool = False
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    no_student_attempt_created: bool = True
+    no_answer_submission_created: bool = True
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

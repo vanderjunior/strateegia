@@ -555,6 +555,33 @@ Regras importantes:
 - nao expoe final question content, final answer key content ou final explanation content
 - a etapa usa apenas `SimuladoFinalizationGuardrail` ja persistido e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
 
+## Fundacao de simulado execution shell
+
+Final approval artifacts agora podem gerar um artifact user-scoped e non-active chamado `SimuladoExecutionShell`, voltado apenas a resumir estrutura operacional futura sem iniciar execucao.
+
+Capacidades atuais desta etapa:
+
+- cria execution shell nao ativo, owner-only e persistido por final approval artifact de origem
+- registra candidate records com ordering metadata deterministico, blockers e readiness states conservadores
+- mantem summaries operacionais bounded sobre approved candidates, estimated question count e duration placeholders
+- preserva flags declarativas para manter execution, submissions, correction, scoring e progress mutation desligados
+
+Endpoints atuais de simulado execution shell:
+
+- `POST /api/simulado-final-approval/{approval_artifact_id}/execution-shell/build`
+- `GET /api/simulado-final-approval/{approval_artifact_id}/execution-shell`
+- `GET /api/simulado-execution-shell/{execution_shell_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas operational execution shell artifacts nao ativos
+- execution nao e iniciada e attempts reais nao sao criados
+- `execution_shell_active`, `execution_started` e `attempt_created` permanecem `false`
+- `student_submission_enabled`, `correction_enabled`, `scoring_enabled` e `progress_mutation_enabled` permanecem `false`
+- approved candidates nao se tornam executable candidates nesta etapa
+- nao expoe final question content, final answer key content ou final explanation content
+- a etapa usa apenas `SimuladoFinalApprovalArtifact` ja persistido e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -680,6 +707,7 @@ Outras notas de seguranca:
 - simulado execution readiness / attempt shell existe apenas como artifact de readiness nao executavel, sem attempts, submissions, correction ou scoring
 - finalization / approval guardrails existem apenas como assessment layer para readiness futura, sem aprovacao real, finalizacao real, execucao, correction ou scoring
 - final approval artifact existe apenas como registro explicito de decisao humana, ainda sem execucao, correction, scoring, submissions ou mutacao de progresso
+- simulado execution shell existe apenas como artifact operacional nao ativo, sem attempts, submissions, correction, scoring ou exposicao de conteudo final
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -733,7 +761,8 @@ Itens planejados, mas nao implementados nesta etapa:
 - fixtures de estabilizacao para simulado execution readiness / attempt shell
 - fixtures de estabilizacao para finalization / approval guardrails
 - fixtures de estabilizacao para final approval artifact
-- shell futuro de execucao de simulado
+- fundacao de simulado execution shell
+- fixtures de estabilizacao para simulado execution shell
 - execucao e correcao futura de simulados, somente apos camadas futuras de approval artifact e execution shell
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito

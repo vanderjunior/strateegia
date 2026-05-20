@@ -42,6 +42,7 @@ from app.services.answer_explanation_guardrails import AnswerExplanationGuardrai
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.simulado_attempt_shell import SimuladoAttemptShellService
+from app.services.simulado_execution_shell import SimuladoExecutionShellService
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
 from app.services.simulado_finalization_guardrails import SimuladoFinalizationGuardrailsService
 from app.services.simulado_question_assembly import SimuladoQuestionAssemblyService
@@ -151,6 +152,10 @@ def get_simulado_finalization_guardrails_service(
 
 def get_simulado_final_approval_service(request: Request) -> SimuladoFinalApprovalService:
     return SimuladoFinalApprovalService(get_repository(request))
+
+
+def get_simulado_execution_shell_service(request: Request) -> SimuladoExecutionShellService:
+    return SimuladoExecutionShellService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1055,6 +1060,54 @@ def get_simulado_final_approval_artifact_by_id(approval_artifact_id: str, reques
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado final approval artifact not found.")
+    return result
+
+
+@router.post("/simulado-final-approval/{approval_artifact_id}/execution-shell/build")
+def build_simulado_execution_shell(approval_artifact_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    approval_artifact = get_simulado_final_approval_service(request).get_approval_artifact_by_id(
+        approval_artifact_id,
+        user_id=user_id,
+    )
+    if approval_artifact is None:
+        raise HTTPException(status_code=404, detail="Simulado final approval artifact not found.")
+    result = get_simulado_execution_shell_service(request).build_execution_shell(
+        approval_artifact_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado execution shell could not be built.")
+    return result
+
+
+@router.get("/simulado-final-approval/{approval_artifact_id}/execution-shell")
+def get_simulado_execution_shell_for_approval(approval_artifact_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    approval_artifact = get_simulado_final_approval_service(request).get_approval_artifact_by_id(
+        approval_artifact_id,
+        user_id=user_id,
+    )
+    if approval_artifact is None:
+        raise HTTPException(status_code=404, detail="Simulado final approval artifact not found.")
+    result = get_simulado_execution_shell_service(request).get_execution_shell(
+        approval_artifact_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado execution shell not found.")
+    return result
+
+
+@router.get("/simulado-execution-shell/{execution_shell_id}")
+def get_simulado_execution_shell_by_id(execution_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_execution_shell_service(request).get_execution_shell_by_id(
+        execution_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado execution shell not found.")
     return result
 
 
