@@ -7,6 +7,10 @@ from app.domain.models import (
     AssemblyWarning,
     AssemblyValidationFinding,
     AnswerExplanationGuardrail,
+    AttemptSessionBlocker,
+    AttemptSessionTimingPlan,
+    AttemptSessionValidationFinding,
+    AttemptSessionWarning,
     AlignmentWarning,
     AnswerSubmission,
     CandidateDraftSummary,
@@ -46,6 +50,8 @@ from app.domain.models import (
     ProgressState,
     QuestionDraftSet,
     QuestionGenerationBlueprintSet,
+    SimuladoAttemptSession,
+    SimuladoAttemptSessionItem,
     SimuladoBlueprint,
     SimuladoBlueprintState,
     SimuladoAttemptShell,
@@ -374,6 +380,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_attempt_session(self, session: SimuladoAttemptSession) -> None:
+        self._repository.save_simulado_attempt_session(session, user_id=self.user_id)
+
+    def get_simulado_attempt_session(
+        self,
+        source_execution_shell_id: str,
+    ) -> SimuladoAttemptSession | None:
+        return self._repository.get_simulado_attempt_session(
+            source_execution_shell_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_attempt_sessions(self) -> list[SimuladoAttemptSession]:
+        return self._repository.list_user_simulado_attempt_sessions(user_id=self.user_id)
+
+    def get_simulado_attempt_session_by_id(
+        self,
+        attempt_session_id: str,
+    ) -> SimuladoAttemptSession | None:
+        return self._repository.get_simulado_attempt_session_by_id(
+            attempt_session_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -460,6 +490,9 @@ class JsonStudyRepository:
             "simulado_execution_shell": {
                 "results": {},
             },
+            "simulado_attempt_session": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -534,6 +567,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_execution_shell"] = self._normalize_simulado_execution_shell_payload(
                 user_state.get("simulado_execution_shell")
+            )
+            user_state["simulado_attempt_session"] = self._normalize_simulado_attempt_session_payload(
+                user_state.get("simulado_attempt_session")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -701,6 +737,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_attempt_session_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -809,6 +855,9 @@ class JsonStudyRepository:
         )
         state["simulado_execution_shell"] = self._normalize_simulado_execution_shell_payload(
             state.get("simulado_execution_shell")
+        )
+        state["simulado_attempt_session"] = self._normalize_simulado_attempt_session_payload(
+            state.get("simulado_attempt_session")
         )
         return state
 
@@ -1090,6 +1139,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_execution_shell_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_execution_shell"]
+
+    def _simulado_attempt_session_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_attempt_session_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_attempt_session"]
 
     def save_document_pipeline_state(
         self,
@@ -2062,6 +2120,59 @@ class JsonStudyRepository:
     ) -> SimuladoExecutionShell | None:
         for item in self.list_user_simulado_execution_shells(user_id=user_id):
             if item.execution_shell_id == execution_shell_id:
+                return item
+        return None
+
+    def save_simulado_attempt_session(
+        self,
+        session: SimuladoAttemptSession,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado attempt session requires user ownership.")
+        payload = self._read()
+        container = self._simulado_attempt_session_container(payload, user_id)
+        container["results"][session.source_execution_shell_id] = session.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_attempt_session(
+        self,
+        source_execution_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAttemptSession | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_attempt_session_container(payload, user_id)["results"].get(
+            source_execution_shell_id
+        )
+        if raw is None:
+            return None
+        return SimuladoAttemptSession.model_validate(raw)
+
+    def list_user_simulado_attempt_sessions(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoAttemptSession]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_attempt_session_container(payload, user_id)["results"].values()
+        items = [SimuladoAttemptSession.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_execution_shell_id)
+        return items
+
+    def get_simulado_attempt_session_by_id(
+        self,
+        attempt_session_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAttemptSession | None:
+        for item in self.list_user_simulado_attempt_sessions(user_id=user_id):
+            if item.attempt_session_id == attempt_session_id:
                 return item
         return None
 

@@ -3217,6 +3217,96 @@ class SimuladoExecutionShell(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class SimuladoAttemptSessionItem(BaseModel):
+    item_id: str
+    source_execution_candidate_record_id: str | None = None
+    source_candidate_id: str | None = None
+    order_index: int = 0
+    display_position: int = 1
+    item_status: str = "item_blocked"
+    item_readiness_state: str = "item_blocked_by_execution_shell"
+    can_be_displayed: bool = False
+    can_accept_answer: bool = False
+    has_submitted_answer: bool = False
+    can_be_corrected: bool = False
+    can_be_scored: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AttemptSessionTimingPlan(BaseModel):
+    timing_plan_id: str
+    timing_available: bool = False
+    estimated_duration_minutes: int = 0
+    per_item_time_limit_seconds: int | None = None
+    timer_active: bool = False
+    timer_started_at: datetime | None = None
+    timer_completed_at: datetime | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AttemptSessionBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AttemptSessionValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AttemptSessionWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAttemptSession(BaseModel):
+    attempt_session_id: str
+    user_id: str | None = None
+    source_execution_shell_id: str
+    source_final_approval_artifact_id: str
+    source_simulado_blueprint_id: str
+    status: str = "attempt_session_blocked"
+    readiness_state: str = "blocked_by_missing_execution_shell"
+    total_items: int = 0
+    prepared_item_count: int = 0
+    blocked_item_count: int = 0
+    items: list[SimuladoAttemptSessionItem] = Field(default_factory=list)
+    timing_plan: AttemptSessionTimingPlan
+    blockers: list[AttemptSessionBlocker] = Field(default_factory=list)
+    validation_findings: list[AttemptSessionValidationFinding] = Field(default_factory=list)
+    warnings: list[AttemptSessionWarning] = Field(default_factory=list)
+    session_prepared: bool = True
+    session_active: bool = False
+    session_submitted: bool = False
+    session_completed: bool = False
+    answer_submission_enabled: bool = False
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    no_answer_submission_created: bool = True
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    no_progress_mutation: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

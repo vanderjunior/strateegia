@@ -42,6 +42,7 @@ from app.services.answer_explanation_guardrails import AnswerExplanationGuardrai
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.simulado_attempt_shell import SimuladoAttemptShellService
+from app.services.simulado_attempt_session import SimuladoAttemptSessionService
 from app.services.simulado_execution_shell import SimuladoExecutionShellService
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
 from app.services.simulado_finalization_guardrails import SimuladoFinalizationGuardrailsService
@@ -156,6 +157,10 @@ def get_simulado_final_approval_service(request: Request) -> SimuladoFinalApprov
 
 def get_simulado_execution_shell_service(request: Request) -> SimuladoExecutionShellService:
     return SimuladoExecutionShellService(get_repository(request))
+
+
+def get_simulado_attempt_session_service(request: Request) -> SimuladoAttemptSessionService:
+    return SimuladoAttemptSessionService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1108,6 +1113,54 @@ def get_simulado_execution_shell_by_id(execution_shell_id: str, request: Request
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado execution shell not found.")
+    return result
+
+
+@router.post("/simulado-execution-shell/{execution_shell_id}/attempt-session/build")
+def build_simulado_attempt_session(execution_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    execution_shell = get_simulado_execution_shell_service(request).get_execution_shell_by_id(
+        execution_shell_id,
+        user_id=user_id,
+    )
+    if execution_shell is None:
+        raise HTTPException(status_code=404, detail="Simulado execution shell not found.")
+    result = get_simulado_attempt_session_service(request).build_attempt_session(
+        execution_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session could not be built.")
+    return result
+
+
+@router.get("/simulado-execution-shell/{execution_shell_id}/attempt-session")
+def get_simulado_attempt_session_for_execution_shell(execution_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    execution_shell = get_simulado_execution_shell_service(request).get_execution_shell_by_id(
+        execution_shell_id,
+        user_id=user_id,
+    )
+    if execution_shell is None:
+        raise HTTPException(status_code=404, detail="Simulado execution shell not found.")
+    result = get_simulado_attempt_session_service(request).get_attempt_session(
+        execution_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
+    return result
+
+
+@router.get("/simulado-attempt-session/{attempt_session_id}")
+def get_simulado_attempt_session_by_id(attempt_session_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_attempt_session_service(request).get_attempt_session_by_id(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
     return result
 
 

@@ -582,6 +582,33 @@ Regras importantes:
 - nao expoe final question content, final answer key content ou final explanation content
 - a etapa usa apenas `SimuladoFinalApprovalArtifact` ja persistido e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
 
+## Fundacao de simulado attempt session
+
+Execution shells agora podem gerar um artifact user-scoped e prepared-only chamado `SimuladoAttemptSession`, voltado apenas a representar um container de tentativa ainda nao submetivel.
+
+Capacidades atuais desta etapa:
+
+- cria prepared attempt session owner-only e persistido por execution shell de origem
+- registra items estruturais com source ids, ordering metadata e timing placeholders
+- mantem flags declarativas para answer submission, correction, scoring e progress mutation desabilitados
+- preserva blockers e findings explicando por que a sessao ainda nao e submetivel, corrigivel ou scoreable
+
+Endpoints atuais de simulado attempt session:
+
+- `POST /api/simulado-execution-shell/{execution_shell_id}/attempt-session/build`
+- `GET /api/simulado-execution-shell/{execution_shell_id}/attempt-session`
+- `GET /api/simulado-attempt-session/{attempt_session_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas prepared non-submittable attempt session artifacts
+- answer submissions nao sao aceitas
+- correction e scoring permanecem desabilitados
+- progress mutation permanece desabilitada
+- nao cria correction results nem scores
+- nao expoe final question content, final answer key content ou final explanation content
+- a etapa usa apenas `SimuladoExecutionShell` ja persistido e nao chama LLM, RAG, vector DB, embeddings ou servicos externos
+
 ## Dashboard minimo do usuario
 
 O app agora inclui um dashboard de estudo read-only e product-facing, separado do console interno de inspection.
@@ -708,6 +735,7 @@ Outras notas de seguranca:
 - finalization / approval guardrails existem apenas como assessment layer para readiness futura, sem aprovacao real, finalizacao real, execucao, correction ou scoring
 - final approval artifact existe apenas como registro explicito de decisao humana, ainda sem execucao, correction, scoring, submissions ou mutacao de progresso
 - simulado execution shell existe apenas como artifact operacional nao ativo, sem attempts, submissions, correction, scoring ou exposicao de conteudo final
+- simulado attempt session existe apenas como container preparado e nao submetivel, sem answer submissions, correction, scoring ou mutacao de progresso
 - sem alternativas, distratores, respostas, explicacoes ou gabarito
 - sem execucao/correcao de simulados
 - sem ativacao automatica de graph, cycle ou simulado blueprint no runtime vivo
@@ -763,6 +791,10 @@ Itens planejados, mas nao implementados nesta etapa:
 - fixtures de estabilizacao para final approval artifact
 - fundacao de simulado execution shell
 - fixtures de estabilizacao para simulado execution shell
+- fundacao de simulado attempt session
+- fixtures de estabilizacao para simulado attempt session
+- fundacao de answer submission
+- correction readiness / correction shell foundation
 - execucao e correcao futura de simulados, somente apos camadas futuras de approval artifact e execution shell
 - geracao futura de questoes a partir de materiais, edital, perfil de banca e blueprint
 - geracao futura de alternativas, distratores, respostas, explicacoes e gabarito
