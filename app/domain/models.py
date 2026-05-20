@@ -3790,6 +3790,126 @@ class SimuladoScoreResult(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ProgressMutationEligibility(BaseModel):
+    eligibility_id: str
+    eligible_for_future_progress_mutation: bool = False
+    eligible_for_future_ranking_update: bool = False
+    eligible_for_future_retention_update: bool = False
+    eligible_for_future_scheduler_update: bool = False
+    eligible_for_future_study_cycle_update: bool = False
+    eligible_for_future_curriculum_graph_update: bool = False
+    eligibility_state: str = "not_eligible"
+    requires_human_review: bool = False
+    requires_complete_score: bool = True
+    requires_topic_mapping: bool = True
+    requires_policy_confirmation: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CandidateProgressTarget(BaseModel):
+    target_id: str
+    target_type: str = "unknown"
+    target_id_ref: str | None = None
+    source_candidate_id: str | None = None
+    source_session_item_id: str | None = None
+    topic_id: str | None = None
+    subtopic_id: str | None = None
+    microtopic_id: str | None = None
+    target_available: bool = False
+    mapping_confidence: float = 0.0
+    proposed_update_kind: str = "no_update_applied"
+    future_update_allowed: bool = False
+    update_applied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProgressScoreCompletenessAssessment(BaseModel):
+    assessment_id: str
+    total_items: int = 0
+    scored_items: int = 0
+    scoreable_items: int = 0
+    blocked_items: int = 0
+    needs_review_items: int = 0
+    blank_items: int = 0
+    unsupported_items: int = 0
+    raw_score: float = 0.0
+    max_score: float = 0.0
+    percentage_score: float | None = None
+    score_complete: bool = False
+    score_partial: bool = False
+    score_blocked: bool = True
+    enough_data_for_progress_update: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProgressMutationBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProgressMutationValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProgressMutationWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoProgressMutationGuardrail(BaseModel):
+    progress_guardrail_id: str
+    user_id: str | None = None
+    source_score_result_id: str
+    source_correction_result_id: str
+    source_answer_key_boundary_id: str
+    source_answer_submission_id: str
+    source_attempt_session_id: str
+    source_simulado_blueprint_id: str
+    status: str = "progress_guardrail_blocked"
+    readiness_state: str = "blocked_by_missing_score_result"
+    eligibility: ProgressMutationEligibility
+    score_completeness: ProgressScoreCompletenessAssessment
+    candidate_progress_targets: list[CandidateProgressTarget] = Field(default_factory=list)
+    blockers: list[ProgressMutationBlocker] = Field(default_factory=list)
+    validation_findings: list[ProgressMutationValidationFinding] = Field(default_factory=list)
+    warnings: list[ProgressMutationWarning] = Field(default_factory=list)
+    progress_mutation_enabled: bool = False
+    ranking_mutation_enabled: bool = False
+    retention_mutation_enabled: bool = False
+    scheduler_mutation_enabled: bool = False
+    study_cycle_mutation_enabled: bool = False
+    curriculum_graph_mutation_enabled: bool = False
+    adaptive_tuning_enabled: bool = False
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

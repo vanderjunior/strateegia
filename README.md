@@ -76,6 +76,7 @@ Regras importantes desta cadeia:
 - fundacao de final answer key exposure boundary / correction input contract correction-shell-aware, internal-only, non-correcting e non-scoring
 - fundacao de correction result answer-key-boundary-aware, non-scoreable e sem final simulado result
 - fundacao de scoring result correction-result-aware, sem mutacao de progresso/ranking/retention/scheduler e sem exposicao publica de answer key/gabarito
+- fundacao de progress mutation guardrails score-result-aware, sem aplicar score ao runtime e sem expor answer key/gabarito publicamente
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Fundacao de answer submission
@@ -237,6 +238,37 @@ Trabalho futuro desta trilha:
 
 - Scoring Stabilization Fixtures
 - Progress Mutation Guardrails
+- Integrated Execution/Correction Foundation
+
+## Fundacao de progress mutation guardrails
+
+Score results agora podem gerar um artifact separado de `progress guardrail`, sempre user-scoped, deterministico e isolado do runtime pedagogico.
+
+Capacidades atuais desta etapa:
+
+- cria um progress mutation guardrail a partir de um `SimuladoScoreResult`
+- registra elegibilidade futura para progresso, ranking, retention, scheduler, study cycle e curriculum graph sem aplicar nenhuma mutacao
+- persiste candidate progress targets e score completeness assessment apenas para revisao futura
+- registra blockers de score incompleto, falta de mapping, falta de policy confirmation e runtime mutation disabled
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de progress guardrails:
+
+- `POST /api/simulado-score-result/{score_result_id}/progress-guardrail/build`
+- `GET /api/simulado-score-result/{score_result_id}/progress-guardrail`
+- `GET /api/simulado-progress-guardrail/{progress_guardrail_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas guardrail artifacts
+- esta etapa nao muta progresso
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Progress Mutation Guardrails Stabilization Fixtures
 - Integrated Execution/Correction Foundation
 
 ## Como instalar

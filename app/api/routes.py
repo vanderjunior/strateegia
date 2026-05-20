@@ -51,6 +51,7 @@ from app.services.simulado_execution_shell import SimuladoExecutionShellService
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
 from app.services.simulado_finalization_guardrails import SimuladoFinalizationGuardrailsService
 from app.services.simulado_question_assembly import SimuladoQuestionAssemblyService
+from app.services.simulado_progress_guardrails import SimuladoProgressGuardrailsService
 from app.services.simulado_scoring import SimuladoScoringService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
@@ -186,6 +187,10 @@ def get_simulado_correction_result_service(request: Request) -> SimuladoCorrecti
 
 def get_simulado_scoring_service(request: Request) -> SimuladoScoringService:
     return SimuladoScoringService(get_repository(request))
+
+
+def get_simulado_progress_guardrails_service(request: Request) -> SimuladoProgressGuardrailsService:
+    return SimuladoProgressGuardrailsService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1431,6 +1436,54 @@ def get_simulado_score_result_by_id(score_result_id: str, request: Request):
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado score result not found.")
+    return result
+
+
+@router.post("/simulado-score-result/{score_result_id}/progress-guardrail/build")
+def build_simulado_progress_guardrail_for_score_result(score_result_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    score_result = get_simulado_scoring_service(request).get_score_result_by_id(
+        score_result_id,
+        user_id=user_id,
+    )
+    if score_result is None:
+        raise HTTPException(status_code=404, detail="Simulado score result not found.")
+    result = get_simulado_progress_guardrails_service(request).build_progress_guardrail(
+        score_result_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado progress guardrail could not be built.")
+    return result
+
+
+@router.get("/simulado-score-result/{score_result_id}/progress-guardrail")
+def get_simulado_progress_guardrail_for_score_result(score_result_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    score_result = get_simulado_scoring_service(request).get_score_result_by_id(
+        score_result_id,
+        user_id=user_id,
+    )
+    if score_result is None:
+        raise HTTPException(status_code=404, detail="Simulado score result not found.")
+    result = get_simulado_progress_guardrails_service(request).get_progress_guardrail(
+        score_result_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado progress guardrail not found.")
+    return result
+
+
+@router.get("/simulado-progress-guardrail/{progress_guardrail_id}")
+def get_simulado_progress_guardrail_by_id(progress_guardrail_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_progress_guardrails_service(request).get_progress_guardrail_by_id(
+        progress_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado progress guardrail not found.")
     return result
 
 
