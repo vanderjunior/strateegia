@@ -3577,6 +3577,104 @@ class SimuladoAnswerKeyBoundary(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class CorrectionResultAnswerRecord(BaseModel):
+    record_id: str
+    source_boundary_answer_record_id: str
+    source_submitted_answer_id: str
+    source_session_item_id: str
+    source_candidate_id: str | None = None
+    answer_kind: str = "blank"
+    correction_state: str = "answer_not_corrected"
+    correction_input_available: bool = False
+    has_internal_answer_key_reference: bool = False
+    has_public_answer_key_content: bool = False
+    answer_key_publicly_exposed: bool = False
+    student_answer_recorded: bool = False
+    student_answer_blank: bool = False
+    candidate_result: str | None = None
+    requires_review: bool = False
+    scoreable: bool = False
+    scoring_enabled: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionResultSummary(BaseModel):
+    summary_id: str
+    correction_result_available: bool = True
+    scoring_available: bool = False
+    progress_mutation_available: bool = False
+    public_answer_key_exposure_allowed: bool = False
+    public_gabarito_exposure_allowed: bool = False
+    correction_completed_for_all_answers: bool = False
+    all_answers_blocked: bool = True
+    has_unresolved_blockers: bool = True
+    requires_human_review: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionResultBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionResultValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionResultWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoCorrectionResult(BaseModel):
+    correction_result_id: str
+    user_id: str | None = None
+    source_answer_key_boundary_id: str
+    source_correction_shell_id: str
+    source_answer_submission_id: str
+    source_attempt_session_id: str
+    source_simulado_blueprint_id: str
+    status: str = "correction_result_blocked"
+    readiness_state: str = "blocked_by_missing_answer_key_boundary"
+    total_answer_records: int = 0
+    corrected_answer_count: int = 0
+    blocked_answer_count: int = 0
+    needs_review_answer_count: int = 0
+    blank_answer_count: int = 0
+    unsupported_answer_count: int = 0
+    answer_records: list[CorrectionResultAnswerRecord] = Field(default_factory=list)
+    summary: CorrectionResultSummary
+    blockers: list[CorrectionResultBlocker] = Field(default_factory=list)
+    validation_findings: list[CorrectionResultValidationFinding] = Field(default_factory=list)
+    warnings: list[CorrectionResultWarning] = Field(default_factory=list)
+    scoring_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    no_score_created: bool = True
+    no_progress_mutation: bool = True
+    no_final_simulado_result_created: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

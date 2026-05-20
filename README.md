@@ -37,6 +37,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `answer submission`
 -> `correction shell`
 -> `answer key boundary`
+-> `correction result`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -73,6 +74,7 @@ Regras importantes desta cadeia:
 - fundacao de answer submission attempt-session-aware, bounded-input-only, non-correcting e non-scoring
 - fundacao de correction readiness / correction shell answer-submission-aware, readiness-only, non-correcting e non-scoring
 - fundacao de final answer key exposure boundary / correction input contract correction-shell-aware, internal-only, non-correcting e non-scoring
+- fundacao de correction result answer-key-boundary-aware, non-scoreable e sem final simulado result
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Fundacao de answer submission
@@ -168,6 +170,38 @@ Regras importantes:
 Trabalho futuro desta trilha:
 
 - Correction Result Foundation
+- Scoring Foundation
+- Progress Mutation Guardrails
+- Integrated Execution/Correction Foundation
+
+## Fundacao de correction result
+
+Answer key boundaries agora podem gerar um artifact separado de `correction result`, sempre user-scoped, deterministico e non-scoreable.
+
+Capacidades atuais desta etapa:
+
+- cria um correction result a partir de um `SimuladoAnswerKeyBoundary`
+- registra estados por resposta submetida com blockers, review flags e disponibilidade estrutural de correcao
+- persiste um artifact proprio de correction result, sem mutar boundary, correction shell ou answer submission de origem
+- mantem scoring, final simulado result e progress mutation desabilitados
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de correction result:
+
+- `POST /api/simulado-answer-key-boundary/{answer_key_boundary_id}/correction-result/build`
+- `GET /api/simulado-answer-key-boundary/{answer_key_boundary_id}/correction-result`
+- `GET /api/simulado-correction-result/{correction_result_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas correction result artifacts non-scoreable
+- esta etapa nao cria score, grade ou final simulado result
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+- esta etapa nao muta progresso, ranking, retention ou scheduler
+
+Trabalho futuro desta trilha:
+
+- Correction Result Stabilization Fixtures
 - Scoring Foundation
 - Progress Mutation Guardrails
 - Integrated Execution/Correction Foundation

@@ -37,6 +37,11 @@ from app.domain.models import (
     CorrectionReadinessSummary,
     CorrectionInputAnswerRecord,
     CorrectionInputContract,
+    CorrectionResultAnswerRecord,
+    CorrectionResultBlocker,
+    CorrectionResultSummary,
+    CorrectionResultValidationFinding,
+    CorrectionResultWarning,
     CorrectionShellAnswerRecord,
     CorrectionShellBlocker,
     CorrectionShellValidationFinding,
@@ -72,6 +77,7 @@ from app.domain.models import (
     SimuladoAttemptShellValidationFinding,
     SimuladoAttemptShellWarning,
     SimuladoAnswerKeyBoundary,
+    SimuladoCorrectionResult,
     SimuladoExecutionBlocker,
     SimuladoExecutionShell,
     SimuladoFinalApprovalArtifact,
@@ -493,6 +499,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_correction_result(self, result: SimuladoCorrectionResult) -> None:
+        self._repository.save_simulado_correction_result(result, user_id=self.user_id)
+
+    def get_simulado_correction_result(
+        self,
+        source_answer_key_boundary_id: str,
+    ) -> SimuladoCorrectionResult | None:
+        return self._repository.get_simulado_correction_result(
+            source_answer_key_boundary_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_correction_results(self) -> list[SimuladoCorrectionResult]:
+        return self._repository.list_user_simulado_correction_results(user_id=self.user_id)
+
+    def get_simulado_correction_result_by_id(
+        self,
+        correction_result_id: str,
+    ) -> SimuladoCorrectionResult | None:
+        return self._repository.get_simulado_correction_result_by_id(
+            correction_result_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -591,6 +621,9 @@ class JsonStudyRepository:
             "simulado_answer_key_boundary": {
                 "results": {},
             },
+            "simulado_correction_result": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -677,6 +710,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_answer_key_boundary"] = self._normalize_simulado_answer_key_boundary_payload(
                 user_state.get("simulado_answer_key_boundary")
+            )
+            user_state["simulado_correction_result"] = self._normalize_simulado_correction_result_payload(
+                user_state.get("simulado_correction_result")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -884,6 +920,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_correction_result_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -1004,6 +1050,9 @@ class JsonStudyRepository:
         )
         state["simulado_answer_key_boundary"] = self._normalize_simulado_answer_key_boundary_payload(
             state.get("simulado_answer_key_boundary")
+        )
+        state["simulado_correction_result"] = self._normalize_simulado_correction_result_payload(
+            state.get("simulado_correction_result")
         )
         return state
 
@@ -1321,6 +1370,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_answer_key_boundary_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_answer_key_boundary"]
+
+    def _simulado_correction_result_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_correction_result_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_correction_result"]
 
     def save_document_pipeline_state(
         self,
@@ -2505,6 +2563,59 @@ class JsonStudyRepository:
     ) -> SimuladoAnswerKeyBoundary | None:
         for item in self.list_user_simulado_answer_key_boundaries(user_id=user_id):
             if item.answer_key_boundary_id == answer_key_boundary_id:
+                return item
+        return None
+
+    def save_simulado_correction_result(
+        self,
+        result: SimuladoCorrectionResult,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado correction result requires user ownership.")
+        payload = self._read()
+        container = self._simulado_correction_result_container(payload, user_id)
+        container["results"][result.source_answer_key_boundary_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_correction_result(
+        self,
+        source_answer_key_boundary_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoCorrectionResult | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_correction_result_container(payload, user_id)["results"].get(
+            source_answer_key_boundary_id
+        )
+        if raw is None:
+            return None
+        return SimuladoCorrectionResult.model_validate(raw)
+
+    def list_user_simulado_correction_results(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoCorrectionResult]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_correction_result_container(payload, user_id)["results"].values()
+        items = [SimuladoCorrectionResult.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_answer_key_boundary_id)
+        return items
+
+    def get_simulado_correction_result_by_id(
+        self,
+        correction_result_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoCorrectionResult | None:
+        for item in self.list_user_simulado_correction_results(user_id=user_id):
+            if item.correction_result_id == correction_result_id:
                 return item
         return None
 
