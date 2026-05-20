@@ -32,6 +32,9 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `simulado attempt shell`
 -> `simulado finalization/approval guardrails`
 -> `simulado final approval artifact`
+-> `simulado execution shell`
+-> `simulado attempt session`
+-> `answer submission`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -63,7 +66,43 @@ Regras importantes desta cadeia:
 - fundacao de simulado execution readiness / attempt shell assembly-aware, non-executable e sem submissions
 - fundacao de finalization / approval guardrails assembly-aware, attempt-shell-aware, non-executable e sem aprovacao real
 - fundacao de final approval artifact audit-friendly, user-scoped e ainda nao executavel
+- fundacao de simulado execution shell final-approval-aware, non-active, non-executable e sem scoring
+- fundacao de simulado attempt session execution-shell-aware, prepared-only e non-submittable
+- fundacao de answer submission attempt-session-aware, bounded-input-only, non-correcting e non-scoring
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
+
+## Fundacao de answer submission
+
+Attempt sessions preparados agora podem receber um artifact separado de `answer submission`, sempre user-scoped e deterministico.
+
+Capacidades atuais desta etapa:
+
+- registra respostas fornecidas pelo usuario para um `SimuladoAttemptSession`
+- suporta payloads pequenos e bounded para `selected_option`, `true_false_value`, `short_text` e `blank`
+- valida apenas estrutura, duplicidade, item desconhecido, answer kind nao suportado e campos em branco
+- persiste um artifact proprio de submissao, sem mutar o attempt session de origem
+- mantem correction, scoring e progress mutation desabilitados
+
+Endpoints atuais do answer submission:
+
+- `POST /api/simulado-attempt-session/{attempt_session_id}/answer-submission/build`
+- `GET /api/simulado-attempt-session/{attempt_session_id}/answer-submission`
+- `GET /api/simulado-answer-submission/{answer_submission_id}`
+
+Regras importantes:
+
+- esta etapa grava apenas respostas brutas fornecidas pelo usuario
+- esta etapa nao corrige respostas
+- esta etapa nao calcula score, grade ou simulado result
+- esta etapa nao expõe correct answer, answer key ou gabarito
+- esta etapa nao muta progresso, ranking, retention ou scheduler
+- texto curto e sanitizado e bounded
+
+Trabalho futuro desta trilha:
+
+- Answer Submission Stabilization Fixtures
+- Correction Readiness / Correction Shell Foundation
+- real Simulado Execution/Correction Foundation
 
 ## Como instalar
 

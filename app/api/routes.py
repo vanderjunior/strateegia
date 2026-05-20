@@ -42,6 +42,7 @@ from app.services.answer_explanation_guardrails import AnswerExplanationGuardrai
 from app.services.question_draft_generation import QuestionDraftGenerationService
 from app.services.question_generation_blueprint import QuestionGenerationBlueprintService
 from app.services.simulado_attempt_shell import SimuladoAttemptShellService
+from app.services.simulado_answer_submission import SimuladoAnswerSubmissionService
 from app.services.simulado_attempt_session import SimuladoAttemptSessionService
 from app.services.simulado_execution_shell import SimuladoExecutionShellService
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
@@ -161,6 +162,10 @@ def get_simulado_execution_shell_service(request: Request) -> SimuladoExecutionS
 
 def get_simulado_attempt_session_service(request: Request) -> SimuladoAttemptSessionService:
     return SimuladoAttemptSessionService(get_repository(request))
+
+
+def get_simulado_answer_submission_service(request: Request) -> SimuladoAnswerSubmissionService:
+    return SimuladoAnswerSubmissionService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1161,6 +1166,59 @@ def get_simulado_attempt_session_by_id(attempt_session_id: str, request: Request
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
+    return result
+
+
+@router.post("/simulado-attempt-session/{attempt_session_id}/answer-submission/build")
+def build_simulado_answer_submission_for_attempt_session(
+    attempt_session_id: str,
+    request: Request,
+    payload: dict[str, object] | None = Body(default=None),
+):
+    user_id = _require_authenticated_user_id(request)
+    attempt_session = get_simulado_attempt_session_service(request).get_attempt_session_by_id(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if attempt_session is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
+    result = get_simulado_answer_submission_service(request).build_answer_submission(
+        attempt_session_id,
+        user_id=user_id,
+        submission_payload=payload,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado answer submission could not be built.")
+    return result
+
+
+@router.get("/simulado-attempt-session/{attempt_session_id}/answer-submission")
+def get_simulado_answer_submission_for_attempt_session(attempt_session_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    attempt_session = get_simulado_attempt_session_service(request).get_attempt_session_by_id(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if attempt_session is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
+    result = get_simulado_answer_submission_service(request).get_answer_submission(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado answer submission not found.")
+    return result
+
+
+@router.get("/simulado-answer-submission/{answer_submission_id}")
+def get_simulado_answer_submission_by_id(answer_submission_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_answer_submission_service(request).get_answer_submission_by_id(
+        answer_submission_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado answer submission not found.")
     return result
 
 

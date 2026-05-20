@@ -7,6 +7,8 @@ from app.domain.models import (
     AssemblyWarning,
     AssemblyValidationFinding,
     AnswerExplanationGuardrail,
+    AnswerSubmissionValidationFinding,
+    AnswerSubmissionWarning,
     AttemptSessionBlocker,
     AttemptSessionTimingPlan,
     AttemptSessionValidationFinding,
@@ -52,6 +54,7 @@ from app.domain.models import (
     QuestionGenerationBlueprintSet,
     SimuladoAttemptSession,
     SimuladoAttemptSessionItem,
+    SimuladoAnswerSubmission,
     SimuladoBlueprint,
     SimuladoBlueprintState,
     SimuladoAttemptShell,
@@ -62,6 +65,7 @@ from app.domain.models import (
     SimuladoFinalApprovalArtifact,
     SimuladoFinalizationGuardrail,
     SimuladoQuestionAssembly,
+    SimuladoSubmittedAnswer,
     StudyCyclePlan,
     StudyCyclePlanState,
     DocumentPipelineEvent,
@@ -404,6 +408,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_answer_submission(self, submission: SimuladoAnswerSubmission) -> None:
+        self._repository.save_simulado_answer_submission(submission, user_id=self.user_id)
+
+    def get_simulado_answer_submission(
+        self,
+        source_attempt_session_id: str,
+    ) -> SimuladoAnswerSubmission | None:
+        return self._repository.get_simulado_answer_submission(
+            source_attempt_session_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_answer_submissions(self) -> list[SimuladoAnswerSubmission]:
+        return self._repository.list_user_simulado_answer_submissions(user_id=self.user_id)
+
+    def get_simulado_answer_submission_by_id(
+        self,
+        answer_submission_id: str,
+    ) -> SimuladoAnswerSubmission | None:
+        return self._repository.get_simulado_answer_submission_by_id(
+            answer_submission_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -493,6 +521,9 @@ class JsonStudyRepository:
             "simulado_attempt_session": {
                 "results": {},
             },
+            "simulado_answer_submission": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -570,6 +601,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_attempt_session"] = self._normalize_simulado_attempt_session_payload(
                 user_state.get("simulado_attempt_session")
+            )
+            user_state["simulado_answer_submission"] = self._normalize_simulado_answer_submission_payload(
+                user_state.get("simulado_answer_submission")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -747,6 +781,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_answer_submission_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -858,6 +902,9 @@ class JsonStudyRepository:
         )
         state["simulado_attempt_session"] = self._normalize_simulado_attempt_session_payload(
             state.get("simulado_attempt_session")
+        )
+        state["simulado_answer_submission"] = self._normalize_simulado_answer_submission_payload(
+            state.get("simulado_answer_submission")
         )
         return state
 
@@ -1148,6 +1195,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_attempt_session_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_attempt_session"]
+
+    def _simulado_answer_submission_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_answer_submission_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_answer_submission"]
 
     def save_document_pipeline_state(
         self,
@@ -2173,6 +2229,59 @@ class JsonStudyRepository:
     ) -> SimuladoAttemptSession | None:
         for item in self.list_user_simulado_attempt_sessions(user_id=user_id):
             if item.attempt_session_id == attempt_session_id:
+                return item
+        return None
+
+    def save_simulado_answer_submission(
+        self,
+        submission: SimuladoAnswerSubmission,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado answer submission requires user ownership.")
+        payload = self._read()
+        container = self._simulado_answer_submission_container(payload, user_id)
+        container["results"][submission.source_attempt_session_id] = submission.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_answer_submission(
+        self,
+        source_attempt_session_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAnswerSubmission | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_answer_submission_container(payload, user_id)["results"].get(
+            source_attempt_session_id
+        )
+        if raw is None:
+            return None
+        return SimuladoAnswerSubmission.model_validate(raw)
+
+    def list_user_simulado_answer_submissions(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoAnswerSubmission]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_answer_submission_container(payload, user_id)["results"].values()
+        items = [SimuladoAnswerSubmission.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_attempt_session_id)
+        return items
+
+    def get_simulado_answer_submission_by_id(
+        self,
+        answer_submission_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAnswerSubmission | None:
+        for item in self.list_user_simulado_answer_submissions(user_id=user_id):
+            if item.answer_submission_id == answer_submission_id:
                 return item
         return None
 

@@ -3307,6 +3307,68 @@ class SimuladoAttemptSession(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class AnswerSubmissionValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AnswerSubmissionWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoSubmittedAnswer(BaseModel):
+    submitted_answer_id: str
+    source_session_item_id: str
+    source_candidate_id: str | None = None
+    order_index: int = 0
+    display_position: int = 1
+    answer_kind: str = "blank"
+    submitted_value: str | None = None
+    submitted_values: list[str] = Field(default_factory=list)
+    is_blank: bool = False
+    is_structurally_valid: bool = False
+    validation_state: str = "not_corrected"
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAnswerSubmission(BaseModel):
+    answer_submission_id: str
+    user_id: str | None = None
+    source_attempt_session_id: str
+    source_execution_shell_id: str
+    source_simulado_blueprint_id: str
+    status: str = "answer_submission_blocked"
+    readiness_state: str = "blocked_by_missing_attempt_session"
+    total_items: int = 0
+    submitted_answer_count: int = 0
+    missing_answer_count: int = 0
+    invalid_answer_count: int = 0
+    duplicate_answer_count: int = 0
+    submitted_answers: list[SimuladoSubmittedAnswer] = Field(default_factory=list)
+    validation_findings: list[AnswerSubmissionValidationFinding] = Field(default_factory=list)
+    warnings: list[AnswerSubmissionWarning] = Field(default_factory=list)
+    submission_recorded: bool = False
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    no_progress_mutation: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
