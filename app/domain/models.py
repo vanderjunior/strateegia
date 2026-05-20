@@ -3369,6 +3369,99 @@ class SimuladoAnswerSubmission(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class CorrectionShellAnswerRecord(BaseModel):
+    record_id: str
+    source_submitted_answer_id: str
+    source_session_item_id: str
+    source_candidate_id: str | None = None
+    answer_kind: str = "blank"
+    submission_validation_state: str = "not_corrected"
+    correction_readiness_state: str = "answer_not_corrected"
+    has_submitted_answer: bool = False
+    is_blank: bool = False
+    has_final_answer_key: bool = False
+    has_correction_rule: bool = False
+    can_be_corrected: bool = False
+    can_be_scored: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionReadinessSummary(BaseModel):
+    summary_id: str
+    has_answer_submission: bool = True
+    has_attempt_session: bool = False
+    has_final_answer_keys: bool = False
+    has_correction_rules: bool = False
+    has_score_rules: bool = False
+    correction_possible_later: bool = False
+    scoring_possible_later: bool = False
+    correction_disabled_reason: str = ""
+    scoring_disabled_reason: str = ""
+    progress_mutation_disabled_reason: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionShellBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionShellValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CorrectionShellWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoCorrectionShell(BaseModel):
+    correction_shell_id: str
+    user_id: str | None = None
+    source_answer_submission_id: str
+    source_attempt_session_id: str
+    source_execution_shell_id: str
+    source_simulado_blueprint_id: str
+    status: str = "correction_shell_blocked"
+    readiness_state: str = "blocked_by_missing_answer_submission"
+    total_submitted_answers: int = 0
+    structurally_valid_answer_count: int = 0
+    blank_answer_count: int = 0
+    invalid_answer_count: int = 0
+    correction_ready_answer_count: int = 0
+    blocked_answer_count: int = 0
+    answer_records: list[CorrectionShellAnswerRecord] = Field(default_factory=list)
+    readiness_summary: CorrectionReadinessSummary
+    blockers: list[CorrectionShellBlocker] = Field(default_factory=list)
+    validation_findings: list[CorrectionShellValidationFinding] = Field(default_factory=list)
+    warnings: list[CorrectionShellWarning] = Field(default_factory=list)
+    correction_enabled: bool = False
+    scoring_enabled: bool = False
+    progress_mutation_enabled: bool = False
+    no_correction_result_created: bool = True
+    no_score_created: bool = True
+    no_progress_mutation: bool = True
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

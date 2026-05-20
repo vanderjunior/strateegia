@@ -35,6 +35,7 @@ Hoje a superficie principal do produto segue esta cadeia, ainda com etapas candi
 -> `simulado execution shell`
 -> `simulado attempt session`
 -> `answer submission`
+-> `correction shell`
 -> `dashboard`
 
 Regras importantes desta cadeia:
@@ -69,6 +70,7 @@ Regras importantes desta cadeia:
 - fundacao de simulado execution shell final-approval-aware, non-active, non-executable e sem scoring
 - fundacao de simulado attempt session execution-shell-aware, prepared-only e non-submittable
 - fundacao de answer submission attempt-session-aware, bounded-input-only, non-correcting e non-scoring
+- fundacao de correction readiness / correction shell answer-submission-aware, readiness-only, non-correcting e non-scoring
 - dashboard minimo de estudo, read-only e user-scoped, com materiais, pipeline documental, edital, coverage/alignment, curriculum graph, study cycle, exam profile, simulado blueprint e pending actions
 
 ## Fundacao de answer submission
@@ -101,7 +103,38 @@ Regras importantes:
 Trabalho futuro desta trilha:
 
 - Answer Submission Stabilization Fixtures
-- Correction Readiness / Correction Shell Foundation
+- Correction Shell Stabilization Fixtures
+- real Simulado Execution/Correction Foundation
+
+## Fundacao de correction readiness / correction shell
+
+Answer submissions agora podem gerar um artifact separado de `correction shell`, sempre user-scoped, deterministico e readiness-only.
+
+Capacidades atuais desta etapa:
+
+- avalia readiness estrutural para correcao futura a partir de um `SimuladoAnswerSubmission`
+- cria registros por resposta submetida com blockers e estados de readiness
+- registra indisponibilidade de final answer keys, correction rules e score rules
+- persiste um artifact proprio de correction readiness, sem mutar answer submission ou attempt session de origem
+- mantem correction, scoring e progress mutation desabilitados
+
+Endpoints atuais de correction shell:
+
+- `POST /api/simulado-answer-submission/{answer_submission_id}/correction-shell/build`
+- `GET /api/simulado-answer-submission/{answer_submission_id}/correction-shell`
+- `GET /api/simulado-correction-shell/{correction_shell_id}`
+
+Regras importantes:
+
+- esta etapa nao corrige respostas
+- esta etapa nao calcula score, grade ou simulado result
+- esta etapa nao expõe answer key, correct answer ou gabarito
+- esta etapa nao marca respostas como corretas/incorretas
+- esta etapa nao muta progresso, ranking, retention ou scheduler
+
+Trabalho futuro desta trilha:
+
+- Correction Shell Stabilization Fixtures
 - real Simulado Execution/Correction Foundation
 
 ## Como instalar

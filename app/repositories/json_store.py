@@ -31,6 +31,11 @@ from app.domain.models import (
     EditalIngestionEvent,
     EditalIngestionState,
     ErrorType,
+    CorrectionReadinessSummary,
+    CorrectionShellAnswerRecord,
+    CorrectionShellBlocker,
+    CorrectionShellValidationFinding,
+    CorrectionShellWarning,
     FinalizationBlocker,
     FinalizationValidationFinding,
     FinalizationWarning,
@@ -65,6 +70,7 @@ from app.domain.models import (
     SimuladoFinalApprovalArtifact,
     SimuladoFinalizationGuardrail,
     SimuladoQuestionAssembly,
+    SimuladoCorrectionShell,
     SimuladoSubmittedAnswer,
     StudyCyclePlan,
     StudyCyclePlanState,
@@ -432,6 +438,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_correction_shell(self, shell: SimuladoCorrectionShell) -> None:
+        self._repository.save_simulado_correction_shell(shell, user_id=self.user_id)
+
+    def get_simulado_correction_shell(
+        self,
+        source_answer_submission_id: str,
+    ) -> SimuladoCorrectionShell | None:
+        return self._repository.get_simulado_correction_shell(
+            source_answer_submission_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_correction_shells(self) -> list[SimuladoCorrectionShell]:
+        return self._repository.list_user_simulado_correction_shells(user_id=self.user_id)
+
+    def get_simulado_correction_shell_by_id(
+        self,
+        correction_shell_id: str,
+    ) -> SimuladoCorrectionShell | None:
+        return self._repository.get_simulado_correction_shell_by_id(
+            correction_shell_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -524,6 +554,9 @@ class JsonStudyRepository:
             "simulado_answer_submission": {
                 "results": {},
             },
+            "simulado_correction_shell": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -604,6 +637,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_answer_submission"] = self._normalize_simulado_answer_submission_payload(
                 user_state.get("simulado_answer_submission")
+            )
+            user_state["simulado_correction_shell"] = self._normalize_simulado_correction_shell_payload(
+                user_state.get("simulado_correction_shell")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -791,6 +827,16 @@ class JsonStudyRepository:
             normalized["results"] = {}
         return normalized
 
+    def _normalize_simulado_correction_shell_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
     def _progress_container(self, payload: dict[str, object], user_id: str | None) -> dict[str, object]:
         if user_id is None:
             progress = payload.get("progress")
@@ -905,6 +951,9 @@ class JsonStudyRepository:
         )
         state["simulado_answer_submission"] = self._normalize_simulado_answer_submission_payload(
             state.get("simulado_answer_submission")
+        )
+        state["simulado_correction_shell"] = self._normalize_simulado_correction_shell_payload(
+            state.get("simulado_correction_shell")
         )
         return state
 
@@ -1204,6 +1253,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_answer_submission_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_answer_submission"]
+
+    def _simulado_correction_shell_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_correction_shell_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_correction_shell"]
 
     def save_document_pipeline_state(
         self,
@@ -2282,6 +2340,59 @@ class JsonStudyRepository:
     ) -> SimuladoAnswerSubmission | None:
         for item in self.list_user_simulado_answer_submissions(user_id=user_id):
             if item.answer_submission_id == answer_submission_id:
+                return item
+        return None
+
+    def save_simulado_correction_shell(
+        self,
+        shell: SimuladoCorrectionShell,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado correction shell requires user ownership.")
+        payload = self._read()
+        container = self._simulado_correction_shell_container(payload, user_id)
+        container["results"][shell.source_answer_submission_id] = shell.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_correction_shell(
+        self,
+        source_answer_submission_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoCorrectionShell | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_correction_shell_container(payload, user_id)["results"].get(
+            source_answer_submission_id
+        )
+        if raw is None:
+            return None
+        return SimuladoCorrectionShell.model_validate(raw)
+
+    def list_user_simulado_correction_shells(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoCorrectionShell]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_correction_shell_container(payload, user_id)["results"].values()
+        items = [SimuladoCorrectionShell.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_answer_submission_id)
+        return items
+
+    def get_simulado_correction_shell_by_id(
+        self,
+        correction_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoCorrectionShell | None:
+        for item in self.list_user_simulado_correction_shells(user_id=user_id):
+            if item.correction_shell_id == correction_shell_id:
                 return item
         return None
 

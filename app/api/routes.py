@@ -44,6 +44,7 @@ from app.services.question_generation_blueprint import QuestionGenerationBluepri
 from app.services.simulado_attempt_shell import SimuladoAttemptShellService
 from app.services.simulado_answer_submission import SimuladoAnswerSubmissionService
 from app.services.simulado_attempt_session import SimuladoAttemptSessionService
+from app.services.simulado_correction_shell import SimuladoCorrectionShellService
 from app.services.simulado_execution_shell import SimuladoExecutionShellService
 from app.services.simulado_final_approval import SimuladoFinalApprovalService
 from app.services.simulado_finalization_guardrails import SimuladoFinalizationGuardrailsService
@@ -166,6 +167,10 @@ def get_simulado_attempt_session_service(request: Request) -> SimuladoAttemptSes
 
 def get_simulado_answer_submission_service(request: Request) -> SimuladoAnswerSubmissionService:
     return SimuladoAnswerSubmissionService(get_repository(request))
+
+
+def get_simulado_correction_shell_service(request: Request) -> SimuladoCorrectionShellService:
+    return SimuladoCorrectionShellService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1219,6 +1224,54 @@ def get_simulado_answer_submission_by_id(answer_submission_id: str, request: Req
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado answer submission not found.")
+    return result
+
+
+@router.post("/simulado-answer-submission/{answer_submission_id}/correction-shell/build")
+def build_simulado_correction_shell_for_answer_submission(answer_submission_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    answer_submission = get_simulado_answer_submission_service(request).get_answer_submission_by_id(
+        answer_submission_id,
+        user_id=user_id,
+    )
+    if answer_submission is None:
+        raise HTTPException(status_code=404, detail="Simulado answer submission not found.")
+    result = get_simulado_correction_shell_service(request).build_correction_shell(
+        answer_submission_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado correction shell could not be built.")
+    return result
+
+
+@router.get("/simulado-answer-submission/{answer_submission_id}/correction-shell")
+def get_simulado_correction_shell_for_answer_submission(answer_submission_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    answer_submission = get_simulado_answer_submission_service(request).get_answer_submission_by_id(
+        answer_submission_id,
+        user_id=user_id,
+    )
+    if answer_submission is None:
+        raise HTTPException(status_code=404, detail="Simulado answer submission not found.")
+    result = get_simulado_correction_shell_service(request).get_correction_shell(
+        answer_submission_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado correction shell not found.")
+    return result
+
+
+@router.get("/simulado-correction-shell/{correction_shell_id}")
+def get_simulado_correction_shell_by_id(correction_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_correction_shell_service(request).get_correction_shell_by_id(
+        correction_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado correction shell not found.")
     return result
 
 
