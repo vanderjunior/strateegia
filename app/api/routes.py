@@ -53,6 +53,9 @@ from app.services.simulado_finalization_guardrails import SimuladoFinalizationGu
 from app.services.simulado_question_assembly import SimuladoQuestionAssemblyService
 from app.services.simulado_progress_guardrails import SimuladoProgressGuardrailsService
 from app.services.simulado_scoring import SimuladoScoringService
+from app.services.simulado_integrated_execution_correction import (
+    SimuladoIntegratedExecutionCorrectionService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -191,6 +194,12 @@ def get_simulado_scoring_service(request: Request) -> SimuladoScoringService:
 
 def get_simulado_progress_guardrails_service(request: Request) -> SimuladoProgressGuardrailsService:
     return SimuladoProgressGuardrailsService(get_repository(request))
+
+
+def get_simulado_integrated_execution_correction_service(
+    request: Request,
+) -> SimuladoIntegratedExecutionCorrectionService:
+    return SimuladoIntegratedExecutionCorrectionService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1484,6 +1493,57 @@ def get_simulado_progress_guardrail_by_id(progress_guardrail_id: str, request: R
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado progress guardrail not found.")
+    return result
+
+
+@router.post("/simulado-attempt-session/{attempt_session_id}/integrated-result/build")
+def build_simulado_integrated_execution_correction_for_attempt_session(
+    attempt_session_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    attempt_session = get_simulado_attempt_session_service(request).get_attempt_session_by_id(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if attempt_session is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
+    result = get_simulado_integrated_execution_correction_service(request).build_integrated_result(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado integrated execution/correction could not be built.")
+    return result
+
+
+@router.get("/simulado-attempt-session/{attempt_session_id}/integrated-result")
+def get_simulado_integrated_execution_correction_for_attempt_session(attempt_session_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    attempt_session = get_simulado_attempt_session_service(request).get_attempt_session_by_id(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if attempt_session is None:
+        raise HTTPException(status_code=404, detail="Simulado attempt session not found.")
+    result = get_simulado_integrated_execution_correction_service(request).get_integrated_result(
+        attempt_session_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado integrated execution/correction not found.")
+    return result
+
+
+@router.get("/simulado-integrated-result/{integrated_result_id}")
+def get_simulado_integrated_execution_correction_by_id(integrated_result_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_integrated_execution_correction_service(request).get_integrated_result_by_id(
+        integrated_result_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado integrated execution/correction not found.")
     return result
 
 

@@ -62,6 +62,14 @@ from app.domain.models import (
     ItemState,
     InterventionHistory,
     InternalAnswerKeyReference,
+    IntegratedArtifactChainSummary,
+    IntegratedCorrectionStatusSummary,
+    IntegratedExecutionCorrectionBlocker,
+    IntegratedExecutionCorrectionValidationFinding,
+    IntegratedExecutionCorrectionWarning,
+    IntegratedExecutionStatusSummary,
+    IntegratedProgressGuardrailSummary,
+    IntegratedScoreStatusSummary,
     MicroTopicPerformance,
     PedagogicalMemory,
     PedagogicalOutcome,
@@ -90,6 +98,7 @@ from app.domain.models import (
     SimuladoAttemptShellWarning,
     SimuladoAnswerKeyBoundary,
     SimuladoCorrectionResult,
+    SimuladoIntegratedExecutionCorrection,
     SimuladoProgressMutationGuardrail,
     SimuladoScoreResult,
     SimuladoExecutionBlocker,
@@ -585,6 +594,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_integrated_result(self, result: SimuladoIntegratedExecutionCorrection) -> None:
+        self._repository.save_simulado_integrated_result(result, user_id=self.user_id)
+
+    def get_simulado_integrated_result(
+        self,
+        source_attempt_session_id: str,
+    ) -> SimuladoIntegratedExecutionCorrection | None:
+        return self._repository.get_simulado_integrated_result(
+            source_attempt_session_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_integrated_results(self) -> list[SimuladoIntegratedExecutionCorrection]:
+        return self._repository.list_user_simulado_integrated_results(user_id=self.user_id)
+
+    def get_simulado_integrated_result_by_id(
+        self,
+        integrated_result_id: str,
+    ) -> SimuladoIntegratedExecutionCorrection | None:
+        return self._repository.get_simulado_integrated_result_by_id(
+            integrated_result_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -692,6 +725,9 @@ class JsonStudyRepository:
             "simulado_progress_guardrail": {
                 "results": {},
             },
+            "simulado_integrated_result": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -787,6 +823,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_progress_guardrail"] = self._normalize_simulado_progress_guardrail_payload(
                 user_state.get("simulado_progress_guardrail")
+            )
+            user_state["simulado_integrated_result"] = self._normalize_simulado_integrated_result_payload(
+                user_state.get("simulado_integrated_result")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -1015,6 +1054,16 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_progress_guardrail_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_integrated_result_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1491,6 +1540,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_progress_guardrail_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_progress_guardrail"]
+
+    def _simulado_integrated_result_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_integrated_result_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_integrated_result"]
 
     def save_document_pipeline_state(
         self,
@@ -2834,6 +2892,59 @@ class JsonStudyRepository:
     ) -> SimuladoProgressMutationGuardrail | None:
         for item in self.list_user_simulado_progress_guardrails(user_id=user_id):
             if item.progress_guardrail_id == progress_guardrail_id:
+                return item
+        return None
+
+    def save_simulado_integrated_result(
+        self,
+        result: SimuladoIntegratedExecutionCorrection,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado integrated execution/correction result requires user ownership.")
+        payload = self._read()
+        container = self._simulado_integrated_result_container(payload, user_id)
+        container["results"][result.source_attempt_session_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_integrated_result(
+        self,
+        source_attempt_session_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoIntegratedExecutionCorrection | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_integrated_result_container(payload, user_id)["results"].get(
+            source_attempt_session_id
+        )
+        if raw is None:
+            return None
+        return SimuladoIntegratedExecutionCorrection.model_validate(raw)
+
+    def list_user_simulado_integrated_results(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoIntegratedExecutionCorrection]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_integrated_result_container(payload, user_id)["results"].values()
+        items = [SimuladoIntegratedExecutionCorrection.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_attempt_session_id)
+        return items
+
+    def get_simulado_integrated_result_by_id(
+        self,
+        integrated_result_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoIntegratedExecutionCorrection | None:
+        for item in self.list_user_simulado_integrated_results(user_id=user_id):
+            if item.integrated_result_id == integrated_result_id:
                 return item
         return None
 

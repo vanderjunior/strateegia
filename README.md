@@ -271,6 +271,37 @@ Trabalho futuro desta trilha:
 - Progress Mutation Guardrails Stabilization Fixtures
 - Integrated Execution/Correction Foundation
 
+## Fundacao de integrated execution/correction
+
+Attempt sessions agora podem gerar um artifact separado de `integrated execution/correction`, sempre user-scoped, deterministico e read-only.
+
+Capacidades atuais desta etapa:
+
+- cria um integrated result a partir de um `SimuladoAttemptSession`
+- resolve e resume a cadeia `answer submission -> correction shell -> answer key boundary -> correction result -> score result -> progress guardrail`
+- registra disponibilidade de artifacts, estados de correction/score/guardrail e blockers finais de runtime mutation disabled
+- persiste um artifact proprio de integracao, sem mutar attempt session, submission, correction, score ou guardrail de origem
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem mutacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de integrated execution/correction:
+
+- `POST /api/simulado-attempt-session/{attempt_session_id}/integrated-result/build`
+- `GET /api/simulado-attempt-session/{attempt_session_id}/integrated-result`
+- `GET /api/simulado-integrated-result/{integrated_result_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas artifacts integrados read-only
+- esta etapa nao aplica score ao runtime pedagogico
+- esta etapa nao muta progresso, ranking, retention, scheduler, study cycle ou curriculum graph
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Integrated Execution/Correction Stabilization Fixtures
+- Safe Runtime Progress Application Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

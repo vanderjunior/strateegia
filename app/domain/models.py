@@ -3910,6 +3910,151 @@ class SimuladoProgressMutationGuardrail(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class IntegratedArtifactChainSummary(BaseModel):
+    chain_summary_id: str
+    attempt_session_available: bool = False
+    answer_submission_available: bool = False
+    correction_shell_available: bool = False
+    answer_key_boundary_available: bool = False
+    correction_result_available: bool = False
+    score_result_available: bool = False
+    progress_guardrail_available: bool = False
+    chain_complete: bool = False
+    missing_artifacts: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedExecutionStatusSummary(BaseModel):
+    summary_id: str
+    session_prepared: bool = False
+    session_active: bool = False
+    session_submitted: bool = False
+    session_completed: bool = False
+    answer_submission_present: bool = False
+    submitted_answer_count: int = 0
+    non_submittable_items_present: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedCorrectionStatusSummary(BaseModel):
+    summary_id: str
+    correction_shell_present: bool = False
+    answer_key_boundary_present: bool = False
+    correction_result_present: bool = False
+    total_answer_records: int = 0
+    corrected_answer_count: int = 0
+    blocked_answer_count: int = 0
+    needs_review_answer_count: int = 0
+    correction_complete: bool = False
+    correction_blocked: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedScoreStatusSummary(BaseModel):
+    summary_id: str
+    score_result_present: bool = False
+    raw_score: float = 0.0
+    max_score: float = 0.0
+    percentage_score: float | None = None
+    scoreable_item_count: int = 0
+    scored_item_count: int = 0
+    blocked_item_count: int = 0
+    needs_review_item_count: int = 0
+    score_complete: bool = False
+    score_blocked: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedProgressGuardrailSummary(BaseModel):
+    summary_id: str
+    progress_guardrail_present: bool = False
+    eligible_for_future_progress_mutation: bool = False
+    eligible_for_future_ranking_update: bool = False
+    eligible_for_future_retention_update: bool = False
+    eligible_for_future_scheduler_update: bool = False
+    candidate_target_count: int = 0
+    update_applied_count: int = 0
+    mutation_blocked: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedExecutionCorrectionBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedExecutionCorrectionValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class IntegratedExecutionCorrectionWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoIntegratedExecutionCorrection(BaseModel):
+    integrated_result_id: str
+    user_id: str | None = None
+    source_attempt_session_id: str
+    source_answer_submission_id: str | None = None
+    source_correction_shell_id: str | None = None
+    source_answer_key_boundary_id: str | None = None
+    source_correction_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    status: str = "integrated_execution_correction_blocked"
+    readiness_state: str = "blocked_by_missing_attempt_session"
+    chain_summary: IntegratedArtifactChainSummary
+    execution_summary: IntegratedExecutionStatusSummary
+    correction_summary: IntegratedCorrectionStatusSummary
+    score_summary: IntegratedScoreStatusSummary
+    progress_guardrail_summary: IntegratedProgressGuardrailSummary
+    blockers: list[IntegratedExecutionCorrectionBlocker] = Field(default_factory=list)
+    validation_findings: list[IntegratedExecutionCorrectionValidationFinding] = Field(default_factory=list)
+    warnings: list[IntegratedExecutionCorrectionWarning] = Field(default_factory=list)
+    progress_mutation_applied: bool = False
+    ranking_update_applied: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_applied: bool = False
+    progress_mutation_enabled: bool = False
+    ranking_mutation_enabled: bool = False
+    retention_mutation_enabled: bool = False
+    scheduler_mutation_enabled: bool = False
+    study_cycle_mutation_enabled: bool = False
+    curriculum_graph_mutation_enabled: bool = False
+    adaptive_tuning_enabled: bool = False
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
