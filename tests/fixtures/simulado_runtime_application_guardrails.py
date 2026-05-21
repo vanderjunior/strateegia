@@ -198,6 +198,33 @@ def no_runtime_mutation_fixture(
     return _wrap_fixture(_no_runtime_mutation_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
+def candidate_mutation_intent_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplicationGuardrailFixture:
+    return candidate_mutation_intents_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def affected_runtime_surface_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplicationGuardrailFixture:
+    return affected_runtime_surfaces_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_application_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplicationGuardrailFixture:
+    return no_runtime_mutation_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def mixed_runtime_guardrail_fixture(
     tmp_path,
     *,
