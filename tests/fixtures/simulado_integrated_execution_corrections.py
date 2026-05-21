@@ -261,6 +261,15 @@ def complete_chain_fixture(
     )
 
 
+def complete_chain_readonly_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return complete_chain_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def incomplete_correction_fixture(
     tmp_path,
     *,
@@ -289,6 +298,51 @@ def progress_guardrail_not_eligible_fixture(
 
 
 def runtime_mutation_disabled_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return complete_chain_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def chain_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return complete_chain_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def execution_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return complete_chain_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def correction_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return complete_chain_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def score_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return complete_chain_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def progress_guardrail_summary_shape_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
@@ -375,6 +429,15 @@ def mixed_guardrail_fixture(
         score_result=guardrail_fixture.score_result,
         progress_guardrail=progress_guardrail,
     )
+
+
+def mixed_blockers_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoIntegratedExecutionCorrectionFixture:
+    return mixed_guardrail_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def idempotency_fixture(
