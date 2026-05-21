@@ -56,6 +56,9 @@ from app.services.simulado_scoring import SimuladoScoringService
 from app.services.simulado_integrated_execution_correction import (
     SimuladoIntegratedExecutionCorrectionService,
 )
+from app.services.simulado_runtime_application_guardrails import (
+    SimuladoRuntimeApplicationGuardrailsService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -200,6 +203,12 @@ def get_simulado_integrated_execution_correction_service(
     request: Request,
 ) -> SimuladoIntegratedExecutionCorrectionService:
     return SimuladoIntegratedExecutionCorrectionService(get_repository(request))
+
+
+def get_simulado_runtime_application_guardrails_service(
+    request: Request,
+) -> SimuladoRuntimeApplicationGuardrailsService:
+    return SimuladoRuntimeApplicationGuardrailsService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1544,6 +1553,57 @@ def get_simulado_integrated_execution_correction_by_id(integrated_result_id: str
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado integrated execution/correction not found.")
+    return result
+
+
+@router.post("/simulado-integrated-result/{integrated_result_id}/runtime-guardrail/build")
+def build_simulado_runtime_application_guardrail_for_integrated_result(
+    integrated_result_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    integrated_result = get_simulado_integrated_execution_correction_service(request).get_integrated_result_by_id(
+        integrated_result_id,
+        user_id=user_id,
+    )
+    if integrated_result is None:
+        raise HTTPException(status_code=404, detail="Simulado integrated execution/correction not found.")
+    result = get_simulado_runtime_application_guardrails_service(request).build_runtime_guardrail(
+        integrated_result_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime application guardrail could not be built.")
+    return result
+
+
+@router.get("/simulado-integrated-result/{integrated_result_id}/runtime-guardrail")
+def get_simulado_runtime_application_guardrail_for_integrated_result(integrated_result_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    integrated_result = get_simulado_integrated_execution_correction_service(request).get_integrated_result_by_id(
+        integrated_result_id,
+        user_id=user_id,
+    )
+    if integrated_result is None:
+        raise HTTPException(status_code=404, detail="Simulado integrated execution/correction not found.")
+    result = get_simulado_runtime_application_guardrails_service(request).get_runtime_guardrail(
+        integrated_result_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime application guardrail not found.")
+    return result
+
+
+@router.get("/simulado-runtime-guardrail/{runtime_guardrail_id}")
+def get_simulado_runtime_application_guardrail_by_id(runtime_guardrail_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_runtime_application_guardrails_service(request).get_runtime_guardrail_by_id(
+        runtime_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime application guardrail not found.")
     return result
 
 

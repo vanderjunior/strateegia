@@ -4055,6 +4055,149 @@ class SimuladoIntegratedExecutionCorrection(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class RuntimeApplicationEligibility(BaseModel):
+    eligibility_id: str
+    eligible_for_future_runtime_application: bool = False
+    eligible_for_future_progress_mutation: bool = False
+    eligible_for_future_ranking_update: bool = False
+    eligible_for_future_retention_update: bool = False
+    eligible_for_future_scheduler_update: bool = False
+    eligible_for_future_study_cycle_update: bool = False
+    eligible_for_future_curriculum_graph_update: bool = False
+    eligibility_state: str = "not_eligible"
+    requires_human_review: bool = True
+    requires_explicit_application_approval: bool = True
+    requires_complete_integrated_chain: bool = True
+    requires_complete_score: bool = True
+    requires_progress_guardrail_eligibility: bool = True
+    requires_runtime_policy_confirmation: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplicationSafetyAssessment(BaseModel):
+    assessment_id: str
+    integrated_chain_complete: bool = False
+    score_result_present: bool = False
+    score_complete: bool = False
+    progress_guardrail_present: bool = False
+    progress_guardrail_eligible: bool = False
+    runtime_policy_available: bool = False
+    public_answer_key_exposure_detected: bool = False
+    public_gabarito_exposure_detected: bool = False
+    unsafe_runtime_mutation_detected: bool = True
+    enough_data_for_future_application: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CandidateRuntimeMutationIntent(BaseModel):
+    intent_id: str
+    intent_type: str = "unknown"
+    source_target_id: str | None = None
+    source_score_item_id: str | None = None
+    topic_id: str | None = None
+    subtopic_id: str | None = None
+    microtopic_id: str | None = None
+    subject_id: str | None = None
+    proposed_surface: str = "unknown"
+    proposed_update_kind: str = "no_application_applied"
+    future_application_allowed: bool = False
+    application_applied: bool = False
+    requires_review: bool = True
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AffectedRuntimeSurfaceSummary(BaseModel):
+    surface_id: str
+    surface_type: str = "unknown"
+    surface_name: str = "unknown"
+    affected: bool = False
+    future_update_allowed: bool = False
+    update_applied: bool = False
+    blocker_count: int = 0
+    warning_count: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplicationBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplicationValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplicationWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoRuntimeApplicationGuardrail(BaseModel):
+    runtime_guardrail_id: str
+    user_id: str | None = None
+    source_integrated_result_id: str
+    source_attempt_session_id: str | None = None
+    source_answer_submission_id: str | None = None
+    source_correction_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    status: str = "runtime_application_guardrail_blocked"
+    readiness_state: str = "blocked_by_missing_integrated_result"
+    eligibility: RuntimeApplicationEligibility
+    safety_assessment: RuntimeApplicationSafetyAssessment
+    candidate_mutation_intents: list[CandidateRuntimeMutationIntent] = Field(default_factory=list)
+    affected_runtime_surfaces: list[AffectedRuntimeSurfaceSummary] = Field(default_factory=list)
+    blockers: list[RuntimeApplicationBlocker] = Field(default_factory=list)
+    validation_findings: list[RuntimeApplicationValidationFinding] = Field(default_factory=list)
+    warnings: list[RuntimeApplicationWarning] = Field(default_factory=list)
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

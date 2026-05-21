@@ -302,6 +302,39 @@ Trabalho futuro desta trilha:
 - Integrated Execution/Correction Stabilization Fixtures
 - Safe Runtime Progress Application Foundation
 
+## Fundacao de safe runtime progress application guardrails
+
+Integrated results agora podem gerar um artifact separado de `runtime application guardrail`, sempre user-scoped, deterministico e isolado de qualquer aplicacao real no runtime pedagogico.
+
+Capacidades atuais desta etapa:
+
+- cria um runtime application guardrail a partir de um `SimuladoIntegratedExecutionCorrection`
+- avalia completude da cadeia integrada, presenca/seguranca do score e favorabilidade do progress guardrail sem aplicar nenhuma mutacao
+- persiste candidate mutation intents e affected runtime surfaces apenas como metadados de revisao futura
+- registra blockers de integrated chain incompleta, score ausente/incompleto, progress guardrail ausente/nao elegivel, runtime policy missing e runtime mutation disabled
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de runtime application guardrails:
+
+- `POST /api/simulado-integrated-result/{integrated_result_id}/runtime-guardrail/build`
+- `GET /api/simulado-integrated-result/{integrated_result_id}/runtime-guardrail`
+- `GET /api/simulado-runtime-guardrail/{runtime_guardrail_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas runtime application guardrail artifacts
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Safe Runtime Progress Application Guardrail Stabilization Fixtures
+- Runtime Progress Application Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

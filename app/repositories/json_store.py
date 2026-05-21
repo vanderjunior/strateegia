@@ -18,8 +18,10 @@ from app.domain.models import (
     AttemptSessionWarning,
     AlignmentWarning,
     AnswerSubmission,
+    AffectedRuntimeSurfaceSummary,
     CandidateDraftSummary,
     CandidateGuardrailSummary,
+    CandidateRuntimeMutationIntent,
     CandidateSourceEvidenceSummary,
     BibliographyAlignmentResult,
     BibliographyAlignmentState,
@@ -88,6 +90,11 @@ from app.domain.models import (
     ScoreSummary,
     ScoreValidationFinding,
     ScoreWarning,
+    RuntimeApplicationBlocker,
+    RuntimeApplicationEligibility,
+    RuntimeApplicationSafetyAssessment,
+    RuntimeApplicationValidationFinding,
+    RuntimeApplicationWarning,
     SimuladoAttemptSession,
     SimuladoAttemptSessionItem,
     SimuladoAnswerSubmission,
@@ -100,6 +107,7 @@ from app.domain.models import (
     SimuladoCorrectionResult,
     SimuladoIntegratedExecutionCorrection,
     SimuladoProgressMutationGuardrail,
+    SimuladoRuntimeApplicationGuardrail,
     SimuladoScoreResult,
     SimuladoExecutionBlocker,
     SimuladoExecutionShell,
@@ -618,6 +626,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_runtime_guardrail(self, result: SimuladoRuntimeApplicationGuardrail) -> None:
+        self._repository.save_simulado_runtime_guardrail(result, user_id=self.user_id)
+
+    def get_simulado_runtime_guardrail(
+        self,
+        source_integrated_result_id: str,
+    ) -> SimuladoRuntimeApplicationGuardrail | None:
+        return self._repository.get_simulado_runtime_guardrail(
+            source_integrated_result_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_runtime_guardrails(self) -> list[SimuladoRuntimeApplicationGuardrail]:
+        return self._repository.list_user_simulado_runtime_guardrails(user_id=self.user_id)
+
+    def get_simulado_runtime_guardrail_by_id(
+        self,
+        runtime_guardrail_id: str,
+    ) -> SimuladoRuntimeApplicationGuardrail | None:
+        return self._repository.get_simulado_runtime_guardrail_by_id(
+            runtime_guardrail_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -728,6 +760,9 @@ class JsonStudyRepository:
             "simulado_integrated_result": {
                 "results": {},
             },
+            "simulado_runtime_guardrail": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -826,6 +861,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_integrated_result"] = self._normalize_simulado_integrated_result_payload(
                 user_state.get("simulado_integrated_result")
+            )
+            user_state["simulado_runtime_guardrail"] = self._normalize_simulado_runtime_guardrail_payload(
+                user_state.get("simulado_runtime_guardrail")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -1064,6 +1102,16 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_integrated_result_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_runtime_guardrail_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1549,6 +1597,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_integrated_result_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_integrated_result"]
+
+    def _simulado_runtime_guardrail_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_runtime_guardrail_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_runtime_guardrail"]
 
     def save_document_pipeline_state(
         self,
@@ -2945,6 +3002,59 @@ class JsonStudyRepository:
     ) -> SimuladoIntegratedExecutionCorrection | None:
         for item in self.list_user_simulado_integrated_results(user_id=user_id):
             if item.integrated_result_id == integrated_result_id:
+                return item
+        return None
+
+    def save_simulado_runtime_guardrail(
+        self,
+        result: SimuladoRuntimeApplicationGuardrail,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado runtime application guardrail requires user ownership.")
+        payload = self._read()
+        container = self._simulado_runtime_guardrail_container(payload, user_id)
+        container["results"][result.source_integrated_result_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_runtime_guardrail(
+        self,
+        source_integrated_result_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeApplicationGuardrail | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_runtime_guardrail_container(payload, user_id)["results"].get(
+            source_integrated_result_id
+        )
+        if raw is None:
+            return None
+        return SimuladoRuntimeApplicationGuardrail.model_validate(raw)
+
+    def list_user_simulado_runtime_guardrails(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoRuntimeApplicationGuardrail]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_runtime_guardrail_container(payload, user_id)["results"].values()
+        items = [SimuladoRuntimeApplicationGuardrail.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_integrated_result_id)
+        return items
+
+    def get_simulado_runtime_guardrail_by_id(
+        self,
+        runtime_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeApplicationGuardrail | None:
+        for item in self.list_user_simulado_runtime_guardrails(user_id=user_id):
+            if item.runtime_guardrail_id == runtime_guardrail_id:
                 return item
         return None
 
