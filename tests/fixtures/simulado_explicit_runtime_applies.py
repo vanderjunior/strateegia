@@ -184,6 +184,105 @@ def explicit_apply_source_fixture(
     return _wrap_fixture(_no_runtime_application_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
+def no_decision_payload_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def approve_without_confirmations_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def approve_with_all_confirmations_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def deny_decision_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def request_revision_decision_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def block_decision_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def mark_not_reviewed_decision_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def confirmation_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def intent_approvals_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def surface_approvals_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def unsafe_source_fixture(
     tmp_path,
     *,
@@ -209,7 +308,25 @@ def mixed_explicit_apply_fixture(
     return _wrap_fixture(_mixed_shell_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
+def mixed_decision_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return mixed_explicit_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_runtime_application_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_public_key_gabarito_safety_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
@@ -236,6 +353,24 @@ def idempotency_fixture(
     return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def payload_idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return idempotency_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def different_payload_behavior_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def api_readonly_fixture(
     tmp_path,
     *,
@@ -244,3 +379,11 @@ def api_readonly_fixture(
 ) -> SimuladoExplicitRuntimeApplyFixture:
     return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
 
+
+def user_scope_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitRuntimeApplyFixture:
+    return explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository)
