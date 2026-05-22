@@ -33,6 +33,14 @@ from app.domain.models import (
     ControlledApplySurfaceDecision,
     ControlledApplyValidationFinding,
     ControlledApplyWarning,
+    CommitExecutionAuditRequirement,
+    CommitExecutionGuardrailAuditEntry,
+    CommitExecutionGuardrailBlocker,
+    CommitExecutionGuardrailValidationFinding,
+    CommitExecutionGuardrailWarning,
+    CommitExecutionReadinessSummary,
+    CommitRollbackExecutionReadiness,
+    CommitTransactionSafetyAssessment,
     CoverageGap,
     CoverageRedundancy,
     CurriculumGraph,
@@ -81,8 +89,11 @@ from app.domain.models import (
     ExplicitCommitValidationFinding,
     ExplicitCommitWarning,
     PlannedProgressCommit,
+    PlannedProgressCommitExecutionCheck,
     PlannedRuntimeSurfaceCommit,
+    PlannedSurfaceCommitExecutionCheck,
     RuntimeCommitRollbackExecutionPlan,
+    RuntimeSurfaceRiskSummary,
     RuntimeCommitTransactionAuditEntry,
     RuntimeCommitTransactionBlocker,
     RuntimeCommitTransactionValidationFinding,
@@ -156,6 +167,7 @@ from app.domain.models import (
     SimuladoQuestionAssembly,
     SimuladoCorrectionShell,
     SimuladoControlledRuntimeApplyShell,
+    SimuladoControlledRuntimeCommitExecutionGuardrail,
     SimuladoExplicitRuntimeMutationCommit,
     SimuladoRuntimeMutationCommitTransaction,
     SimuladoExplicitRuntimeProgressApply,
@@ -892,6 +904,37 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_controlled_commit_execution_guardrail(
+        self,
+        result: SimuladoControlledRuntimeCommitExecutionGuardrail,
+    ) -> None:
+        self._repository.save_simulado_controlled_commit_execution_guardrail(result, user_id=self.user_id)
+
+    def get_simulado_controlled_commit_execution_guardrail(
+        self,
+        source_commit_transaction_id: str,
+    ) -> SimuladoControlledRuntimeCommitExecutionGuardrail | None:
+        return self._repository.get_simulado_controlled_commit_execution_guardrail(
+            source_commit_transaction_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_controlled_commit_execution_guardrails(
+        self,
+    ) -> list[SimuladoControlledRuntimeCommitExecutionGuardrail]:
+        return self._repository.list_user_simulado_controlled_commit_execution_guardrails(
+            user_id=self.user_id
+        )
+
+    def get_simulado_controlled_commit_execution_guardrail_by_id(
+        self,
+        execution_guardrail_id: str,
+    ) -> SimuladoControlledRuntimeCommitExecutionGuardrail | None:
+        return self._repository.get_simulado_controlled_commit_execution_guardrail_by_id(
+            execution_guardrail_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -1026,6 +1069,9 @@ class JsonStudyRepository:
             "simulado_runtime_mutation_commit_transaction": {
                 "results": {},
             },
+            "simulado_controlled_commit_execution_guardrail": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -1157,6 +1203,11 @@ class JsonStudyRepository:
             user_state["simulado_runtime_mutation_commit_transaction"] = (
                 self._normalize_simulado_runtime_mutation_commit_transaction_payload(
                     user_state.get("simulado_runtime_mutation_commit_transaction")
+                )
+            )
+            user_state["simulado_controlled_commit_execution_guardrail"] = (
+                self._normalize_simulado_controlled_commit_execution_guardrail_payload(
+                    user_state.get("simulado_controlled_commit_execution_guardrail")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -1478,6 +1529,19 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_runtime_mutation_commit_transaction_payload(
+        self,
+        payload: object,
+    ) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_controlled_commit_execution_guardrail_payload(
         self,
         payload: object,
     ) -> dict[str, object]:
@@ -2038,6 +2102,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_runtime_mutation_commit_transaction_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_runtime_mutation_commit_transaction"]
+
+    def _simulado_controlled_commit_execution_guardrail_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_controlled_commit_execution_guardrail_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_controlled_commit_execution_guardrail"]
 
     def save_document_pipeline_state(
         self,
@@ -3860,6 +3933,61 @@ class JsonStudyRepository:
     ) -> SimuladoRuntimeMutationCommitTransaction | None:
         for item in self.list_user_simulado_runtime_mutation_commit_transactions(user_id=user_id):
             if item.commit_transaction_id == commit_transaction_id:
+                return item
+        return None
+
+    def save_simulado_controlled_commit_execution_guardrail(
+        self,
+        result: SimuladoControlledRuntimeCommitExecutionGuardrail,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado controlled commit execution guardrail requires user ownership.")
+        payload = self._read()
+        container = self._simulado_controlled_commit_execution_guardrail_container(payload, user_id)
+        container["results"][result.source_commit_transaction_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_controlled_commit_execution_guardrail(
+        self,
+        source_commit_transaction_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeCommitExecutionGuardrail | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_controlled_commit_execution_guardrail_container(payload, user_id)["results"].get(
+            source_commit_transaction_id
+        )
+        if raw is None:
+            return None
+        return SimuladoControlledRuntimeCommitExecutionGuardrail.model_validate(raw)
+
+    def list_user_simulado_controlled_commit_execution_guardrails(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoControlledRuntimeCommitExecutionGuardrail]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_controlled_commit_execution_guardrail_container(payload, user_id)[
+            "results"
+        ].values()
+        items = [SimuladoControlledRuntimeCommitExecutionGuardrail.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_commit_transaction_id)
+        return items
+
+    def get_simulado_controlled_commit_execution_guardrail_by_id(
+        self,
+        execution_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeCommitExecutionGuardrail | None:
+        for item in self.list_user_simulado_controlled_commit_execution_guardrails(user_id=user_id):
+            if item.execution_guardrail_id == execution_guardrail_id:
                 return item
         return None
 

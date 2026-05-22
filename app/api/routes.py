@@ -80,6 +80,9 @@ from app.services.simulado_explicit_mutation_commit import (
 from app.services.simulado_runtime_mutation_commit_transaction import (
     SimuladoRuntimeMutationCommitTransactionService,
 )
+from app.services.simulado_controlled_commit_execution_guardrail import (
+    SimuladoControlledRuntimeCommitExecutionGuardrailService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -272,6 +275,12 @@ def get_simulado_runtime_mutation_commit_transaction_service(
     request: Request,
 ) -> SimuladoRuntimeMutationCommitTransactionService:
     return SimuladoRuntimeMutationCommitTransactionService(get_repository(request))
+
+
+def get_simulado_controlled_commit_execution_guardrail_service(
+    request: Request,
+) -> SimuladoControlledRuntimeCommitExecutionGuardrailService:
+    return SimuladoControlledRuntimeCommitExecutionGuardrailService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2045,6 +2054,69 @@ def get_simulado_runtime_mutation_commit_transaction_by_id(commit_transaction_id
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado runtime mutation commit transaction not found.")
+    return result
+
+
+@router.post("/simulado-commit-transaction/{commit_transaction_id}/execution-guardrail/build")
+def build_simulado_controlled_commit_execution_guardrail_for_commit_transaction(
+    commit_transaction_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    transaction = get_simulado_runtime_mutation_commit_transaction_service(
+        request
+    ).get_commit_transaction_by_id(
+        commit_transaction_id,
+        user_id=user_id,
+    )
+    if transaction is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime mutation commit transaction not found.")
+    result = get_simulado_controlled_commit_execution_guardrail_service(request).build_execution_guardrail(
+        commit_transaction_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled runtime commit execution guardrail could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-commit-transaction/{commit_transaction_id}/execution-guardrail")
+def get_simulado_controlled_commit_execution_guardrail_for_commit_transaction(
+    commit_transaction_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    transaction = get_simulado_runtime_mutation_commit_transaction_service(
+        request
+    ).get_commit_transaction_by_id(
+        commit_transaction_id,
+        user_id=user_id,
+    )
+    if transaction is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime mutation commit transaction not found.")
+    result = get_simulado_controlled_commit_execution_guardrail_service(request).get_execution_guardrail(
+        commit_transaction_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled runtime commit execution guardrail not found.")
+    return result
+
+
+@router.get("/simulado-commit-execution-guardrail/{execution_guardrail_id}")
+def get_simulado_controlled_commit_execution_guardrail_by_id(execution_guardrail_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_controlled_commit_execution_guardrail_service(
+        request
+    ).get_execution_guardrail_by_id(
+        execution_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled runtime commit execution guardrail not found.")
     return result
 
 

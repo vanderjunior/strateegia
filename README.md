@@ -569,6 +569,40 @@ Trabalho futuro desta trilha:
 - Runtime Mutation Commit Transaction Stabilization Fixtures
 - Controlled Runtime Commit Execution Guardrail Foundation
 
+## Fundacao de controlled runtime commit execution guardrail
+
+Runtime mutation commit transactions agora podem gerar um artifact separado de `controlled runtime commit execution guardrail`, sempre user-scoped, deterministico e limitado a readiness/safety validation para futura execucao controlada.
+
+Capacidades atuais desta etapa:
+
+- cria um controlled runtime commit execution guardrail a partir de um `SimuladoRuntimeMutationCommitTransaction`
+- valida commit transaction safety, rollback execution readiness, planned progress commit checks e planned surface commit checks apenas como metadados bounded
+- registra audit requirements e audit trail apenas como requisitos de futura execucao
+- persiste o execution guardrail artifact sem executar commit
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de controlled runtime commit execution guardrail:
+
+- `POST /api/simulado-commit-transaction/{commit_transaction_id}/execution-guardrail/build`
+- `GET /api/simulado-commit-transaction/{commit_transaction_id}/execution-guardrail`
+- `GET /api/simulado-commit-execution-guardrail/{execution_guardrail_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas execution guardrail/readiness artifacts
+- esta etapa nao executa commit nem mutation commit
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria commit execution events, mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Controlled Runtime Commit Execution Guardrail Stabilization Fixtures
+- Explicit Runtime Commit Execution Approval Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
