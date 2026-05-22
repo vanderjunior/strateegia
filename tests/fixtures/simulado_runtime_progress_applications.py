@@ -195,6 +195,36 @@ def explicit_apply_not_allowed_fixture(
     return _persist_runtime_guardrail(fixture)
 
 
+def explicit_apply_blocked_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressApplicationFixture:
+    return explicit_apply_not_allowed_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_confirmation_missing_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressApplicationFixture:
+    fixture = _wrap_fixture(_no_runtime_application_fixture(tmp_path, user_id=user_id, repository=repository))
+    assert fixture.runtime_guardrail is not None
+    fixture.runtime_guardrail.readiness_state = "runtime_application_needs_review"
+    fixture.runtime_guardrail.safety_assessment.integrated_chain_complete = True
+    fixture.runtime_guardrail.safety_assessment.score_result_present = True
+    fixture.runtime_guardrail.safety_assessment.score_complete = True
+    fixture.runtime_guardrail.safety_assessment.progress_guardrail_present = True
+    fixture.runtime_guardrail.safety_assessment.runtime_policy_available = True
+    fixture.runtime_guardrail.safety_assessment.progress_guardrail_eligible = True
+    fixture.runtime_guardrail.eligibility.requires_progress_guardrail_eligibility = False
+    fixture.runtime_guardrail.eligibility.requires_complete_integrated_chain = False
+    fixture.runtime_guardrail.eligibility.requires_complete_score = False
+    return _persist_runtime_guardrail(fixture)
+
+
 def planned_mutation_intents_fixture(
     tmp_path,
     *,
@@ -287,6 +317,15 @@ def mixed_runtime_progress_application_fixture(
     assert fixture.runtime_guardrail is not None
     fixture.runtime_guardrail.metadata["force_runtime_application_disabled"] = True
     return _persist_runtime_guardrail(fixture)
+
+
+def mixed_application_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressApplicationFixture:
+    return mixed_runtime_progress_application_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def incomplete_score_fixture(
