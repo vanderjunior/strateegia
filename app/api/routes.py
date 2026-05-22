@@ -74,6 +74,9 @@ from app.services.simulado_runtime_progress_mutation import (
 from app.services.simulado_controlled_mutation_commit import (
     SimuladoControlledRuntimeMutationCommitService,
 )
+from app.services.simulado_explicit_mutation_commit import (
+    SimuladoExplicitRuntimeMutationCommitService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -254,6 +257,12 @@ def get_simulado_controlled_mutation_commit_service(
     request: Request,
 ) -> SimuladoControlledRuntimeMutationCommitService:
     return SimuladoControlledRuntimeMutationCommitService(get_repository(request))
+
+
+def get_simulado_explicit_mutation_commit_service(
+    request: Request,
+) -> SimuladoExplicitRuntimeMutationCommitService:
+    return SimuladoExplicitRuntimeMutationCommitService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1915,6 +1924,59 @@ def get_simulado_controlled_mutation_commit_shell_by_id(commit_shell_id: str, re
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado controlled mutation commit shell not found.")
+    return result
+
+
+@router.post("/simulado-mutation-commit-shell/{commit_shell_id}/explicit-commit/build")
+def build_simulado_explicit_mutation_commit_for_controlled_commit_shell(
+    commit_shell_id: str,
+    request: Request,
+    decision_payload: dict[str, object] | None = Body(default=None),
+):
+    user_id = _require_authenticated_user_id(request)
+    commit_shell = get_simulado_controlled_mutation_commit_service(request).get_commit_shell_by_id(
+        commit_shell_id,
+        user_id=user_id,
+    )
+    if commit_shell is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled mutation commit shell not found.")
+    result = get_simulado_explicit_mutation_commit_service(request).build_explicit_commit(
+        commit_shell_id,
+        decision_payload=decision_payload,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime mutation commit could not be built.")
+    return result
+
+
+@router.get("/simulado-mutation-commit-shell/{commit_shell_id}/explicit-commit")
+def get_simulado_explicit_mutation_commit_for_controlled_commit_shell(commit_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    commit_shell = get_simulado_controlled_mutation_commit_service(request).get_commit_shell_by_id(
+        commit_shell_id,
+        user_id=user_id,
+    )
+    if commit_shell is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled mutation commit shell not found.")
+    result = get_simulado_explicit_mutation_commit_service(request).get_explicit_commit(
+        commit_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime mutation commit not found.")
+    return result
+
+
+@router.get("/simulado-explicit-commit/{explicit_commit_id}")
+def get_simulado_explicit_mutation_commit_by_id(explicit_commit_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_explicit_mutation_commit_service(request).get_explicit_commit_by_id(
+        explicit_commit_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime mutation commit not found.")
     return result
 
 

@@ -498,6 +498,41 @@ Regras importantes:
 Trabalho futuro desta trilha:
 
 - Controlled Runtime Mutation Commit Stabilization Fixtures
+- Explicit Runtime Mutation Commit Stabilization Fixtures
+
+## Fundacao de explicit runtime mutation commit
+
+Controlled runtime mutation commit shells agora podem gerar um artifact separado de `explicit runtime mutation commit`, sempre user-scoped, deterministico e limitado a decisao explicita humana para revisao futura.
+
+Capacidades atuais desta etapa:
+
+- cria um explicit runtime mutation commit a partir de um `SimuladoControlledRuntimeMutationCommitShell`
+- registra decisoes `approve`, `deny`, `request_revision`, `block` e `mark_not_reviewed` apenas como artifact de decisao bounded
+- registra confirmation summary, delta approvals, surface approvals e audit trail apenas como metadados de revisao futura
+- persiste a explicit commit artifact sem executar mutation commit
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de explicit runtime mutation commit:
+
+- `POST /api/simulado-mutation-commit-shell/{commit_shell_id}/explicit-commit/build`
+- `GET /api/simulado-mutation-commit-shell/{commit_shell_id}/explicit-commit`
+- `GET /api/simulado-explicit-commit/{explicit_commit_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas explicit commit decision artifacts
+- `approve` significa somente future mutation commit review, nunca actual commit
+- esta etapa nao faz mutation commit nem aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Explicit Runtime Mutation Commit Stabilization Fixtures
+- Runtime Mutation Commit Transaction Foundation
 - Explicit Runtime Mutation Commit Foundation
 
 ## Como instalar
