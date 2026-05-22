@@ -91,10 +91,17 @@ from app.domain.models import (
     ScoreValidationFinding,
     ScoreWarning,
     RuntimeApplicationBlocker,
+    RuntimeApplicationAuditEntry,
     RuntimeApplicationEligibility,
     RuntimeApplicationSafetyAssessment,
     RuntimeApplicationValidationFinding,
     RuntimeApplicationWarning,
+    RuntimeProgressApplicationBlocker,
+    RuntimeProgressApplicationPlan,
+    RuntimeProgressApplicationValidationFinding,
+    RuntimeProgressApplicationWarning,
+    PlannedRuntimeMutationIntent,
+    ProposedRuntimeSurfaceDiff,
     SimuladoAttemptSession,
     SimuladoAttemptSessionItem,
     SimuladoAnswerSubmission,
@@ -108,6 +115,7 @@ from app.domain.models import (
     SimuladoIntegratedExecutionCorrection,
     SimuladoProgressMutationGuardrail,
     SimuladoRuntimeApplicationGuardrail,
+    SimuladoRuntimeProgressApplication,
     SimuladoScoreResult,
     SimuladoExecutionBlocker,
     SimuladoExecutionShell,
@@ -650,6 +658,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_runtime_progress_application(self, result: SimuladoRuntimeProgressApplication) -> None:
+        self._repository.save_simulado_runtime_progress_application(result, user_id=self.user_id)
+
+    def get_simulado_runtime_progress_application(
+        self,
+        source_runtime_guardrail_id: str,
+    ) -> SimuladoRuntimeProgressApplication | None:
+        return self._repository.get_simulado_runtime_progress_application(
+            source_runtime_guardrail_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_runtime_progress_applications(self) -> list[SimuladoRuntimeProgressApplication]:
+        return self._repository.list_user_simulado_runtime_progress_applications(user_id=self.user_id)
+
+    def get_simulado_runtime_progress_application_by_id(
+        self,
+        application_id: str,
+    ) -> SimuladoRuntimeProgressApplication | None:
+        return self._repository.get_simulado_runtime_progress_application_by_id(
+            application_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -763,6 +795,9 @@ class JsonStudyRepository:
             "simulado_runtime_guardrail": {
                 "results": {},
             },
+            "simulado_runtime_progress_application": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -864,6 +899,11 @@ class JsonStudyRepository:
             )
             user_state["simulado_runtime_guardrail"] = self._normalize_simulado_runtime_guardrail_payload(
                 user_state.get("simulado_runtime_guardrail")
+            )
+            user_state["simulado_runtime_progress_application"] = (
+                self._normalize_simulado_runtime_progress_application_payload(
+                    user_state.get("simulado_runtime_progress_application")
+                )
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -1112,6 +1152,16 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_runtime_guardrail_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_runtime_progress_application_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1606,6 +1656,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_runtime_guardrail_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_runtime_guardrail"]
+
+    def _simulado_runtime_progress_application_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_runtime_progress_application_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_runtime_progress_application"]
 
     def save_document_pipeline_state(
         self,
@@ -3055,6 +3114,59 @@ class JsonStudyRepository:
     ) -> SimuladoRuntimeApplicationGuardrail | None:
         for item in self.list_user_simulado_runtime_guardrails(user_id=user_id):
             if item.runtime_guardrail_id == runtime_guardrail_id:
+                return item
+        return None
+
+    def save_simulado_runtime_progress_application(
+        self,
+        result: SimuladoRuntimeProgressApplication,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado runtime progress application requires user ownership.")
+        payload = self._read()
+        container = self._simulado_runtime_progress_application_container(payload, user_id)
+        container["results"][result.source_runtime_guardrail_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_runtime_progress_application(
+        self,
+        source_runtime_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeProgressApplication | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_runtime_progress_application_container(payload, user_id)["results"].get(
+            source_runtime_guardrail_id
+        )
+        if raw is None:
+            return None
+        return SimuladoRuntimeProgressApplication.model_validate(raw)
+
+    def list_user_simulado_runtime_progress_applications(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoRuntimeProgressApplication]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_runtime_progress_application_container(payload, user_id)["results"].values()
+        items = [SimuladoRuntimeProgressApplication.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_runtime_guardrail_id)
+        return items
+
+    def get_simulado_runtime_progress_application_by_id(
+        self,
+        application_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeProgressApplication | None:
+        for item in self.list_user_simulado_runtime_progress_applications(user_id=user_id):
+            if item.application_id == application_id:
                 return item
         return None
 

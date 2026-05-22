@@ -59,6 +59,9 @@ from app.services.simulado_integrated_execution_correction import (
 from app.services.simulado_runtime_application_guardrails import (
     SimuladoRuntimeApplicationGuardrailsService,
 )
+from app.services.simulado_runtime_progress_application import (
+    SimuladoRuntimeProgressApplicationService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -209,6 +212,12 @@ def get_simulado_runtime_application_guardrails_service(
     request: Request,
 ) -> SimuladoRuntimeApplicationGuardrailsService:
     return SimuladoRuntimeApplicationGuardrailsService(get_repository(request))
+
+
+def get_simulado_runtime_progress_application_service(
+    request: Request,
+) -> SimuladoRuntimeProgressApplicationService:
+    return SimuladoRuntimeProgressApplicationService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1604,6 +1613,57 @@ def get_simulado_runtime_application_guardrail_by_id(runtime_guardrail_id: str, 
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado runtime application guardrail not found.")
+    return result
+
+
+@router.post("/simulado-runtime-guardrail/{runtime_guardrail_id}/progress-application/build")
+def build_simulado_runtime_progress_application_for_runtime_guardrail(
+    runtime_guardrail_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    runtime_guardrail = get_simulado_runtime_application_guardrails_service(request).get_runtime_guardrail_by_id(
+        runtime_guardrail_id,
+        user_id=user_id,
+    )
+    if runtime_guardrail is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime application guardrail not found.")
+    result = get_simulado_runtime_progress_application_service(request).build_application(
+        runtime_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress application could not be built.")
+    return result
+
+
+@router.get("/simulado-runtime-guardrail/{runtime_guardrail_id}/progress-application")
+def get_simulado_runtime_progress_application_for_runtime_guardrail(runtime_guardrail_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    runtime_guardrail = get_simulado_runtime_application_guardrails_service(request).get_runtime_guardrail_by_id(
+        runtime_guardrail_id,
+        user_id=user_id,
+    )
+    if runtime_guardrail is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime application guardrail not found.")
+    result = get_simulado_runtime_progress_application_service(request).get_application(
+        runtime_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress application not found.")
+    return result
+
+
+@router.get("/simulado-progress-application/{application_id}")
+def get_simulado_runtime_progress_application_by_id(application_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_runtime_progress_application_service(request).get_application_by_id(
+        application_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress application not found.")
     return result
 
 

@@ -335,6 +335,38 @@ Trabalho futuro desta trilha:
 - Safe Runtime Progress Application Guardrail Stabilization Fixtures
 - Runtime Progress Application Foundation
 
+## Fundacao de runtime progress application
+
+Runtime application guardrails agora podem gerar um artifact separado de `runtime progress application`, sempre user-scoped, deterministico e dry-run/planned-only.
+
+Capacidades atuais desta etapa:
+
+- cria um runtime progress application a partir de um `SimuladoRuntimeApplicationGuardrail`
+- registra um application plan, planned mutation intents, proposed runtime surface diffs e audit trail placeholders sem aplicar nenhuma mutacao real
+- persiste um artifact proprio de dry-run/planned application, sem mutar runtime guardrail, integrated result, score result ou progress guardrail de origem
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de runtime progress application:
+
+- `POST /api/simulado-runtime-guardrail/{runtime_guardrail_id}/progress-application/build`
+- `GET /api/simulado-runtime-guardrail/{runtime_guardrail_id}/progress-application`
+- `GET /api/simulado-progress-application/{application_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas dry-run/planned application artifacts
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Runtime Progress Application Stabilization Fixtures
+- Controlled Runtime Progress Apply Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
