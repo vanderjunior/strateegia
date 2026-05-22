@@ -71,7 +71,6 @@ ALLOWED_SURFACES = {
     "unknown",
 }
 
-
 def _create_clients(tmp_path):
     repository = JsonStudyRepository(tmp_path / "study_data.json")
     app = create_app(repository=repository)
@@ -125,7 +124,7 @@ def test_runtime_progress_application_stabilization_fixtures_are_deterministic_a
         assert "/private/" not in dumped_text
 
 
-def test_runtime_progress_application_stabilization_covers_missing_and_blocked_guardrail_states(tmp_path):
+def test_runtime_progress_application_stabilization_covers_missing_and_blocked_states(tmp_path):
     missing = missing_runtime_guardrail_fixture(tmp_path / "missing")
     not_eligible = build_runtime_progress_application(guardrail_not_eligible_fixture(tmp_path / "not-eligible"))
     incomplete = build_runtime_progress_application(incomplete_guardrail_fixture(tmp_path / "incomplete"))
@@ -164,7 +163,7 @@ def test_runtime_progress_application_stabilization_covers_missing_and_blocked_g
     assert "blocked_by_audit_confirmation_missing" in {item.code for item in audit_missing.blockers}
 
 
-def test_runtime_progress_application_stabilization_preserves_planned_intents_and_surface_diff_shapes(tmp_path):
+def test_runtime_progress_application_stabilization_preserves_planned_intents_and_surface_diffs(tmp_path):
     intents = build_runtime_progress_application(planned_mutation_intents_fixture(tmp_path / "intents"))
     diffs = build_runtime_progress_application(proposed_surface_diffs_fixture(tmp_path / "diffs"))
 
@@ -188,29 +187,29 @@ def test_runtime_progress_application_stabilization_preserves_planned_intents_an
         assert isinstance(diff.proposed_after_summary, dict)
 
 
-def test_runtime_progress_application_stabilization_preserves_audit_trail_and_mixed_blockers(tmp_path):
+def test_runtime_progress_application_stabilization_preserves_audit_trail_and_plan_requirements(tmp_path):
     audit = build_runtime_progress_application(audit_trail_fixture(tmp_path / "audit"))
-    mixed = build_runtime_progress_application(mixed_application_fixture(tmp_path / "mixed"))
-
     assert audit is not None
-    assert audit.audit_trail
+
+    assert audit.plan.requires_runtime_policy in {False, True}
+    assert audit.plan.requires_explicit_final_approval is True
+    assert audit.plan.requires_audit_confirmation is True
+
     event_types = {item.event_type for item in audit.audit_trail}
     assert "application_plan_created" in event_types
     assert "no_runtime_application" in event_types
     assert any(code in event_types for code in {"application_blocked", "runtime_policy_missing"})
+
+
+def test_runtime_progress_application_stabilization_preserves_mixed_blockers_and_no_public_exposure(tmp_path):
+    mixed = build_runtime_progress_application(mixed_application_fixture(tmp_path / "mixed"))
+    safe = build_runtime_progress_application(no_public_key_gabarito_safety_fixture(tmp_path / "safe"))
 
     assert mixed is not None
     blocker_codes = {item.code for item in mixed.blockers}
     assert "blocked_by_runtime_policy_missing" in blocker_codes
     assert "blocked_by_runtime_application_disabled" in blocker_codes
     assert len(mixed.warnings) >= 1
-
-
-def test_runtime_progress_application_stabilization_preserves_no_public_answer_key_and_no_runtime_application(
-    tmp_path,
-):
-    safe = build_runtime_progress_application(no_public_key_gabarito_safety_fixture(tmp_path / "safe"))
-    application = build_runtime_progress_application(no_runtime_application_fixture(tmp_path / "application"))
 
     assert safe is not None
     dumped_payload = safe.model_dump(mode="json")
@@ -227,6 +226,11 @@ def test_runtime_progress_application_stabilization_preserves_no_public_answer_k
     assert "data:image" not in dumped_text
     assert "raw_runtime_block" not in dumped_text
 
+
+def test_runtime_progress_application_stabilization_preserves_no_runtime_application_and_no_mutation(tmp_path):
+    application = build_runtime_progress_application(no_runtime_application_fixture(tmp_path / "application"))
+    mutation = build_runtime_progress_application(no_runtime_mutation_fixture(tmp_path / "mutation"))
+
     assert application is not None
     assert application.application_mode in {"dry_run", "planned_only"}
     assert application.application_status != "applied"
@@ -234,8 +238,31 @@ def test_runtime_progress_application_stabilization_preserves_no_public_answer_k
     assert application.runtime_application_applied is False
     assert application.no_runtime_application is True
 
+    assert mutation is not None
+    assert mutation.progress_mutation_enabled is False
+    assert mutation.progress_mutation_applied is False
+    assert mutation.ranking_update_enabled is False
+    assert mutation.ranking_update_applied is False
+    assert mutation.retention_update_enabled is False
+    assert mutation.retention_update_applied is False
+    assert mutation.scheduler_update_enabled is False
+    assert mutation.scheduler_update_applied is False
+    assert mutation.study_cycle_update_enabled is False
+    assert mutation.study_cycle_update_applied is False
+    assert mutation.curriculum_graph_update_enabled is False
+    assert mutation.curriculum_graph_update_applied is False
+    assert mutation.adaptive_tuning_enabled is False
+    assert mutation.adaptive_tuning_applied is False
+    assert mutation.no_progress_mutation is True
+    assert mutation.no_ranking_update is True
+    assert mutation.no_retention_update is True
+    assert mutation.no_scheduler_update is True
+    assert mutation.no_study_cycle_update is True
+    assert mutation.no_curriculum_graph_update is True
+    assert mutation.no_adaptive_tuning_update is True
 
-def test_runtime_progress_application_stabilization_preserves_no_runtime_mutation_and_idempotency(tmp_path):
+
+def test_runtime_progress_application_stabilization_is_persistent_idempotent_and_non_mutating(tmp_path):
     fixture = idempotency_fixture(tmp_path)
     repository = fixture.context.repository
     service = SimuladoRuntimeProgressApplicationService(repository)
@@ -289,28 +316,6 @@ def test_runtime_progress_application_stabilization_preserves_no_runtime_mutatio
     assert before_runtime_guardrail.model_dump(mode="json") == after_runtime_guardrail.model_dump(mode="json")
     assert before_integrated.model_dump(mode="json") == after_integrated.model_dump(mode="json")
     assert before_progress.model_dump(mode="json") == after_progress.model_dump(mode="json")
-
-    assert result.progress_mutation_enabled is False
-    assert result.progress_mutation_applied is False
-    assert result.ranking_update_enabled is False
-    assert result.ranking_update_applied is False
-    assert result.retention_update_enabled is False
-    assert result.retention_update_applied is False
-    assert result.scheduler_update_enabled is False
-    assert result.scheduler_update_applied is False
-    assert result.study_cycle_update_enabled is False
-    assert result.study_cycle_update_applied is False
-    assert result.curriculum_graph_update_enabled is False
-    assert result.curriculum_graph_update_applied is False
-    assert result.adaptive_tuning_enabled is False
-    assert result.adaptive_tuning_applied is False
-    assert result.no_progress_mutation is True
-    assert result.no_ranking_update is True
-    assert result.no_retention_update is True
-    assert result.no_scheduler_update is True
-    assert result.no_study_cycle_update is True
-    assert result.no_curriculum_graph_update is True
-    assert result.no_adaptive_tuning_update is True
 
 
 def test_runtime_progress_application_stabilization_api_owner_only_and_read_only_behaviour(tmp_path):
