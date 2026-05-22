@@ -138,6 +138,15 @@ def approved_for_future_review_fixture(
     )
 
 
+def approved_for_future_only_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def confirmations_incomplete_fixture(
     tmp_path,
     *,
@@ -148,6 +157,15 @@ def confirmations_incomplete_fixture(
         explicit_apply_source_fixture(tmp_path, user_id=user_id, repository=repository),
         decision_payload=approve_payload(),
     )
+
+
+def missing_rollback_plan_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def intents_not_approved_fixture(
@@ -195,6 +213,15 @@ def runtime_mutation_disabled_fixture(
     return _persist_explicit_apply(fixture)
 
 
+def public_answer_key_exposure_forbidden_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return unsafe_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def unsafe_source_fixture(
     tmp_path,
     *,
@@ -219,6 +246,69 @@ def mixed_mutation_fixture(
     )
 
 
+def proposed_progress_deltas_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def proposed_surface_updates_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def rollback_plan_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def mutation_mode_status_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_public_key_gabarito_safety_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_application_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_runtime_mutation_fixture(
     tmp_path,
     *,
@@ -231,6 +321,15 @@ def no_runtime_mutation_fixture(
     )
 
 
+def idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def api_readonly_fixture(
     tmp_path,
     *,
@@ -241,3 +340,12 @@ def api_readonly_fixture(
         _api_readonly_fixture(tmp_path, user_id=user_id, repository=repository),
         decision_payload=approve_all_payload(),
     )
+
+
+def user_scope_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeProgressMutationFixture:
+    return api_readonly_fixture(tmp_path, user_id=user_id, repository=repository)
