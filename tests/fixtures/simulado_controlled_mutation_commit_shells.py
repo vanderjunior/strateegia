@@ -330,6 +330,15 @@ def unsafe_source_fixture(
     return _persist_transaction(fixture)
 
 
+def public_answer_key_exposure_forbidden_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return unsafe_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def explicit_apply_not_approved_fixture(
     tmp_path,
     *,
@@ -352,6 +361,78 @@ def mixed_commit_shell_fixture(
     return _persist_transaction(fixture)
 
 
+def delta_commit_decision_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def surface_commit_decision_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def rollback_readiness_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_requirements_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def commit_mode_status_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_public_key_gabarito_safety_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_mutation_commit_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_runtime_mutation_fixture(
     tmp_path,
     *,
@@ -359,6 +440,24 @@ def no_runtime_mutation_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledMutationCommitShellFixture:
     return transaction_proposal_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return api_readonly_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def user_scope_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledMutationCommitShellFixture:
+    return api_readonly_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def api_readonly_fixture(
