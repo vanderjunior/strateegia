@@ -77,6 +77,9 @@ from app.services.simulado_controlled_mutation_commit import (
 from app.services.simulado_explicit_mutation_commit import (
     SimuladoExplicitRuntimeMutationCommitService,
 )
+from app.services.simulado_runtime_mutation_commit_transaction import (
+    SimuladoRuntimeMutationCommitTransactionService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -263,6 +266,12 @@ def get_simulado_explicit_mutation_commit_service(
     request: Request,
 ) -> SimuladoExplicitRuntimeMutationCommitService:
     return SimuladoExplicitRuntimeMutationCommitService(get_repository(request))
+
+
+def get_simulado_runtime_mutation_commit_transaction_service(
+    request: Request,
+) -> SimuladoRuntimeMutationCommitTransactionService:
+    return SimuladoRuntimeMutationCommitTransactionService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1977,6 +1986,65 @@ def get_simulado_explicit_mutation_commit_by_id(explicit_commit_id: str, request
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado explicit runtime mutation commit not found.")
+    return result
+
+
+@router.post("/simulado-explicit-commit/{explicit_commit_id}/commit-transaction/build")
+def build_simulado_runtime_mutation_commit_transaction_for_explicit_commit(
+    explicit_commit_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    explicit_commit = get_simulado_explicit_mutation_commit_service(request).get_explicit_commit_by_id(
+        explicit_commit_id,
+        user_id=user_id,
+    )
+    if explicit_commit is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime mutation commit not found.")
+    result = get_simulado_runtime_mutation_commit_transaction_service(request).build_commit_transaction(
+        explicit_commit_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime mutation commit transaction could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-explicit-commit/{explicit_commit_id}/commit-transaction")
+def get_simulado_runtime_mutation_commit_transaction_for_explicit_commit(
+    explicit_commit_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    explicit_commit = get_simulado_explicit_mutation_commit_service(request).get_explicit_commit_by_id(
+        explicit_commit_id,
+        user_id=user_id,
+    )
+    if explicit_commit is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime mutation commit not found.")
+    result = get_simulado_runtime_mutation_commit_transaction_service(request).get_commit_transaction(
+        explicit_commit_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime mutation commit transaction not found.")
+    return result
+
+
+@router.get("/simulado-commit-transaction/{commit_transaction_id}")
+def get_simulado_runtime_mutation_commit_transaction_by_id(commit_transaction_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_runtime_mutation_commit_transaction_service(
+        request
+    ).get_commit_transaction_by_id(
+        commit_transaction_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime mutation commit transaction not found.")
     return result
 
 

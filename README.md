@@ -533,7 +533,41 @@ Trabalho futuro desta trilha:
 
 - Explicit Runtime Mutation Commit Stabilization Fixtures
 - Runtime Mutation Commit Transaction Foundation
-- Explicit Runtime Mutation Commit Foundation
+- Controlled Runtime Commit Execution Guardrail Foundation
+
+## Fundacao de runtime mutation commit transaction
+
+Explicit runtime mutation commits agora podem gerar um artifact separado de `runtime mutation commit transaction`, sempre user-scoped, deterministico e limitado a commit planning / dry-run transaction metadata.
+
+Capacidades atuais desta etapa:
+
+- cria um runtime mutation commit transaction a partir de um `SimuladoExplicitRuntimeMutationCommit`
+- registra planned progress commits e planned runtime surface commits apenas como resumos bounded de futura execucao
+- registra rollback execution plan metadata sem executar rollback nem commit
+- persiste o commit transaction artifact sem executar mutation commit
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de runtime mutation commit transaction:
+
+- `POST /api/simulado-explicit-commit/{explicit_commit_id}/commit-transaction/build`
+- `GET /api/simulado-explicit-commit/{explicit_commit_id}/commit-transaction`
+- `GET /api/simulado-commit-transaction/{commit_transaction_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas commit transaction / commit execution plan artifacts
+- o artifact e plan-only / dry-run only, nunca actual commit execution
+- esta etapa nao faz mutation commit nem aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Runtime Mutation Commit Transaction Stabilization Fixtures
+- Controlled Runtime Commit Execution Guardrail Foundation
 
 ## Como instalar
 
