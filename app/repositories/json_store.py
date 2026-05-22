@@ -64,6 +64,14 @@ from app.domain.models import (
     FinalApprovalDecision,
     FinalApprovalValidationFinding,
     FinalApprovalWarning,
+    ExplicitApplyAuditEntry,
+    ExplicitApplyBlocker,
+    ExplicitApplyConfirmationSummary,
+    ExplicitApplyDecisionSummary,
+    ExplicitApplyIntentApproval,
+    ExplicitApplySurfaceApproval,
+    ExplicitApplyValidationFinding,
+    ExplicitApplyWarning,
     ExecutionShellBlocker,
     ExecutionShellCandidateRecord,
     ExecutionShellOperationalSummary,
@@ -132,6 +140,7 @@ from app.domain.models import (
     SimuladoQuestionAssembly,
     SimuladoCorrectionShell,
     SimuladoControlledRuntimeApplyShell,
+    SimuladoExplicitRuntimeProgressApply,
     SimuladoSubmittedAnswer,
     StudyCyclePlan,
     StudyCyclePlanState,
@@ -715,6 +724,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_explicit_runtime_apply(self, result: SimuladoExplicitRuntimeProgressApply) -> None:
+        self._repository.save_simulado_explicit_runtime_apply(result, user_id=self.user_id)
+
+    def get_simulado_explicit_runtime_apply(
+        self,
+        source_apply_shell_id: str,
+    ) -> SimuladoExplicitRuntimeProgressApply | None:
+        return self._repository.get_simulado_explicit_runtime_apply(
+            source_apply_shell_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_explicit_runtime_applies(self) -> list[SimuladoExplicitRuntimeProgressApply]:
+        return self._repository.list_user_simulado_explicit_runtime_applies(user_id=self.user_id)
+
+    def get_simulado_explicit_runtime_apply_by_id(
+        self,
+        explicit_apply_id: str,
+    ) -> SimuladoExplicitRuntimeProgressApply | None:
+        return self._repository.get_simulado_explicit_runtime_apply_by_id(
+            explicit_apply_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -834,6 +867,9 @@ class JsonStudyRepository:
             "simulado_controlled_apply_shell": {
                 "results": {},
             },
+            "simulado_explicit_runtime_apply": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -943,6 +979,9 @@ class JsonStudyRepository:
             )
             user_state["simulado_controlled_apply_shell"] = self._normalize_simulado_controlled_apply_shell_payload(
                 user_state.get("simulado_controlled_apply_shell")
+            )
+            user_state["simulado_explicit_runtime_apply"] = self._normalize_simulado_explicit_runtime_apply_payload(
+                user_state.get("simulado_explicit_runtime_apply")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -1211,6 +1250,16 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_controlled_apply_shell_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_explicit_runtime_apply_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1723,6 +1772,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_controlled_apply_shell_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_controlled_apply_shell"]
+
+    def _simulado_explicit_runtime_apply_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_explicit_runtime_apply_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_explicit_runtime_apply"]
 
     def save_document_pipeline_state(
         self,
@@ -3278,6 +3336,59 @@ class JsonStudyRepository:
     ) -> SimuladoControlledRuntimeApplyShell | None:
         for item in self.list_user_simulado_controlled_apply_shells(user_id=user_id):
             if item.apply_shell_id == apply_shell_id:
+                return item
+        return None
+
+    def save_simulado_explicit_runtime_apply(
+        self,
+        result: SimuladoExplicitRuntimeProgressApply,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado explicit runtime apply requires user ownership.")
+        payload = self._read()
+        container = self._simulado_explicit_runtime_apply_container(payload, user_id)
+        container["results"][result.source_apply_shell_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_explicit_runtime_apply(
+        self,
+        source_apply_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoExplicitRuntimeProgressApply | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_explicit_runtime_apply_container(payload, user_id)["results"].get(
+            source_apply_shell_id
+        )
+        if raw is None:
+            return None
+        return SimuladoExplicitRuntimeProgressApply.model_validate(raw)
+
+    def list_user_simulado_explicit_runtime_applies(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoExplicitRuntimeProgressApply]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_explicit_runtime_apply_container(payload, user_id)["results"].values()
+        items = [SimuladoExplicitRuntimeProgressApply.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_apply_shell_id)
+        return items
+
+    def get_simulado_explicit_runtime_apply_by_id(
+        self,
+        explicit_apply_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoExplicitRuntimeProgressApply | None:
+        for item in self.list_user_simulado_explicit_runtime_applies(user_id=user_id):
+            if item.explicit_apply_id == explicit_apply_id:
                 return item
         return None
 

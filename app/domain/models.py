@@ -4487,6 +4487,162 @@ class SimuladoControlledRuntimeApplyShell(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ExplicitApplyDecisionSummary(BaseModel):
+    summary_id: str
+    decision_type: str = "mark_not_reviewed"
+    decision_state: str = "decision_not_reviewed"
+    reviewer_id: str | None = None
+    reason: str = ""
+    decision_recorded: bool = False
+    approved_for_future_runtime_mutation_review: bool = False
+    denied: bool = False
+    revision_requested: bool = False
+    blocked: bool = False
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplyConfirmationSummary(BaseModel):
+    summary_id: str
+    runtime_policy_confirmed: bool = False
+    explicit_apply_approval_confirmed: bool = False
+    audit_confirmed: bool = False
+    rollback_plan_confirmed: bool = False
+    human_review_confirmed: bool = False
+    public_answer_key_absence_confirmed: bool = False
+    all_confirmations_satisfied: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplyIntentApproval(BaseModel):
+    approval_id: str
+    source_intent_decision_id: str | None = None
+    source_intent_id: str | None = None
+    intent_type: str = "unknown"
+    proposed_surface: str = "unknown"
+    source_apply_decision: str = "intent_not_reviewed"
+    source_applied: bool = False
+    explicitly_approved: bool = False
+    approved_for_future_runtime_mutation_review: bool = False
+    approved_for_apply_now: bool = False
+    applied: bool = False
+    approval_state: str = "intent_not_reviewed"
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplySurfaceApproval(BaseModel):
+    approval_id: str
+    source_surface_decision_id: str | None = None
+    source_diff_id: str | None = None
+    surface_type: str = "unknown"
+    source_apply_decision: str = "surface_not_reviewed"
+    source_applied: bool = False
+    explicitly_approved: bool = False
+    approved_for_future_runtime_mutation_review: bool = False
+    approved_for_apply_now: bool = False
+    applied: bool = False
+    approval_state: str = "surface_not_reviewed"
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplyAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplyBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplyValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ExplicitApplyWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoExplicitRuntimeProgressApply(BaseModel):
+    explicit_apply_id: str
+    user_id: str | None = None
+    source_apply_shell_id: str
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    decision_status: str = "explicit_apply_not_reviewed"
+    readiness_state: str = "explicit_apply_needs_review"
+    decision_summary: ExplicitApplyDecisionSummary
+    confirmation_summary: ExplicitApplyConfirmationSummary
+    intent_approvals: list[ExplicitApplyIntentApproval] = Field(default_factory=list)
+    surface_approvals: list[ExplicitApplySurfaceApproval] = Field(default_factory=list)
+    audit_trail: list[ExplicitApplyAuditEntry] = Field(default_factory=list)
+    blockers: list[ExplicitApplyBlocker] = Field(default_factory=list)
+    validation_findings: list[ExplicitApplyValidationFinding] = Field(default_factory=list)
+    warnings: list[ExplicitApplyWarning] = Field(default_factory=list)
+    explicit_apply_recorded: bool = False
+    explicit_apply_approved: bool = False
+    apply_request_accepted: bool = False
+    apply_ready_for_runtime_mutation: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_final_pedagogical_update_event: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

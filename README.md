@@ -399,6 +399,40 @@ Trabalho futuro desta trilha:
 - Controlled Runtime Progress Apply Stabilization Fixtures
 - Explicit Runtime Progress Apply Foundation
 
+## Fundacao de explicit runtime progress apply
+
+Controlled apply shells agora podem gerar um artifact separado de `explicit runtime progress apply`, sempre user-scoped, deterministico e limitado ao registro de decisao explicita.
+
+Capacidades atuais desta etapa:
+
+- cria um explicit runtime progress apply a partir de um `SimuladoControlledRuntimeApplyShell`
+- registra decisoes `approve`, `deny`, `request_revision`, `block_apply` e `mark_not_reviewed`, com confirmacoes conservadoras e bounded
+- interpreta `approve` apenas como aprovacao para future runtime mutation review, nunca como aplicacao real
+- persiste intent approvals, surface approvals e audit trail de decisao explicita sem mutar controlled apply shell, runtime progress application, runtime guardrail, integrated result, score result ou progress guardrail de origem
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de explicit runtime progress apply:
+
+- `POST /api/simulado-controlled-apply-shell/{apply_shell_id}/explicit-apply/build`
+- `GET /api/simulado-controlled-apply-shell/{apply_shell_id}/explicit-apply`
+- `GET /api/simulado-explicit-apply/{explicit_apply_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas explicit apply decision artifacts
+- aprovacao significa apenas future runtime mutation review, nao aplicacao real
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Explicit Runtime Progress Apply Stabilization Fixtures
+- Runtime Progress Mutation Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

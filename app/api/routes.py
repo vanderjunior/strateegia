@@ -65,6 +65,9 @@ from app.services.simulado_runtime_progress_application import (
 from app.services.simulado_controlled_apply_shell import (
     SimuladoControlledRuntimeApplyShellService,
 )
+from app.services.simulado_explicit_runtime_apply import (
+    SimuladoExplicitRuntimeProgressApplyService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -227,6 +230,12 @@ def get_simulado_controlled_apply_shell_service(
     request: Request,
 ) -> SimuladoControlledRuntimeApplyShellService:
     return SimuladoControlledRuntimeApplyShellService(get_repository(request))
+
+
+def get_simulado_explicit_runtime_apply_service(
+    request: Request,
+) -> SimuladoExplicitRuntimeProgressApplyService:
+    return SimuladoExplicitRuntimeProgressApplyService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1724,6 +1733,59 @@ def get_simulado_controlled_apply_shell_by_id(apply_shell_id: str, request: Requ
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado controlled apply shell not found.")
+    return result
+
+
+@router.post("/simulado-controlled-apply-shell/{apply_shell_id}/explicit-apply/build")
+def build_simulado_explicit_runtime_apply_for_controlled_apply_shell(
+    apply_shell_id: str,
+    request: Request,
+    decision_payload: dict[str, object] | None = Body(default=None),
+):
+    user_id = _require_authenticated_user_id(request)
+    shell = get_simulado_controlled_apply_shell_service(request).get_apply_shell_by_id(
+        apply_shell_id,
+        user_id=user_id,
+    )
+    if shell is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled apply shell not found.")
+    result = get_simulado_explicit_runtime_apply_service(request).build_explicit_apply(
+        apply_shell_id,
+        decision_payload=decision_payload,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime apply could not be built.")
+    return result
+
+
+@router.get("/simulado-controlled-apply-shell/{apply_shell_id}/explicit-apply")
+def get_simulado_explicit_runtime_apply_for_controlled_apply_shell(apply_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    shell = get_simulado_controlled_apply_shell_service(request).get_apply_shell_by_id(
+        apply_shell_id,
+        user_id=user_id,
+    )
+    if shell is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled apply shell not found.")
+    result = get_simulado_explicit_runtime_apply_service(request).get_explicit_apply(
+        apply_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime apply not found.")
+    return result
+
+
+@router.get("/simulado-explicit-apply/{explicit_apply_id}")
+def get_simulado_explicit_runtime_apply_by_id(explicit_apply_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_explicit_runtime_apply_service(request).get_explicit_apply_by_id(
+        explicit_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime apply not found.")
     return result
 
 
