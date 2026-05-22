@@ -62,6 +62,9 @@ from app.services.simulado_runtime_application_guardrails import (
 from app.services.simulado_runtime_progress_application import (
     SimuladoRuntimeProgressApplicationService,
 )
+from app.services.simulado_controlled_apply_shell import (
+    SimuladoControlledRuntimeApplyShellService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -218,6 +221,12 @@ def get_simulado_runtime_progress_application_service(
     request: Request,
 ) -> SimuladoRuntimeProgressApplicationService:
     return SimuladoRuntimeProgressApplicationService(get_repository(request))
+
+
+def get_simulado_controlled_apply_shell_service(
+    request: Request,
+) -> SimuladoControlledRuntimeApplyShellService:
+    return SimuladoControlledRuntimeApplyShellService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1664,6 +1673,57 @@ def get_simulado_runtime_progress_application_by_id(application_id: str, request
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado runtime progress application not found.")
+    return result
+
+
+@router.post("/simulado-progress-application/{application_id}/controlled-apply-shell/build")
+def build_simulado_controlled_apply_shell_for_progress_application(
+    application_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    application = get_simulado_runtime_progress_application_service(request).get_application_by_id(
+        application_id,
+        user_id=user_id,
+    )
+    if application is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress application not found.")
+    result = get_simulado_controlled_apply_shell_service(request).build_apply_shell(
+        application_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled apply shell could not be built.")
+    return result
+
+
+@router.get("/simulado-progress-application/{application_id}/controlled-apply-shell")
+def get_simulado_controlled_apply_shell_for_progress_application(application_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    application = get_simulado_runtime_progress_application_service(request).get_application_by_id(
+        application_id,
+        user_id=user_id,
+    )
+    if application is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress application not found.")
+    result = get_simulado_controlled_apply_shell_service(request).get_apply_shell(
+        application_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled apply shell not found.")
+    return result
+
+
+@router.get("/simulado-controlled-apply-shell/{apply_shell_id}")
+def get_simulado_controlled_apply_shell_by_id(apply_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_controlled_apply_shell_service(request).get_apply_shell_by_id(
+        apply_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled apply shell not found.")
     return result
 
 

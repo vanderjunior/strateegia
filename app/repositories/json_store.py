@@ -25,6 +25,14 @@ from app.domain.models import (
     CandidateSourceEvidenceSummary,
     BibliographyAlignmentResult,
     BibliographyAlignmentState,
+    ControlledApplyAuditEntry,
+    ControlledApplyAuditRequirement,
+    ControlledApplyBlocker,
+    ControlledApplyIntentDecision,
+    ControlledApplyPreconditionSummary,
+    ControlledApplySurfaceDecision,
+    ControlledApplyValidationFinding,
+    ControlledApplyWarning,
     CoverageGap,
     CoverageRedundancy,
     CurriculumGraph,
@@ -123,6 +131,7 @@ from app.domain.models import (
     SimuladoFinalizationGuardrail,
     SimuladoQuestionAssembly,
     SimuladoCorrectionShell,
+    SimuladoControlledRuntimeApplyShell,
     SimuladoSubmittedAnswer,
     StudyCyclePlan,
     StudyCyclePlanState,
@@ -682,6 +691,30 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_controlled_apply_shell(self, result: SimuladoControlledRuntimeApplyShell) -> None:
+        self._repository.save_simulado_controlled_apply_shell(result, user_id=self.user_id)
+
+    def get_simulado_controlled_apply_shell(
+        self,
+        source_application_id: str,
+    ) -> SimuladoControlledRuntimeApplyShell | None:
+        return self._repository.get_simulado_controlled_apply_shell(
+            source_application_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_controlled_apply_shells(self) -> list[SimuladoControlledRuntimeApplyShell]:
+        return self._repository.list_user_simulado_controlled_apply_shells(user_id=self.user_id)
+
+    def get_simulado_controlled_apply_shell_by_id(
+        self,
+        apply_shell_id: str,
+    ) -> SimuladoControlledRuntimeApplyShell | None:
+        return self._repository.get_simulado_controlled_apply_shell_by_id(
+            apply_shell_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -798,6 +831,9 @@ class JsonStudyRepository:
             "simulado_runtime_progress_application": {
                 "results": {},
             },
+            "simulado_controlled_apply_shell": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -904,6 +940,9 @@ class JsonStudyRepository:
                 self._normalize_simulado_runtime_progress_application_payload(
                     user_state.get("simulado_runtime_progress_application")
                 )
+            )
+            user_state["simulado_controlled_apply_shell"] = self._normalize_simulado_controlled_apply_shell_payload(
+                user_state.get("simulado_controlled_apply_shell")
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -1162,6 +1201,16 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_runtime_progress_application_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_controlled_apply_shell_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1665,6 +1714,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_runtime_progress_application_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_runtime_progress_application"]
+
+    def _simulado_controlled_apply_shell_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_controlled_apply_shell_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_controlled_apply_shell"]
 
     def save_document_pipeline_state(
         self,
@@ -3167,6 +3225,59 @@ class JsonStudyRepository:
     ) -> SimuladoRuntimeProgressApplication | None:
         for item in self.list_user_simulado_runtime_progress_applications(user_id=user_id):
             if item.application_id == application_id:
+                return item
+        return None
+
+    def save_simulado_controlled_apply_shell(
+        self,
+        result: SimuladoControlledRuntimeApplyShell,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado controlled apply shell requires user ownership.")
+        payload = self._read()
+        container = self._simulado_controlled_apply_shell_container(payload, user_id)
+        container["results"][result.source_application_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_controlled_apply_shell(
+        self,
+        source_application_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeApplyShell | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_controlled_apply_shell_container(payload, user_id)["results"].get(
+            source_application_id
+        )
+        if raw is None:
+            return None
+        return SimuladoControlledRuntimeApplyShell.model_validate(raw)
+
+    def list_user_simulado_controlled_apply_shells(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoControlledRuntimeApplyShell]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_controlled_apply_shell_container(payload, user_id)["results"].values()
+        items = [SimuladoControlledRuntimeApplyShell.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_application_id)
+        return items
+
+    def get_simulado_controlled_apply_shell_by_id(
+        self,
+        apply_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeApplyShell | None:
+        for item in self.list_user_simulado_controlled_apply_shells(user_id=user_id):
+            if item.apply_shell_id == apply_shell_id:
                 return item
         return None
 

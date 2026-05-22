@@ -4338,6 +4338,155 @@ class SimuladoRuntimeProgressApplication(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ControlledApplyPreconditionSummary(BaseModel):
+    summary_id: str
+    source_application_present: bool = True
+    source_application_planned_only: bool = True
+    source_application_not_applied: bool = True
+    runtime_policy_present: bool = False
+    explicit_apply_approval_present: bool = False
+    audit_confirmation_present: bool = False
+    rollback_plan_present: bool = False
+    all_intents_apply_allowed: bool = False
+    all_surfaces_apply_allowed: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    preconditions_satisfied: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplyIntentDecision(BaseModel):
+    decision_id: str
+    source_intent_id: str | None = None
+    intent_type: str = "unknown"
+    proposed_surface: str = "unknown"
+    planned: bool = True
+    source_applied: bool = False
+    apply_allowed: bool = False
+    apply_decision: str = "intent_rejected_pre_apply"
+    apply_decision_reason: str = ""
+    applied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplySurfaceDecision(BaseModel):
+    decision_id: str
+    source_diff_id: str | None = None
+    surface_type: str = "unknown"
+    diff_status: str = "diff_blocked"
+    source_applied: bool = False
+    apply_allowed: bool = False
+    apply_decision: str = "surface_rejected_pre_apply"
+    apply_decision_reason: str = ""
+    applied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplyAuditRequirement(BaseModel):
+    requirement_id: str
+    requirement_type: str
+    required: bool = True
+    satisfied: bool = False
+    reason: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplyAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplyBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplyValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledApplyWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoControlledRuntimeApplyShell(BaseModel):
+    apply_shell_id: str
+    user_id: str | None = None
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    application_mode: str = "pre_apply_shell"
+    apply_status: str = "apply_blocked"
+    readiness_state: str = "blocked_by_missing_runtime_progress_application"
+    precondition_summary: ControlledApplyPreconditionSummary
+    intent_decisions: list[ControlledApplyIntentDecision] = Field(default_factory=list)
+    surface_decisions: list[ControlledApplySurfaceDecision] = Field(default_factory=list)
+    audit_requirements: list[ControlledApplyAuditRequirement] = Field(default_factory=list)
+    audit_trail: list[ControlledApplyAuditEntry] = Field(default_factory=list)
+    blockers: list[ControlledApplyBlocker] = Field(default_factory=list)
+    validation_findings: list[ControlledApplyValidationFinding] = Field(default_factory=list)
+    warnings: list[ControlledApplyWarning] = Field(default_factory=list)
+    apply_shell_created: bool = True
+    apply_request_accepted: bool = False
+    apply_preconditions_satisfied: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

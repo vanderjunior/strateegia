@@ -367,6 +367,38 @@ Trabalho futuro desta trilha:
 - Runtime Progress Application Stabilization Fixtures
 - Controlled Runtime Progress Apply Foundation
 
+## Fundacao de controlled runtime progress apply shell
+
+Runtime progress applications agora podem gerar um artifact separado de `controlled apply shell`, sempre user-scoped, deterministico e limitado a validacao pre-apply.
+
+Capacidades atuais desta etapa:
+
+- cria um controlled apply shell a partir de um `SimuladoRuntimeProgressApplication`
+- valida precondicoes de future apply, incluindo runtime policy, explicit apply approval, audit confirmation e rollback plan sem aplicar nenhuma mutacao real
+- registra intent decisions, surface decisions, audit requirements, blockers e audit trail de pre-apply sem mutar runtime progress application, runtime guardrail, integrated result, score result ou progress guardrail de origem
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de controlled apply shell:
+
+- `POST /api/simulado-progress-application/{application_id}/controlled-apply-shell/build`
+- `GET /api/simulado-progress-application/{application_id}/controlled-apply-shell`
+- `GET /api/simulado-controlled-apply-shell/{apply_shell_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas controlled apply shell artifacts
+- esta etapa valida requisitos de pre-apply, mas nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Controlled Runtime Progress Apply Stabilization Fixtures
+- Explicit Runtime Progress Apply Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
