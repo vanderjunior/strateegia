@@ -149,6 +149,15 @@ def source_application_planned_only_fixture(
     return _persist_application(fixture)
 
 
+def planned_only_source_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return source_application_planned_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def application_not_planned_only_fixture(
     tmp_path,
     *,
@@ -332,6 +341,15 @@ def no_runtime_application_fixture(
     return source_application_planned_only_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def rollback_plan_missing_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return source_application_planned_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_runtime_mutation_fixture(
     tmp_path,
     *,
@@ -357,6 +375,62 @@ def idempotency_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledApplyShellFixture:
     return no_runtime_application_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def public_answer_key_exposure_forbidden_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    fixture = _wrap_fixture(_no_public_key_gabarito_safety_fixture(tmp_path, user_id=user_id, repository=repository))
+    application = fixture.runtime_progress_application
+    assert application is not None
+    application.answer_key_publicly_exposed = True
+    application.gabarito_publicly_exposed = True
+    _set_preapply_metadata(
+        application,
+        runtime_policy_present=True,
+        explicit_apply_approval_present=True,
+        audit_confirmation_present=True,
+    )
+    return _persist_application(fixture)
+
+
+def intent_decision_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return intents_not_apply_allowed_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def surface_decision_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return surfaces_not_apply_allowed_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_requirements_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return source_application_planned_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return missing_runtime_policy_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def user_scope_fixture(
@@ -394,6 +468,15 @@ def mixed_controlled_apply_shell_fixture(
         audit_confirmation_present=False,
     )
     return _persist_application(fixture)
+
+
+def mixed_shell_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledApplyShellFixture:
+    return mixed_controlled_apply_shell_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def incomplete_guardrail_fixture(
