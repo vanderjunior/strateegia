@@ -71,6 +71,9 @@ from app.services.simulado_explicit_runtime_apply import (
 from app.services.simulado_runtime_progress_mutation import (
     SimuladoRuntimeProgressMutationService,
 )
+from app.services.simulado_controlled_mutation_commit import (
+    SimuladoControlledRuntimeMutationCommitService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -245,6 +248,12 @@ def get_simulado_runtime_progress_mutation_service(
     request: Request,
 ) -> SimuladoRuntimeProgressMutationService:
     return SimuladoRuntimeProgressMutationService(get_repository(request))
+
+
+def get_simulado_controlled_mutation_commit_service(
+    request: Request,
+) -> SimuladoControlledRuntimeMutationCommitService:
+    return SimuladoControlledRuntimeMutationCommitService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1849,6 +1858,63 @@ def get_simulado_runtime_progress_mutation_by_id(mutation_transaction_id: str, r
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado runtime progress mutation transaction not found.")
+    return result
+
+
+@router.post("/simulado-progress-mutation/{mutation_transaction_id}/commit-shell/build")
+def build_simulado_controlled_mutation_commit_shell_for_mutation_transaction(
+    mutation_transaction_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    transaction = get_simulado_runtime_progress_mutation_service(request).get_mutation_transaction_by_id(
+        mutation_transaction_id,
+        user_id=user_id,
+    )
+    if transaction is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress mutation transaction not found.")
+    result = get_simulado_controlled_mutation_commit_service(request).build_commit_shell(
+        mutation_transaction_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled mutation commit shell could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-progress-mutation/{mutation_transaction_id}/commit-shell")
+def get_simulado_controlled_mutation_commit_shell_for_mutation_transaction(
+    mutation_transaction_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    transaction = get_simulado_runtime_progress_mutation_service(request).get_mutation_transaction_by_id(
+        mutation_transaction_id,
+        user_id=user_id,
+    )
+    if transaction is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress mutation transaction not found.")
+    result = get_simulado_controlled_mutation_commit_service(request).get_commit_shell(
+        mutation_transaction_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled mutation commit shell not found.")
+    return result
+
+
+@router.get("/simulado-mutation-commit-shell/{commit_shell_id}")
+def get_simulado_controlled_mutation_commit_shell_by_id(commit_shell_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_controlled_mutation_commit_service(request).get_commit_shell_by_id(
+        commit_shell_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado controlled mutation commit shell not found.")
     return result
 
 

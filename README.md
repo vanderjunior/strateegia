@@ -467,6 +467,39 @@ Trabalho futuro desta trilha:
 - Runtime Progress Mutation Stabilization Fixtures
 - Controlled Runtime Mutation Commit Foundation
 
+## Fundacao de controlled runtime mutation commit shell
+
+Runtime progress mutation transactions agora podem gerar um artifact separado de `controlled runtime mutation commit shell`, sempre user-scoped, deterministico e limitado a validacao pre-commit.
+
+Capacidades atuais desta etapa:
+
+- cria um controlled mutation commit shell a partir de um `SimuladoRuntimeProgressMutationTransaction`
+- registra precondition summary, rollback readiness, delta commit decisions, surface commit decisions e audit requirements apenas como resumos bounded
+- persiste a commit shell sem executar mutation commit
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de controlled runtime mutation commit shell:
+
+- `POST /api/simulado-progress-mutation/{mutation_transaction_id}/commit-shell/build`
+- `GET /api/simulado-progress-mutation/{mutation_transaction_id}/commit-shell`
+- `GET /api/simulado-mutation-commit-shell/{commit_shell_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas controlled commit shell artifacts
+- esta etapa valida requisitos pre-commit, mas nao executa mutation commit
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Controlled Runtime Mutation Commit Stabilization Fixtures
+- Explicit Runtime Mutation Commit Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

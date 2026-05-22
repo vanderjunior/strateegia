@@ -4809,6 +4809,179 @@ class SimuladoRuntimeProgressMutationTransaction(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ControlledCommitPreconditionSummary(BaseModel):
+    summary_id: str
+    source_transaction_present: bool = True
+    source_transaction_proposal_only: bool = True
+    source_transaction_not_committed: bool = True
+    source_mutation_valid_for_commit: bool = False
+    source_mutation_commit_ready: bool = False
+    rollback_available: bool = False
+    rollback_verified: bool = False
+    all_deltas_commit_allowed: bool = False
+    all_surfaces_commit_allowed: bool = False
+    commit_policy_present: bool = False
+    explicit_commit_approval_present: bool = False
+    audit_confirmation_present: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    preconditions_satisfied: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitRollbackReadiness(BaseModel):
+    rollback_readiness_id: str
+    rollback_required: bool = True
+    rollback_available: bool = False
+    rollback_verified: bool = False
+    rollback_steps_count: int = 0
+    rollback_ready_for_commit: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitDeltaDecision(BaseModel):
+    decision_id: str
+    source_delta_id: str | None = None
+    target_type: str = "unknown"
+    target_id: str | None = None
+    delta_kind: str = "unknown"
+    source_applied: bool = False
+    source_commit_allowed: bool = False
+    commit_decision: str = "delta_rejected_pre_commit"
+    commit_decision_reason: str = ""
+    committed: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitSurfaceDecision(BaseModel):
+    decision_id: str
+    source_update_id: str | None = None
+    surface_type: str = "unknown"
+    update_kind: str = "unknown"
+    source_applied: bool = False
+    source_commit_allowed: bool = False
+    commit_decision: str = "surface_rejected_pre_commit"
+    commit_decision_reason: str = ""
+    committed: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitAuditRequirement(BaseModel):
+    requirement_id: str
+    requirement_type: str
+    required: bool = True
+    satisfied: bool = False
+    reason: str = ""
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoControlledRuntimeMutationCommitShell(BaseModel):
+    commit_shell_id: str
+    user_id: str | None = None
+    source_mutation_transaction_id: str
+    source_explicit_apply_id: str
+    source_apply_shell_id: str
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    commit_mode: str = "pre_commit_shell"
+    commit_status: str = "commit_blocked"
+    readiness_state: str = "blocked_by_missing_mutation_transaction"
+    precondition_summary: ControlledCommitPreconditionSummary
+    rollback_readiness: ControlledCommitRollbackReadiness
+    delta_commit_decisions: list[ControlledCommitDeltaDecision] = Field(default_factory=list)
+    surface_commit_decisions: list[ControlledCommitSurfaceDecision] = Field(default_factory=list)
+    audit_requirements: list[ControlledCommitAuditRequirement] = Field(default_factory=list)
+    audit_trail: list[ControlledCommitAuditEntry] = Field(default_factory=list)
+    blockers: list[ControlledCommitBlocker] = Field(default_factory=list)
+    validation_findings: list[ControlledCommitValidationFinding] = Field(default_factory=list)
+    warnings: list[ControlledCommitWarning] = Field(default_factory=list)
+    commit_shell_created: bool = True
+    commit_request_accepted: bool = False
+    commit_preconditions_satisfied: bool = False
+    commit_ready_for_execution: bool = False
+    mutation_valid_for_commit: bool = False
+    mutation_commit_ready: bool = False
+    mutation_committed: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_final_pedagogical_update_event: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

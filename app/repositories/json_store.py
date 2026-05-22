@@ -141,6 +141,7 @@ from app.domain.models import (
     SimuladoCorrectionShell,
     SimuladoControlledRuntimeApplyShell,
     SimuladoExplicitRuntimeProgressApply,
+    SimuladoControlledRuntimeMutationCommitShell,
     SimuladoRuntimeProgressMutationTransaction,
     SimuladoSubmittedAnswer,
     StudyCyclePlan,
@@ -780,6 +781,37 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_controlled_mutation_commit_shell(
+        self,
+        result: SimuladoControlledRuntimeMutationCommitShell,
+    ) -> None:
+        self._repository.save_simulado_controlled_mutation_commit_shell(result, user_id=self.user_id)
+
+    def get_simulado_controlled_mutation_commit_shell(
+        self,
+        source_mutation_transaction_id: str,
+    ) -> SimuladoControlledRuntimeMutationCommitShell | None:
+        return self._repository.get_simulado_controlled_mutation_commit_shell(
+            source_mutation_transaction_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_controlled_mutation_commit_shells(
+        self,
+    ) -> list[SimuladoControlledRuntimeMutationCommitShell]:
+        return self._repository.list_user_simulado_controlled_mutation_commit_shells(
+            user_id=self.user_id
+        )
+
+    def get_simulado_controlled_mutation_commit_shell_by_id(
+        self,
+        commit_shell_id: str,
+    ) -> SimuladoControlledRuntimeMutationCommitShell | None:
+        return self._repository.get_simulado_controlled_mutation_commit_shell_by_id(
+            commit_shell_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -905,6 +937,9 @@ class JsonStudyRepository:
             "simulado_runtime_progress_mutation": {
                 "results": {},
             },
+            "simulado_controlled_mutation_commit_shell": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -1021,6 +1056,11 @@ class JsonStudyRepository:
             user_state["simulado_runtime_progress_mutation"] = (
                 self._normalize_simulado_runtime_progress_mutation_payload(
                     user_state.get("simulado_runtime_progress_mutation")
+                )
+            )
+            user_state["simulado_controlled_mutation_commit_shell"] = (
+                self._normalize_simulado_controlled_mutation_commit_shell_payload(
+                    user_state.get("simulado_controlled_mutation_commit_shell")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -1310,6 +1350,18 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_runtime_progress_mutation_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_controlled_mutation_commit_shell_payload(
+        self, payload: object
+    ) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1840,6 +1892,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_runtime_progress_mutation_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_runtime_progress_mutation"]
+
+    def _simulado_controlled_mutation_commit_shell_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_controlled_mutation_commit_shell_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_controlled_mutation_commit_shell"]
 
     def save_document_pipeline_state(
         self,
@@ -3501,6 +3562,59 @@ class JsonStudyRepository:
     ) -> SimuladoRuntimeProgressMutationTransaction | None:
         for item in self.list_user_simulado_runtime_progress_mutation_transactions(user_id=user_id):
             if item.mutation_transaction_id == mutation_transaction_id:
+                return item
+        return None
+
+    def save_simulado_controlled_mutation_commit_shell(
+        self,
+        result: SimuladoControlledRuntimeMutationCommitShell,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado controlled mutation commit shell requires user ownership.")
+        payload = self._read()
+        container = self._simulado_controlled_mutation_commit_shell_container(payload, user_id)
+        container["results"][result.source_mutation_transaction_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_controlled_mutation_commit_shell(
+        self,
+        source_mutation_transaction_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeMutationCommitShell | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_controlled_mutation_commit_shell_container(payload, user_id)["results"].get(
+            source_mutation_transaction_id
+        )
+        if raw is None:
+            return None
+        return SimuladoControlledRuntimeMutationCommitShell.model_validate(raw)
+
+    def list_user_simulado_controlled_mutation_commit_shells(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoControlledRuntimeMutationCommitShell]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_controlled_mutation_commit_shell_container(payload, user_id)["results"].values()
+        items = [SimuladoControlledRuntimeMutationCommitShell.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_mutation_transaction_id)
+        return items
+
+    def get_simulado_controlled_mutation_commit_shell_by_id(
+        self,
+        commit_shell_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeMutationCommitShell | None:
+        for item in self.list_user_simulado_controlled_mutation_commit_shells(user_id=user_id):
+            if item.commit_shell_id == commit_shell_id:
                 return item
         return None
 
