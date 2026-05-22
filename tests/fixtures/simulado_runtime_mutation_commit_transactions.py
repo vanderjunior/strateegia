@@ -130,6 +130,15 @@ def approved_for_future_review_fixture(
     )
 
 
+def approved_for_future_only_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeMutationCommitTransactionFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def confirmations_incomplete_fixture(
     tmp_path,
     *,
@@ -344,6 +353,15 @@ def rollback_execution_plan_shape_fixture(
 
 
 def audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeMutationCommitTransactionFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def commit_transaction_mode_status_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
