@@ -433,6 +433,40 @@ Trabalho futuro desta trilha:
 - Explicit Runtime Progress Apply Stabilization Fixtures
 - Runtime Progress Mutation Foundation
 
+## Fundacao de runtime progress mutation
+
+Explicit runtime applies agora podem gerar um artifact separado de `runtime progress mutation transaction`, sempre user-scoped, deterministico e limitado a proposta de mutacao dry-run.
+
+Capacidades atuais desta etapa:
+
+- cria um runtime progress mutation transaction a partir de um `SimuladoExplicitRuntimeProgressApply`
+- registra proposed progress deltas e proposed runtime surface updates apenas como resumos bounded
+- inclui rollback plan metadata e audit trail de proposta sem executar commit
+- persiste a transaction proposal sem mutar explicit apply, controlled apply shell, runtime progress application, runtime guardrail, integrated result, score result ou progress guardrail de origem
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de runtime progress mutation:
+
+- `POST /api/simulado-explicit-apply/{explicit_apply_id}/progress-mutation/build`
+- `GET /api/simulado-explicit-apply/{explicit_apply_id}/progress-mutation`
+- `GET /api/simulado-progress-mutation/{mutation_transaction_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas mutation transaction / proposal artifacts
+- proposed deltas e surface updates continuam dry-run only, nunca commit real
+- esta etapa nao faz mutation commit nem aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Runtime Progress Mutation Stabilization Fixtures
+- Controlled Runtime Mutation Commit Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

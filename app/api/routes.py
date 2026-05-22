@@ -68,6 +68,9 @@ from app.services.simulado_controlled_apply_shell import (
 from app.services.simulado_explicit_runtime_apply import (
     SimuladoExplicitRuntimeProgressApplyService,
 )
+from app.services.simulado_runtime_progress_mutation import (
+    SimuladoRuntimeProgressMutationService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -236,6 +239,12 @@ def get_simulado_explicit_runtime_apply_service(
     request: Request,
 ) -> SimuladoExplicitRuntimeProgressApplyService:
     return SimuladoExplicitRuntimeProgressApplyService(get_repository(request))
+
+
+def get_simulado_runtime_progress_mutation_service(
+    request: Request,
+) -> SimuladoRuntimeProgressMutationService:
+    return SimuladoRuntimeProgressMutationService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -1786,6 +1795,60 @@ def get_simulado_explicit_runtime_apply_by_id(explicit_apply_id: str, request: R
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado explicit runtime apply not found.")
+    return result
+
+
+@router.post("/simulado-explicit-apply/{explicit_apply_id}/progress-mutation/build")
+def build_simulado_runtime_progress_mutation_for_explicit_apply(
+    explicit_apply_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    explicit_apply = get_simulado_explicit_runtime_apply_service(request).get_explicit_apply_by_id(
+        explicit_apply_id,
+        user_id=user_id,
+    )
+    if explicit_apply is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime apply not found.")
+    result = get_simulado_runtime_progress_mutation_service(request).build_mutation_transaction(
+        explicit_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime progress mutation transaction could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-explicit-apply/{explicit_apply_id}/progress-mutation")
+def get_simulado_runtime_progress_mutation_for_explicit_apply(explicit_apply_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    explicit_apply = get_simulado_explicit_runtime_apply_service(request).get_explicit_apply_by_id(
+        explicit_apply_id,
+        user_id=user_id,
+    )
+    if explicit_apply is None:
+        raise HTTPException(status_code=404, detail="Simulado explicit runtime apply not found.")
+    result = get_simulado_runtime_progress_mutation_service(request).get_mutation_transaction(
+        explicit_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress mutation transaction not found.")
+    return result
+
+
+@router.get("/simulado-progress-mutation/{mutation_transaction_id}")
+def get_simulado_runtime_progress_mutation_by_id(mutation_transaction_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_runtime_progress_mutation_service(request).get_mutation_transaction_by_id(
+        mutation_transaction_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Simulado runtime progress mutation transaction not found.")
     return result
 
 

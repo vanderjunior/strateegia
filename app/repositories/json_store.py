@@ -141,6 +141,7 @@ from app.domain.models import (
     SimuladoCorrectionShell,
     SimuladoControlledRuntimeApplyShell,
     SimuladoExplicitRuntimeProgressApply,
+    SimuladoRuntimeProgressMutationTransaction,
     SimuladoSubmittedAnswer,
     StudyCyclePlan,
     StudyCyclePlanState,
@@ -748,6 +749,37 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_runtime_progress_mutation_transaction(
+        self,
+        result: SimuladoRuntimeProgressMutationTransaction,
+    ) -> None:
+        self._repository.save_simulado_runtime_progress_mutation_transaction(result, user_id=self.user_id)
+
+    def get_simulado_runtime_progress_mutation_transaction(
+        self,
+        source_explicit_apply_id: str,
+    ) -> SimuladoRuntimeProgressMutationTransaction | None:
+        return self._repository.get_simulado_runtime_progress_mutation_transaction(
+            source_explicit_apply_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_runtime_progress_mutation_transactions(
+        self,
+    ) -> list[SimuladoRuntimeProgressMutationTransaction]:
+        return self._repository.list_user_simulado_runtime_progress_mutation_transactions(
+            user_id=self.user_id
+        )
+
+    def get_simulado_runtime_progress_mutation_transaction_by_id(
+        self,
+        mutation_transaction_id: str,
+    ) -> SimuladoRuntimeProgressMutationTransaction | None:
+        return self._repository.get_simulado_runtime_progress_mutation_transaction_by_id(
+            mutation_transaction_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -870,6 +902,9 @@ class JsonStudyRepository:
             "simulado_explicit_runtime_apply": {
                 "results": {},
             },
+            "simulado_runtime_progress_mutation": {
+                "results": {},
+            },
         }
 
     def _read(self) -> dict[str, object]:
@@ -982,6 +1017,11 @@ class JsonStudyRepository:
             )
             user_state["simulado_explicit_runtime_apply"] = self._normalize_simulado_explicit_runtime_apply_payload(
                 user_state.get("simulado_explicit_runtime_apply")
+            )
+            user_state["simulado_runtime_progress_mutation"] = (
+                self._normalize_simulado_runtime_progress_mutation_payload(
+                    user_state.get("simulado_runtime_progress_mutation")
+                )
             )
             normalized_user_data[str(user_id)] = user_state
         normalized["user_data"] = normalized_user_data
@@ -1260,6 +1300,16 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_explicit_runtime_apply_payload(self, payload: object) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_runtime_progress_mutation_payload(self, payload: object) -> dict[str, object]:
         normalized = {
             "results": {},
         }
@@ -1781,6 +1831,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_explicit_runtime_apply_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_explicit_runtime_apply"]
+
+    def _simulado_runtime_progress_mutation_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_runtime_progress_mutation_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_runtime_progress_mutation"]
 
     def save_document_pipeline_state(
         self,
@@ -3389,6 +3448,59 @@ class JsonStudyRepository:
     ) -> SimuladoExplicitRuntimeProgressApply | None:
         for item in self.list_user_simulado_explicit_runtime_applies(user_id=user_id):
             if item.explicit_apply_id == explicit_apply_id:
+                return item
+        return None
+
+    def save_simulado_runtime_progress_mutation_transaction(
+        self,
+        result: SimuladoRuntimeProgressMutationTransaction,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado runtime progress mutation transaction requires user ownership.")
+        payload = self._read()
+        container = self._simulado_runtime_progress_mutation_container(payload, user_id)
+        container["results"][result.source_explicit_apply_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_runtime_progress_mutation_transaction(
+        self,
+        source_explicit_apply_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeProgressMutationTransaction | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_runtime_progress_mutation_container(payload, user_id)["results"].get(
+            source_explicit_apply_id
+        )
+        if raw is None:
+            return None
+        return SimuladoRuntimeProgressMutationTransaction.model_validate(raw)
+
+    def list_user_simulado_runtime_progress_mutation_transactions(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoRuntimeProgressMutationTransaction]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_runtime_progress_mutation_container(payload, user_id)["results"].values()
+        items = [SimuladoRuntimeProgressMutationTransaction.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_explicit_apply_id)
+        return items
+
+    def get_simulado_runtime_progress_mutation_transaction_by_id(
+        self,
+        mutation_transaction_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeProgressMutationTransaction | None:
+        for item in self.list_user_simulado_runtime_progress_mutation_transactions(user_id=user_id):
+            if item.mutation_transaction_id == mutation_transaction_id:
                 return item
         return None
 

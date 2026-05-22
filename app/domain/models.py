@@ -4643,6 +4643,172 @@ class SimuladoExplicitRuntimeProgressApply(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class RuntimeMutationValidationSummary(BaseModel):
+    summary_id: str
+    source_explicit_apply_present: bool = False
+    explicit_apply_recorded: bool = False
+    explicit_apply_approved: bool = False
+    approved_for_future_runtime_mutation_review: bool = False
+    approved_for_apply_now: bool = False
+    apply_ready_for_runtime_mutation: bool = False
+    confirmations_satisfied: bool = False
+    proposed_delta_count: int = 0
+    proposed_surface_update_count: int = 0
+    rollback_plan_available: bool = False
+    transaction_valid_for_commit: bool = False
+    transaction_commit_ready: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProposedProgressDelta(BaseModel):
+    delta_id: str
+    source_intent_approval_id: str | None = None
+    target_type: str = "unknown"
+    target_id: str | None = None
+    topic_id: str | None = None
+    subtopic_id: str | None = None
+    microtopic_id: str | None = None
+    subject_id: str | None = None
+    delta_kind: str = "unknown"
+    before_snapshot_available: bool = False
+    after_snapshot_available: bool = False
+    proposed_before_summary: dict[str, object] = Field(default_factory=dict)
+    proposed_after_summary: dict[str, object] = Field(default_factory=dict)
+    proposed_delta_value: float | None = None
+    confidence: float = 0.0
+    applied: bool = False
+    commit_allowed: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProposedRuntimeSurfaceUpdate(BaseModel):
+    update_id: str
+    source_surface_approval_id: str | None = None
+    surface_type: str = "unknown"
+    surface_name: str = "unknown"
+    update_kind: str = "unknown"
+    target_ref: str | None = None
+    before_snapshot_available: bool = False
+    after_snapshot_available: bool = False
+    proposed_before_summary: dict[str, object] = Field(default_factory=dict)
+    proposed_after_summary: dict[str, object] = Field(default_factory=dict)
+    applied: bool = False
+    commit_allowed: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeMutationRollbackPlan(BaseModel):
+    rollback_plan_id: str
+    rollback_required: bool = True
+    rollback_available: bool = False
+    rollback_verified: bool = False
+    rollback_summary: str = ""
+    rollback_steps_count: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeMutationAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeMutationBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeMutationValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeMutationWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoRuntimeProgressMutationTransaction(BaseModel):
+    mutation_transaction_id: str
+    user_id: str | None = None
+    source_explicit_apply_id: str
+    source_apply_shell_id: str
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    mutation_mode: str = "proposal_only"
+    mutation_status: str = "mutation_blocked"
+    readiness_state: str = "mutation_needs_review"
+    validation_summary: RuntimeMutationValidationSummary
+    proposed_progress_deltas: list[ProposedProgressDelta] = Field(default_factory=list)
+    proposed_surface_updates: list[ProposedRuntimeSurfaceUpdate] = Field(default_factory=list)
+    rollback_plan: RuntimeMutationRollbackPlan
+    audit_trail: list[RuntimeMutationAuditEntry] = Field(default_factory=list)
+    blockers: list[RuntimeMutationBlocker] = Field(default_factory=list)
+    validation_findings: list[RuntimeMutationValidationFinding] = Field(default_factory=list)
+    warnings: list[RuntimeMutationWarning] = Field(default_factory=list)
+    mutation_transaction_created: bool = True
+    mutation_valid_for_commit: bool = False
+    mutation_commit_ready: bool = False
+    mutation_committed: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_final_pedagogical_update_event: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
