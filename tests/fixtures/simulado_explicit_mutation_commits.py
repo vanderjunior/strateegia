@@ -331,6 +331,15 @@ def no_public_key_gabarito_safety_fixture(
     return explicit_commit_source_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def no_mutation_commit_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitMutationCommitFixture:
+    return explicit_commit_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_runtime_mutation_fixture(
     tmp_path,
     *,
@@ -356,6 +365,15 @@ def different_payload_behavior_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoExplicitMutationCommitFixture:
     return explicit_commit_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def user_scope_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitMutationCommitFixture:
+    return api_readonly_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def api_readonly_fixture(
