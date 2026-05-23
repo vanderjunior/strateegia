@@ -6157,6 +6157,198 @@ class SimuladoControlledRuntimeCommitExecution(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class FinalPedagogicalUpdateEventSummary(BaseModel):
+    summary_id: str
+    source_controlled_execution_present: bool = True
+    source_controlled_execution_dry_run: bool = True
+    source_execution_started: bool = False
+    source_commit_executed: bool = False
+    source_mutation_committed: bool = False
+    source_runtime_application_performed: bool = False
+    source_real_execution_performed: bool = False
+    proposed_progress_update_count: int = 0
+    proposed_ranking_update_count: int = 0
+    proposed_retention_update_count: int = 0
+    proposed_scheduler_update_count: int = 0
+    proposed_study_cycle_update_count: int = 0
+    proposed_curriculum_graph_update_count: int = 0
+    proposed_adaptive_tuning_update_count: int = 0
+    final_event_apply_allowed: bool = False
+    final_event_applied: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProposedUpdateEntryBase(BaseModel):
+    entry_id: str
+    update_surface: str = "progress"
+    update_kind: str = "unknown"
+    source_record_id: str
+    target_type: str = "unknown"
+    target_id: str | None = None
+    proposed: bool = True
+    applied: bool = False
+    apply_allowed: bool = False
+    bounded_summary: dict[str, object] = Field(default_factory=dict)
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ProposedProgressUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "progress"
+
+
+class ProposedRankingUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "ranking"
+
+
+class ProposedRetentionUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "retention"
+
+
+class ProposedSchedulerUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "scheduler"
+
+
+class ProposedStudyCycleUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "study_cycle"
+
+
+class ProposedCurriculumGraphUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "curriculum_graph"
+
+
+class ProposedAdaptiveTuningUpdateEntry(ProposedUpdateEntryBase):
+    update_surface: str = "adaptive_tuning"
+
+
+class FinalPedagogicalUpdateEventAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalPedagogicalUpdateEventBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalPedagogicalUpdateEventValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class FinalPedagogicalUpdateEventWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoFinalPedagogicalUpdateEvent(BaseModel):
+    final_event_id: str
+    user_id: str | None = None
+    source_controlled_execution_id: str
+    source_execution_plan_id: str
+    source_execution_approval_id: str
+    source_execution_guardrail_id: str
+    source_commit_transaction_id: str
+    source_explicit_commit_id: str
+    source_commit_shell_id: str
+    source_mutation_transaction_id: str
+    source_explicit_apply_id: str
+    source_apply_shell_id: str
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    final_event_mode: str = "event_proposal_only"
+    final_event_status: str = "final_event_blocked"
+    readiness_state: str = "blocked_by_final_event_apply_disabled"
+    event_summary: FinalPedagogicalUpdateEventSummary
+    proposed_progress_updates: list[ProposedProgressUpdateEntry] = Field(default_factory=list)
+    proposed_ranking_updates: list[ProposedRankingUpdateEntry] = Field(default_factory=list)
+    proposed_retention_updates: list[ProposedRetentionUpdateEntry] = Field(default_factory=list)
+    proposed_scheduler_updates: list[ProposedSchedulerUpdateEntry] = Field(default_factory=list)
+    proposed_study_cycle_updates: list[ProposedStudyCycleUpdateEntry] = Field(
+        default_factory=list
+    )
+    proposed_curriculum_graph_updates: list[ProposedCurriculumGraphUpdateEntry] = Field(
+        default_factory=list
+    )
+    proposed_adaptive_tuning_updates: list[ProposedAdaptiveTuningUpdateEntry] = Field(
+        default_factory=list
+    )
+    audit_trail: list[FinalPedagogicalUpdateEventAuditEntry] = Field(default_factory=list)
+    blockers: list[FinalPedagogicalUpdateEventBlocker] = Field(default_factory=list)
+    validation_findings: list[FinalPedagogicalUpdateEventValidationFinding] = Field(
+        default_factory=list
+    )
+    warnings: list[FinalPedagogicalUpdateEventWarning] = Field(default_factory=list)
+    final_pedagogical_update_event_created: bool = True
+    final_pedagogical_update_event_applied: bool = False
+    final_pedagogical_update_event_apply_allowed: bool = False
+    final_pedagogical_update_event_application_started: bool = False
+    final_pedagogical_update_event_application_completed: bool = False
+    controlled_execution_dry_run_only: bool = True
+    execution_started: bool = False
+    commit_executed: bool = False
+    mutation_committed: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_commit_execution: bool = True
+    no_commit_execution_event_created: bool = True
+    no_mutation_commit: bool = True
+    no_mutation_commit_event_created: bool = True
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_applied_final_pedagogical_update_event: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

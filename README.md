@@ -709,6 +709,43 @@ Trabalho futuro desta trilha:
 - Controlled Runtime Commit Execution Stabilization Fixtures
 - Final Pedagogical Update Event Foundation
 
+## Fundacao de final pedagogical update event
+
+Controlled runtime commit executions agora podem gerar um artifact separado de `final pedagogical update event`, sempre user-scoped, deterministico e limitado a uma proposta final de atualizacao pedagogica sem aplicacao real.
+
+Capacidades atuais desta etapa:
+
+- cria um final pedagogical update event a partir de um `SimuladoControlledRuntimeCommitExecution`
+- consolida proposed progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning updates de forma bounded
+- registra blockers, validation findings, warnings e audit trail apenas para proposta final dry-run
+- persiste o final event artifact sem aplicar o evento e sem runtime mutation
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de final pedagogical update event:
+
+- `POST /api/simulado-controlled-execution/{controlled_execution_id}/final-pedagogical-event/build`
+- `GET /api/simulado-controlled-execution/{controlled_execution_id}/final-pedagogical-event`
+- `GET /api/simulado-final-pedagogical-event/{final_event_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas final pedagogical update event proposal artifacts
+- o artifact permanece event-proposal-only e dry-run-final-event-only
+- esta etapa nao aplica o evento final
+- esta etapa nao muta progresso nem runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao executa adaptive tuning
+- esta etapa nao cria applied final pedagogical update events nem runtime application events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Final Pedagogical Update Event Stabilization Fixtures
+- Runtime Apply Policy / Feature Flag Foundation
+- Minimal Progress Ledger Apply Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
