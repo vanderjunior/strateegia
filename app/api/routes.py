@@ -83,6 +83,9 @@ from app.services.simulado_runtime_mutation_commit_transaction import (
 from app.services.simulado_controlled_commit_execution_guardrail import (
     SimuladoControlledRuntimeCommitExecutionGuardrailService,
 )
+from app.services.simulado_explicit_commit_execution_approval import (
+    SimuladoExplicitRuntimeCommitExecutionApprovalService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -281,6 +284,12 @@ def get_simulado_controlled_commit_execution_guardrail_service(
     request: Request,
 ) -> SimuladoControlledRuntimeCommitExecutionGuardrailService:
     return SimuladoControlledRuntimeCommitExecutionGuardrailService(get_repository(request))
+
+
+def get_simulado_explicit_commit_execution_approval_service(
+    request: Request,
+) -> SimuladoExplicitRuntimeCommitExecutionApprovalService:
+    return SimuladoExplicitRuntimeCommitExecutionApprovalService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2117,6 +2126,87 @@ def get_simulado_controlled_commit_execution_guardrail_by_id(execution_guardrail
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Simulado controlled runtime commit execution guardrail not found.")
+    return result
+
+
+@router.post("/simulado-commit-execution-guardrail/{execution_guardrail_id}/explicit-execution-approval/build")
+def build_simulado_explicit_commit_execution_approval_for_execution_guardrail(
+    execution_guardrail_id: str,
+    request: Request,
+    decision_payload: dict[str, object] | None = Body(default=None),
+):
+    user_id = _require_authenticated_user_id(request)
+    guardrail = get_simulado_controlled_commit_execution_guardrail_service(
+        request
+    ).get_execution_guardrail_by_id(
+        execution_guardrail_id,
+        user_id=user_id,
+    )
+    if guardrail is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled runtime commit execution guardrail not found.",
+        )
+    result = get_simulado_explicit_commit_execution_approval_service(
+        request
+    ).build_execution_approval(
+        execution_guardrail_id,
+        decision_payload=decision_payload,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado explicit runtime commit execution approval could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-commit-execution-guardrail/{execution_guardrail_id}/explicit-execution-approval")
+def get_simulado_explicit_commit_execution_approval_for_execution_guardrail(
+    execution_guardrail_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    guardrail = get_simulado_controlled_commit_execution_guardrail_service(
+        request
+    ).get_execution_guardrail_by_id(
+        execution_guardrail_id,
+        user_id=user_id,
+    )
+    if guardrail is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled runtime commit execution guardrail not found.",
+        )
+    result = get_simulado_explicit_commit_execution_approval_service(
+        request
+    ).get_execution_approval(
+        execution_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado explicit runtime commit execution approval not found.",
+        )
+    return result
+
+
+@router.get("/simulado-explicit-execution-approval/{execution_approval_id}")
+def get_simulado_explicit_commit_execution_approval_by_id(execution_approval_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_explicit_commit_execution_approval_service(
+        request
+    ).get_execution_approval_by_id(
+        execution_approval_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado explicit runtime commit execution approval not found.",
+        )
     return result
 
 

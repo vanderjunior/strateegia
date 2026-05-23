@@ -603,6 +603,41 @@ Trabalho futuro desta trilha:
 - Controlled Runtime Commit Execution Guardrail Stabilization Fixtures
 - Explicit Runtime Commit Execution Approval Foundation
 
+## Fundacao de explicit runtime commit execution approval
+
+Controlled runtime commit execution guardrails agora podem gerar um artifact separado de `explicit runtime commit execution approval`, sempre user-scoped, deterministico e limitado a decisao explicita humana para futura revisao de execucao controlada.
+
+Capacidades atuais desta etapa:
+
+- cria um explicit runtime commit execution approval a partir de um `SimuladoControlledRuntimeCommitExecutionGuardrail`
+- registra decisoes `approve`, `deny`, `request_revision`, `block` e `mark_not_reviewed` apenas como artifact explicito bounded
+- registra confirmation summary, progress execution approvals e surface execution approvals apenas para futura revisao
+- persiste o explicit execution approval artifact sem executar commit
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de explicit runtime commit execution approval:
+
+- `POST /api/simulado-commit-execution-guardrail/{execution_guardrail_id}/explicit-execution-approval/build`
+- `GET /api/simulado-commit-execution-guardrail/{execution_guardrail_id}/explicit-execution-approval`
+- `GET /api/simulado-explicit-execution-approval/{execution_approval_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas explicit execution approval artifacts
+- approval significa apenas future controlled execution review, nao execucao real
+- esta etapa nao executa commit nem mutation commit
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria commit execution events, mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Explicit Runtime Commit Execution Approval Stabilization Fixtures
+- Runtime Commit Execution Plan Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
