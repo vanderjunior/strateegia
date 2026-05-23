@@ -638,6 +638,42 @@ Trabalho futuro desta trilha:
 - Explicit Runtime Commit Execution Approval Stabilization Fixtures
 - Runtime Commit Execution Plan Foundation
 
+## Fundacao de runtime commit execution plan
+
+Explicit runtime commit execution approvals agora podem gerar um artifact separado de `runtime commit execution plan`, sempre user-scoped, deterministico e limitado a consolidacao final de metadata aprovada para futura revisao de execucao controlada.
+
+Capacidades atuais desta etapa:
+
+- cria um runtime commit execution plan a partir de um `SimuladoExplicitRuntimeCommitExecutionApproval`
+- consolida approved future-review execution metadata em phases, planned progress steps e planned surface steps
+- cria rollback checkpoints e audit checkpoints bounded
+- registra blockers, validation findings e warnings apenas para futura revisao
+- persiste o execution plan artifact sem executar commit
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de runtime commit execution plan:
+
+- `POST /api/simulado-explicit-execution-approval/{execution_approval_id}/execution-plan/build`
+- `GET /api/simulado-explicit-execution-approval/{execution_approval_id}/execution-plan`
+- `GET /api/simulado-execution-plan/{execution_plan_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas runtime commit execution plan artifacts
+- o artifact permanece execution-plan-only e dry-run-only
+- esta etapa nao executa commit nem mutation commit
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria commit execution events, mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Runtime Commit Execution Plan Stabilization Fixtures
+- Controlled Runtime Commit Execution Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
