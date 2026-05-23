@@ -150,6 +150,45 @@ def _mark_execution_disabled(
     return _persist_execution_approval(fixture)
 
 
+def _mark_rollback_incomplete(
+    fixture: SimuladoRuntimeCommitExecutionPlanFixture,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    execution_guardrail_fixture = fixture.execution_approval_fixture
+    assert execution_guardrail_fixture is not None
+    execution_guardrail = execution_guardrail_fixture.execution_guardrail
+    assert execution_guardrail is not None
+    execution_guardrail.rollback_readiness.rollback_available = False
+    execution_guardrail.rollback_readiness.rollback_verified = False
+    execution_guardrail_fixture.context.repository.save_simulado_controlled_commit_execution_guardrail(
+        execution_guardrail,
+        user_id=fixture.context.user_id,
+    )
+    return fixture
+
+
+def _mark_audit_incomplete(
+    fixture: SimuladoRuntimeCommitExecutionPlanFixture,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    execution_approval = fixture.execution_approval
+    assert execution_approval is not None
+    execution_approval.confirmation_summary.audit_confirmed = False
+    execution_approval.confirmation_summary.all_confirmations_satisfied = True
+    execution_approval.explicit_execution_approved = True
+    execution_approval.approved_for_future_commit_execution_review = True
+    return _persist_execution_approval(fixture)
+
+
+def _mark_future_review_but_not_execution_now(
+    fixture: SimuladoRuntimeCommitExecutionPlanFixture,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    execution_approval = fixture.execution_approval
+    assert execution_approval is not None
+    execution_approval.explicit_execution_approved = True
+    execution_approval.approved_for_future_commit_execution_review = True
+    execution_approval.approved_for_execution_now = False
+    return _persist_execution_approval(fixture)
+
+
 def build_runtime_commit_execution_plan(
     fixture: SimuladoRuntimeCommitExecutionPlanFixture,
 ) -> SimuladoRuntimeCommitExecutionPlan | None:
@@ -188,6 +227,19 @@ def missing_explicit_execution_approval_fixture(
     )
 
 
+def missing_execution_approval_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return missing_explicit_execution_approval_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def execution_plan_source_fixture(
     tmp_path,
     *,
@@ -219,6 +271,26 @@ def approved_for_future_review_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoRuntimeCommitExecutionPlanFixture:
     return execution_plan_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def approval_approved_for_future_review_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def execution_now_not_allowed_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return _mark_future_review_but_not_execution_now(
+        approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+    )
 
 
 def confirmations_incomplete_fixture(
@@ -268,6 +340,28 @@ def execution_disabled_fixture(
     )
 
 
+def rollback_checkpoints_incomplete_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return _mark_rollback_incomplete(
+        approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+    )
+
+
+def audit_checkpoints_incomplete_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return _mark_audit_incomplete(
+        approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+    )
+
+
 def unsafe_source_fixture(
     tmp_path,
     *,
@@ -289,6 +383,15 @@ def plan_summary_fixture(
     return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def execution_plan_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return plan_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def planned_progress_steps_fixture(
     tmp_path,
     *,
@@ -298,7 +401,34 @@ def planned_progress_steps_fixture(
     return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def planned_progress_steps_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return planned_progress_steps_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def planned_surface_steps_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def planned_surface_steps_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return planned_surface_steps_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def planned_phases_shape_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
@@ -316,7 +446,34 @@ def rollback_checkpoint_fixture(
     return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def rollback_checkpoints_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return rollback_checkpoint_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def audit_checkpoint_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_checkpoints_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return audit_checkpoint_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def execution_plan_mode_status_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
@@ -334,6 +491,15 @@ def no_public_key_gabarito_safety_fixture(
     return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def public_answer_key_exposure_forbidden_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return unsafe_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_runtime_mutation_fixture(
     tmp_path,
     *,
@@ -347,6 +513,33 @@ def no_runtime_mutation_fixture(
 
 
 def payload_idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return payload_idempotency_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_commit_execution_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeCommitExecutionPlanFixture:
+    return approved_for_future_review_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_application_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
