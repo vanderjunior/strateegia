@@ -286,6 +286,15 @@ def dry_run_execution_summary_fixture(
     return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def dry_run_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return dry_run_execution_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def phase_execution_records_fixture(
     tmp_path,
     *,
@@ -293,6 +302,15 @@ def phase_execution_records_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledRuntimeCommitExecutionFixture:
     return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def phase_execution_records_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return phase_execution_records_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def progress_step_execution_records_fixture(
@@ -304,6 +322,19 @@ def progress_step_execution_records_fixture(
     return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def progress_step_execution_records_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return progress_step_execution_records_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def surface_step_execution_records_fixture(
     tmp_path,
     *,
@@ -311,6 +342,19 @@ def surface_step_execution_records_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledRuntimeCommitExecutionFixture:
     return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def surface_step_execution_records_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return surface_step_execution_records_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
 
 
 def rollback_verification_records_fixture(
@@ -322,6 +366,19 @@ def rollback_verification_records_fixture(
     return rollback_verification_failed_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def rollback_verification_records_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return rollback_verification_records_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def audit_verification_records_fixture(
     tmp_path,
     *,
@@ -329,6 +386,37 @@ def audit_verification_records_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledRuntimeCommitExecutionFixture:
     return audit_verification_failed_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_verification_records_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return audit_verification_records_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def dry_run_audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def execution_mode_status_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def no_public_key_gabarito_safety_fixture(
@@ -341,6 +429,15 @@ def no_public_key_gabarito_safety_fixture(
 
 
 def no_runtime_application_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledRuntimeCommitExecutionFixture:
+    return execution_allowed_now_false_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_commit_execution_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
