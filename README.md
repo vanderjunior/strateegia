@@ -820,6 +820,40 @@ Trabalho futuro desta trilha:
 - Applied Event Ledger / Idempotency Foundation
 - Propagation Guardrails
 
+## Fundacao de applied event ledger / idempotency
+
+Minimal progress ledger applies agora podem gerar um artifact separado de `applied event ledger`, sempre user-scoped, deterministico e limitado a registrar, auditar e deduplicar o isolated apply de 48A sem criar novos ledger entries nem propagar efeitos.
+
+Capacidades atuais desta etapa:
+
+- cria um `SimuladoAppliedEventLedger` a partir de um `SimuladoMinimalProgressLedgerApply`
+- registra applied event records bounded e source-linked para os ledger entries ja aplicados em 48A
+- persiste idempotency record, deduplication record, replay safety record, rollback reference e audit trail
+- reforca replay safety e deduplicacao por `source_minimal_progress_ledger_apply_id` e idempotency key
+- nao cria novos progress ledger entries
+- nao muta existing progress aggregates nem global runtime progress
+- nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning
+
+Endpoints atuais de applied event ledger:
+
+- `POST /api/simulado-minimal-progress-ledger-apply/{minimal_progress_ledger_apply_id}/applied-event-ledger/build`
+- `GET /api/simulado-minimal-progress-ledger-apply/{minimal_progress_ledger_apply_id}/applied-event-ledger`
+- `GET /api/simulado-applied-event-ledger/{applied_event_ledger_id}`
+
+Regras importantes:
+
+- esta etapa e uma ledger/idempotency layer, nao uma propagation layer
+- esta etapa nao cria novos applies de progresso
+- esta etapa nao marca o final event como globally applied
+- esta etapa nao muta existing progress aggregates
+- esta etapa nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Applied Event Ledger / Idempotency Stabilization Fixtures
+- Propagation Guardrails
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

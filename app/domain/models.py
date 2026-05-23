@@ -6763,6 +6763,214 @@ class SimuladoMinimalProgressLedgerApply(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class AppliedEventLedgerSummary(BaseModel):
+    summary_id: str
+    source_apply_present: bool = True
+    source_apply_applied: bool = False
+    source_apply_status: str = "apply_blocked"
+    source_applied_entry_count: int = 0
+    ledger_event_count: int = 0
+    idempotency_satisfied: bool = False
+    deduplication_enforced: bool = True
+    duplicate_event_detected: bool = False
+    replay_safe: bool = True
+    rollback_reference_preserved: bool = False
+    propagation_performed: bool = False
+    global_progress_mutation_applied: bool = False
+    existing_progress_aggregate_mutated: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventRecord(BaseModel):
+    event_record_id: str
+    user_id: str | None = None
+    source_minimal_progress_ledger_apply_id: str
+    source_runtime_apply_policy_id: str
+    source_final_event_id: str
+    source_applied_progress_ledger_entry_id: str
+    event_type: str = "minimal_progress_ledger_apply_recorded"
+    event_scope: str = "minimal_progress_ledger"
+    target_type: str = "unknown"
+    target_id: str | None = None
+    bounded_event_summary: dict[str, object] = Field(default_factory=dict)
+    recorded: bool = True
+    applied_elsewhere: bool = False
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventIdempotencyRecord(BaseModel):
+    idempotency_key_required: bool = True
+    idempotency_key_present: bool = False
+    idempotency_key_valid: bool = False
+    idempotency_key: str | None = None
+    source_minimal_progress_ledger_apply_id: str
+    source_runtime_apply_policy_id: str
+    duplicate_event_detected: bool = False
+    previous_ledger_id: str | None = None
+    satisfied: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventDeduplicationRecord(BaseModel):
+    deduplication_enforced: bool = True
+    deduplication_key: str
+    duplicate_source_apply_detected: bool = False
+    duplicate_event_detected: bool = False
+    previous_ledger_id: str | None = None
+    event_count_after_deduplication: int = 0
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventReplaySafetyRecord(BaseModel):
+    replay_safe: bool = True
+    replay_count: int = 0
+    replay_returns_existing_ledger: bool = True
+    same_source_same_key_idempotent: bool = True
+    no_duplicate_event_records: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventRollbackReference(BaseModel):
+    rollback_required: bool = True
+    rollback_reference_preserved: bool = False
+    rollback_scope: str = "minimal_progress_ledger"
+    rollback_executed: bool = False
+    rollback_summary: dict[str, object] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventLedgerAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventLedgerBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventLedgerValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class AppliedEventLedgerWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoAppliedEventLedger(BaseModel):
+    applied_event_ledger_id: str
+    user_id: str | None = None
+    source_minimal_progress_ledger_apply_id: str
+    source_runtime_apply_policy_id: str
+    source_final_event_id: str
+    source_controlled_execution_id: str
+    source_execution_plan_id: str
+    source_execution_approval_id: str
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_integrated_result_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    ledger_mode: str = "applied_event_ledger"
+    ledger_status: str = "ledger_blocked"
+    readiness_state: str = "blocked_by_source_apply_not_applied"
+    ledger_summary: AppliedEventLedgerSummary
+    applied_event_records: list[AppliedEventRecord] = Field(default_factory=list)
+    idempotency_record: AppliedEventIdempotencyRecord
+    deduplication_record: AppliedEventDeduplicationRecord
+    replay_safety_record: AppliedEventReplaySafetyRecord
+    rollback_reference: AppliedEventRollbackReference
+    audit_trail: list[AppliedEventLedgerAuditEntry] = Field(default_factory=list)
+    blockers: list[AppliedEventLedgerBlocker] = Field(default_factory=list)
+    validation_findings: list[AppliedEventLedgerValidationFinding] = Field(default_factory=list)
+    warnings: list[AppliedEventLedgerWarning] = Field(default_factory=list)
+    applied_event_ledger_created: bool = True
+    ledger_event_recorded: bool = False
+    ledger_event_count: int = 0
+    source_minimal_progress_ledger_apply_present: bool = True
+    source_minimal_progress_ledger_apply_applied: bool = False
+    source_applied_progress_ledger_entry_count: int = 0
+    idempotency_key_required: bool = True
+    idempotency_key_present: bool = False
+    idempotency_key_valid: bool = False
+    idempotency_key: str | None = None
+    idempotency_key_recorded: bool = False
+    deduplication_enforced: bool = True
+    duplicate_event_detected: bool = False
+    duplicate_source_apply_detected: bool = False
+    previous_ledger_id: str | None = None
+    replay_safe: bool = True
+    replay_count: int = 0
+    replay_returns_existing_ledger: bool = True
+    rollback_required: bool = True
+    rollback_reference_preserved: bool = False
+    rollback_executed: bool = False
+    minimal_progress_ledger_apply_applied: bool = False
+    applied_progress_ledger_entry_created: bool = False
+    final_event_applied_to_minimal_ledger: bool = False
+    final_event_applied_globally: bool = False
+    existing_progress_aggregate_mutated: bool = False
+    global_progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    commit_executed: bool = False
+    mutation_committed: bool = False
+    no_new_progress_apply: bool = True
+    no_existing_progress_aggregate_mutation: bool = True
+    no_global_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_commit_execution: bool = True
+    no_mutation_commit: bool = True
+    no_runtime_application_beyond_minimal_ledger: bool = True
+    no_public_answer_key_exposure: bool = True
+    no_public_gabarito_exposure: bool = True
+    no_propagation: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

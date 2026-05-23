@@ -193,6 +193,7 @@ from app.domain.models import (
     SimuladoExplicitRuntimeCommitExecutionApproval,
     SimuladoExplicitRuntimeMutationCommit,
     SimuladoFinalPedagogicalUpdateEvent,
+    SimuladoAppliedEventLedger,
     SimuladoMinimalProgressLedgerApply,
     SimuladoRuntimeApplyPolicy,
     SimuladoRuntimeCommitExecutionPlan,
@@ -1166,6 +1167,40 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_applied_event_ledger(
+        self,
+        result: SimuladoAppliedEventLedger,
+    ) -> None:
+        self._repository.save_simulado_applied_event_ledger(
+            result,
+            user_id=self.user_id,
+        )
+
+    def get_simulado_applied_event_ledger(
+        self,
+        source_minimal_progress_ledger_apply_id: str,
+    ) -> SimuladoAppliedEventLedger | None:
+        return self._repository.get_simulado_applied_event_ledger(
+            source_minimal_progress_ledger_apply_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_applied_event_ledgers(
+        self,
+    ) -> list[SimuladoAppliedEventLedger]:
+        return self._repository.list_user_simulado_applied_event_ledgers(
+            user_id=self.user_id,
+        )
+
+    def get_simulado_applied_event_ledger_by_id(
+        self,
+        applied_event_ledger_id: str,
+    ) -> SimuladoAppliedEventLedger | None:
+        return self._repository.get_simulado_applied_event_ledger_by_id(
+            applied_event_ledger_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -1319,6 +1354,9 @@ class JsonStudyRepository:
                 "results": {},
             },
             "simulado_minimal_progress_ledger_apply": {
+                "results": {},
+            },
+            "simulado_applied_event_ledger": {
                 "results": {},
             },
         }
@@ -1487,6 +1525,11 @@ class JsonStudyRepository:
             user_state["simulado_minimal_progress_ledger_apply"] = (
                 self._normalize_simulado_minimal_progress_ledger_apply_payload(
                     user_state.get("simulado_minimal_progress_ledger_apply")
+                )
+            )
+            user_state["simulado_applied_event_ledger"] = (
+                self._normalize_simulado_applied_event_ledger_payload(
+                    user_state.get("simulado_applied_event_ledger")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -1899,6 +1942,19 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_minimal_progress_ledger_apply_payload(
+        self,
+        payload: object,
+    ) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_applied_event_ledger_payload(
         self,
         payload: object,
     ) -> dict[str, object]:
@@ -2526,6 +2582,15 @@ class JsonStudyRepository:
         return self._ensure_user_state(payload, user_id)[
             "simulado_minimal_progress_ledger_apply"
         ]
+
+    def _simulado_applied_event_ledger_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_applied_event_ledger_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_applied_event_ledger"]
 
     def save_document_pipeline_state(
         self,
@@ -4731,6 +4796,61 @@ class JsonStudyRepository:
     ) -> SimuladoMinimalProgressLedgerApply | None:
         for item in self.list_user_simulado_minimal_progress_ledger_applies(user_id=user_id):
             if item.minimal_progress_ledger_apply_id == minimal_progress_ledger_apply_id:
+                return item
+        return None
+
+    def save_simulado_applied_event_ledger(
+        self,
+        result: SimuladoAppliedEventLedger,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado applied event ledger requires user ownership.")
+        payload = self._read()
+        container = self._simulado_applied_event_ledger_container(payload, user_id)
+        container["results"][result.source_minimal_progress_ledger_apply_id] = result.model_dump(
+            mode="json"
+        )
+        self._write(payload)
+
+    def get_simulado_applied_event_ledger(
+        self,
+        source_minimal_progress_ledger_apply_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAppliedEventLedger | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_applied_event_ledger_container(payload, user_id)["results"].get(
+            source_minimal_progress_ledger_apply_id
+        )
+        if raw is None:
+            return None
+        return SimuladoAppliedEventLedger.model_validate(raw)
+
+    def list_user_simulado_applied_event_ledgers(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoAppliedEventLedger]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_applied_event_ledger_container(payload, user_id)["results"].values()
+        items = [SimuladoAppliedEventLedger.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_minimal_progress_ledger_apply_id)
+        return items
+
+    def get_simulado_applied_event_ledger_by_id(
+        self,
+        applied_event_ledger_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoAppliedEventLedger | None:
+        for item in self.list_user_simulado_applied_event_ledgers(user_id=user_id):
+            if item.applied_event_ledger_id == applied_event_ledger_id:
                 return item
         return None
 

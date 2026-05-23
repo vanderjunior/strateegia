@@ -99,6 +99,9 @@ from app.services.simulado_runtime_apply_policy import SimuladoRuntimeApplyPolic
 from app.services.simulado_minimal_progress_ledger_apply import (
     SimuladoMinimalProgressLedgerApplyService,
 )
+from app.services.simulado_applied_event_ledger import (
+    SimuladoAppliedEventLedgerService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -333,6 +336,12 @@ def get_simulado_minimal_progress_ledger_apply_service(
     request: Request,
 ) -> SimuladoMinimalProgressLedgerApplyService:
     return SimuladoMinimalProgressLedgerApplyService(get_repository(request))
+
+
+def get_simulado_applied_event_ledger_service(
+    request: Request,
+) -> SimuladoAppliedEventLedgerService:
+    return SimuladoAppliedEventLedgerService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2638,6 +2647,88 @@ def get_simulado_minimal_progress_ledger_apply_by_id(
         raise HTTPException(
             status_code=404,
             detail="Simulado minimal progress ledger apply not found.",
+        )
+    return result
+
+
+@router.post(
+    "/simulado-minimal-progress-ledger-apply/{minimal_progress_ledger_apply_id}/applied-event-ledger/build"
+)
+def build_simulado_applied_event_ledger_for_minimal_apply(
+    minimal_progress_ledger_apply_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    source_apply = get_simulado_minimal_progress_ledger_apply_service(
+        request
+    ).get_minimal_progress_ledger_apply_by_id(
+        minimal_progress_ledger_apply_id,
+        user_id=user_id,
+    )
+    if source_apply is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado minimal progress ledger apply not found.",
+        )
+    result = get_simulado_applied_event_ledger_service(request).build_applied_event_ledger(
+        minimal_progress_ledger_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado applied event ledger could not be built.",
+        )
+    return result
+
+
+@router.get(
+    "/simulado-minimal-progress-ledger-apply/{minimal_progress_ledger_apply_id}/applied-event-ledger"
+)
+def get_simulado_applied_event_ledger_for_minimal_apply(
+    minimal_progress_ledger_apply_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    source_apply = get_simulado_minimal_progress_ledger_apply_service(
+        request
+    ).get_minimal_progress_ledger_apply_by_id(
+        minimal_progress_ledger_apply_id,
+        user_id=user_id,
+    )
+    if source_apply is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado minimal progress ledger apply not found.",
+        )
+    result = get_simulado_applied_event_ledger_service(request).get_applied_event_ledger(
+        minimal_progress_ledger_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado applied event ledger not found.",
+        )
+    return result
+
+
+@router.get("/simulado-applied-event-ledger/{applied_event_ledger_id}")
+def get_simulado_applied_event_ledger_by_id(
+    applied_event_ledger_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_applied_event_ledger_service(
+        request
+    ).get_applied_event_ledger_by_id(
+        applied_event_ledger_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado applied event ledger not found.",
         )
     return result
 
