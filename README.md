@@ -674,6 +674,41 @@ Trabalho futuro desta trilha:
 - Runtime Commit Execution Plan Stabilization Fixtures
 - Controlled Runtime Commit Execution Foundation
 
+## Fundacao de controlled runtime commit execution
+
+Runtime commit execution plans agora podem gerar um artifact separado de `controlled runtime commit execution`, sempre user-scoped, deterministico e limitado a um dry-run/preview de execucao controlada.
+
+Capacidades atuais desta etapa:
+
+- cria um controlled runtime commit execution a partir de um `SimuladoRuntimeCommitExecutionPlan`
+- avalia phases, progress steps, surface steps, rollback verifications e audit verifications sem executar commit
+- registra blockers, validation findings, warnings e audit trail entries apenas para preview controlado
+- persiste o controlled execution artifact sem mutation commit nem runtime application
+- mantem progress, ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning sem aplicacao
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de controlled runtime commit execution:
+
+- `POST /api/simulado-execution-plan/{execution_plan_id}/controlled-execution/build`
+- `GET /api/simulado-execution-plan/{execution_plan_id}/controlled-execution`
+- `GET /api/simulado-controlled-execution/{controlled_execution_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas controlled execution dry-run artifacts
+- o artifact permanece dry-run-only e execution-preview-only
+- esta etapa nao executa commit nem mutation commit
+- esta etapa nao aplica progresso ao runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao cria commit execution events, mutation commit events, runtime application events nem final pedagogical update events
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Controlled Runtime Commit Execution Stabilization Fixtures
+- Final Pedagogical Update Event Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

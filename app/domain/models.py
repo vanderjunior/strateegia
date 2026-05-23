@@ -5918,6 +5918,245 @@ class SimuladoRuntimeCommitExecutionPlan(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ControlledCommitExecutionSummary(BaseModel):
+    summary_id: str
+    source_plan_present: bool = True
+    source_plan_created: bool = True
+    source_plan_ready_for_future_execution_review: bool = False
+    source_execution_allowed_now: bool = False
+    source_execution_started: bool = False
+    source_commit_executed: bool = False
+    planned_phase_count: int = 0
+    evaluated_phase_count: int = 0
+    blocked_phase_count: int = 0
+    planned_progress_step_count: int = 0
+    evaluated_progress_step_count: int = 0
+    blocked_progress_step_count: int = 0
+    planned_surface_step_count: int = 0
+    evaluated_surface_step_count: int = 0
+    blocked_surface_step_count: int = 0
+    rollback_verification_count: int = 0
+    rollback_blocked_count: int = 0
+    audit_verification_count: int = 0
+    audit_blocked_count: int = 0
+    controlled_execution_dry_run_complete: bool = True
+    real_execution_performed: bool = False
+    mutation_commit_performed: bool = False
+    runtime_application_performed: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPhaseExecutionRecord(BaseModel):
+    record_id: str
+    source_phase_id: str
+    phase_type: str = "unknown"
+    phase_order: int = 0
+    source_phase_status: str = "phase_planned"
+    execution_record_status: str = "record_not_executed"
+    evaluated: bool = True
+    execution_allowed: bool = False
+    executed: bool = False
+    blocked: bool = True
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledProgressStepExecutionRecord(BaseModel):
+    record_id: str
+    source_step_id: str
+    source_progress_approval_id: str
+    target_type: str = "unknown"
+    delta_kind: str = "unknown"
+    source_step_status: str = "step_planned"
+    execution_record_status: str = "record_not_executed"
+    evaluated: bool = True
+    execution_allowed: bool = False
+    executed: bool = False
+    blocked: bool = True
+    proposed_delta_summary: dict[str, object] = Field(default_factory=dict)
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledSurfaceStepExecutionRecord(BaseModel):
+    record_id: str
+    source_step_id: str
+    source_surface_approval_id: str
+    surface_type: str = "unknown"
+    update_kind: str = "unknown"
+    source_step_status: str = "step_planned"
+    execution_record_status: str = "record_not_executed"
+    evaluated: bool = True
+    execution_allowed: bool = False
+    executed: bool = False
+    blocked: bool = True
+    proposed_surface_update_summary: dict[str, object] = Field(default_factory=dict)
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledRollbackVerificationRecord(BaseModel):
+    record_id: str
+    source_checkpoint_id: str
+    checkpoint_type: str = "unknown"
+    required: bool = True
+    available: bool = False
+    verified: bool = False
+    evaluated: bool = True
+    execution_allowed: bool = False
+    executed: bool = False
+    blocked: bool = True
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledAuditVerificationRecord(BaseModel):
+    record_id: str
+    source_checkpoint_id: str
+    checkpoint_type: str = "unknown"
+    required: bool = True
+    satisfied: bool = False
+    evaluated: bool = True
+    execution_allowed: bool = False
+    executed: bool = False
+    blocked: bool = True
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitExecutionAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitExecutionBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitExecutionValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledCommitExecutionWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoControlledRuntimeCommitExecution(BaseModel):
+    controlled_execution_id: str
+    user_id: str | None = None
+    source_execution_plan_id: str
+    source_execution_approval_id: str
+    source_execution_guardrail_id: str
+    source_commit_transaction_id: str
+    source_explicit_commit_id: str
+    source_commit_shell_id: str
+    source_mutation_transaction_id: str
+    source_explicit_apply_id: str
+    source_apply_shell_id: str
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    execution_mode: str = "controlled_execution_dry_run"
+    execution_status: str = "execution_needs_review"
+    readiness_state: str = "controlled_execution_needs_review"
+    execution_summary: ControlledCommitExecutionSummary
+    phase_execution_records: list[ControlledPhaseExecutionRecord] = Field(default_factory=list)
+    progress_step_execution_records: list[ControlledProgressStepExecutionRecord] = Field(
+        default_factory=list
+    )
+    surface_step_execution_records: list[ControlledSurfaceStepExecutionRecord] = Field(
+        default_factory=list
+    )
+    rollback_verification_records: list[ControlledRollbackVerificationRecord] = Field(
+        default_factory=list
+    )
+    audit_verification_records: list[ControlledAuditVerificationRecord] = Field(
+        default_factory=list
+    )
+    audit_trail: list[ControlledCommitExecutionAuditEntry] = Field(default_factory=list)
+    blockers: list[ControlledCommitExecutionBlocker] = Field(default_factory=list)
+    validation_findings: list[ControlledCommitExecutionValidationFinding] = Field(
+        default_factory=list
+    )
+    warnings: list[ControlledCommitExecutionWarning] = Field(default_factory=list)
+    controlled_execution_created: bool = True
+    execution_started: bool = False
+    execution_completed: bool = False
+    execution_succeeded: bool = False
+    execution_failed: bool = False
+    execution_allowed_now: bool = False
+    commit_execution_allowed: bool = False
+    commit_execution_started: bool = False
+    commit_executed: bool = False
+    mutation_committed: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    no_commit_execution: bool = True
+    no_commit_execution_event_created: bool = True
+    no_mutation_commit: bool = True
+    no_mutation_commit_event_created: bool = True
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_final_pedagogical_update_event: bool = True
+    final_pedagogical_update_event_created: bool = False
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

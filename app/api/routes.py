@@ -89,6 +89,9 @@ from app.services.simulado_explicit_commit_execution_approval import (
 from app.services.simulado_runtime_commit_execution_plan import (
     SimuladoRuntimeCommitExecutionPlanService,
 )
+from app.services.simulado_controlled_runtime_commit_execution import (
+    SimuladoControlledRuntimeCommitExecutionService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -299,6 +302,12 @@ def get_simulado_runtime_commit_execution_plan_service(
     request: Request,
 ) -> SimuladoRuntimeCommitExecutionPlanService:
     return SimuladoRuntimeCommitExecutionPlanService(get_repository(request))
+
+
+def get_simulado_controlled_runtime_commit_execution_service(
+    request: Request,
+) -> SimuladoControlledRuntimeCommitExecutionService:
+    return SimuladoControlledRuntimeCommitExecutionService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2288,6 +2297,88 @@ def get_simulado_runtime_commit_execution_plan_by_id(execution_plan_id: str, req
         raise HTTPException(
             status_code=404,
             detail="Simulado runtime commit execution plan not found.",
+        )
+    return result
+
+
+@router.post("/simulado-execution-plan/{execution_plan_id}/controlled-execution/build")
+def build_simulado_controlled_runtime_commit_execution_for_execution_plan(
+    execution_plan_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    execution_plan = get_simulado_runtime_commit_execution_plan_service(
+        request
+    ).get_execution_plan_by_id(
+        execution_plan_id,
+        user_id=user_id,
+    )
+    if execution_plan is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime commit execution plan not found.",
+        )
+    result = get_simulado_controlled_runtime_commit_execution_service(
+        request
+    ).build_controlled_execution(
+        execution_plan_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled runtime commit execution could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-execution-plan/{execution_plan_id}/controlled-execution")
+def get_simulado_controlled_runtime_commit_execution_for_execution_plan(
+    execution_plan_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    execution_plan = get_simulado_runtime_commit_execution_plan_service(
+        request
+    ).get_execution_plan_by_id(
+        execution_plan_id,
+        user_id=user_id,
+    )
+    if execution_plan is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime commit execution plan not found.",
+        )
+    result = get_simulado_controlled_runtime_commit_execution_service(
+        request
+    ).get_controlled_execution(
+        execution_plan_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled runtime commit execution not found.",
+        )
+    return result
+
+
+@router.get("/simulado-controlled-execution/{controlled_execution_id}")
+def get_simulado_controlled_runtime_commit_execution_by_id(
+    controlled_execution_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_controlled_runtime_commit_execution_service(
+        request
+    ).get_controlled_execution_by_id(
+        controlled_execution_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled runtime commit execution not found.",
         )
     return result
 

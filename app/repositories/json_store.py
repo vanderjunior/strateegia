@@ -176,6 +176,7 @@ from app.domain.models import (
     SimuladoQuestionAssembly,
     SimuladoCorrectionShell,
     SimuladoControlledRuntimeApplyShell,
+    SimuladoControlledRuntimeCommitExecution,
     SimuladoControlledRuntimeCommitExecutionGuardrail,
     SimuladoExplicitRuntimeCommitExecutionApproval,
     SimuladoExplicitRuntimeMutationCommit,
@@ -1014,6 +1015,40 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_controlled_runtime_commit_execution(
+        self,
+        result: SimuladoControlledRuntimeCommitExecution,
+    ) -> None:
+        self._repository.save_simulado_controlled_runtime_commit_execution(
+            result,
+            user_id=self.user_id,
+        )
+
+    def get_simulado_controlled_runtime_commit_execution(
+        self,
+        source_execution_plan_id: str,
+    ) -> SimuladoControlledRuntimeCommitExecution | None:
+        return self._repository.get_simulado_controlled_runtime_commit_execution(
+            source_execution_plan_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_controlled_runtime_commit_executions(
+        self,
+    ) -> list[SimuladoControlledRuntimeCommitExecution]:
+        return self._repository.list_user_simulado_controlled_runtime_commit_executions(
+            user_id=self.user_id,
+        )
+
+    def get_simulado_controlled_runtime_commit_execution_by_id(
+        self,
+        controlled_execution_id: str,
+    ) -> SimuladoControlledRuntimeCommitExecution | None:
+        return self._repository.get_simulado_controlled_runtime_commit_execution_by_id(
+            controlled_execution_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -1155,6 +1190,9 @@ class JsonStudyRepository:
                 "results": {},
             },
             "simulado_runtime_commit_execution_plan": {
+                "results": {},
+            },
+            "simulado_controlled_runtime_commit_execution": {
                 "results": {},
             },
         }
@@ -1303,6 +1341,11 @@ class JsonStudyRepository:
             user_state["simulado_runtime_commit_execution_plan"] = (
                 self._normalize_simulado_runtime_commit_execution_plan_payload(
                     user_state.get("simulado_runtime_commit_execution_plan")
+                )
+            )
+            user_state["simulado_controlled_runtime_commit_execution"] = (
+                self._normalize_simulado_controlled_runtime_commit_execution_payload(
+                    user_state.get("simulado_controlled_runtime_commit_execution")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -1663,6 +1706,19 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_runtime_commit_execution_plan_payload(
+        self,
+        payload: object,
+    ) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_controlled_runtime_commit_execution_payload(
         self,
         payload: object,
     ) -> dict[str, object]:
@@ -2250,6 +2306,17 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_runtime_commit_execution_plan_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_runtime_commit_execution_plan"]
+
+    def _simulado_controlled_runtime_commit_execution_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_controlled_runtime_commit_execution_payload({})
+        return self._ensure_user_state(payload, user_id)[
+            "simulado_controlled_runtime_commit_execution"
+        ]
 
     def save_document_pipeline_state(
         self,
@@ -4237,6 +4304,61 @@ class JsonStudyRepository:
     ) -> SimuladoRuntimeCommitExecutionPlan | None:
         for item in self.list_user_simulado_runtime_commit_execution_plans(user_id=user_id):
             if item.execution_plan_id == execution_plan_id:
+                return item
+        return None
+
+    def save_simulado_controlled_runtime_commit_execution(
+        self,
+        result: SimuladoControlledRuntimeCommitExecution,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado controlled runtime commit execution requires user ownership.")
+        payload = self._read()
+        container = self._simulado_controlled_runtime_commit_execution_container(payload, user_id)
+        container["results"][result.source_execution_plan_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_controlled_runtime_commit_execution(
+        self,
+        source_execution_plan_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeCommitExecution | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_controlled_runtime_commit_execution_container(payload, user_id)[
+            "results"
+        ].get(source_execution_plan_id)
+        if raw is None:
+            return None
+        return SimuladoControlledRuntimeCommitExecution.model_validate(raw)
+
+    def list_user_simulado_controlled_runtime_commit_executions(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoControlledRuntimeCommitExecution]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_controlled_runtime_commit_execution_container(payload, user_id)[
+            "results"
+        ].values()
+        items = [SimuladoControlledRuntimeCommitExecution.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_execution_plan_id)
+        return items
+
+    def get_simulado_controlled_runtime_commit_execution_by_id(
+        self,
+        controlled_execution_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledRuntimeCommitExecution | None:
+        for item in self.list_user_simulado_controlled_runtime_commit_executions(user_id=user_id):
+            if item.controlled_execution_id == controlled_execution_id:
                 return item
         return None
 
