@@ -746,6 +746,43 @@ Trabalho futuro desta trilha:
 - Runtime Apply Policy / Feature Flag Foundation
 - Minimal Progress Ledger Apply Foundation
 
+## Fundacao de runtime apply policy / feature flag
+
+Final pedagogical update events agora podem gerar um artifact separado de `runtime apply policy`, sempre user-scoped, deterministico e limitado a um policy gate para futuras aplicacoes sem aplicar nada no runtime atual.
+
+Capacidades atuais desta etapa:
+
+- cria um runtime apply policy a partir de um `SimuladoFinalPedagogicalUpdateEvent`
+- avalia feature flag snapshot, apply scope policy, idempotency, rollback, audit, human review e environment safety
+- persiste o policy artifact sem aplicar final event, sem progress ledger apply e sem runtime mutation
+- mantem feature flag desabilitada por padrao e `runtime_apply_allowed_now = false`
+- mantem minimal progress ledger apply desabilitado
+- mantem ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning apply desabilitados
+- mantem answer key e gabarito sem exposicao publica
+
+Endpoints atuais de runtime apply policy:
+
+- `POST /api/simulado-final-pedagogical-event/{final_event_id}/runtime-apply-policy/build`
+- `GET /api/simulado-final-pedagogical-event/{final_event_id}/runtime-apply-policy`
+- `GET /api/simulado-runtime-apply-policy/{runtime_apply_policy_id}`
+
+Regras importantes:
+
+- esta etapa cria apenas runtime apply policy artifacts
+- o artifact permanece policy-gate-only e feature-flag-gate-only
+- esta etapa nao aplica o final event
+- esta etapa nao muta progresso nem runtime pedagogico
+- esta etapa nao atualiza ranking, retention ou scheduler
+- esta etapa nao altera study cycle ou curriculum graph
+- esta etapa nao executa adaptive tuning
+- esta etapa nao cria applied final pedagogical update events nem applied progress ledger entries
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Runtime Apply Policy / Feature Flag Stabilization Fixtures
+- Minimal Progress Ledger Apply Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

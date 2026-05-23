@@ -152,6 +152,18 @@ from app.domain.models import (
     RuntimeProgressApplicationPlan,
     RuntimeProgressApplicationValidationFinding,
     RuntimeProgressApplicationWarning,
+    RuntimeApplyAuditRequirement,
+    RuntimeApplyEnvironmentSafetyRequirement,
+    RuntimeApplyFeatureFlagSnapshot,
+    RuntimeApplyHumanReviewRequirement,
+    RuntimeApplyIdempotencyRequirement,
+    RuntimeApplyPolicyAuditEntry,
+    RuntimeApplyPolicyBlocker,
+    RuntimeApplyPolicySummary,
+    RuntimeApplyPolicyValidationFinding,
+    RuntimeApplyPolicyWarning,
+    RuntimeApplyRollbackRequirement,
+    RuntimeApplyScopePolicy,
     PlannedRuntimeMutationIntent,
     ProposedRuntimeSurfaceDiff,
     SimuladoAttemptSession,
@@ -181,6 +193,7 @@ from app.domain.models import (
     SimuladoExplicitRuntimeCommitExecutionApproval,
     SimuladoExplicitRuntimeMutationCommit,
     SimuladoFinalPedagogicalUpdateEvent,
+    SimuladoRuntimeApplyPolicy,
     SimuladoRuntimeCommitExecutionPlan,
     SimuladoRuntimeMutationCommitTransaction,
     SimuladoExplicitRuntimeProgressApply,
@@ -1084,6 +1097,40 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_runtime_apply_policy(
+        self,
+        result: SimuladoRuntimeApplyPolicy,
+    ) -> None:
+        self._repository.save_simulado_runtime_apply_policy(
+            result,
+            user_id=self.user_id,
+        )
+
+    def get_simulado_runtime_apply_policy(
+        self,
+        source_final_event_id: str,
+    ) -> SimuladoRuntimeApplyPolicy | None:
+        return self._repository.get_simulado_runtime_apply_policy(
+            source_final_event_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_runtime_apply_policies(
+        self,
+    ) -> list[SimuladoRuntimeApplyPolicy]:
+        return self._repository.list_user_simulado_runtime_apply_policies(
+            user_id=self.user_id,
+        )
+
+    def get_simulado_runtime_apply_policy_by_id(
+        self,
+        runtime_apply_policy_id: str,
+    ) -> SimuladoRuntimeApplyPolicy | None:
+        return self._repository.get_simulado_runtime_apply_policy_by_id(
+            runtime_apply_policy_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -1231,6 +1278,9 @@ class JsonStudyRepository:
                 "results": {},
             },
             "simulado_final_pedagogical_update_event": {
+                "results": {},
+            },
+            "simulado_runtime_apply_policy": {
                 "results": {},
             },
         }
@@ -1389,6 +1439,11 @@ class JsonStudyRepository:
             user_state["simulado_final_pedagogical_update_event"] = (
                 self._normalize_simulado_final_pedagogical_update_event_payload(
                     user_state.get("simulado_final_pedagogical_update_event")
+                )
+            )
+            user_state["simulado_runtime_apply_policy"] = (
+                self._normalize_simulado_runtime_apply_policy_payload(
+                    user_state.get("simulado_runtime_apply_policy")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -1775,6 +1830,19 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_final_pedagogical_update_event_payload(
+        self,
+        payload: object,
+    ) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_runtime_apply_policy_payload(
         self,
         payload: object,
     ) -> dict[str, object]:
@@ -2382,6 +2450,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_final_pedagogical_update_event_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_final_pedagogical_update_event"]
+
+    def _simulado_runtime_apply_policy_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_runtime_apply_policy_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_runtime_apply_policy"]
 
     def save_document_pipeline_state(
         self,
@@ -4479,6 +4556,59 @@ class JsonStudyRepository:
     ) -> SimuladoFinalPedagogicalUpdateEvent | None:
         for item in self.list_user_simulado_final_pedagogical_update_events(user_id=user_id):
             if item.final_event_id == final_event_id:
+                return item
+        return None
+
+    def save_simulado_runtime_apply_policy(
+        self,
+        result: SimuladoRuntimeApplyPolicy,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado runtime apply policy requires user ownership.")
+        payload = self._read()
+        container = self._simulado_runtime_apply_policy_container(payload, user_id)
+        container["results"][result.source_final_event_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_runtime_apply_policy(
+        self,
+        source_final_event_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeApplyPolicy | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_runtime_apply_policy_container(payload, user_id)["results"].get(
+            source_final_event_id
+        )
+        if raw is None:
+            return None
+        return SimuladoRuntimeApplyPolicy.model_validate(raw)
+
+    def list_user_simulado_runtime_apply_policies(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoRuntimeApplyPolicy]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_runtime_apply_policy_container(payload, user_id)["results"].values()
+        items = [SimuladoRuntimeApplyPolicy.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_final_event_id)
+        return items
+
+    def get_simulado_runtime_apply_policy_by_id(
+        self,
+        runtime_apply_policy_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoRuntimeApplyPolicy | None:
+        for item in self.list_user_simulado_runtime_apply_policies(user_id=user_id):
+            if item.runtime_apply_policy_id == runtime_apply_policy_id:
                 return item
         return None
 

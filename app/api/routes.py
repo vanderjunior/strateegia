@@ -95,6 +95,7 @@ from app.services.simulado_controlled_runtime_commit_execution import (
 from app.services.simulado_final_pedagogical_update_event import (
     SimuladoFinalPedagogicalUpdateEventService,
 )
+from app.services.simulado_runtime_apply_policy import SimuladoRuntimeApplyPolicyService
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -317,6 +318,12 @@ def get_simulado_final_pedagogical_update_event_service(
     request: Request,
 ) -> SimuladoFinalPedagogicalUpdateEventService:
     return SimuladoFinalPedagogicalUpdateEventService(get_repository(request))
+
+
+def get_simulado_runtime_apply_policy_service(
+    request: Request,
+) -> SimuladoRuntimeApplyPolicyService:
+    return SimuladoRuntimeApplyPolicyService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2470,6 +2477,78 @@ def get_simulado_final_pedagogical_update_event_by_id(
         raise HTTPException(
             status_code=404,
             detail="Simulado final pedagogical update event not found.",
+        )
+    return result
+
+
+@router.post("/simulado-final-pedagogical-event/{final_event_id}/runtime-apply-policy/build")
+def build_simulado_runtime_apply_policy_for_final_event(
+    final_event_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    final_event = get_simulado_final_pedagogical_update_event_service(request).get_final_event_by_id(
+        final_event_id,
+        user_id=user_id,
+    )
+    if final_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado final pedagogical update event not found.",
+        )
+    result = get_simulado_runtime_apply_policy_service(request).build_runtime_apply_policy(
+        final_event_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime apply policy could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-final-pedagogical-event/{final_event_id}/runtime-apply-policy")
+def get_simulado_runtime_apply_policy_for_final_event(
+    final_event_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    final_event = get_simulado_final_pedagogical_update_event_service(request).get_final_event_by_id(
+        final_event_id,
+        user_id=user_id,
+    )
+    if final_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado final pedagogical update event not found.",
+        )
+    result = get_simulado_runtime_apply_policy_service(request).get_runtime_apply_policy(
+        final_event_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime apply policy not found.",
+        )
+    return result
+
+
+@router.get("/simulado-runtime-apply-policy/{runtime_apply_policy_id}")
+def get_simulado_runtime_apply_policy_by_id(
+    runtime_apply_policy_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_runtime_apply_policy_service(request).get_runtime_apply_policy_by_id(
+        runtime_apply_policy_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime apply policy not found.",
         )
     return result
 

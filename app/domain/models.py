@@ -6349,6 +6349,234 @@ class SimuladoFinalPedagogicalUpdateEvent(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class RuntimeApplyPolicySummary(BaseModel):
+    summary_id: str
+    source_final_event_present: bool = True
+    source_final_event_created: bool = True
+    source_final_event_applied: bool = False
+    source_final_event_apply_allowed: bool = False
+    source_event_proposal_only: bool = True
+    apply_feature_flag_enabled: bool = False
+    apply_allowed_now: bool = False
+    minimal_progress_ledger_scope_allowed: bool = False
+    ranking_scope_allowed: bool = False
+    retention_scope_allowed: bool = False
+    scheduler_scope_allowed: bool = False
+    study_cycle_scope_allowed: bool = False
+    curriculum_graph_scope_allowed: bool = False
+    adaptive_tuning_scope_allowed: bool = False
+    idempotency_required: bool = True
+    rollback_required: bool = True
+    audit_required: bool = True
+    human_review_required: bool = True
+    environment_safe_for_apply: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyFeatureFlagSnapshot(BaseModel):
+    snapshot_id: str
+    feature_flag_name: str
+    feature_flag_enabled: bool = False
+    default_enabled: bool = False
+    source: str = "foundation_default"
+    environment: str = "local_default"
+    evaluated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyScopePolicy(BaseModel):
+    scope_policy_id: str
+    minimal_progress_ledger_apply_allowed: bool = False
+    ranking_apply_allowed: bool = False
+    retention_apply_allowed: bool = False
+    scheduler_apply_allowed: bool = False
+    study_cycle_apply_allowed: bool = False
+    curriculum_graph_apply_allowed: bool = False
+    adaptive_tuning_apply_allowed: bool = False
+    allowed_surfaces: list[str] = Field(default_factory=list)
+    blocked_surfaces: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyIdempotencyRequirement(BaseModel):
+    requirement_id: str
+    idempotency_key_required: bool = True
+    idempotency_key_present: bool = False
+    idempotency_key_valid: bool = False
+    satisfied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyRollbackRequirement(BaseModel):
+    requirement_id: str
+    rollback_required: bool = True
+    rollback_plan_required: bool = True
+    rollback_plan_present: bool = False
+    rollback_verified: bool = False
+    satisfied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyAuditRequirement(BaseModel):
+    requirement_id: str
+    audit_required: bool = True
+    audit_confirmation_required: bool = True
+    audit_confirmation_present: bool = False
+    satisfied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyHumanReviewRequirement(BaseModel):
+    requirement_id: str
+    human_review_required: bool = True
+    human_review_present: bool = False
+    satisfied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyEnvironmentSafetyRequirement(BaseModel):
+    requirement_id: str
+    environment_safe_for_apply: bool = False
+    write_mode_allowed: bool = False
+    dry_run_only: bool = True
+    external_services_disabled: bool = True
+    satisfied: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyPolicyAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyPolicyBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyPolicyValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class RuntimeApplyPolicyWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoRuntimeApplyPolicy(BaseModel):
+    runtime_apply_policy_id: str
+    user_id: str | None = None
+    source_final_event_id: str
+    source_controlled_execution_id: str
+    source_execution_plan_id: str
+    source_execution_approval_id: str
+    source_execution_guardrail_id: str
+    source_commit_transaction_id: str
+    source_explicit_commit_id: str
+    source_commit_shell_id: str
+    source_mutation_transaction_id: str
+    source_explicit_apply_id: str
+    source_apply_shell_id: str
+    source_application_id: str
+    source_runtime_guardrail_id: str
+    source_integrated_result_id: str | None = None
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    runtime_apply_policy_mode: str = "policy_gate_only"
+    runtime_apply_policy_status: str = "apply_not_enabled"
+    readiness_state: str = "blocked_by_runtime_apply_feature_flag_disabled"
+    policy_summary: RuntimeApplyPolicySummary
+    feature_flag_snapshot: RuntimeApplyFeatureFlagSnapshot
+    apply_scope_policy: RuntimeApplyScopePolicy
+    idempotency_requirement: RuntimeApplyIdempotencyRequirement
+    rollback_requirement: RuntimeApplyRollbackRequirement
+    audit_requirement: RuntimeApplyAuditRequirement
+    human_review_requirement: RuntimeApplyHumanReviewRequirement
+    environment_safety_requirement: RuntimeApplyEnvironmentSafetyRequirement
+    audit_trail: list[RuntimeApplyPolicyAuditEntry] = Field(default_factory=list)
+    blockers: list[RuntimeApplyPolicyBlocker] = Field(default_factory=list)
+    validation_findings: list[RuntimeApplyPolicyValidationFinding] = Field(default_factory=list)
+    warnings: list[RuntimeApplyPolicyWarning] = Field(default_factory=list)
+    runtime_apply_policy_created: bool = True
+    runtime_apply_feature_flag_enabled: bool = False
+    runtime_apply_allowed_now: bool = False
+    final_event_apply_allowed: bool = False
+    final_event_applied: bool = False
+    final_event_application_started: bool = False
+    final_event_application_completed: bool = False
+    minimal_progress_ledger_apply_allowed: bool = False
+    ranking_apply_allowed: bool = False
+    retention_apply_allowed: bool = False
+    scheduler_apply_allowed: bool = False
+    study_cycle_apply_allowed: bool = False
+    curriculum_graph_apply_allowed: bool = False
+    adaptive_tuning_apply_allowed: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    progress_mutation_enabled: bool = False
+    progress_mutation_applied: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    commit_executed: bool = False
+    mutation_committed: bool = False
+    no_commit_execution: bool = True
+    no_commit_execution_event_created: bool = True
+    no_mutation_commit: bool = True
+    no_mutation_commit_event_created: bool = True
+    no_runtime_application: bool = True
+    no_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_applied_final_pedagogical_update_event: bool = True
+    no_applied_progress_ledger_entry: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str
