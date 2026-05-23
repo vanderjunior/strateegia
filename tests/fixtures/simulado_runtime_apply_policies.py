@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from app.domain.models import (
     SimuladoFinalPedagogicalUpdateEvent,
@@ -287,6 +288,150 @@ def policy_summary_fixture(
     return feature_flag_disabled_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def policy_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def feature_flag_snapshot_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def apply_scope_policy_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def idempotency_requirement_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def rollback_requirement_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_requirement_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def human_review_requirement_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def environment_safety_requirement_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def policy_audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_applied_final_event_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_applied_progress_ledger_entry_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def user_scope_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def api_readonly_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return policy_summary_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def mixed_policy_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoRuntimeApplyPolicyFixture:
+    return apply_scope_not_allowed_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def capture_runtime_apply_policy_source_snapshot(
     fixture: SimuladoRuntimeApplyPolicyFixture,
 ) -> RuntimeApplyPolicySourceSnapshot:
@@ -341,3 +486,43 @@ def capture_runtime_apply_policy_source_snapshot(
             repository.list_user_simulado_runtime_apply_policies(user_id=user_id)
         ),
     )
+
+
+def stabilization_fixture_builders() -> dict[
+    str,
+    Callable[..., SimuladoRuntimeApplyPolicyFixture],
+]:
+    return {
+        "missing_final_event": missing_final_event_fixture,
+        "final_event_not_proposal_only": final_event_not_proposal_only_fixture,
+        "final_event_already_applied": final_event_already_applied_fixture,
+        "feature_flag_disabled": feature_flag_disabled_fixture,
+        "runtime_apply_not_allowed_now": runtime_apply_not_allowed_now_fixture,
+        "idempotency_requirement_missing": idempotency_requirement_missing_fixture,
+        "rollback_requirement_missing": rollback_requirement_missing_fixture,
+        "audit_requirement_missing": audit_requirement_missing_fixture,
+        "human_review_requirement_missing": human_review_requirement_missing_fixture,
+        "environment_not_safe": environment_not_safe_fixture,
+        "apply_scope_not_allowed": apply_scope_not_allowed_fixture,
+        "public_answer_key_exposure_forbidden": (
+            public_answer_key_exposure_forbidden_fixture
+        ),
+        "policy_summary_shape": policy_summary_shape_fixture,
+        "feature_flag_snapshot_shape": feature_flag_snapshot_shape_fixture,
+        "apply_scope_policy_shape": apply_scope_policy_shape_fixture,
+        "idempotency_requirement_shape": idempotency_requirement_shape_fixture,
+        "rollback_requirement_shape": rollback_requirement_shape_fixture,
+        "audit_requirement_shape": audit_requirement_shape_fixture,
+        "human_review_requirement_shape": human_review_requirement_shape_fixture,
+        "environment_safety_requirement_shape": (
+            environment_safety_requirement_shape_fixture
+        ),
+        "policy_audit_trail": policy_audit_trail_fixture,
+        "no_applied_final_event": no_applied_final_event_fixture,
+        "no_applied_progress_ledger_entry": no_applied_progress_ledger_entry_fixture,
+        "no_runtime_mutation": no_runtime_mutation_fixture,
+        "idempotency": idempotency_fixture,
+        "user_scope": user_scope_fixture,
+        "api_readonly": api_readonly_fixture,
+        "mixed_policy": mixed_policy_fixture,
+    }
