@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from app.domain.models import (
     SimuladoControlledRuntimeCommitExecution,
@@ -35,6 +36,16 @@ class SimuladoFinalPedagogicalUpdateEventFixture:
     controlled_execution_fixture: SimuladoControlledRuntimeCommitExecutionFixture | None
     controlled_execution: SimuladoControlledRuntimeCommitExecution | None
     missing_controlled_execution_id: str | None = None
+
+
+@dataclass(frozen=True)
+class FinalPedagogicalUpdateEventSourceSnapshot:
+    controlled_execution: dict[str, object] | None
+    execution_plan: dict[str, object] | None
+    execution_approval: dict[str, object] | None
+    execution_guardrail: dict[str, object] | None
+    progress: dict[str, object]
+    final_event_count: int
 
 
 def _wrap_fixture(
@@ -469,3 +480,90 @@ def execution_disabled_fixture(
     return _wrap_fixture(
         _execution_disabled_fixture(tmp_path, user_id=user_id, repository=repository)
     )
+
+
+def capture_final_event_source_snapshot(
+    fixture: SimuladoFinalPedagogicalUpdateEventFixture,
+) -> FinalPedagogicalUpdateEventSourceSnapshot:
+    controlled_execution = fixture.controlled_execution
+    assert controlled_execution is not None
+    repository = fixture.context.repository
+    user_id = fixture.context.user_id
+
+    stored_controlled_execution = repository.get_simulado_controlled_runtime_commit_execution_by_id(
+        controlled_execution.controlled_execution_id,
+        user_id=user_id,
+    )
+    stored_execution_plan = repository.get_simulado_runtime_commit_execution_plan_by_id(
+        controlled_execution.source_execution_plan_id,
+        user_id=user_id,
+    )
+    stored_execution_approval = repository.get_simulado_explicit_commit_execution_approval_by_id(
+        controlled_execution.source_execution_approval_id,
+        user_id=user_id,
+    )
+    stored_execution_guardrail = repository.get_simulado_controlled_commit_execution_guardrail_by_id(
+        controlled_execution.source_execution_guardrail_id,
+        user_id=user_id,
+    )
+
+    return FinalPedagogicalUpdateEventSourceSnapshot(
+        controlled_execution=(
+            None
+            if stored_controlled_execution is None
+            else stored_controlled_execution.model_dump(mode="json")
+        ),
+        execution_plan=(
+            None if stored_execution_plan is None else stored_execution_plan.model_dump(mode="json")
+        ),
+        execution_approval=(
+            None
+            if stored_execution_approval is None
+            else stored_execution_approval.model_dump(mode="json")
+        ),
+        execution_guardrail=(
+            None
+            if stored_execution_guardrail is None
+            else stored_execution_guardrail.model_dump(mode="json")
+        ),
+        progress=repository.load_progress(user_id=user_id).model_dump(mode="json"),
+        final_event_count=len(
+            repository.list_user_simulado_final_pedagogical_update_events(user_id=user_id)
+        ),
+    )
+
+
+def stabilization_fixture_builders() -> dict[
+    str,
+    Callable[..., SimuladoFinalPedagogicalUpdateEventFixture],
+]:
+    return {
+        "missing_controlled_execution": missing_controlled_execution_fixture,
+        "controlled_execution_not_dry_run": controlled_execution_not_dry_run_fixture,
+        "controlled_execution_started": controlled_execution_started_fixture,
+        "commit_executed_detected": commit_executed_detected_fixture,
+        "mutation_committed_detected": mutation_committed_detected_fixture,
+        "runtime_application_detected": runtime_application_detected_fixture,
+        "progress_mutation_detected": progress_mutation_detected_fixture,
+        "final_event_apply_disabled": final_event_apply_disabled_fixture,
+        "public_answer_key_exposure_forbidden": (
+            public_answer_key_exposure_forbidden_fixture
+        ),
+        "final_event_summary": final_event_summary_fixture,
+        "proposed_progress_updates": proposed_progress_updates_fixture,
+        "proposed_ranking_updates": proposed_ranking_updates_fixture,
+        "proposed_retention_updates": proposed_retention_updates_fixture,
+        "proposed_scheduler_updates": proposed_scheduler_updates_fixture,
+        "proposed_study_cycle_updates": proposed_study_cycle_updates_fixture,
+        "proposed_curriculum_graph_updates": proposed_curriculum_graph_updates_fixture,
+        "proposed_adaptive_tuning_updates": proposed_adaptive_tuning_updates_fixture,
+        "final_event_audit_trail": final_event_audit_trail_fixture,
+        "no_public_key_gabarito_safety": no_public_key_gabarito_safety_fixture,
+        "no_runtime_application": no_runtime_application_fixture,
+        "no_runtime_mutation": no_runtime_mutation_fixture,
+        "idempotency": idempotency_fixture,
+        "api_readonly": api_readonly_fixture,
+        "user_scope": user_scope_fixture,
+        "mixed_final_event": mixed_final_event_fixture,
+        "execution_disabled": execution_disabled_fixture,
+    }
