@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from app.domain.models import (
     ProposedProgressUpdateEntry,
@@ -439,6 +440,188 @@ def idempotency_fixture(
     )
 
 
+def idempotency_unsatisfied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return idempotency_requirement_unsatisfied_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def rollback_unsatisfied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return rollback_requirement_unsatisfied_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def audit_unsatisfied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return audit_requirement_unsatisfied_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def human_review_unsatisfied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return human_review_requirement_unsatisfied_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def allowed_policy_success_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def blocked_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return policy_feature_flag_disabled_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def applied_ledger_entries_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def idempotency_replay_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return idempotency_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def rollback_record_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def audit_trail_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def no_global_progress_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def no_existing_progress_aggregate_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def no_runtime_propagation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def no_leakage_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    return allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def user_scope_fixture(
     tmp_path,
     *,
@@ -501,3 +684,82 @@ def capture_minimal_progress_ledger_apply_source_snapshot(
             repository.list_user_simulado_minimal_progress_ledger_applies(user_id=user_id)
         ),
     )
+
+
+def capture_minimal_apply_source_snapshot(
+    fixture: SimuladoMinimalProgressLedgerApplyFixture,
+) -> MinimalProgressLedgerApplySourceSnapshot:
+    return capture_minimal_progress_ledger_apply_source_snapshot(fixture)
+
+
+def mixed_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoMinimalProgressLedgerApplyFixture:
+    fixture = allowed_minimal_progress_ledger_apply_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+    runtime_apply_policy = fixture.runtime_apply_policy
+    assert runtime_apply_policy is not None
+    runtime_apply_policy.idempotency_requirement.idempotency_key_present = False
+    runtime_apply_policy.idempotency_requirement.idempotency_key_valid = False
+    runtime_apply_policy.idempotency_requirement.satisfied = False
+    runtime_apply_policy.idempotency_requirement.blockers = [
+        "blocked_by_idempotency_requirement_unsatisfied"
+    ]
+    runtime_apply_policy.human_review_requirement.human_review_present = False
+    runtime_apply_policy.human_review_requirement.satisfied = False
+    runtime_apply_policy.human_review_requirement.blockers = [
+        "blocked_by_human_review_requirement_unsatisfied"
+    ]
+    runtime_apply_policy.environment_safety_requirement.environment_safe_for_apply = False
+    runtime_apply_policy.environment_safety_requirement.write_mode_allowed = False
+    runtime_apply_policy.environment_safety_requirement.satisfied = False
+    runtime_apply_policy.environment_safety_requirement.blockers = [
+        "blocked_by_environment_not_safe_for_apply"
+    ]
+    _persist_policy(fixture)
+    return _clear_progress_updates(fixture)
+
+
+def stabilization_fixture_builders() -> dict[
+    str,
+    Callable[..., SimuladoMinimalProgressLedgerApplyFixture],
+]:
+    return {
+        "missing_runtime_apply_policy": missing_runtime_apply_policy_fixture,
+        "feature_flag_disabled": policy_feature_flag_disabled_fixture,
+        "policy_feature_flag_disabled": policy_feature_flag_disabled_fixture,
+        "runtime_apply_not_allowed_now": runtime_apply_not_allowed_now_fixture,
+        "minimal_progress_ledger_scope_not_allowed": (
+            minimal_progress_ledger_scope_not_allowed_fixture
+        ),
+        "idempotency_unsatisfied": idempotency_unsatisfied_fixture,
+        "rollback_unsatisfied": rollback_unsatisfied_fixture,
+        "audit_unsatisfied": audit_unsatisfied_fixture,
+        "human_review_unsatisfied": human_review_unsatisfied_fixture,
+        "environment_unsafe": environment_unsafe_fixture,
+        "public_answer_key_exposure_forbidden": (
+            public_answer_key_exposure_forbidden_fixture
+        ),
+        "no_proposed_progress_updates": no_proposed_progress_updates_fixture,
+        "allowed_policy_success": allowed_policy_success_fixture,
+        "blocked_apply": blocked_apply_fixture,
+        "applied_ledger_entries_shape": applied_ledger_entries_shape_fixture,
+        "idempotency_replay": idempotency_replay_fixture,
+        "rollback_record_shape": rollback_record_shape_fixture,
+        "audit_trail_shape": audit_trail_shape_fixture,
+        "no_global_progress_mutation": no_global_progress_mutation_fixture,
+        "no_existing_progress_aggregate_mutation": (
+            no_existing_progress_aggregate_mutation_fixture
+        ),
+        "no_runtime_propagation": no_runtime_propagation_fixture,
+        "no_leakage": no_leakage_fixture,
+        "user_scope": user_scope_fixture,
+        "api_readonly": api_readonly_fixture,
+        "mixed_apply": mixed_apply_fixture,
+    }
