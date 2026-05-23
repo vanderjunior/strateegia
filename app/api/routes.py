@@ -96,6 +96,9 @@ from app.services.simulado_final_pedagogical_update_event import (
     SimuladoFinalPedagogicalUpdateEventService,
 )
 from app.services.simulado_runtime_apply_policy import SimuladoRuntimeApplyPolicyService
+from app.services.simulado_minimal_progress_ledger_apply import (
+    SimuladoMinimalProgressLedgerApplyService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -324,6 +327,12 @@ def get_simulado_runtime_apply_policy_service(
     request: Request,
 ) -> SimuladoRuntimeApplyPolicyService:
     return SimuladoRuntimeApplyPolicyService(get_repository(request))
+
+
+def get_simulado_minimal_progress_ledger_apply_service(
+    request: Request,
+) -> SimuladoMinimalProgressLedgerApplyService:
+    return SimuladoMinimalProgressLedgerApplyService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2549,6 +2558,86 @@ def get_simulado_runtime_apply_policy_by_id(
         raise HTTPException(
             status_code=404,
             detail="Simulado runtime apply policy not found.",
+        )
+    return result
+
+
+@router.post(
+    "/simulado-runtime-apply-policy/{runtime_apply_policy_id}/minimal-progress-ledger-apply/build"
+)
+def build_simulado_minimal_progress_ledger_apply_for_policy(
+    runtime_apply_policy_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    policy = get_simulado_runtime_apply_policy_service(request).get_runtime_apply_policy_by_id(
+        runtime_apply_policy_id,
+        user_id=user_id,
+    )
+    if policy is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime apply policy not found.",
+        )
+    result = get_simulado_minimal_progress_ledger_apply_service(
+        request
+    ).build_minimal_progress_ledger_apply(
+        runtime_apply_policy_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado minimal progress ledger apply could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-runtime-apply-policy/{runtime_apply_policy_id}/minimal-progress-ledger-apply")
+def get_simulado_minimal_progress_ledger_apply_for_policy(
+    runtime_apply_policy_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    policy = get_simulado_runtime_apply_policy_service(request).get_runtime_apply_policy_by_id(
+        runtime_apply_policy_id,
+        user_id=user_id,
+    )
+    if policy is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado runtime apply policy not found.",
+        )
+    result = get_simulado_minimal_progress_ledger_apply_service(
+        request
+    ).get_minimal_progress_ledger_apply(
+        runtime_apply_policy_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado minimal progress ledger apply not found.",
+        )
+    return result
+
+
+@router.get("/simulado-minimal-progress-ledger-apply/{minimal_progress_ledger_apply_id}")
+def get_simulado_minimal_progress_ledger_apply_by_id(
+    minimal_progress_ledger_apply_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_minimal_progress_ledger_apply_service(
+        request
+    ).get_minimal_progress_ledger_apply_by_id(
+        minimal_progress_ledger_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado minimal progress ledger apply not found.",
         )
     return result
 

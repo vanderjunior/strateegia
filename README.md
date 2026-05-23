@@ -783,6 +783,43 @@ Trabalho futuro desta trilha:
 - Runtime Apply Policy / Feature Flag Stabilization Fixtures
 - Minimal Progress Ledger Apply Foundation
 
+## Fundacao de minimal progress ledger apply
+
+Runtime apply policies agora podem gerar um artifact separado de `minimal progress ledger apply`, sempre user-scoped, deterministico, idempotente e limitado a um ledger isolado de simulado sem propagar efeitos para o runtime pedagogico maior.
+
+Capacidades atuais desta etapa:
+
+- cria um `SimuladoMinimalProgressLedgerApply` a partir de um `SimuladoRuntimeApplyPolicy`
+- aplica apenas bounded ledger entries derivados de proposed progress updates do final event
+- persiste o apply artifact com idempotency record, rollback record e audit trail
+- aplica somente ao escopo `minimal_progress_ledger`
+- nao muta existing progress aggregates nem global runtime progress
+- nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning
+- preserva owner scope, JSON safety e no public answer key/gabarito exposure
+
+Endpoints atuais de minimal progress ledger apply:
+
+- `POST /api/simulado-runtime-apply-policy/{runtime_apply_policy_id}/minimal-progress-ledger-apply/build`
+- `GET /api/simulado-runtime-apply-policy/{runtime_apply_policy_id}/minimal-progress-ledger-apply`
+- `GET /api/simulado-minimal-progress-ledger-apply/{minimal_progress_ledger_apply_id}`
+
+Regras importantes:
+
+- esta etapa e o primeiro limited real apply step
+- o apply e isolado ao minimal progress ledger artifact
+- esta etapa requer policy gates de runtime apply satisfeitos
+- esta etapa e idempotente por `source_runtime_apply_policy_id` e idempotency key
+- esta etapa nao muta existing progress aggregates
+- esta etapa nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning
+- esta etapa nao executa commit execution nem mutation commit
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Minimal Progress Ledger Apply Stabilization Fixtures
+- Applied Event Ledger / Idempotency Foundation
+- Propagation Guardrails
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
