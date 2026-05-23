@@ -278,6 +278,15 @@ def deny_execution_decision_fixture(
     return explicit_execution_approval_source_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def deny_execution_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return deny_execution_decision_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def request_revision_decision_fixture(
     tmp_path,
     *,
@@ -285,6 +294,15 @@ def request_revision_decision_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoExplicitCommitExecutionApprovalFixture:
     return explicit_execution_approval_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def request_revision_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return request_revision_decision_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def block_execution_decision_fixture(
@@ -296,6 +314,15 @@ def block_execution_decision_fixture(
     return explicit_execution_approval_source_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def block_execution_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return block_execution_decision_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def mark_not_reviewed_decision_fixture(
     tmp_path,
     *,
@@ -303,6 +330,15 @@ def mark_not_reviewed_decision_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoExplicitCommitExecutionApprovalFixture:
     return explicit_execution_approval_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def mark_not_reviewed_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return mark_not_reviewed_decision_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def confirmation_summary_shape_fixture(
@@ -368,7 +404,34 @@ def no_runtime_mutation_fixture(
     return _wrap_fixture(_no_runtime_mutation_fixture(tmp_path, user_id=user_id, repository=repository))
 
 
+def no_commit_execution_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return explicit_execution_approval_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_application_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return explicit_execution_approval_source_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def payload_idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return approve_with_all_confirmations_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def different_payload_behavior_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
@@ -402,3 +465,12 @@ def mixed_decision_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoExplicitCommitExecutionApprovalFixture:
     return _wrap_fixture(_mixed_execution_guardrail_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def mixed_approval_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoExplicitCommitExecutionApprovalFixture:
+    return mixed_decision_fixture(tmp_path, user_id=user_id, repository=repository)
