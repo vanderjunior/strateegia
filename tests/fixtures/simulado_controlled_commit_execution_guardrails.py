@@ -177,6 +177,15 @@ def commit_transaction_not_valid_fixture(
     return transaction_plan_only_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def transaction_not_valid_for_execution_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledCommitExecutionGuardrailFixture:
+    return commit_transaction_not_valid_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def commit_execution_not_ready_fixture(
     tmp_path,
     *,
@@ -304,6 +313,15 @@ def progress_commit_checks_shape_fixture(
     return transaction_plan_only_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def progress_commit_execution_checks_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledCommitExecutionGuardrailFixture:
+    return progress_commit_checks_shape_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def surface_commit_checks_shape_fixture(
     tmp_path,
     *,
@@ -313,6 +331,15 @@ def surface_commit_checks_shape_fixture(
     return transaction_plan_only_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def surface_commit_execution_checks_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledCommitExecutionGuardrailFixture:
+    return surface_commit_checks_shape_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def rollback_execution_readiness_shape_fixture(
     tmp_path,
     *,
@@ -320,6 +347,15 @@ def rollback_execution_readiness_shape_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledCommitExecutionGuardrailFixture:
     return transaction_plan_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def rollback_readiness_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledCommitExecutionGuardrailFixture:
+    return rollback_execution_readiness_shape_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def runtime_surface_risk_summary_fixture(
@@ -341,6 +377,15 @@ def audit_requirements_shape_fixture(
 
 
 def audit_trail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledCommitExecutionGuardrailFixture:
+    return transaction_plan_only_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def execution_guardrail_mode_status_fixture(
     tmp_path,
     *,
     user_id: str = "user-a",
