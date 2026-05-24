@@ -1,11 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import type { CapabilityCard } from "@/lib/api/types";
 import { pscppProfileCards } from "@/lib/mock/mentorium-demo-data";
 
-export function PSCPPProfileCards() {
+export function PSCPPProfileCards({
+  cards = pscppProfileCards
+}: {
+  cards?: CapabilityCard[];
+}) {
   return (
     <div className="grid gap-5 md:grid-cols-3">
-      {pscppProfileCards.map((card) => (
+      {cards.map((card) => (
         <Card key={card.title}>
           <Badge>{card.status.replaceAll("_", " ")}</Badge>
           <CardTitle className="mt-5">{card.title}</CardTitle>

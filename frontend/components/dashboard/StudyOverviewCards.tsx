@@ -1,11 +1,16 @@
 import { Card, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import type { StudyOverviewCard } from "@/lib/api/types";
 import { studyOverviewCards } from "@/lib/mock/mentorium-demo-data";
 
-export function StudyOverviewCards() {
+export function StudyOverviewCards({
+  cards = studyOverviewCards
+}: {
+  cards?: StudyOverviewCard[];
+}) {
   return (
     <div className="grid gap-5 xl:grid-cols-3">
-      {studyOverviewCards.map((card) => (
+      {cards.map((card) => (
         <Card key={card.title}>
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
             estudo

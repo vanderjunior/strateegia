@@ -39,7 +39,7 @@ export function AppShell({ children }: PropsWithChildren) {
               </div>
               <h1 className="mt-2 font-serif text-3xl text-ink">Painel de capacidades auditadas</h1>
             </div>
-            <Badge>mock state</Badge>
+            <Badge>read-only beta</Badge>
           </header>
           <main className="px-6 py-8 lg:px-10">{children}</main>
         </div>

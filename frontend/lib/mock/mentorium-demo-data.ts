@@ -1,10 +1,4 @@
-export type CapabilityStatus =
-  | "implemented_and_tested"
-  | "implemented_but_needs_manual_validation"
-  | "partially_implemented"
-  | "foundation_only"
-  | "metadata_only"
-  | "not_implemented";
+import type { CapabilityCard, CapabilityStatus, StudyOverviewCard } from "@/lib/api/types";
 
 export const landingPipeline = [
   "Upload de materiais",
@@ -87,7 +81,7 @@ export const dashboardSidebar = [
   "Runtime"
 ] as const;
 
-export const studyOverviewCards = [
+export const studyOverviewCards: StudyOverviewCard[] = [
   {
     title: "Bloco dominante",
     value: "Manobrabilidade e rebocadores",
@@ -108,7 +102,7 @@ export const studyOverviewCards = [
   }
 ] as const;
 
-export const documentStatusCards = [
+export const documentStatusCards: CapabilityCard[] = [
   {
     title: "PDF textual",
     status: "implemented_and_tested" as CapabilityStatus,
@@ -135,7 +129,7 @@ export const documentStatusCards = [
   }
 ] as const;
 
-export const runtimeStatusCards = [
+export const runtimeStatusCards: CapabilityCard[] = [
   {
     title: "Tentativa / correcao / score",
     status: "implemented_and_tested" as CapabilityStatus,
@@ -174,24 +168,24 @@ export const runtimeStatusCards = [
   }
 ] as const;
 
-export const pscppProfileCards = [
+export const pscppProfileCards: CapabilityCard[] = [
   {
     title: "Question style profile",
+    status: "implemented_and_tested" as CapabilityStatus,
+    summary: "Perfil PSCPP/Praticagem com ancora bibliografica, formato A-E e arquetipos tecnicos.",
+    detail: "Base testada para orientar blueprint e draft metadata com regras de seguranca."
+  },
+  {
+    title: "Question generation integration",
     status: "metadata_only" as CapabilityStatus,
-    summary: "PSCPP/Praticagem com ancora bibliografica, A-E e arquetipos tecnicos.",
-    detail: "Integrado a simulado, fixation, review e summary metadata."
+    summary: "Integracao de metadata e validacao para simulado, fixation, review e summary.",
+    detail: "Source-grounding, arquetipos e human review seguem sem gerar respostas finais sensiveis."
   },
   {
     title: "Study cycle guide",
-    status: "metadata_only" as CapabilityStatus,
-    summary: "Rotacao de 12 sessoes, fases de estudo e guidance proporcional.",
-    detail: "Sem agenda forcada e com override do usuario."
-  },
-  {
-    title: "Tema dominante",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Manobrabilidade, COLREG, navegacao restrita, Arte Naval e NORMAM.",
-    detail: "Tudo com linguagem tecnico-operacional maritima."
+    summary: "Rotacao de 12 sessoes, fases de estudo e guidance proporcional para PSCPP.",
+    detail: "Guidance-only, sem agenda forcada e com override do usuario."
   }
 ] as const;
 

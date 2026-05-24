@@ -1,11 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import type { CapabilityCard } from "@/lib/api/types";
 import { documentStatusCards } from "@/lib/mock/mentorium-demo-data";
 
-export function DocumentStatusCards() {
+export function DocumentStatusCards({
+  cards = documentStatusCards
+}: {
+  cards?: CapabilityCard[];
+}) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
-      {documentStatusCards.map((card) => (
+      {cards.map((card) => (
         <Card key={card.title}>
           <Badge>{card.status.replaceAll("_", " ")}</Badge>
           <CardTitle className="mt-5">{card.title}</CardTitle>
