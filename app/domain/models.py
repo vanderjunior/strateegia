@@ -7214,6 +7214,227 @@ class SimuladoPropagationGuardrail(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class ControlledPropagationApplySummary(BaseModel):
+    summary_id: str
+    source_guardrail_present: bool = True
+    source_guardrail_ready_for_future_review: bool = False
+    source_candidate_target_count: int = 0
+    controlled_entry_count: int = 0
+    controlled_propagation_ledger_recorded: bool = False
+    controlled_propagation_successful: bool = False
+    direct_runtime_propagation_performed: bool = False
+    ranking_update_performed: bool = False
+    retention_update_performed: bool = False
+    scheduler_update_performed: bool = False
+    study_cycle_update_performed: bool = False
+    curriculum_graph_update_performed: bool = False
+    adaptive_tuning_performed: bool = False
+    idempotency_satisfied: bool = False
+    rollback_reference_created: bool = False
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationSourceGuardrailSummary(BaseModel):
+    summary_id: str
+    guardrail_mode: str = "propagation_guardrail_only"
+    guardrail_status: str = "propagation_blocked"
+    readiness_state: str = "blocked_by_source_ledger_not_recorded"
+    propagation_ready_for_future_review: bool = False
+    propagation_allowed_now: bool = False
+    propagation_applied: bool = False
+    candidate_ranking_count: int = 0
+    candidate_retention_count: int = 0
+    candidate_scheduler_count: int = 0
+    candidate_study_cycle_count: int = 0
+    candidate_curriculum_graph_count: int = 0
+    candidate_adaptive_tuning_count: int = 0
+    no_propagation: bool = True
+    no_runtime_updates: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationEntry(BaseModel):
+    entry_id: str
+    user_id: str | None = None
+    source_propagation_guardrail_id: str
+    source_candidate_target_id: str
+    source_event_record_id: str
+    propagation_surface: str
+    propagation_kind: str = "unknown"
+    target_type: str = "unknown"
+    target_reference: str | None = None
+    bounded_propagation_summary: dict[str, object] = Field(default_factory=dict)
+    recorded: bool = True
+    applied_to_controlled_ledger: bool = True
+    applied_to_runtime_surface: bool = False
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationIdempotencyRecord(BaseModel):
+    idempotency_key_required: bool = True
+    idempotency_key_present: bool = False
+    idempotency_key_valid: bool = False
+    idempotency_key: str | None = None
+    source_propagation_guardrail_id: str
+    duplicate_controlled_apply_detected: bool = False
+    previous_apply_id: str | None = None
+    replay_returns_existing_apply: bool = True
+    satisfied: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationRollbackRecord(BaseModel):
+    rollback_required: bool = True
+    rollback_reference_created: bool = False
+    rollback_reference_preserved: bool = False
+    rollback_scope: str = "controlled_propagation_ledger"
+    rollback_executed: bool = False
+    rollback_summary: dict[str, object] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationApplyAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationApplyBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationApplyValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class ControlledPropagationApplyWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoControlledPropagationApply(BaseModel):
+    controlled_propagation_apply_id: str
+    user_id: str | None = None
+    source_propagation_guardrail_id: str
+    source_applied_event_ledger_id: str
+    source_minimal_progress_ledger_apply_id: str
+    source_runtime_apply_policy_id: str
+    source_final_event_id: str
+    source_controlled_execution_id: str
+    source_execution_plan_id: str
+    source_execution_approval_id: str
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_integrated_result_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    apply_mode: str = "controlled_propagation_apply"
+    apply_status: str = "controlled_propagation_blocked"
+    readiness_state: str = "blocked_by_guardrail_not_ready_for_future_review"
+    apply_summary: ControlledPropagationApplySummary
+    source_guardrail_summary: ControlledPropagationSourceGuardrailSummary
+    controlled_propagation_entries: list[ControlledPropagationEntry] = Field(
+        default_factory=list
+    )
+    idempotency_record: ControlledPropagationIdempotencyRecord
+    rollback_record: ControlledPropagationRollbackRecord
+    audit_trail: list[ControlledPropagationApplyAuditEntry] = Field(default_factory=list)
+    blockers: list[ControlledPropagationApplyBlocker] = Field(default_factory=list)
+    validation_findings: list[ControlledPropagationApplyValidationFinding] = Field(
+        default_factory=list
+    )
+    warnings: list[ControlledPropagationApplyWarning] = Field(default_factory=list)
+    controlled_propagation_apply_created: bool = True
+    controlled_propagation_allowed: bool = False
+    controlled_propagation_applied: bool = False
+    controlled_propagation_ledger_recorded: bool = False
+    controlled_propagation_entry_created: bool = False
+    controlled_propagation_entry_count: int = 0
+    source_guardrail_present: bool = True
+    source_guardrail_ready_for_future_review: bool = False
+    source_propagation_allowed_now: bool = False
+    source_propagation_applied: bool = False
+    source_candidate_target_count: int = 0
+    idempotency_key_required: bool = True
+    idempotency_key_present: bool = False
+    idempotency_key_valid: bool = False
+    idempotency_key: str | None = None
+    idempotency_key_recorded: bool = False
+    duplicate_controlled_apply_detected: bool = False
+    replay_returns_existing_apply: bool = True
+    rollback_required: bool = True
+    rollback_reference_created: bool = False
+    rollback_reference_preserved: bool = False
+    rollback_scope: str = "controlled_propagation_ledger"
+    rollback_executed: bool = False
+    final_event_applied_globally: bool = False
+    existing_progress_aggregate_mutated: bool = False
+    global_progress_mutation_applied: bool = False
+    ranking_propagation_recorded: bool = False
+    retention_propagation_recorded: bool = False
+    scheduler_propagation_recorded: bool = False
+    study_cycle_propagation_recorded: bool = False
+    curriculum_graph_propagation_recorded: bool = False
+    adaptive_tuning_propagation_recorded: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    commit_executed: bool = False
+    mutation_committed: bool = False
+    no_direct_runtime_propagation: bool = True
+    no_new_progress_apply: bool = True
+    no_existing_progress_aggregate_mutation: bool = True
+    no_global_progress_mutation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_commit_execution: bool = True
+    no_mutation_commit: bool = True
+    no_runtime_application_beyond_minimal_ledger: bool = True
+    no_public_answer_key_exposure: bool = True
+    no_public_gabarito_exposure: bool = True
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

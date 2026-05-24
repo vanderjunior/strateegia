@@ -890,6 +890,42 @@ Trabalho futuro desta trilha:
 - Propagation Guardrail Stabilization Fixtures
 - Controlled Propagation Apply Foundation
 
+## Fundacao de controlled propagation apply
+
+Propagation guardrails agora podem gerar um artifact separado de `controlled propagation apply`, sempre user-scoped, deterministico, idempotente e limitado a registrar entradas de propagacao em um ledger/audit artifact isolado sem tocar nas superficies runtime downstream.
+
+Capacidades atuais desta etapa:
+
+- cria um `SimuladoControlledPropagationApply` a partir de um `SimuladoPropagationGuardrail`
+- registra controlled propagation entries bounded e source-linked para ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning
+- persiste apply summary, source guardrail summary, idempotency record, rollback record e audit trail
+- aplica apenas ao controlled propagation ledger isolado
+- nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning diretamente
+- nao cria review schedule entries
+- nao cria novos progress applies
+- nao muta existing progress aggregates nem global runtime progress
+
+Endpoints atuais de controlled propagation apply:
+
+- `POST /api/simulado-propagation-guardrail/{propagation_guardrail_id}/controlled-propagation-apply/build`
+- `GET /api/simulado-propagation-guardrail/{propagation_guardrail_id}/controlled-propagation-apply`
+- `GET /api/simulado-controlled-propagation-apply/{controlled_propagation_apply_id}`
+
+Regras importantes:
+
+- esta etapa e controlled propagation ledger/apply artifact only, nao direct runtime propagation
+- toda controlled propagation entry permanece `applied_to_controlled_ledger = true` e `applied_to_runtime_surface = false`
+- esta etapa requer um source propagation guardrail seguro e ready for future review
+- esta etapa e idempotente por `source_propagation_guardrail_id`
+- esta etapa nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning
+- esta etapa nao muta existing progress aggregates
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Controlled Propagation Apply Stabilization Fixtures
+- futuramente, apenas se aprovado, surface-specific real propagation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.

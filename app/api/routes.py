@@ -105,6 +105,9 @@ from app.services.simulado_applied_event_ledger import (
 from app.services.simulado_propagation_guardrail import (
     SimuladoPropagationGuardrailService,
 )
+from app.services.simulado_controlled_propagation_apply import (
+    SimuladoControlledPropagationApplyService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -351,6 +354,12 @@ def get_simulado_propagation_guardrail_service(
     request: Request,
 ) -> SimuladoPropagationGuardrailService:
     return SimuladoPropagationGuardrailService(get_repository(request))
+
+
+def get_simulado_controlled_propagation_apply_service(
+    request: Request,
+) -> SimuladoControlledPropagationApplyService:
+    return SimuladoControlledPropagationApplyService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2812,6 +2821,92 @@ def get_simulado_propagation_guardrail_by_id(
         raise HTTPException(
             status_code=404,
             detail="Simulado propagation guardrail not found.",
+        )
+    return result
+
+
+@router.post(
+    "/simulado-propagation-guardrail/{propagation_guardrail_id}/controlled-propagation-apply/build"
+)
+def build_simulado_controlled_propagation_apply_for_guardrail(
+    propagation_guardrail_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    source_guardrail = get_simulado_propagation_guardrail_service(
+        request
+    ).get_propagation_guardrail_by_id(
+        propagation_guardrail_id,
+        user_id=user_id,
+    )
+    if source_guardrail is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado propagation guardrail not found.",
+        )
+    result = get_simulado_controlled_propagation_apply_service(
+        request
+    ).build_controlled_propagation_apply(
+        propagation_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled propagation apply could not be built.",
+        )
+    return result
+
+
+@router.get(
+    "/simulado-propagation-guardrail/{propagation_guardrail_id}/controlled-propagation-apply"
+)
+def get_simulado_controlled_propagation_apply_for_guardrail(
+    propagation_guardrail_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    source_guardrail = get_simulado_propagation_guardrail_service(
+        request
+    ).get_propagation_guardrail_by_id(
+        propagation_guardrail_id,
+        user_id=user_id,
+    )
+    if source_guardrail is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado propagation guardrail not found.",
+        )
+    result = get_simulado_controlled_propagation_apply_service(
+        request
+    ).get_controlled_propagation_apply(
+        propagation_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled propagation apply not found.",
+        )
+    return result
+
+
+@router.get("/simulado-controlled-propagation-apply/{controlled_propagation_apply_id}")
+def get_simulado_controlled_propagation_apply_by_id(
+    controlled_propagation_apply_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_controlled_propagation_apply_service(
+        request
+    ).get_controlled_propagation_apply_by_id(
+        controlled_propagation_apply_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado controlled propagation apply not found.",
         )
     return result
 

@@ -64,6 +64,15 @@ from app.domain.models import (
     CorrectionShellBlocker,
     CorrectionShellValidationFinding,
     CorrectionShellWarning,
+    ControlledPropagationApplyAuditEntry,
+    ControlledPropagationApplyBlocker,
+    ControlledPropagationApplySummary,
+    ControlledPropagationApplyValidationFinding,
+    ControlledPropagationApplyWarning,
+    ControlledPropagationEntry,
+    ControlledPropagationIdempotencyRecord,
+    ControlledPropagationRollbackRecord,
+    ControlledPropagationSourceGuardrailSummary,
     FinalizationBlocker,
     FinalizationValidationFinding,
     FinalizationWarning,
@@ -194,6 +203,7 @@ from app.domain.models import (
     SimuladoExplicitRuntimeMutationCommit,
     SimuladoFinalPedagogicalUpdateEvent,
     SimuladoAppliedEventLedger,
+    SimuladoControlledPropagationApply,
     SimuladoMinimalProgressLedgerApply,
     SimuladoPropagationGuardrail,
     SimuladoRuntimeApplyPolicy,
@@ -1236,6 +1246,40 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_controlled_propagation_apply(
+        self,
+        result: SimuladoControlledPropagationApply,
+    ) -> None:
+        self._repository.save_simulado_controlled_propagation_apply(
+            result,
+            user_id=self.user_id,
+        )
+
+    def get_simulado_controlled_propagation_apply(
+        self,
+        source_propagation_guardrail_id: str,
+    ) -> SimuladoControlledPropagationApply | None:
+        return self._repository.get_simulado_controlled_propagation_apply(
+            source_propagation_guardrail_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_controlled_propagation_applies(
+        self,
+    ) -> list[SimuladoControlledPropagationApply]:
+        return self._repository.list_user_simulado_controlled_propagation_applies(
+            user_id=self.user_id,
+        )
+
+    def get_simulado_controlled_propagation_apply_by_id(
+        self,
+        controlled_propagation_apply_id: str,
+    ) -> SimuladoControlledPropagationApply | None:
+        return self._repository.get_simulado_controlled_propagation_apply_by_id(
+            controlled_propagation_apply_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -1395,6 +1439,9 @@ class JsonStudyRepository:
                 "results": {},
             },
             "simulado_propagation_guardrail": {
+                "results": {},
+            },
+            "simulado_controlled_propagation_apply": {
                 "results": {},
             },
         }
@@ -1573,6 +1620,11 @@ class JsonStudyRepository:
             user_state["simulado_propagation_guardrail"] = (
                 self._normalize_simulado_propagation_guardrail_payload(
                     user_state.get("simulado_propagation_guardrail")
+                )
+            )
+            user_state["simulado_controlled_propagation_apply"] = (
+                self._normalize_simulado_controlled_propagation_apply_payload(
+                    user_state.get("simulado_controlled_propagation_apply")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -2011,6 +2063,19 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_propagation_guardrail_payload(
+        self,
+        payload: object,
+    ) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_controlled_propagation_apply_payload(
         self,
         payload: object,
     ) -> dict[str, object]:
@@ -2656,6 +2721,17 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_propagation_guardrail_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_propagation_guardrail"]
+
+    def _simulado_controlled_propagation_apply_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_controlled_propagation_apply_payload({})
+        return self._ensure_user_state(payload, user_id)[
+            "simulado_controlled_propagation_apply"
+        ]
 
     def save_document_pipeline_state(
         self,
@@ -4969,6 +5045,63 @@ class JsonStudyRepository:
     ) -> SimuladoPropagationGuardrail | None:
         for item in self.list_user_simulado_propagation_guardrails(user_id=user_id):
             if item.propagation_guardrail_id == propagation_guardrail_id:
+                return item
+        return None
+
+    def save_simulado_controlled_propagation_apply(
+        self,
+        result: SimuladoControlledPropagationApply,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado controlled propagation apply requires user ownership.")
+        payload = self._read()
+        container = self._simulado_controlled_propagation_apply_container(payload, user_id)
+        container["results"][result.source_propagation_guardrail_id] = result.model_dump(
+            mode="json"
+        )
+        self._write(payload)
+
+    def get_simulado_controlled_propagation_apply(
+        self,
+        source_propagation_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledPropagationApply | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_controlled_propagation_apply_container(payload, user_id)[
+            "results"
+        ].get(source_propagation_guardrail_id)
+        if raw is None:
+            return None
+        return SimuladoControlledPropagationApply.model_validate(raw)
+
+    def list_user_simulado_controlled_propagation_applies(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoControlledPropagationApply]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_controlled_propagation_apply_container(payload, user_id)[
+            "results"
+        ].values()
+        items = [SimuladoControlledPropagationApply.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_propagation_guardrail_id)
+        return items
+
+    def get_simulado_controlled_propagation_apply_by_id(
+        self,
+        controlled_propagation_apply_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoControlledPropagationApply | None:
+        for item in self.list_user_simulado_controlled_propagation_applies(user_id=user_id):
+            if item.controlled_propagation_apply_id == controlled_propagation_apply_id:
                 return item
         return None
 
