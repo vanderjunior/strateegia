@@ -131,6 +131,24 @@ def _mark_unsafe_public_exposure(
     return _persist_guardrail(fixture)
 
 
+def _mark_idempotency_requirement_unsatisfied(
+    fixture: SimuladoControlledPropagationApplyFixture,
+) -> SimuladoControlledPropagationApplyFixture:
+    guardrail = fixture.propagation_guardrail
+    assert guardrail is not None
+    guardrail.metadata["controlled_propagation_apply_idempotency_unsatisfied"] = True
+    return _persist_guardrail(fixture)
+
+
+def _mark_rollback_requirement_unsatisfied(
+    fixture: SimuladoControlledPropagationApplyFixture,
+) -> SimuladoControlledPropagationApplyFixture:
+    guardrail = fixture.propagation_guardrail
+    assert guardrail is not None
+    guardrail.metadata["controlled_propagation_apply_rollback_unsatisfied"] = True
+    return _persist_guardrail(fixture)
+
+
 def build_controlled_propagation_apply(
     fixture: SimuladoControlledPropagationApplyFixture,
 ) -> SimuladoControlledPropagationApply | None:
@@ -202,6 +220,32 @@ def source_guardrail_unsafe_state_fixture(
     )
 
 
+def source_guardrail_state_unsafe_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return source_guardrail_unsafe_state_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def source_guardrail_not_ready_for_future_review_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return source_guardrail_not_ready_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def no_candidate_targets_fixture(
     tmp_path,
     *,
@@ -215,6 +259,19 @@ def no_candidate_targets_fixture(
     )
 
 
+def source_guardrail_no_candidate_targets_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_candidate_targets_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def unsafe_public_exposure_fixture(
     tmp_path,
     *,
@@ -225,6 +282,19 @@ def unsafe_public_exposure_fixture(
         _wrap_fixture(
             _unsafe_public_exposure_fixture(tmp_path, user_id=user_id, repository=repository)
         )
+    )
+
+
+def source_guardrail_public_exposure_forbidden_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return unsafe_public_exposure_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
     )
 
 
@@ -257,6 +327,37 @@ def controlled_entry_shape_fixture(
     return safe_source_guardrail_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def controlled_propagation_entries_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return controlled_entry_shape_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def idempotency_record_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return safe_source_guardrail_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def replay_behavior_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return idempotency_replay_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def rollback_record_shape_fixture(
     tmp_path,
     *,
@@ -284,6 +385,32 @@ def no_direct_runtime_propagation_fixture(
     return safe_source_guardrail_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
+def ledger_only_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_direct_runtime_propagation_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def no_runtime_surface_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_direct_runtime_propagation_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def no_runtime_update_fixture(
     tmp_path,
     *,
@@ -291,6 +418,86 @@ def no_runtime_update_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledPropagationApplyFixture:
     return safe_source_guardrail_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_ranking_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_runtime_update_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_retention_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_runtime_update_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_scheduler_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_runtime_update_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_study_cycle_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_runtime_update_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_curriculum_graph_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_runtime_update_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_adaptive_tuning_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_runtime_update_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_new_progress_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_direct_runtime_propagation_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
+def no_global_progress_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return no_direct_runtime_propagation_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
 
 
 def no_leakage_fixture(
@@ -309,6 +516,32 @@ def idempotency_replay_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoControlledPropagationApplyFixture:
     return safe_source_guardrail_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def idempotency_requirement_unsatisfied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return _mark_idempotency_requirement_unsatisfied(
+        _wrap_fixture(
+            _successful_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+        )
+    )
+
+
+def rollback_requirement_unsatisfied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoControlledPropagationApplyFixture:
+    return _mark_rollback_requirement_unsatisfied(
+        _wrap_fixture(
+            _successful_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+        )
+    )
 
 
 def user_scope_fixture(
@@ -352,6 +585,15 @@ def mixed_apply_fixture(
             repository=repository,
         ),
     }
+
+
+def mixed_controlled_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> dict[str, SimuladoControlledPropagationApplyFixture]:
+    return mixed_apply_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def capture_controlled_propagation_apply_source_snapshot(
@@ -444,18 +686,50 @@ def stabilization_fixture_builders() -> dict[str, Callable[..., object]]:
         "missing_propagation_guardrail_fixture": missing_propagation_guardrail_fixture,
         "source_guardrail_blocked_fixture": source_guardrail_blocked_fixture,
         "source_guardrail_not_ready_fixture": source_guardrail_not_ready_fixture,
+        "source_guardrail_state_unsafe_fixture": source_guardrail_state_unsafe_fixture,
+        "source_guardrail_not_ready_for_future_review_fixture": (
+            source_guardrail_not_ready_for_future_review_fixture
+        ),
+        "source_guardrail_no_candidate_targets_fixture": (
+            source_guardrail_no_candidate_targets_fixture
+        ),
+        "source_guardrail_public_exposure_forbidden_fixture": (
+            source_guardrail_public_exposure_forbidden_fixture
+        ),
         "source_guardrail_unsafe_state_fixture": source_guardrail_unsafe_state_fixture,
         "no_candidate_targets_fixture": no_candidate_targets_fixture,
+        "idempotency_requirement_unsatisfied_fixture": (
+            idempotency_requirement_unsatisfied_fixture
+        ),
+        "rollback_requirement_unsatisfied_fixture": (
+            rollback_requirement_unsatisfied_fixture
+        ),
         "unsafe_public_exposure_fixture": unsafe_public_exposure_fixture,
         "safe_source_guardrail_fixture": safe_source_guardrail_fixture,
         "controlled_entry_shape_fixture": controlled_entry_shape_fixture,
+        "controlled_propagation_entries_shape_fixture": (
+            controlled_propagation_entries_shape_fixture
+        ),
+        "idempotency_record_shape_fixture": idempotency_record_shape_fixture,
+        "replay_behavior_fixture": replay_behavior_fixture,
         "rollback_record_shape_fixture": rollback_record_shape_fixture,
         "audit_trail_shape_fixture": audit_trail_shape_fixture,
+        "ledger_only_apply_fixture": ledger_only_apply_fixture,
         "no_direct_runtime_propagation_fixture": no_direct_runtime_propagation_fixture,
+        "no_runtime_surface_apply_fixture": no_runtime_surface_apply_fixture,
         "no_runtime_update_fixture": no_runtime_update_fixture,
+        "no_ranking_update_fixture": no_ranking_update_fixture,
+        "no_retention_update_fixture": no_retention_update_fixture,
+        "no_scheduler_update_fixture": no_scheduler_update_fixture,
+        "no_study_cycle_update_fixture": no_study_cycle_update_fixture,
+        "no_curriculum_graph_update_fixture": no_curriculum_graph_update_fixture,
+        "no_adaptive_tuning_update_fixture": no_adaptive_tuning_update_fixture,
+        "no_new_progress_apply_fixture": no_new_progress_apply_fixture,
+        "no_global_progress_mutation_fixture": no_global_progress_mutation_fixture,
         "no_leakage_fixture": no_leakage_fixture,
         "idempotency_replay_fixture": idempotency_replay_fixture,
         "user_scope_fixture": user_scope_fixture,
         "api_readonly_fixture": api_readonly_fixture,
         "mixed_apply_fixture": mixed_apply_fixture,
+        "mixed_controlled_apply_fixture": mixed_controlled_apply_fixture,
     }

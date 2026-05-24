@@ -127,13 +127,13 @@ class SimuladoControlledPropagationApplyService:
             source_candidate_target_count=candidate_count,
             idempotency_key_required=True,
             idempotency_key_present=bool(idempotency_key),
-            idempotency_key_valid=bool(idempotency_key),
+            idempotency_key_valid=self._idempotency_satisfied(source_guardrail),
             idempotency_key=idempotency_key,
-            idempotency_key_recorded=bool(idempotency_key),
+            idempotency_key_recorded=self._idempotency_satisfied(source_guardrail),
             duplicate_controlled_apply_detected=False,
             replay_returns_existing_apply=True,
             rollback_required=True,
-            rollback_reference_created=ready,
+            rollback_reference_created=ready and self._rollback_satisfied(source_guardrail),
             rollback_reference_preserved=False,
             rollback_scope="controlled_propagation_ledger",
             rollback_executed=False,
@@ -242,8 +242,10 @@ class SimuladoControlledPropagationApplyService:
             return "blocked_by_guardrail_not_ready_for_future_review"
         if self._candidate_count(source_guardrail) <= 0:
             return "blocked_by_no_candidate_propagation_targets"
-        if not self._idempotency_key(source_guardrail):
+        if not self._idempotency_satisfied(source_guardrail):
             return "blocked_by_idempotency_requirement_unsatisfied"
+        if not self._rollback_satisfied(source_guardrail):
+            return "blocked_by_rollback_requirement_unsatisfied"
         return "controlled_propagation_ready"
 
     def _idempotency_key(
@@ -267,6 +269,28 @@ class SimuladoControlledPropagationApplyService:
                 source_guardrail.candidate_study_cycle_targets,
                 source_guardrail.candidate_curriculum_graph_targets,
                 source_guardrail.candidate_adaptive_tuning_targets,
+            )
+        )
+
+    def _idempotency_satisfied(
+        self,
+        source_guardrail: SimuladoPropagationGuardrail,
+    ) -> bool:
+        if bool(
+            source_guardrail.metadata.get(
+                "controlled_propagation_apply_idempotency_unsatisfied"
+            )
+        ):
+            return False
+        return bool(self._idempotency_key(source_guardrail))
+
+    def _rollback_satisfied(
+        self,
+        source_guardrail: SimuladoPropagationGuardrail,
+    ) -> bool:
+        return not bool(
+            source_guardrail.metadata.get(
+                "controlled_propagation_apply_rollback_unsatisfied"
             )
         )
 
@@ -299,8 +323,8 @@ class SimuladoControlledPropagationApplyService:
             study_cycle_update_performed=False,
             curriculum_graph_update_performed=False,
             adaptive_tuning_performed=False,
-            idempotency_satisfied=bool(idempotency_key),
-            rollback_reference_created=ready,
+            idempotency_satisfied=self._idempotency_satisfied(source_guardrail),
+            rollback_reference_created=ready and self._rollback_satisfied(source_guardrail),
             unsafe_public_answer_key_exposure_detected=(
                 source_guardrail.answer_key_publicly_exposed
             ),
@@ -416,13 +440,13 @@ class SimuladoControlledPropagationApplyService:
         return ControlledPropagationIdempotencyRecord(
             idempotency_key_required=True,
             idempotency_key_present=bool(idempotency_key),
-            idempotency_key_valid=bool(idempotency_key),
+            idempotency_key_valid=self._idempotency_satisfied(source_guardrail),
             idempotency_key=idempotency_key,
             source_propagation_guardrail_id=source_guardrail.propagation_guardrail_id,
             duplicate_controlled_apply_detected=False,
             previous_apply_id=None,
             replay_returns_existing_apply=True,
-            satisfied=bool(idempotency_key),
+            satisfied=self._idempotency_satisfied(source_guardrail),
             metadata={},
         )
 
@@ -433,7 +457,7 @@ class SimuladoControlledPropagationApplyService:
     ) -> ControlledPropagationRollbackRecord:
         return ControlledPropagationRollbackRecord(
             rollback_required=True,
-            rollback_reference_created=ready,
+            rollback_reference_created=ready and self._rollback_satisfied(source_guardrail),
             rollback_reference_preserved=False,
             rollback_scope="controlled_propagation_ledger",
             rollback_executed=False,
@@ -468,6 +492,30 @@ class SimuladoControlledPropagationApplyService:
                 "Controlled propagation entries recorded in isolated ledger only."
                 if ready
                 else "Controlled propagation apply blocked.",
+            ),
+            (
+                "controlled_propagation_entry_recorded"
+                if ready
+                else "controlled_propagation_entry_not_recorded",
+                "Controlled propagation entries were recorded to the isolated ledger."
+                if ready
+                else "No controlled propagation entries were recorded.",
+            ),
+            (
+                "idempotency_key_recorded"
+                if self._idempotency_satisfied(source_guardrail)
+                else "idempotency_required",
+                "Controlled propagation idempotency key recorded."
+                if self._idempotency_satisfied(source_guardrail)
+                else "Controlled propagation idempotency requirement remains unsatisfied.",
+            ),
+            (
+                "rollback_reference_created"
+                if ready and self._rollback_satisfied(source_guardrail)
+                else "rollback_required",
+                "Controlled propagation rollback reference created."
+                if ready and self._rollback_satisfied(source_guardrail)
+                else "Controlled propagation rollback requirement remains unsatisfied.",
             ),
             (
                 "controlled_propagation_not_applied_to_runtime",
@@ -527,6 +575,9 @@ class SimuladoControlledPropagationApplyService:
             ),
             "blocked_by_idempotency_requirement_unsatisfied": (
                 "Controlled propagation idempotency requirement is unsatisfied."
+            ),
+            "blocked_by_rollback_requirement_unsatisfied": (
+                "Controlled propagation rollback requirement is unsatisfied."
             ),
             "blocked_by_public_answer_key_exposure_forbidden": (
                 "Public answer key or gabarito exposure forbids controlled propagation."
