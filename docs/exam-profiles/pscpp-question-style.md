@@ -68,3 +68,4 @@
 - Scoring and distractor hints stay metadata-only and deterministic
 - Answer-key handling remains human-review-only
 - `PSCPP/2012 Prova Rosa` remains historical style evidence only, never current edital scope
+- Related study guidance lives in `pscpp-study-cycle-profile.md`
