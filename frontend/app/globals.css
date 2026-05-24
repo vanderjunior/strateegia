@@ -13,6 +13,10 @@
   --color-gold-2: #dfc08a;
   --color-silver: #a8b8c4;
   --color-text-primary: #e8eef2;
+  --color-text-muted: rgba(232, 238, 242, 0.75);
+  --color-text-soft: rgba(232, 238, 242, 0.45);
+  --color-line: rgba(168, 184, 196, 0.1);
+  --color-line-strong: rgba(168, 184, 196, 0.18);
   --font-serif: "Cormorant";
   --font-sans: "Geist";
   --font-mono: "JetBrains Mono";
@@ -37,6 +41,17 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(168, 184, 196, 0.1) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at top, black 0%, transparent 78%);
+  opacity: 0.22;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -44,4 +59,73 @@ a {
 
 button {
   font: inherit;
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-silver);
+}
+
+.section-kicker::before {
+  content: "";
+  width: 1.1rem;
+  height: 1px;
+  background: rgba(168, 184, 196, 0.5);
+}
+
+.ghost-stroke {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(232, 238, 242, 0.16);
+}
+
+.naval-window {
+  overflow: hidden;
+  border: 1px solid rgba(168, 184, 196, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(15, 30, 42, 0.98) 0%, rgba(10, 21, 32, 0.98) 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.04),
+    0 34px 90px rgba(8, 16, 24, 0.6),
+    0 0 54px rgba(201, 169, 110, 0.05);
+}
+
+.naval-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(168, 184, 196, 0.1);
+  background: rgba(10, 21, 32, 0.96);
+}
+
+.naval-window-dot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+}
+
+.window-url {
+  flex: 1;
+  margin-inline: 0.85rem;
+  border: 1px solid rgba(168, 184, 196, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.28rem 0.8rem;
+  text-align: center;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 242, 0.34);
+}
+
+.glass-gold {
+  background: rgba(201, 169, 110, 0.1);
+  border: 1px solid rgba(201, 169, 110, 0.18);
 }

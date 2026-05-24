@@ -17,18 +17,24 @@ export function DashboardPreview() {
         transition={{ duration: 0.5 }}
       >
         <div className="mb-8">
-          <div className="font-mono text-[11px] uppercase tracking-[0.26em] text-silver">
-            preview do produto
-          </div>
+          <div className="section-kicker">preview do produto</div>
           <h2 className="mt-3 font-serif text-4xl text-ink">
             Shell editorial para uma operacao ainda em beta fechado
           </h2>
         </div>
-        <div className="space-y-5 rounded-[36px] border border-[rgba(201,169,110,0.18)] bg-[rgba(10,21,32,0.86)] p-5 shadow-shell">
-          <StudyOverviewCards />
-          <DocumentStatusCards />
-          <RuntimeStatusCards />
-          <PSCPPProfileCards />
+        <div className="naval-window">
+          <div className="naval-window-bar">
+            <span className="naval-window-dot bg-[#e17d69]" />
+            <span className="naval-window-dot bg-[#d6c477]" />
+            <span className="naval-window-dot bg-[#8fc9a9]" />
+            <div className="window-url">mentorium / dashboard preview</div>
+          </div>
+          <div className="space-y-5 bg-[rgba(10,21,32,0.86)] p-5">
+            <StudyOverviewCards />
+            <DocumentStatusCards />
+            <RuntimeStatusCards />
+            <PSCPPProfileCards />
+          </div>
         </div>
       </motion.div>
     </section>

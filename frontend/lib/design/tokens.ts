@@ -16,6 +16,9 @@ export const mentoriumTokens = {
     textSoft: "rgba(232,238,242,0.68)",
     lineSubtle: "rgba(168,184,196,0.14)",
     lineGold: "rgba(201,169,110,0.24)",
+    lineStrong: "rgba(168,184,196,0.18)",
+    panel: "rgba(10,21,32,0.84)",
+    panelSoft: "rgba(21,39,56,0.92)",
     success: "#7ec9a2",
     warning: "#dfc08a",
     caution: "#d39a82"
@@ -23,7 +26,9 @@ export const mentoriumTokens = {
   gradients: {
     shell: "linear-gradient(180deg, rgba(26,47,63,0.98) 0%, rgba(10,21,32,1) 100%)",
     hero: "linear-gradient(135deg, rgba(21,39,56,0.96) 0%, rgba(10,21,32,1) 100%)",
-    goldGlow: "radial-gradient(circle, rgba(201,169,110,0.24) 0%, rgba(201,169,110,0) 70%)"
+    goldGlow: "radial-gradient(circle, rgba(201,169,110,0.24) 0%, rgba(201,169,110,0) 70%)",
+    frame: "linear-gradient(180deg, rgba(15,30,42,0.98) 0%, rgba(10,21,32,0.98) 100%)",
+    mist: "radial-gradient(circle at top, rgba(42,74,97,0.34), transparent 38%), radial-gradient(circle at right top, rgba(201,169,110,0.12), transparent 24%)"
   },
   fonts: {
     serif: "Cormorant",

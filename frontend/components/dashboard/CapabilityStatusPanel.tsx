@@ -10,7 +10,7 @@ export function CapabilityStatusPanel({ items }: { items: CapabilityStatusItem[]
         <Card key={item.id} className="flex h-full flex-col justify-between gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
+              <div className="section-kicker">
                 capability
               </div>
               <h3 className="mt-3 font-serif text-2xl text-ink">{item.label}</h3>
@@ -24,6 +24,7 @@ export function CapabilityStatusPanel({ items }: { items: CapabilityStatusItem[]
               </Badge>
             </div>
           </div>
+          <div className="h-px w-full bg-[linear-gradient(90deg,rgba(168,184,196,0.14),transparent)]" />
           <p className="text-sm leading-7 text-silver">{item.detail}</p>
         </Card>
       ))}

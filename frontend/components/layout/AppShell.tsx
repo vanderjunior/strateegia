@@ -32,7 +32,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </nav>
         </aside>
         <div className="bg-radial-shell">
-          <header className="flex items-center justify-between border-b border-[rgba(168,184,196,0.08)] px-6 py-5 lg:px-10">
+          <header className="flex items-center justify-between border-b border-[rgba(168,184,196,0.08)] bg-[rgba(10,21,32,0.44)] px-6 py-5 lg:px-10">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
                 mentorium / dashboard

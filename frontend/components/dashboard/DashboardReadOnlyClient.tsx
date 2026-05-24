@@ -44,44 +44,52 @@ export function DashboardReadOnlyClient() {
             O produto continua cauteloso com OCR, geracao completa de simulado e qualquer mutacao de runtime.
           </p>
         </div>
-        <div className="rounded-[32px] border border-[rgba(168,184,196,0.10)] bg-[rgba(10,21,32,0.76)] p-6">
-          <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
-            restricoes claras
+        <div className="naval-window">
+          <div className="naval-window-bar">
+            <span className="naval-window-dot bg-[#e17d69]" />
+            <span className="naval-window-dot bg-[#d6c477]" />
+            <span className="naval-window-dot bg-[#8fc9a9]" />
+            <div className="window-url">restricoes e safeguards</div>
           </div>
-          <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-            <li>Somente GET read-only nesta camada</li>
-            <li>Sem mutacao real de scheduler ou calendario</li>
-            <li>Sem overclaim de OCR para PDF escaneado</li>
-            <li>Sem exposicao de respostas finais sensiveis</li>
-          </ul>
+          <div className="p-6">
+            <div className="section-kicker">
+              restricoes claras
+            </div>
+            <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
+              <li>Somente GET read-only nesta camada</li>
+              <li>Sem mutacao real de scheduler ou calendario</li>
+              <li>Sem overclaim de OCR para PDF escaneado</li>
+              <li>Sem exposicao de respostas finais sensiveis</li>
+            </ul>
+          </div>
         </div>
       </section>
 
       <StudyOverviewCards cards={viewModel.studyOverviewCards} />
 
       <section className="space-y-4">
-        <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
+        <div className="section-kicker">
           capability matrix
         </div>
         <CapabilityStatusPanel items={viewModel.capabilityItems} />
       </section>
 
       <section className="space-y-4">
-        <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
+        <div className="section-kicker">
           materiais e edital
         </div>
         <DocumentStatusCards cards={viewModel.documentCards} />
       </section>
 
       <section className="space-y-4">
-        <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
+        <div className="section-kicker">
           perfis PSCPP
         </div>
         <PSCPPProfileCards cards={viewModel.pscppCards} />
       </section>
 
       <section className="space-y-4">
-        <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
+        <div className="section-kicker">
           runtime e ledger
         </div>
         <RuntimeStatusCards cards={viewModel.runtimeCards} />

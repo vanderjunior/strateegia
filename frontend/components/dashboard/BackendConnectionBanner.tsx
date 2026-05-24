@@ -23,25 +23,28 @@ function bannerTone(state: BackendConnectionInfo["state"]): string {
 
 export function BackendConnectionBanner({ connection }: { connection: BackendConnectionInfo }) {
   return (
-    <Card className={bannerTone(connection.state)}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
-            backend status
+    <Card className={`${bannerTone(connection.state)} p-0`}>
+      <div className="naval-window-bar rounded-t-[28px] border-b-[rgba(168,184,196,0.1)]">
+        <span className="naval-window-dot bg-[#e17d69]" />
+        <span className="naval-window-dot bg-[#d6c477]" />
+        <span className="naval-window-dot bg-[#8fc9a9]" />
+        <div className="window-url">{connection.endpoint ?? "frontend / read-only bridge"}</div>
+      </div>
+      <div className="p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="section-kicker">
+              backend status
+            </div>
+            <h3 className="mt-3 font-serif text-2xl text-ink">{connection.title}</h3>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-silver">{connection.detail}</p>
           </div>
-          <h3 className="mt-3 font-serif text-2xl text-ink">{connection.title}</h3>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-silver">{connection.detail}</p>
-          {connection.endpoint ? (
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-[rgba(232,238,242,0.58)]">
-              endpoint: {connection.endpoint}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge>{connection.state.replaceAll("_", " ")}</Badge>
-          <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
-            {connection.source}
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge>{connection.state.replaceAll("_", " ")}</Badge>
+            <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
+              {connection.source}
+            </Badge>
+          </div>
         </div>
       </div>
     </Card>
