@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from app.domain.models import (
     SimuladoAppliedEventLedger,
@@ -195,6 +196,24 @@ def blocked_source_apply_fixture(
     )
 
 
+def source_apply_blocked_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return blocked_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def source_apply_not_applied_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return blocked_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def no_source_applied_entries_fixture(
     tmp_path,
     *,
@@ -204,6 +223,15 @@ def no_source_applied_entries_fixture(
     return _clear_applied_entries(
         _wrap_fixture(_allowed_apply_fixture(tmp_path, user_id=user_id, repository=repository))
     )
+
+
+def source_apply_zero_entries_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return no_source_applied_entries_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def missing_idempotency_fixture(
@@ -217,6 +245,15 @@ def missing_idempotency_fixture(
     )
 
 
+def source_apply_missing_idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return missing_idempotency_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def invalid_idempotency_fixture(
     tmp_path,
     *,
@@ -226,6 +263,15 @@ def invalid_idempotency_fixture(
     return _mark_invalid_idempotency(
         _wrap_fixture(_allowed_apply_fixture(tmp_path, user_id=user_id, repository=repository))
     )
+
+
+def source_apply_invalid_idempotency_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return invalid_idempotency_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def unsafe_public_exposure_fixture(
@@ -239,6 +285,15 @@ def unsafe_public_exposure_fixture(
     )
 
 
+def source_apply_unsafe_public_exposure_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return unsafe_public_exposure_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def successful_source_apply_fixture(
     tmp_path,
     *,
@@ -246,6 +301,105 @@ def successful_source_apply_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoAppliedEventLedgerFixture:
     return _wrap_fixture(_allowed_apply_fixture(tmp_path, user_id=user_id, repository=repository))
+
+
+def applied_event_records_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def idempotency_record_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def deduplication_record_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def replay_safety_record_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def rollback_reference_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_trail_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_new_progress_apply_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_global_progress_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_existing_progress_aggregate_mutation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_propagation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_leakage_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def idempotency_replay_fixture(
@@ -273,6 +427,19 @@ def api_readonly_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoAppliedEventLedgerFixture:
     return successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def mixed_ledger_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoAppliedEventLedgerFixture:
+    return source_apply_invalid_idempotency_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
 
 
 def capture_applied_event_ledger_source_snapshot(
@@ -307,3 +474,35 @@ def capture_applied_event_ledger_source_snapshot(
             repository.list_user_simulado_applied_event_ledgers(user_id=user_id)
         ),
     )
+
+
+def stabilization_fixture_builders() -> dict[
+    str,
+    Callable[..., SimuladoAppliedEventLedgerFixture],
+]:
+    return {
+        "missing_minimal_progress_ledger_apply": missing_minimal_progress_ledger_apply_fixture,
+        "source_apply_blocked": source_apply_blocked_fixture,
+        "source_apply_not_applied": source_apply_not_applied_fixture,
+        "source_apply_zero_entries": source_apply_zero_entries_fixture,
+        "source_apply_missing_idempotency": source_apply_missing_idempotency_fixture,
+        "source_apply_invalid_idempotency": source_apply_invalid_idempotency_fixture,
+        "source_apply_unsafe_public_exposure": source_apply_unsafe_public_exposure_fixture,
+        "successful_source_apply": successful_source_apply_fixture,
+        "applied_event_records_shape": applied_event_records_shape_fixture,
+        "idempotency_record_shape": idempotency_record_shape_fixture,
+        "deduplication_record_shape": deduplication_record_shape_fixture,
+        "replay_safety_record_shape": replay_safety_record_shape_fixture,
+        "rollback_reference_shape": rollback_reference_shape_fixture,
+        "audit_trail_shape": audit_trail_shape_fixture,
+        "no_new_progress_apply": no_new_progress_apply_fixture,
+        "no_global_progress_mutation": no_global_progress_mutation_fixture,
+        "no_existing_progress_aggregate_mutation": (
+            no_existing_progress_aggregate_mutation_fixture
+        ),
+        "no_runtime_propagation": no_runtime_propagation_fixture,
+        "no_leakage": no_leakage_fixture,
+        "user_scope": user_scope_fixture,
+        "api_readonly": api_readonly_fixture,
+        "mixed_ledger": mixed_ledger_fixture,
+    }
