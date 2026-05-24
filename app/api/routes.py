@@ -102,6 +102,9 @@ from app.services.simulado_minimal_progress_ledger_apply import (
 from app.services.simulado_applied_event_ledger import (
     SimuladoAppliedEventLedgerService,
 )
+from app.services.simulado_propagation_guardrail import (
+    SimuladoPropagationGuardrailService,
+)
 from app.services.snapshot_offline_io import export_inspection_snapshot
 from app.services.scientific_tooling_contracts import (
     json_safe_profile,
@@ -342,6 +345,12 @@ def get_simulado_applied_event_ledger_service(
     request: Request,
 ) -> SimuladoAppliedEventLedgerService:
     return SimuladoAppliedEventLedgerService(get_repository(request))
+
+
+def get_simulado_propagation_guardrail_service(
+    request: Request,
+) -> SimuladoPropagationGuardrailService:
+    return SimuladoPropagationGuardrailService(get_repository(request))
 
 
 def _auth_sessions(request: Request) -> dict[str, str]:
@@ -2729,6 +2738,80 @@ def get_simulado_applied_event_ledger_by_id(
         raise HTTPException(
             status_code=404,
             detail="Simulado applied event ledger not found.",
+        )
+    return result
+
+
+@router.post(
+    "/simulado-applied-event-ledger/{applied_event_ledger_id}/propagation-guardrail/build"
+)
+def build_simulado_propagation_guardrail_for_applied_event_ledger(
+    applied_event_ledger_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    source_ledger = get_simulado_applied_event_ledger_service(request).get_applied_event_ledger_by_id(
+        applied_event_ledger_id,
+        user_id=user_id,
+    )
+    if source_ledger is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado applied event ledger not found.",
+        )
+    result = get_simulado_propagation_guardrail_service(request).build_propagation_guardrail(
+        applied_event_ledger_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado propagation guardrail could not be built.",
+        )
+    return result
+
+
+@router.get("/simulado-applied-event-ledger/{applied_event_ledger_id}/propagation-guardrail")
+def get_simulado_propagation_guardrail_for_applied_event_ledger(
+    applied_event_ledger_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    source_ledger = get_simulado_applied_event_ledger_service(request).get_applied_event_ledger_by_id(
+        applied_event_ledger_id,
+        user_id=user_id,
+    )
+    if source_ledger is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado applied event ledger not found.",
+        )
+    result = get_simulado_propagation_guardrail_service(request).get_propagation_guardrail(
+        applied_event_ledger_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado propagation guardrail not found.",
+        )
+    return result
+
+
+@router.get("/simulado-propagation-guardrail/{propagation_guardrail_id}")
+def get_simulado_propagation_guardrail_by_id(
+    propagation_guardrail_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    result = get_simulado_propagation_guardrail_service(request).get_propagation_guardrail_by_id(
+        propagation_guardrail_id,
+        user_id=user_id,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulado propagation guardrail not found.",
         )
     return result
 

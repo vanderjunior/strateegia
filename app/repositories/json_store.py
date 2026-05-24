@@ -195,6 +195,7 @@ from app.domain.models import (
     SimuladoFinalPedagogicalUpdateEvent,
     SimuladoAppliedEventLedger,
     SimuladoMinimalProgressLedgerApply,
+    SimuladoPropagationGuardrail,
     SimuladoRuntimeApplyPolicy,
     SimuladoRuntimeCommitExecutionPlan,
     SimuladoRuntimeMutationCommitTransaction,
@@ -1201,6 +1202,40 @@ class UserScopedStudyRepository:
             user_id=self.user_id,
         )
 
+    def save_simulado_propagation_guardrail(
+        self,
+        result: SimuladoPropagationGuardrail,
+    ) -> None:
+        self._repository.save_simulado_propagation_guardrail(
+            result,
+            user_id=self.user_id,
+        )
+
+    def get_simulado_propagation_guardrail(
+        self,
+        source_applied_event_ledger_id: str,
+    ) -> SimuladoPropagationGuardrail | None:
+        return self._repository.get_simulado_propagation_guardrail(
+            source_applied_event_ledger_id,
+            user_id=self.user_id,
+        )
+
+    def list_user_simulado_propagation_guardrails(
+        self,
+    ) -> list[SimuladoPropagationGuardrail]:
+        return self._repository.list_user_simulado_propagation_guardrails(
+            user_id=self.user_id,
+        )
+
+    def get_simulado_propagation_guardrail_by_id(
+        self,
+        propagation_guardrail_id: str,
+    ) -> SimuladoPropagationGuardrail | None:
+        return self._repository.get_simulado_propagation_guardrail_by_id(
+            propagation_guardrail_id,
+            user_id=self.user_id,
+        )
+
 
 class JsonStudyRepository:
     def __init__(self, path: Path):
@@ -1357,6 +1392,9 @@ class JsonStudyRepository:
                 "results": {},
             },
             "simulado_applied_event_ledger": {
+                "results": {},
+            },
+            "simulado_propagation_guardrail": {
                 "results": {},
             },
         }
@@ -1530,6 +1568,11 @@ class JsonStudyRepository:
             user_state["simulado_applied_event_ledger"] = (
                 self._normalize_simulado_applied_event_ledger_payload(
                     user_state.get("simulado_applied_event_ledger")
+                )
+            )
+            user_state["simulado_propagation_guardrail"] = (
+                self._normalize_simulado_propagation_guardrail_payload(
+                    user_state.get("simulado_propagation_guardrail")
                 )
             )
             normalized_user_data[str(user_id)] = user_state
@@ -1955,6 +1998,19 @@ class JsonStudyRepository:
         return normalized
 
     def _normalize_simulado_applied_event_ledger_payload(
+        self,
+        payload: object,
+    ) -> dict[str, object]:
+        normalized = {
+            "results": {},
+        }
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("results"), dict):
+            normalized["results"] = {}
+        return normalized
+
+    def _normalize_simulado_propagation_guardrail_payload(
         self,
         payload: object,
     ) -> dict[str, object]:
@@ -2591,6 +2647,15 @@ class JsonStudyRepository:
         if user_id is None:
             return self._normalize_simulado_applied_event_ledger_payload({})
         return self._ensure_user_state(payload, user_id)["simulado_applied_event_ledger"]
+
+    def _simulado_propagation_guardrail_container(
+        self,
+        payload: dict[str, object],
+        user_id: str | None,
+    ) -> dict[str, object]:
+        if user_id is None:
+            return self._normalize_simulado_propagation_guardrail_payload({})
+        return self._ensure_user_state(payload, user_id)["simulado_propagation_guardrail"]
 
     def save_document_pipeline_state(
         self,
@@ -4851,6 +4916,59 @@ class JsonStudyRepository:
     ) -> SimuladoAppliedEventLedger | None:
         for item in self.list_user_simulado_applied_event_ledgers(user_id=user_id):
             if item.applied_event_ledger_id == applied_event_ledger_id:
+                return item
+        return None
+
+    def save_simulado_propagation_guardrail(
+        self,
+        result: SimuladoPropagationGuardrail,
+        *,
+        user_id: str | None,
+    ) -> None:
+        if user_id is None:
+            raise ValueError("Simulado propagation guardrail requires user ownership.")
+        payload = self._read()
+        container = self._simulado_propagation_guardrail_container(payload, user_id)
+        container["results"][result.source_applied_event_ledger_id] = result.model_dump(mode="json")
+        self._write(payload)
+
+    def get_simulado_propagation_guardrail(
+        self,
+        source_applied_event_ledger_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoPropagationGuardrail | None:
+        if user_id is None:
+            return None
+        payload = self._read()
+        raw = self._simulado_propagation_guardrail_container(payload, user_id)["results"].get(
+            source_applied_event_ledger_id
+        )
+        if raw is None:
+            return None
+        return SimuladoPropagationGuardrail.model_validate(raw)
+
+    def list_user_simulado_propagation_guardrails(
+        self,
+        *,
+        user_id: str | None,
+    ) -> list[SimuladoPropagationGuardrail]:
+        if user_id is None:
+            return []
+        payload = self._read()
+        raw = self._simulado_propagation_guardrail_container(payload, user_id)["results"].values()
+        items = [SimuladoPropagationGuardrail.model_validate(item) for item in raw]
+        items.sort(key=lambda item: item.source_applied_event_ledger_id)
+        return items
+
+    def get_simulado_propagation_guardrail_by_id(
+        self,
+        propagation_guardrail_id: str,
+        *,
+        user_id: str | None,
+    ) -> SimuladoPropagationGuardrail | None:
+        for item in self.list_user_simulado_propagation_guardrails(user_id=user_id):
+            if item.propagation_guardrail_id == propagation_guardrail_id:
                 return item
         return None
 

@@ -6971,6 +6971,249 @@ class SimuladoAppliedEventLedger(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
+class PropagationReadinessSummary(BaseModel):
+    summary_id: str
+    source_ledger_present: bool = True
+    source_ledger_recorded: bool = False
+    source_ledger_event_count: int = 0
+    source_ledger_replay_safe: bool = False
+    source_ledger_deduplication_enforced: bool = False
+    source_ledger_no_propagation: bool = True
+    source_final_event_applied_globally: bool = False
+    source_global_progress_mutation_applied: bool = False
+    propagation_allowed_now: bool = False
+    propagation_ready_for_future_review: bool = False
+    ranking_candidate_count: int = 0
+    retention_candidate_count: int = 0
+    scheduler_candidate_count: int = 0
+    study_cycle_candidate_count: int = 0
+    curriculum_graph_candidate_count: int = 0
+    adaptive_tuning_candidate_count: int = 0
+    blocked_surface_count: int = 0
+    unsafe_public_answer_key_exposure_detected: bool = False
+    unsafe_gabarito_exposure_detected: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SourceAppliedLedgerPropagationSummary(BaseModel):
+    summary_id: str
+    source_apply_present: bool = True
+    source_apply_applied: bool = False
+    source_apply_status: str = "apply_blocked"
+    source_applied_entry_count: int = 0
+    ledger_event_count: int = 0
+    replay_safe: bool = False
+    deduplication_enforced: bool = False
+    no_propagation: bool = True
+    final_event_applied_globally: bool = False
+    global_progress_mutation_applied: bool = False
+    existing_progress_aggregate_mutated: bool = False
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class _BasePropagationCandidate(BaseModel):
+    target_id: str
+    source_event_record_id: str
+    source_applied_ledger_entry_id: str
+    propagation_surface: str
+    propagation_kind: str = "unknown"
+    target_type: str = "unknown"
+    target_reference: str | None = None
+    bounded_signal_summary: dict[str, object] = Field(default_factory=dict)
+    candidate: bool = True
+    propagation_allowed: bool = False
+    propagated: bool = False
+    blockers: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class CandidateRankingPropagationTarget(_BasePropagationCandidate):
+    propagation_surface: str = "ranking"
+    propagation_kind: str = "ranking_signal_candidate"
+
+
+class CandidateRetentionPropagationTarget(_BasePropagationCandidate):
+    propagation_surface: str = "retention"
+    propagation_kind: str = "retention_signal_candidate"
+
+
+class CandidateSchedulerPropagationTarget(_BasePropagationCandidate):
+    propagation_surface: str = "scheduler"
+    propagation_kind: str = "scheduler_signal_candidate"
+
+
+class CandidateStudyCyclePropagationTarget(_BasePropagationCandidate):
+    propagation_surface: str = "study_cycle"
+    propagation_kind: str = "study_cycle_signal_candidate"
+
+
+class CandidateCurriculumGraphPropagationTarget(_BasePropagationCandidate):
+    propagation_surface: str = "curriculum_graph"
+    propagation_kind: str = "curriculum_graph_signal_candidate"
+
+
+class CandidateAdaptiveTuningPropagationTarget(_BasePropagationCandidate):
+    propagation_surface: str = "adaptive_tuning"
+    propagation_kind: str = "adaptive_tuning_signal_candidate"
+
+
+class PropagationSurfaceRiskSummary(BaseModel):
+    risk_summary_id: str
+    candidate_surface_count: int = 0
+    blocked_surface_count: int = 0
+    ranking_candidate_count: int = 0
+    retention_candidate_count: int = 0
+    scheduler_candidate_count: int = 0
+    study_cycle_candidate_count: int = 0
+    curriculum_graph_candidate_count: int = 0
+    adaptive_tuning_candidate_count: int = 0
+    propagation_allowed_surface_count: int = 0
+    propagated_surface_count: int = 0
+    high_risk_surface_count: int = 0
+    no_propagation: bool = True
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class PropagationGuardrailAuditEntry(BaseModel):
+    audit_id: str
+    event_type: str
+    actor_user_id: str | None = None
+    message: str
+    created_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class PropagationGuardrailBlocker(BaseModel):
+    blocker_id: str
+    code: str
+    severity: str = "blocked"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class PropagationGuardrailValidationFinding(BaseModel):
+    finding_id: str
+    code: str
+    severity: str = "info"
+    message: str
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class PropagationGuardrailWarning(BaseModel):
+    code: str
+    message: str
+    severity: str = "warning"
+    related_artifact_type: str | None = None
+    related_artifact_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
+class SimuladoPropagationGuardrail(BaseModel):
+    propagation_guardrail_id: str
+    user_id: str | None = None
+    source_applied_event_ledger_id: str
+    source_minimal_progress_ledger_apply_id: str
+    source_runtime_apply_policy_id: str
+    source_final_event_id: str
+    source_controlled_execution_id: str
+    source_execution_plan_id: str
+    source_execution_approval_id: str
+    source_score_result_id: str | None = None
+    source_progress_guardrail_id: str | None = None
+    source_integrated_result_id: str | None = None
+    source_attempt_session_id: str | None = None
+    source_simulado_blueprint_id: str | None = None
+    guardrail_mode: str = "propagation_guardrail_only"
+    guardrail_status: str = "propagation_blocked"
+    readiness_state: str = "blocked_by_source_ledger_not_recorded"
+    readiness_summary: PropagationReadinessSummary
+    source_ledger_summary: SourceAppliedLedgerPropagationSummary
+    candidate_ranking_targets: list[CandidateRankingPropagationTarget] = Field(
+        default_factory=list
+    )
+    candidate_retention_targets: list[CandidateRetentionPropagationTarget] = Field(
+        default_factory=list
+    )
+    candidate_scheduler_targets: list[CandidateSchedulerPropagationTarget] = Field(
+        default_factory=list
+    )
+    candidate_study_cycle_targets: list[CandidateStudyCyclePropagationTarget] = Field(
+        default_factory=list
+    )
+    candidate_curriculum_graph_targets: list[CandidateCurriculumGraphPropagationTarget] = Field(
+        default_factory=list
+    )
+    candidate_adaptive_tuning_targets: list[CandidateAdaptiveTuningPropagationTarget] = Field(
+        default_factory=list
+    )
+    surface_risk_summary: PropagationSurfaceRiskSummary
+    audit_trail: list[PropagationGuardrailAuditEntry] = Field(default_factory=list)
+    blockers: list[PropagationGuardrailBlocker] = Field(default_factory=list)
+    validation_findings: list[PropagationGuardrailValidationFinding] = Field(
+        default_factory=list
+    )
+    warnings: list[PropagationGuardrailWarning] = Field(default_factory=list)
+    propagation_guardrail_created: bool = True
+    propagation_allowed_now: bool = False
+    propagation_applied: bool = False
+    propagation_ready_for_future_review: bool = False
+    ranking_propagation_allowed: bool = False
+    ranking_update_enabled: bool = False
+    ranking_update_applied: bool = False
+    retention_propagation_allowed: bool = False
+    retention_update_enabled: bool = False
+    retention_update_applied: bool = False
+    scheduler_propagation_allowed: bool = False
+    scheduler_update_enabled: bool = False
+    scheduler_update_applied: bool = False
+    study_cycle_propagation_allowed: bool = False
+    study_cycle_update_enabled: bool = False
+    study_cycle_update_applied: bool = False
+    curriculum_graph_propagation_allowed: bool = False
+    curriculum_graph_update_enabled: bool = False
+    curriculum_graph_update_applied: bool = False
+    adaptive_tuning_propagation_allowed: bool = False
+    adaptive_tuning_enabled: bool = False
+    adaptive_tuning_applied: bool = False
+    source_ledger_present: bool = True
+    source_ledger_recorded: bool = False
+    source_ledger_event_count: int = 0
+    source_ledger_replay_safe: bool = False
+    source_ledger_deduplication_enforced: bool = False
+    source_ledger_no_propagation: bool = True
+    final_event_applied_globally: bool = False
+    existing_progress_aggregate_mutated: bool = False
+    global_progress_mutation_applied: bool = False
+    no_new_progress_apply: bool = True
+    no_existing_progress_aggregate_mutation: bool = True
+    no_global_progress_mutation: bool = True
+    no_propagation: bool = True
+    no_ranking_update: bool = True
+    no_retention_update: bool = True
+    no_scheduler_update: bool = True
+    no_study_cycle_update: bool = True
+    no_curriculum_graph_update: bool = True
+    no_adaptive_tuning_update: bool = True
+    no_commit_execution: bool = True
+    no_mutation_commit: bool = True
+    no_runtime_application_beyond_minimal_ledger: bool = True
+    no_public_answer_key_exposure: bool = True
+    no_public_gabarito_exposure: bool = True
+    commit_executed: bool = False
+    mutation_committed: bool = False
+    runtime_application_enabled: bool = False
+    runtime_application_applied: bool = False
+    answer_key_publicly_exposed: bool = False
+    gabarito_publicly_exposed: bool = False
+    generated_at: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+
 class DocumentPipelineEvent(BaseModel):
     event_id: str
     document_id: str

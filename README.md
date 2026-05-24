@@ -854,6 +854,42 @@ Trabalho futuro desta trilha:
 - Applied Event Ledger / Idempotency Stabilization Fixtures
 - Propagation Guardrails
 
+## Fundacao de propagation guardrail
+
+Applied event ledgers agora podem gerar um artifact separado de `propagation guardrail`, sempre user-scoped, deterministico e limitado a avaliar readiness para futuras propagacoes sem executar nenhuma propagacao real.
+
+Capacidades atuais desta etapa:
+
+- cria um `SimuladoPropagationGuardrail` a partir de um `SimuladoAppliedEventLedger`
+- gera candidate propagation targets bounded para ranking, retention, scheduler, study cycle, curriculum graph e adaptive tuning
+- persiste readiness summary, source ledger summary, surface risk summary, blockers, warnings e audit trail
+- avalia replay safety, deduplication enforcement, no-propagation state e sinais de unsafe source state
+- nao propaga
+- nao cria review schedule entries
+- nao cria novos progress applies
+- nao muta existing progress aggregates nem global runtime progress
+- nao atualiza ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning
+
+Endpoints atuais de propagation guardrail:
+
+- `POST /api/simulado-applied-event-ledger/{applied_event_ledger_id}/propagation-guardrail/build`
+- `GET /api/simulado-applied-event-ledger/{applied_event_ledger_id}/propagation-guardrail`
+- `GET /api/simulado-propagation-guardrail/{propagation_guardrail_id}`
+
+Regras importantes:
+
+- esta etapa e propagation guardrail/readiness only, nao propagation
+- todos os candidate targets permanecem `propagation_allowed = false` e `propagated = false`
+- esta etapa nao muta existing progress aggregates
+- esta etapa nao marca o final event como globally applied
+- esta etapa nao cria ranking, retention, scheduler, study cycle, curriculum graph ou adaptive tuning updates
+- esta etapa nao expõe answer key, answer key value, correct answer ou gabarito publicamente
+
+Trabalho futuro desta trilha:
+
+- Propagation Guardrail Stabilization Fixtures
+- Controlled Propagation Apply Foundation
+
 ## Como instalar
 
 1. Crie e ative um ambiente Python 3.12+.
