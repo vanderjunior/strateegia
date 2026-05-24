@@ -237,6 +237,7 @@ class QuestionDraftGenerationService:
             metadata={
                 "source_blueprint_readiness": slot_blueprint.readiness_state,
                 "style_hint_count": len(slot_blueprint.style_hints),
+                "question_style_profile_id": slot_blueprint.metadata.get("question_style_profile_id"),
             },
         )
         provenance = QuestionDraftProvenance(
@@ -283,6 +284,19 @@ class QuestionDraftGenerationService:
                 "no_distractors_generated": True,
                 "no_final_explanations_generated": True,
                 "style_hints": list(slot_blueprint.style_hints),
+                "question_style_profile_id": slot_blueprint.metadata.get("question_style_profile_id"),
+                "source_required": slot_blueprint.metadata.get("source_required"),
+                "bibliography_anchor_required": slot_blueprint.metadata.get("bibliography_anchor_required"),
+                "allowed_archetypes": list(slot_blueprint.metadata.get("allowed_archetypes", [])),
+                "preferred_templates": list(slot_blueprint.metadata.get("preferred_templates", [])),
+                "distractor_policy": dict(slot_blueprint.metadata.get("distractor_policy", {})),
+                "scoring_behavior": dict(slot_blueprint.metadata.get("scoring_behavior", {})),
+                "safety_rules": dict(slot_blueprint.metadata.get("safety_rules", {})),
+                "human_review_required_for_answer_key": slot_blueprint.metadata.get(
+                    "human_review_required_for_answer_key"
+                ),
+                "visible_source_titles": list(slot_blueprint.metadata.get("visible_source_titles", [])),
+                "question_style_validation": dict(slot_blueprint.metadata.get("question_style_validation", {})),
             },
         )
 

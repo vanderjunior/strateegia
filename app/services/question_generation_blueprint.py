@@ -25,6 +25,7 @@ from app.domain.models import (
 )
 from app.repositories.json_store import JsonStudyRepository
 from app.services.exam_profiles import ExamProfileService
+from app.services.question_style_profiles import enrich_question_generation_blueprint_with_style_profile
 
 
 BLUEPRINT_SET_VERSION = "question-generation-blueprint-v1"
@@ -310,6 +311,16 @@ class QuestionGenerationBlueprintService:
             "no_answer_key_generated": True,
             "no_explanations_generated": True,
         }
+        metadata = enrich_question_generation_blueprint_with_style_profile(
+            exam_profile_id=simulado.exam_profile_id,
+            blueprint_metadata=metadata,
+            source_titles=[item.source_title for item in source_evidence if item.source_title],
+            source_present=bool(source_evidence),
+            requested_archetype="technical_operational_scenario"
+            if question_kind == "technical_maritime_scenario"
+            else None,
+            delivery_context="simulado",
+        )
         return QuestionGenerationBlueprint(
             blueprint_id=f"question-generation-slot:{slot.slot_id}",
             user_id=simulado.user_id,
@@ -754,13 +765,33 @@ class QuestionGenerationBlueprintService:
         if question_kind == "technical_maritime_scenario" or (
             profile and profile.exam_family == "PSCPP"
         ):
-            constraints.append(
-                QuestionGenerationConstraint(
-                    constraint_id=f"{slot.slot_id}:must_preserve_technical_maritime_context",
-                    constraint_type="must_preserve_technical_maritime_context",
-                    severity="error",
-                    description="Future drafts for PSCPP/Praticagem must preserve technical maritime context.",
-                )
+            constraints.extend(
+                [
+                    QuestionGenerationConstraint(
+                        constraint_id=f"{slot.slot_id}:must_preserve_technical_maritime_context",
+                        constraint_type="must_preserve_technical_maritime_context",
+                        severity="error",
+                        description="Future drafts for PSCPP/Praticagem must preserve technical maritime context.",
+                    ),
+                    QuestionGenerationConstraint(
+                        constraint_id=f"{slot.slot_id}:must_keep_pscpp_source_anchor_visible",
+                        constraint_type="must_keep_pscpp_source_anchor_visible",
+                        severity="error",
+                        description="PSCPP planning metadata must preserve a visible bibliography/source anchor.",
+                    ),
+                    QuestionGenerationConstraint(
+                        constraint_id=f"{slot.slot_id}:must_require_human_review_for_answer_key",
+                        constraint_type="must_require_human_review_for_answer_key",
+                        severity="error",
+                        description="PSCPP planning metadata must keep answer-key validation blocked behind human review.",
+                    ),
+                    QuestionGenerationConstraint(
+                        constraint_id=f"{slot.slot_id}:must_keep_current_edital_alignment",
+                        constraint_type="must_keep_current_edital_alignment",
+                        severity="error",
+                        description="PSCPP style hints must stay subordinate to current edital alignment.",
+                    ),
+                ]
             )
         if style_hints:
             constraints.append(

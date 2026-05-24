@@ -22,6 +22,10 @@ from app.domain.models import (
     ExamTimingProfile,
 )
 from app.repositories.json_store import JsonStudyRepository
+from app.services.question_style_profiles import (
+    PSCPP_QUESTION_STYLE_PROFILE_ID,
+    get_pscpp_question_style_profile,
+)
 
 
 PROFILE_VERSION = "exam-profiles-v1"
@@ -835,6 +839,7 @@ class ExamProfileService:
         )
 
     def _build_marinha_pscpp_profile(self) -> ExamProfile:
+        style_profile = get_pscpp_question_style_profile()
         return ExamProfile(
             profile_id="exam-profile:marinha-pscpp",
             exam_board="MARINHA_PSCPP",
@@ -923,6 +928,12 @@ class ExamProfileService:
                 reading_precision="high",
                 technical_language="high",
                 reasoning="PSCPP style hints emphasize maritime technical language and operational detail.",
+                metadata={
+                    "question_style_profile_id": PSCPP_QUESTION_STYLE_PROFILE_ID,
+                    "source_required": True,
+                    "bibliography_anchor_required": True,
+                    "historical_exam_evidence": style_profile["historical_exam_evidence"],
+                },
             ),
             content_behavior_profile=ExamContentBehaviorProfile(
                 law_dry_text_weight="medium",
@@ -973,5 +984,10 @@ class ExamProfileService:
                 cognitive_demand_summary="High recall, high application and high precision demand in maritime/praticagem contexts.",
                 limitation_summary="This profile is declarative only and does not hardcode a single PSCPP format or change runtime behavior.",
             ),
-            metadata={"static_profile": True, "maritime_context": True},
+            metadata={
+                "static_profile": True,
+                "maritime_context": True,
+                "canonical_question_style_profile_id": PSCPP_QUESTION_STYLE_PROFILE_ID,
+                "question_style_profile_scope": "style_and_constraints_only",
+            },
         )
