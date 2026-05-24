@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mentorium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* ── surfaces */
+  --base:   #1a2f3f;   /* petróleo médio — fundo principal */
+  --s1:     #152738;   /* um grau mais fundo */
+  --s2:     #0f1e2a;   /* naval escuro — superfícies elevadas */
+  --s3:     #0a1520;   /* naval mais profundo */
+  --s4:     #2a4a61;   /* naval claro — cards hover */
+  --s5:     #243f55;   /* cards repouso */
+
+  /* ── acentos */
+  --gold:   #c9a96e;
+  --gold2:  #dfc08a;
+  --gold3:  rgba(201,169,110,0.14);
+  --goldl:  rgba(201,169,110,0.28);
+  --silver: #a8b8c4;
+  --silverl:rgba(168,184,196,0.18);
+  --silverb:rgba(168,184,196,0.10);
+
+  /* ── texto */
+  --t0: #e8eef2;
+  --t1: rgba(232,238,242,0.75);
+  --t2: rgba(232,238,242,0.45);
+  --t3: rgba(232,238,242,0.25);
+  --t4: rgba(232,238,242,0.12);
+
+  /* ── linhas */
+  --line:  rgba(168,184,196,0.10);
+  --line2: rgba(168,184,196,0.18);
+
+  /* ── type */
+  --serif:'Cormorant',Georgia,serif;
+  --sans:'Geist',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+
+  /* ── motion */
+  --ease:cubic-bezier(0.25,0.46,0.45,0.94);
+  --smooth:cubic-bezier(0.16,1,0.3,1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--base);color:var(--t0);overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+
+/* ── cursor */
+#cur,#cur-r{position:fixed;pointer-events:none;z-index:9999;border-radius:50%;transform:translate(-50%,-50%);}
+#cur{width:7px;height:7px;background:var(--gold);transition:width .15s,height .15s,background .2s;}
+#cur-r{width:30px;height:30px;border:1px solid rgba(201,169,110,0.3);transition:all .1s var(--ease);}
+body.h #cur{width:11px;height:11px;}
+body.h #cur-r{width:50px;height:50px;border-color:rgba(201,169,110,0.5);}
+
+/* ── nav */
+nav{
+  position:fixed;inset:0 0 auto 0;z-index:100;height:62px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 52px;
+  transition:background .5s,border-color .5s;
+  border-bottom:1px solid transparent;
+}
+nav.on{
+  background:rgba(15,30,42,0.90);
+  backdrop-filter:blur(36px) saturate(140%);
+  border-bottom-color:var(--line);
+}
+.logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;letter-spacing:-.3px;color:var(--t0);}
+.logo-m{
+  width:28px;height:28px;border-radius:7px;
+  background:var(--gold3);border:1px solid var(--goldl);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-style:italic;font-weight:600;font-size:16px;color:var(--gold);
+}
+.nav-mid{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:36px;}
+.nav-mid a{font-size:13.5px;color:var(--t2);transition:color .15s;}
+.nav-mid a:hover{color:var(--t0);}
+.nav-r{display:flex;gap:8px;}
+.btn{padding:7px 18px;border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:none;transition:all .18s;border:none;letter-spacing:-.1px;}
+.btn-g{background:transparent;border:1px solid var(--line2);color:var(--t2);}
+.btn-g:hover{border-color:var(--silverl);color:var(--t0);}
+.btn-gold{background:var(--gold);color:var(--s3);font-weight:700;}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);}
+
+/* ── hero */
+#hero{
+  min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:130px 24px 80px;
+  position:relative;overflow:hidden;
+}
+.h-aura{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% -5%,  rgba(201,169,110,0.09) 0%,transparent 65%),
+    radial-gradient(ellipse 55% 45% at 15% 80%,  rgba(15,30,42,0.7)     0%,transparent 60%),
+    radial-gradient(ellipse 55% 45% at 85% 80%,  rgba(15,30,42,0.5)     0%,transparent 60%);
+}
+.h-dots{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(168,184,196,0.12) 1px,transparent 1px);
+  background-size:36px 36px;
+  mask-image:radial-gradient(ellipse 65% 60% at 50% 42%,black 0%,transparent 80%);
+}
+/* horizontal rule lines */
+.h-rule{
+  position:absolute;left:0;right:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(168,184,196,0.07),transparent);
+}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 16px;border-radius:100px;
+  border:1px solid var(--goldl);background:var(--gold3);
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  color:var(--gold);margin-bottom:40px;
+  opacity:0;animation:up .65s var(--smooth) .05s both;
+}
+.ey-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:blink 3s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+.h-title{
+  font-family:var(--serif);
+  font-size:clamp(58px,10vw,130px);
+  font-weight:300;line-height:.91;letter-spacing:-.035em;
+  opacity:0;animation:up .95s var(--smooth) .15s both;
+}
+.h-title em{font-style:italic;font-weight:700;color:var(--gold);}
+.h-title .ghost{
+  display:block;font-weight:300;
+  color:transparent;-webkit-text-stroke:1px rgba(168,184,196,0.18);
+}
+.h-sub{
+  max-width:510px;margin:30px auto 0;
+  font-size:17px;font-weight:300;line-height:1.75;color:var(--t2);
+  opacity:0;animation:up .95s var(--smooth) .28s both;
+}
+.h-sub strong{color:var(--t1);font-weight:400;}
+.h-cta{
+  display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+  margin-top:44px;
+  opacity:0;animation:up .95s var(--smooth) .40s both;
+}
+.btn-lg{padding:13px 30px;border-radius:10px;font-family:var(--sans);font-size:15px;font-weight:500;cursor:none;letter-spacing:-.1px;transition:all .2s var(--ease);}
+.btn-lg-gold{background:var(--gold);color:var(--s3);border:none;font-weight:700;}
+.btn-lg-gold:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 10px 36px rgba(201,169,110,0.25);}
+.btn-lg-ghost{background:transparent;border:1px solid var(--line2);color:var(--t1);}
+.btn-lg-ghost:hover{border-color:var(--silverl);color:var(--t0);}
+
+/* product frame */
+.h-frame{
+  margin-top:72px;width:100%;max-width:840px;
+  opacity:0;animation:up 1.05s var(--smooth) .55s both;
+}
+.frame-win{
+  background:var(--s2);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 .5px rgba(255,255,255,0.04),0 48px 96px rgba(8,16,24,0.65),0 0 60px rgba(201,169,110,0.05);
+}
+.frame-bar{display:flex;align-items:center;gap:7px;padding:12px 18px;background:var(--s3);border-bottom:1px solid var(--line);}
+.fd{width:9px;height:9px;border-radius:50%;}
+.frame-url{
+  flex:1;margin:0 14px;text-align:center;
+  background:rgba(255,255,255,0.04);border:1px solid var(--line);
+  border-radius:5px;padding:4px 12px;
+  font-family:var(--mono);font-size:11px;color:var(--t3);
+}
+.frame-body{display:grid;grid-template-columns:192px 1fr;min-height:256px;}
+.frame-side{
+  border-right:1px solid var(--line);padding:18px 14px;
+  background:var(--s3);
+}
+.fs-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--silver);opacity:.5;margin-bottom:14px;}
+.fs-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font-size:12px;color:var(--t2);margin-bottom:2px;transition:background .15s;}
+.fs-item.on{background:var(--gold3);color:var(--gold);}
+.frame-main{padding:18px;display:flex;flex-direction:column;gap:14px;}
+.fm-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--silver);opacity:.6;margin-bottom:10px;}
+.br{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);}
+.br:last-child{border:none;}
+.br-n{font-size:12px;color:var(--t2);flex:1;}
+.br-t{width:90px;height:2px;background:rgba(255,255,255,.07);border-radius:1px;overflow:hidden;flex-shrink:0;}
+.br-f{height:100%;border-radius:1px;background:linear-gradient(90deg,var(--silver),var(--t0));}
+.br-f.w{background:linear-gradient(90deg,rgba(200,80,60,0.6),rgba(220,100,70,0.8));}
+.br-p{font-family:var(--mono);font-size:10px;width:28px;text-align:right;flex-shrink:0;}
+.br-p.ok{color:var(--silver);}.br-p.w{color:rgba(230,110,80,.9);}
+.fm-r2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mini{background:var(--s1);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+.mini-l{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;}
+.mini-v{font-family:var(--serif);font-size:28px;font-weight:600;color:var(--t0);line-height:1;}
+.mini-d{font-size:11px;color:var(--gold);margin-top:4px;}
+@keyframes up{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── layout */
+.wrap{max-width:1100px;margin:0 auto;padding:0 52px;}
+section{padding:112px 0;}
+section.dim{background:var(--s1);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.s-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--silver);margin-bottom:20px;}
+.s-tag::before{content:'';width:16px;height:1px;background:var(--silver);opacity:.5;}
+h2.disp{font-family:var(--serif);font-size:clamp(38px,5.5vw,68px);font-weight:300;line-height:1.0;letter-spacing:-.03em;color:var(--t0);}
+h2.disp em{font-style:italic;font-weight:700;color:var(--gold);}
+h2.disp .gw{color:transparent;-webkit-text-stroke:1px var(--t4);}
+.lead{font-size:16px;font-weight:300;line-height:1.75;color:var(--t2);max-width:440px;margin-top:18px;}
+
+[data-r]{opacity:0;transition:opacity .8s var(--smooth),transform .8s var(--smooth);}
+[data-r="up"]{transform:translateY(24px);}
+[data-r="left"]{transform:translateX(-20px);}
+[data-r="right"]{transform:translateX(20px);}
+[data-r].in{opacity:1;transform:none;}
+
+/* ── pipeline */
+.pipe-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;margin-top:64px;}
+.pipe-chain{display:flex;flex-direction:column;}
+.pr{display:flex;gap:0;opacity:0;transform:translateX(14px);transition:opacity .5s var(--smooth),transform .5s var(--smooth);}
+.pr.in{opacity:1;transform:none;}
+.pr-sp{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0;}
+.pr-node{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid var(--line2);background:var(--base);margin-top:4px;transition:all .3s;}
+.pr.done .pr-node{background:var(--silver);border-color:var(--silver);}
+.pr.active .pr-node{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 4px var(--gold3);}
+.pr-ln{width:1px;flex:1;min-height:20px;background:linear-gradient(to bottom,var(--line2),transparent);}
+.pr:last-child .pr-ln{display:none;}
+.pr-b{padding:0 0 24px 14px;flex:1;}
+.pr-b h4{font-size:14px;font-weight:500;color:var(--t1);letter-spacing:-.1px;transition:color .15s;}
+.pr.active .pr-b h4{color:var(--gold);}
+.pr-b p{font-size:12px;color:var(--t3);line-height:1.6;margin-top:2px;}
+.pb{display:inline-block;margin-top:5px;padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;}
+.bl2{background:rgba(100,200,140,.08);color:rgba(140,220,160,.75);}
+.bc2{background:var(--silverb);color:var(--silver);}
+.bs2{background:var(--gold3);color:var(--gold);}
+
+/* ── features */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:64px;background:var(--line);border:1px solid var(--line);border-radius:2px;overflow:hidden;}
+.fc{background:var(--base);padding:34px 28px;position:relative;overflow:hidden;cursor:default;transition:background .2s;}
+.fc::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--goldl),transparent);opacity:0;transition:opacity .25s;}
+.fc:hover{background:var(--s5);}
+.fc:hover::after{opacity:1;}
+.fc-ico{width:40px;height:40px;border-radius:9px;background:var(--s2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:22px;}
+.fc h3{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.02em;line-height:1.2;margin-bottom:10px;}
+.fc p{font-size:13px;color:var(--t2);line-height:1.7;font-weight:300;}
+.fc-tag{display:inline-flex;align-items:center;gap:5px;margin-top:18px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;}
+.fc-dot{width:4px;height:4px;border-radius:50%;}
+.fc-tag.live{color:rgba(140,220,160,.8);}.fc-tag.live .fc-dot{background:rgba(140,220,160,.8);animation:blink 2.5s infinite;}
+.fc-tag.soon{color:var(--gold);opacity:.8;}.fc-tag.soon .fc-dot{background:var(--gold);}
+
+/* ── how */
+.how-body{max-width:720px;margin:64px auto 0;}
+.how-step{display:grid;grid-template-columns:60px 1fr;padding:36px 0;border-top:1px solid var(--line);opacity:0;transform:translateY(16px);transition:opacity .6s var(--smooth),transform .6s var(--smooth);}
+.how-step.in{opacity:1;transform:none;}
+.how-step:last-child{border-bottom:1px solid var(--line);}
+.how-n{font-family:var(--serif);font-style:italic;font-weight:300;font-size:40px;color:var(--t3);line-height:1;transition:color .2s;padding-top:2px;}
+.how-step:hover .how-n{color:var(--gold);}
+.how-c h3{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:-.02em;margin-bottom:8px;}
+.how-c p{font-size:14px;color:var(--t2);line-height:1.75;font-weight:300;}
+.chip-r{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.chip{padding:3px 10px;border-radius:100px;border:1px solid var(--silverl);background:var(--silverb);font-family:var(--mono);font-size:10px;color:var(--silver);}
+
+/* ── adaptive / dashboard mockup */
+.adapt-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:72px;align-items:center;}
+.adapt-pts{display:flex;flex-direction:column;gap:28px;margin-top:36px;}
+.ap{display:flex;gap:16px;opacity:0;transform:translateX(-14px);transition:opacity .5s var(--smooth),transform .5s var(--smooth);}
+.ap.in{opacity:1;transform:none;}
+.ap-i{width:36px;height:36px;flex-shrink:0;border-radius:8px;background:var(--s2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.ap-t h4{font-size:14px;font-weight:500;margin-bottom:3px;letter-spacing:-.1px;}
+.ap-t p{font-size:13px;color:var(--t2);line-height:1.6;font-weight:300;}
+
+/* dashboard — naval escuro na lateral, petróleo no centro */
+.dash{
+  background:var(--base);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 72px rgba(8,16,24,0.55);
+}
+.dash-top{display:flex;align-items:center;gap:6px;padding:11px 16px;background:var(--s3);border-bottom:1px solid var(--line);}
+.dd{width:8px;height:8px;border-radius:50%;}
+.dash-t{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.04em;}
+.dash-inner{display:grid;grid-template-columns:140px 1fr;}
+.dash-side{background:var(--s2);border-right:1px solid var(--line);padding:14px 12px;}
+.ds-lbl{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--silver);opacity:.45;margin-bottom:10px;}
+.ds-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;font-size:11px;color:var(--t2);margin-bottom:1px;}
+.ds-item.on{background:var(--gold3);color:var(--gold);}
+.dash-main{padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--base);}
+.dl{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--silver);opacity:.55;margin-bottom:5px;display:flex;align-items:center;gap:8px;}
+.dl::after{content:'';flex:1;height:1px;background:var(--line);}
+.dm{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);}
+.dm:last-of-type{border:none;}
+.dm-l{font-size:11px;color:var(--t2);flex:1;font-weight:300;}
+.dm-t{width:80px;height:2px;background:rgba(255,255,255,.06);border-radius:1px;overflow:hidden;flex-shrink:0;}
+.dm-f{height:100%;border-radius:1px;background:linear-gradient(90deg,var(--silver),var(--t0));}
+.dm-f.w{background:linear-gradient(90deg,rgba(200,80,60,0.5),rgba(220,100,70,0.75));}
+.dm-p{font-family:var(--mono);font-size:10px;width:26px;text-align:right;}
+.dm-p.ok{color:var(--silver);}.dm-p.w{color:rgba(230,110,80,.9);}
+.dash-r2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dmc{background:var(--s1);border:1px solid var(--line);border-radius:7px;padding:12px;}
+.dmc-l{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:5px;}
+.dmc-v{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--t0);line-height:1;}
+.dmc-d{font-size:10px;color:var(--gold);margin-top:3px;font-weight:300;}
+.dash-note{background:var(--s1);border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:11px;color:var(--t2);line-height:1.6;font-weight:300;display:flex;gap:7px;align-items:flex-start;}
+.dash-ni{color:var(--gold);flex-shrink:0;}
+
+/* ── pricing */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:64px;background:var(--line);border:1px solid var(--line);border-radius:2px;overflow:hidden;}
+.pc{background:var(--base);padding:38px 30px;transition:background .2s;}
+.pc.hl{background:var(--s1);}
+.pc:not(.hl):hover{background:var(--s5);}
+.pc-tier{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;}
+.pc-badge{display:inline-block;padding:3px 10px;background:var(--gold3);border:1px solid var(--goldl);border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.06em;margin-bottom:14px;}
+.pc-price{display:flex;align-items:baseline;gap:3px;margin-bottom:14px;}
+.pc-cur{font-size:16px;color:var(--t2);font-weight:300;}
+.pc-val{font-family:var(--serif);font-size:54px;font-weight:300;line-height:1;letter-spacing:-.04em;color:var(--t0);}
+.pc-per{font-size:13px;color:var(--t3);}
+.pc-desc{font-size:13px;color:var(--t2);line-height:1.65;font-weight:300;margin:0 0 22px;padding-bottom:22px;border-bottom:1px solid var(--line);}
+.pc-feats{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:28px;}
+.pc-feats li{display:flex;gap:10px;font-size:13px;color:var(--t2);line-height:1.4;font-weight:300;}
+.pch{width:16px;height:16px;flex-shrink:0;margin-top:1px;border-radius:4px;border:1px solid var(--goldl);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);}
+.pch.off{opacity:.2;border-color:var(--line2);}
+.btn-plan{width:100%;padding:12px;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:none;transition:all .18s;letter-spacing:-.1px;}
+.bpo{background:transparent;border:1px solid var(--line2);color:var(--t2);}
+.bpo:hover{border-color:var(--silverl);color:var(--t0);}
+.bps{background:var(--gold);border:none;color:var(--s3);font-weight:700;}
+.bps:hover{background:var(--gold2);}
+
+/* ── cta band */
+.cta-band{
+  padding:104px 52px;text-align:center;
+  border-top:1px solid var(--line);
+  position:relative;overflow:hidden;
+}
+.cta-band::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:500px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--goldl),transparent);
+}
+.cta-band::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 50% 60% at 50% 0%,rgba(201,169,110,0.06) 0%,transparent 65%);
+}
+.cta-title{font-family:var(--serif);font-size:clamp(40px,5vw,62px);font-weight:300;letter-spacing:-.03em;line-height:1.1;margin-bottom:14px;position:relative;z-index:1;}
+.cta-title em{font-style:italic;font-weight:700;color:var(--gold);}
+.cta-sub{font-size:16px;color:var(--t2);font-weight:300;line-height:1.7;max-width:360px;margin:0 auto 36px;position:relative;z-index:1;}
+.cta-note{margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--t3);}
+
+/* ── modal */
+.ov{position:fixed;inset:0;z-index:200;background:rgba(10,20,28,.88);backdrop-filter:blur(40px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.ov.open{opacity:1;pointer-events:all;}
+.modal{background:var(--s1);border:1px solid var(--line2);border-radius:20px;padding:48px 44px;width:100%;max-width:420px;position:relative;box-shadow:0 40px 100px rgba(8,16,24,0.8),0 0 60px rgba(201,169,110,0.05);transform:scale(.96) translateY(12px);transition:transform .4s var(--smooth);}
+.ov.open .modal{transform:none;}
+.mx{position:absolute;top:16px;right:16px;width:26px;height:26px;border-radius:50%;background:var(--s2);border:none;color:var(--t3);cursor:none;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.mx:hover{color:var(--t0);background:var(--s4);}
+.mh2{display:flex;align-items:center;gap:9px;margin-bottom:28px;}
+.mm{width:26px;height:26px;border-radius:6px;background:var(--gold3);border:1px solid var(--goldl);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:14px;color:var(--gold);}
+.mn{font-size:15px;font-weight:600;letter-spacing:-.2px;}
+.m-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:24px;}
+.mt2{padding:9px 0;margin-right:22px;font-size:13px;font-weight:400;color:var(--t3);background:none;border:none;border-bottom:1.5px solid transparent;cursor:none;font-family:var(--sans);transition:all .15s;}
+.mt2.a{color:var(--t0);border-bottom-color:var(--gold);}
+.m-title{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px;}
+.m-sub{font-size:13px;color:var(--t2);margin-bottom:26px;font-weight:300;}
+.fg{margin-bottom:14px;}
+.fl2{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:7px;}
+.fi{width:100%;padding:11px 14px;background:var(--s2);border:1px solid var(--line);border-radius:8px;color:var(--t0);font-family:var(--sans);font-size:14px;font-weight:300;outline:none;transition:border-color .15s,box-shadow .15s;}
+.fi:focus{border-color:var(--goldl);box-shadow:0 0 0 3px var(--gold3);}
+.fi::placeholder{color:var(--t3);}
+.f-hint{font-size:11px;color:var(--t3);margin-top:5px;}
+.f-hint a{color:var(--gold);}
+.btn-sub{width:100%;padding:13px;border-radius:8px;background:var(--gold);border:none;color:var(--s3);font-family:var(--sans);font-size:14px;font-weight:700;cursor:none;transition:all .18s;margin-top:6px;}
+.btn-sub:hover{background:var(--gold2);}
+.m-foot{margin-top:16px;text-align:center;font-size:12px;color:var(--t3);}
+.m-foot a{color:var(--gold);}
+
+/* ── footer */
+footer{padding:48px 52px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;}
+.f-logo{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:500;}
+.f-links{display:flex;gap:28px;list-style:none;}
+.f-links a{font-size:13px;color:var(--t3);transition:color .15s;}
+.f-links a:hover{color:var(--t1);}
+.f-copy{font-family:var(--mono);font-size:11px;color:var(--t3);}
+
+@media(max-width:860px){
+  nav{padding:0 20px;}.nav-mid{display:none;}
+  .wrap{padding:0 20px;}section{padding:72px 0;}
+  .pipe-grid,.adapt-grid{grid-template-columns:1fr;gap:48px;}
+  .feat-grid,.price-grid{grid-template-columns:1fr;}
+  .frame-body,.dash-inner{grid-template-columns:1fr;}.frame-side,.dash-side{display:none;}
+  footer{padding:36px 20px;}.modal{padding:32px 22px;margin:12px;border-radius:16px;}
+  .cta-band{padding:72px 20px;}
+}
+</style>
+</head>
+<body>
+<div id="cur"></div><div id="cur-r"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="logo"><div class="logo-m">M</div>Mentorium</a>
+  <div class="nav-mid">
+    <a href="#pipeline">Pipeline</a>
+    <a href="#features">Funcionalidades</a>
+    <a href="#how">Como funciona</a>
+    <a href="#pricing">Planos</a>
+  </div>
+  <div class="nav-r">
+    <a href="#" class="btn btn-g" onclick="openM('login');return false;">Entrar</a>
+    <a href="#" class="btn btn-gold" onclick="openM('signup');return false;">Criar conta</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="h-aura"></div>
+  <div class="h-dots"></div>
+  <div class="h-rule" style="top:33%"></div>
+  <div class="h-rule" style="top:66%"></div>
+
+  <div class="eyebrow"><span class="ey-dot"></span>plataforma edital-aware · acesso antecipado</div>
+  <h1 class="h-title">
+    Estude o que<br>
+    <em>vai cair.</em><br>
+    <span class="ghost">Nada além.</span>
+  </h1>
+  <p class="h-sub">
+    O Mentorium lê seu edital, alinha sua bibliografia e monta um currículo de estudos preciso.
+    Depois te guia com resumos, questões e simulados —
+    <strong>adaptados ao seu desempenho em tempo real.</strong>
+  </p>
+  <div class="h-cta">
+    <a href="#" class="btn-lg btn-lg-gold" onclick="openM('signup');return false;">Criar conta gratuita</a>
+    <a href="#how" class="btn-lg btn-lg-ghost">Como funciona</a>
+  </div>
+
+  <div class="h-frame">
+    <div class="frame-win">
+      <div class="frame-bar">
+        <div class="fd" style="background:#ff5f57"></div>
+        <div class="fd" style="background:#febc2e"></div>
+        <div class="fd" style="background:#28c840"></div>
+        <div class="frame-url">app.mentorium.com.br / dashboard</div>
+      </div>
+      <div class="frame-body">
+        <div class="frame-side">
+          <div class="fs-lbl">Painel</div>
+          <div class="fs-item on"><span>📊</span> Sessão atual</div>
+          <div class="fs-item"><span>📋</span> Edital</div>
+          <div class="fs-item"><span>📄</span> Materiais</div>
+          <div class="fs-item"><span>🔄</span> Ciclo</div>
+          <div class="fs-item"><span>✅</span> Simulados</div>
+        </div>
+        <div class="frame-main">
+          <div>
+            <div class="fm-lbl">retenção · Direito Constitucional</div>
+            <div class="br"><span class="br-n">Princípios Fundamentais</span><div class="br-t"><div class="br-f" style="width:88%"></div></div><span class="br-p ok">88%</span></div>
+            <div class="br"><span class="br-n">Direitos e Garantias</span><div class="br-t"><div class="br-f" style="width:72%"></div></div><span class="br-p ok">72%</span></div>
+            <div class="br"><span class="br-n">Organização do Estado</span><div class="br-t"><div class="br-f w" style="width:41%"></div></div><span class="br-p w">41%</span></div>
+            <div class="br"><span class="br-n">Poder Executivo</span><div class="br-t"><div class="br-f w" style="width:29%"></div></div><span class="br-p w">29%</span></div>
+          </div>
+          <div class="fm-r2">
+            <div class="mini"><div class="mini-l">Retenção geral</div><div class="mini-v">67%</div><div class="mini-d">↑ +12% esta semana</div></div>
+            <div class="mini"><div class="mini-l">Tópicos cobertos</div><div class="mini-v">6 / 8</div><div class="mini-d">alinhados ao edital</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section class="dim" id="pipeline">
+  <div class="wrap">
+    <div style="max-width:460px" data-r="up">
+      <div class="s-tag">Pipeline de conhecimento</div>
+      <h2 class="disp">Do upload ao <em>simulado,</em><br><span class="gw">automatizado.</span></h2>
+      <p class="lead">Uma cadeia determinística e auditável que transforma seus materiais em um plano de estudos estruturado.</p>
+    </div>
+    <div class="pipe-grid">
+      <div style="padding-top:8px" data-r="up">
+        <p style="font-size:14px;color:var(--t2);line-height:1.75;font-weight:300;max-width:360px">Cada etapa é separada, auditável e revisável. Nenhuma decisão é tomada sem base nos seus materiais reais.</p>
+        <div style="margin-top:24px;display:flex;gap:8px;flex-wrap:wrap">
+          <span style="padding:3px 10px;border:1px solid rgba(100,200,140,.2);border-radius:4px;font-family:var(--mono);font-size:9px;color:rgba(140,220,160,.75)">live</span>
+          <span style="padding:3px 10px;border:1px solid var(--silverl);border-radius:4px;font-family:var(--mono);font-size:9px;color:var(--silver)">candidate</span>
+          <span style="padding:3px 10px;border:1px solid var(--goldl);border-radius:4px;font-family:var(--mono);font-size:9px;color:var(--gold)">em breve</span>
+        </div>
+      </div>
+      <div class="pipe-chain">
+        <div class="pr done"><div class="pr-sp"><div class="pr-node"></div><div class="pr-ln"></div></div><div class="pr-b"><h4>Upload de Material</h4><p>PDF, TXT, Markdown — isolados por usuário</p><span class="pb bl2">live</span></div></div>
+        <div class="pr done"><div class="pr-sp"><div class="pr-node"></div><div class="pr-ln"></div></div><div class="pr-b"><h4>Pipeline Documental</h4><p>Extração, chunking e estruturação do conteúdo</p><span class="pb bl2">live</span></div></div>
+        <div class="pr active"><div class="pr-sp"><div class="pr-node"></div><div class="pr-ln"></div></div><div class="pr-b"><h4>Ingestão de Edital</h4><p>Tópicos, pesos, exclusões e estrutura de prova</p><span class="pb bc2">candidate</span></div></div>
+        <div class="pr"><div class="pr-sp"><div class="pr-node"></div><div class="pr-ln"></div></div><div class="pr-b"><h4>Alinhamento Bibliográfico</h4><p>Cruza edital com seus materiais, aponta gaps</p><span class="pb bc2">candidate</span></div></div>
+        <div class="pr"><div class="pr-sp"><div class="pr-node"></div><div class="pr-ln"></div></div><div class="pr-b"><h4>Curriculum Graph + Study Cycle</h4><p>Rotação de matérias calibrada por peso e desempenho</p><span class="pb bc2">candidate</span></div></div>
+        <div class="pr"><div class="pr-sp"><div class="pr-node"></div><div class="pr-ln"></div></div><div class="pr-b"><h4>Exam Profiles + Simulado Blueprint</h4><p>CEBRASPE, FGV, Marinha, PSCPP e demais bancas</p><span class="pb bs2">em breve</span></div></div>
+        <div class="pr"><div class="pr-sp"><div class="pr-node"></div></div><div class="pr-b"><h4>Questões & Gabarito</h4><p>Geração source-grounded, revisada e auditável</p><span class="pb bs2">em breve</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div data-r="up" style="max-width:480px">
+      <div class="s-tag">Funcionalidades</div>
+      <h2 class="disp">Tudo que você<br>precisa para <em>passar.</em></h2>
+    </div>
+    <div class="feat-grid" data-r="up">
+      <div class="fc"><div class="fc-ico">📄</div><h3>Upload & Processamento</h3><p>PDF, apostilas e livros processados automaticamente. Extração, chunking e estruturação isolados por usuário.</p><div class="fc-tag live"><span class="fc-dot"></span>Disponível</div></div>
+      <div class="fc"><div class="fc-ico">📋</div><h3>Leitura de Edital</h3><p>Detecta tópicos, subtópicos, pesos, exclusões e formato de prova. Análise determinística e auditável.</p><div class="fc-tag live"><span class="fc-dot"></span>Disponível</div></div>
+      <div class="fc"><div class="fc-ico">🔗</div><h3>Alinhamento Bibliográfico</h3><p>Cruza o conteúdo programático com seus materiais. Identifica lacunas, redundâncias e o que falta estudar.</p><div class="fc-tag live"><span class="fc-dot"></span>Disponível</div></div>
+      <div class="fc"><div class="fc-ico">🧠</div><h3>Tutor Adaptativo</h3><p>Sessões que evoluem com seu desempenho. Rastreia microtópicos, memória pedagógica e padrões de erro.</p><div class="fc-tag live"><span class="fc-dot"></span>Disponível</div></div>
+      <div class="fc"><div class="fc-ico">🔄</div><h3>Ciclo de Estudos</h3><p>Rotação inteligente entre matérias baseada no currículo, desempenho e tempo disponível até a prova.</p><div class="fc-tag live"><span class="fc-dot"></span>Disponível</div></div>
+      <div class="fc"><div class="fc-ico">✅</div><h3>Questões & Simulados</h3><p>Geração de questões e simulados completos no perfil da banca — CEBRASPE, FGV, Marinha e mais.</p><div class="fc-tag soon"><span class="fc-dot"></span>Em breve</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="dim" id="how">
+  <div class="wrap">
+    <div data-r="up" style="text-align:center;max-width:480px;margin:0 auto">
+      <div class="s-tag" style="justify-content:center">Como funciona</div>
+      <h2 class="disp">Do zero ao <em>simulado</em><br>em minutos.</h2>
+    </div>
+    <div class="how-body">
+      <div class="how-step"><div class="how-n">01</div><div class="how-c"><h3>Crie sua conta e defina o objetivo</h3><p>Selecione o concurso ou crie um objetivo personalizado. Tudo isolado por usuário.</p><div class="chip-r"><span class="chip">CEBRASPE</span><span class="chip">FGV</span><span class="chip">Marinha</span><span class="chip">+ qualquer banca</span></div></div></div>
+      <div class="how-step"><div class="how-n">02</div><div class="how-c"><h3>Envie o edital e seus materiais</h3><p>PDF, apostilas, livros, anotações. O pipeline extrai, estrutura e identifica o que vai cair.</p><div class="chip-r"><span class="chip">PDF</span><span class="chip">TXT</span><span class="chip">Markdown</span></div></div></div>
+      <div class="how-step"><div class="how-n">03</div><div class="how-c"><h3>Receba seu currículo alinhado</h3><p>O Mentorium cruza o edital com sua bibliografia, aponta gaps e gera um currículo priorizado por peso e relevância.</p></div></div>
+      <div class="how-step"><div class="how-n">04</div><div class="how-c"><h3>Estude por ciclos adaptativos</h3><p>Sessões com resumos e questões. O tutor intensifica a revisão exatamente onde seu desempenho cai.</p></div></div>
+      <div class="how-step"><div class="how-n">05</div><div class="how-c"><h3>Simulado e resumão pré-prova</h3><p>Simulado completo no perfil da banca. Antes da prova, um resumão focado nos seus pontos mais fracos.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ADAPTIVE -->
+<section id="adaptive">
+  <div class="wrap">
+    <div class="adapt-grid">
+      <div data-r="left">
+        <div class="s-tag">Inteligência adaptativa</div>
+        <h2 class="disp">Quanto mais usa,<br><em>mais preciso</em> fica.</h2>
+        <p class="lead">O tutor rastreia retenção por microtópico, padrões de erro e ritmo de revisão para calibrar seu plano continuamente.</p>
+        <div class="adapt-pts">
+          <div class="ap"><div class="ap-i">📊</div><div class="ap-t"><h4>Retenção por microtópico em tempo real</h4><p>Cada conceito tem seu índice monitorado individualmente.</p></div></div>
+          <div class="ap"><div class="ap-i">🔁</div><div class="ap-t"><h4>Revisão cumulativa nos pontos críticos</h4><p>Errou muito? O tutor aprofunda automaticamente nesse tópico.</p></div></div>
+          <div class="ap"><div class="ap-i">⏱</div><div class="ap-t"><h4>Ciclo calibrado pelo tempo até a prova</h4><p>Foco cresce nos tópicos de maior peso conforme a data se aproxima.</p></div></div>
+        </div>
+      </div>
+      <div data-r="right">
+        <div class="dash">
+          <div class="dash-top">
+            <div class="dd" style="background:#ff5f57"></div>
+            <div class="dd" style="background:#febc2e"></div>
+            <div class="dd" style="background:#28c840"></div>
+            <div class="dash-t">Mentorium · Sessão adaptativa</div>
+          </div>
+          <div class="dash-inner">
+            <div class="dash-side">
+              <div class="ds-lbl">Painel</div>
+              <div class="ds-item on"><span>📊</span> Sessão</div>
+              <div class="ds-item"><span>📋</span> Edital</div>
+              <div class="ds-item"><span>📄</span> Materiais</div>
+              <div class="ds-item"><span>🔄</span> Ciclo</div>
+              <div class="ds-item"><span>✅</span> Simulados</div>
+            </div>
+            <div class="dash-main">
+              <div>
+                <div class="dl">retenção · Dir. Constitucional</div>
+                <div class="dm"><span class="dm-l">Princípios Fundamentais</span><div class="dm-t"><div class="dm-f" style="width:88%"></div></div><span class="dm-p ok">88%</span></div>
+                <div class="dm"><span class="dm-l">Direitos e Garantias</span><div class="dm-t"><div class="dm-f" style="width:72%"></div></div><span class="dm-p ok">72%</span></div>
+                <div class="dm"><span class="dm-l">Organização do Estado</span><div class="dm-t"><div class="dm-f w" style="width:41%"></div></div><span class="dm-p w">41%</span></div>
+                <div class="dm"><span class="dm-l">Poder Executivo</span><div class="dm-t"><div class="dm-f w" style="width:28%"></div></div><span class="dm-p w">28%</span></div>
+              </div>
+              <div class="dash-r2">
+                <div class="dmc"><div class="dmc-l">Retenção geral</div><div class="dmc-v">67%</div><div class="dmc-d">↑ +12% semana</div></div>
+                <div class="dmc"><div class="dmc-l">Tópicos</div><div class="dmc-v">6/8</div><div class="dmc-d">no edital</div></div>
+              </div>
+              <div class="dash-note"><span class="dash-ni">→</span>Revisão intensificada em <strong style="color:var(--silver);font-weight:400">Organização do Estado</strong> e <strong style="color:var(--silver);font-weight:400">Poder Executivo</strong> na próxima sessão.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="dim" id="pricing">
+  <div class="wrap">
+    <div data-r="up" style="max-width:420px">
+      <div class="s-tag">Planos</div>
+      <h2 class="disp">Simples.<br><em>Transparente.</em></h2>
+      <p class="lead">Em acesso antecipado. Preços definitivos no lançamento — primeiros usuários terão condições especiais.</p>
+    </div>
+    <div class="price-grid" data-r="up">
+      <div class="pc">
+        <div class="pc-tier">// Gratuito</div>
+        <div class="pc-price"><span class="pc-cur">R$</span><span class="pc-val">0</span><span class="pc-per">/mês</span></div>
+        <p class="pc-desc">Para conhecer a plataforma e organizar seus primeiros estudos.</p>
+        <ul class="pc-feats">
+          <li><span class="pch">✓</span>Upload de até 3 materiais</li>
+          <li><span class="pch">✓</span>Leitura de 1 edital</li>
+          <li><span class="pch">✓</span>Pipeline documental básico</li>
+          <li><span class="pch">✓</span>Dashboard de progresso</li>
+          <li><span class="pch off">—</span><span style="opacity:.35">Tutor adaptativo completo</span></li>
+          <li><span class="pch off">—</span><span style="opacity:.35">Geração de questões</span></li>
+        </ul>
+        <button class="btn-plan bpo" onclick="openM('signup')">Começar grátis</button>
+      </div>
+      <div class="pc hl">
+        <div class="pc-badge">Acesso antecipado</div>
+        <div class="pc-tier">// Profissional</div>
+        <div class="pc-price"><span class="pc-val" style="font-size:32px;color:var(--t2);font-family:var(--sans);font-weight:300">a definir</span></div>
+        <p class="pc-desc">Todos os recursos. Primeiros usuários terão condições especiais de lançamento.</p>
+        <ul class="pc-feats">
+          <li><span class="pch">✓</span>Materiais e editais ilimitados</li>
+          <li><span class="pch">✓</span>Alinhamento bibliográfico completo</li>
+          <li><span class="pch">✓</span>Tutor adaptativo com memória pedagógica</li>
+          <li><span class="pch">✓</span>Ciclo de estudos por edital</li>
+          <li><span class="pch">✓</span>Geração de questões (em breve)</li>
+          <li><span class="pch">✓</span>Simulados por banca (em breve)</li>
+        </ul>
+        <button class="btn-plan bps" onclick="openM('signup')">Entrar na lista</button>
+      </div>
+      <div class="pc">
+        <div class="pc-tier">// Intensivo</div>
+        <div class="pc-price"><span class="pc-val" style="font-size:32px;color:var(--t2);font-family:var(--sans);font-weight:300">a definir</span></div>
+        <p class="pc-desc">Para a reta final. Análise avançada, resumão pré-prova e suporte prioritário.</p>
+        <ul class="pc-feats">
+          <li><span class="pch">✓</span>Tudo do Profissional</li>
+          <li><span class="pch">✓</span>Resumão pré-prova automatizado</li>
+          <li><span class="pch">✓</span>Análise avançada de pontos fracos</li>
+          <li><span class="pch">✓</span>Multi-edital simultâneo</li>
+          <li><span class="pch">✓</span>Exportação de snapshots</li>
+          <li><span class="pch">✓</span>Acesso antecipado a novos recursos</li>
+        </ul>
+        <button class="btn-plan bpo" onclick="openM('signup')">Entrar na lista</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<div class="cta-band" data-r="up">
+  <p class="cta-title">Pronto para estudar<br>só o que <em>importa?</em></p>
+  <p class="cta-sub">Crie sua conta agora. Gratuita, sem cartão, sem compromisso.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1">
+    <a href="#" class="btn-lg btn-lg-gold" onclick="openM('signup');return false;">Criar conta gratuita</a>
+    <a href="#" class="btn-lg btn-lg-ghost" onclick="openM('login');return false;">Já tenho conta</a>
+  </div>
+  <p class="cta-note">Acesso antecipado · Sem cartão de crédito</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-logo"><div class="logo-m">M</div>Mentorium</div>
+  <ul class="f-links">
+    <li><a href="#">Funcionalidades</a></li>
+    <li><a href="#">Como funciona</a></li>
+    <li><a href="#">Planos</a></li>
+    <li><a href="#">Contato</a></li>
+  </ul>
+  <div class="f-copy">© 2025 Mentorium</div>
+</footer>
+
+<!-- MODAL -->
+<div class="ov" id="ov">
+  <div class="modal">
+    <button class="mx" onclick="closeM()">✕</button>
+    <div class="mh2"><div class="mm">M</div><span class="mn">Mentorium</span></div>
+    <div class="m-tabs">
+      <button class="mt2 a" onclick="switchT('login')">Entrar</button>
+      <button class="mt2" onclick="switchT('signup')">Criar conta</button>
+    </div>
+    <h2 class="m-title" id="mh">Bem-vindo de volta.</h2>
+    <p class="m-sub" id="ms">Continue de onde parou.</p>
+    <div id="fl">
+      <div class="fg"><label class="fl2">E-mail</label><input type="email" class="fi" placeholder="seu@email.com"></div>
+      <div class="fg"><label class="fl2">Senha</label><input type="password" class="fi" placeholder="••••••••"><p class="f-hint"><a href="#">Esqueceu a senha?</a></p></div>
+      <button class="btn-sub">Entrar na plataforma</button>
+      <p class="m-foot">Ainda não tem conta? <a href="#" onclick="switchT('signup')">Criar agora</a></p>
+    </div>
+    <div id="fs" style="display:none">
+      <div class="fg"><label class="fl2">Nome</label><input type="text" class="fi" placeholder="Seu nome completo"></div>
+      <div class="fg"><label class="fl2">E-mail</label><input type="email" class="fi" placeholder="seu@email.com"></div>
+      <div class="fg"><label class="fl2">Senha</label><input type="password" class="fi" placeholder="Mínimo 8 caracteres"><p class="f-hint">Armazenada com segurança. Nunca em texto puro.</p></div>
+      <button class="btn-sub">Criar minha conta</button>
+      <p class="m-foot">Já tem conta? <a href="#" onclick="switchT('login')">Entrar aqui</a></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const C=document.getElementById('cur'),R=document.getElementById('cur-r');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;C.style.left=mx+'px';C.style.top=my+'px';});
+(function tick(){rx+=(mx-rx)*.09;ry+=(my-ry)*.09;R.style.left=rx+'px';R.style.top=ry+'px';requestAnimationFrame(tick);})();
+document.querySelectorAll('a,button,.fc,.pc,.how-step,.ap').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('h'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('h'));
+});
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('on',scrollY>40),{passive:true});
+const els=[...document.querySelectorAll('[data-r],.how-step,.pr,.ap')];
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const idx=els.indexOf(e.target);
+    const d=e.target.classList.contains('pr')||e.target.classList.contains('how-step')||e.target.classList.contains('ap')?idx%8*75:0;
+    setTimeout(()=>e.target.classList.add('in'),d);
+    io.unobserve(e.target);
+  });
+},{threshold:.1});
+els.forEach(el=>io.observe(el));
+function openM(t){document.getElementById('ov').classList.add('open');switchT(t);document.body.style.overflow='hidden';}
+function closeM(){document.getElementById('ov').classList.remove('open');document.body.style.overflow='';}
+function switchT(t){
+  document.querySelectorAll('.mt2').forEach((b,i)=>b.classList.toggle('a',t==='login'?i===0:i===1));
+  document.getElementById('fl').style.display=t==='login'?'block':'none';
+  document.getElementById('fs').style.display=t==='signup'?'block':'none';
+  document.getElementById('mh').textContent=t==='login'?'Bem-vindo de volta.':'Comece sua jornada.';
+  document.getElementById('ms').textContent=t==='login'?'Continue de onde parou.':'Crie sua conta gratuitamente.';
+}
+document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)closeM();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM();});
+</script>
+</body>
+</html>

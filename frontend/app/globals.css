@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-base: #1a2f3f;
+  --color-s1: #152738;
+  --color-s2: #0f1e2a;
+  --color-s3: #0a1520;
+  --color-s4: #2a4a61;
+  --color-s5: #243f55;
+  --color-gold: #c9a96e;
+  --color-gold-2: #dfc08a;
+  --color-silver: #a8b8c4;
+  --color-text-primary: #e8eef2;
+  --font-serif: "Cormorant";
+  --font-sans: "Geist";
+  --font-mono: "JetBrains Mono";
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(42, 74, 97, 0.22), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(201, 169, 110, 0.10), transparent 22%),
+    linear-gradient(180deg, rgba(26, 47, 63, 0.98) 0%, rgba(10, 21, 32, 1) 100%);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+}
