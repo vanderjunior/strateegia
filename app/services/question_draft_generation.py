@@ -285,10 +285,16 @@ class QuestionDraftGenerationService:
                 "no_final_explanations_generated": True,
                 "style_hints": list(slot_blueprint.style_hints),
                 "question_style_profile_id": slot_blueprint.metadata.get("question_style_profile_id"),
+                "exam_profile_id": slot_blueprint.metadata.get("exam_profile_id"),
+                "format": slot_blueprint.metadata.get("format"),
+                "options_count": slot_blueprint.metadata.get("options_count"),
+                "answer_labels": list(slot_blueprint.metadata.get("answer_labels", [])),
                 "source_required": slot_blueprint.metadata.get("source_required"),
                 "bibliography_anchor_required": slot_blueprint.metadata.get("bibliography_anchor_required"),
                 "allowed_archetypes": list(slot_blueprint.metadata.get("allowed_archetypes", [])),
                 "preferred_templates": list(slot_blueprint.metadata.get("preferred_templates", [])),
+                "selected_question_archetype": slot_blueprint.metadata.get("selected_question_archetype"),
+                "recommended_question_archetype": slot_blueprint.metadata.get("recommended_question_archetype"),
                 "distractor_policy": dict(slot_blueprint.metadata.get("distractor_policy", {})),
                 "scoring_behavior": dict(slot_blueprint.metadata.get("scoring_behavior", {})),
                 "safety_rules": dict(slot_blueprint.metadata.get("safety_rules", {})),
@@ -296,6 +302,13 @@ class QuestionDraftGenerationService:
                     "human_review_required_for_answer_key"
                 ),
                 "visible_source_titles": list(slot_blueprint.metadata.get("visible_source_titles", [])),
+                "source_grounding_validation_state": slot_blueprint.metadata.get("source_grounding_validation_state"),
+                "bibliography_anchor_validation_state": slot_blueprint.metadata.get(
+                    "bibliography_anchor_validation_state"
+                ),
+                "current_edital_alignment_validation_state": slot_blueprint.metadata.get(
+                    "current_edital_alignment_validation_state"
+                ),
                 "question_style_validation": dict(slot_blueprint.metadata.get("question_style_validation", {})),
             },
         )

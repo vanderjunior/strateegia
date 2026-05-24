@@ -316,9 +316,25 @@ class QuestionGenerationBlueprintService:
             blueprint_metadata=metadata,
             source_titles=[item.source_title for item in source_evidence if item.source_title],
             source_present=bool(source_evidence),
-            requested_archetype="technical_operational_scenario"
-            if question_kind == "technical_maritime_scenario"
-            else None,
+            requested_archetype=(
+                slot.metadata.get("requested_archetype")
+                if isinstance(slot.metadata.get("requested_archetype"), str)
+                else (
+                    "technical_operational_scenario"
+                    if question_kind == "technical_maritime_scenario"
+                    else None
+                )
+            ),
+            formula_supported=bool(slot.metadata.get("formula_supported", False)),
+            per_statement_source_support=bool(slot.metadata.get("per_statement_source_support", False)),
+            negative_command=bool(slot.metadata.get("negative_command", False)),
+            bibliography_anchor_present=bool(source_evidence),
+            source_title_visible=bool([item.source_title for item in source_evidence if item.source_title]),
+            current_edital_alignment_present=slot.metadata.get("current_edital_alignment_present", bool(source_evidence)),
+            exact_source_value_present=bool(slot.metadata.get("exact_source_value_present", False)),
+            scenario_present=bool(slot.metadata.get("scenario_present", question_kind == "technical_maritime_scenario")),
+            normative_source_present=bool(slot.metadata.get("normative_source_present", False)),
+            units_present=bool(slot.metadata.get("units_present", False)),
             delivery_context="simulado",
         )
         return QuestionGenerationBlueprint(

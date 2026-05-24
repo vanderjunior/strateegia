@@ -220,6 +220,47 @@ def get_question_style_profile(profile_id: str | None) -> dict[str, object] | No
     return get_pscpp_question_style_profile()
 
 
+def get_allowed_archetypes_for_profile(profile_id: str | None) -> list[str]:
+    profile = get_question_style_profile(profile_id)
+    if profile is None:
+        return []
+    return [
+        str(item["archetype_id"])
+        for item in profile["question_archetypes"]
+        if isinstance(item, dict) and "archetype_id" in item
+    ]
+
+
+def get_profile_template_hints(profile_id: str | None) -> list[dict[str, str]]:
+    profile = get_question_style_profile(profile_id)
+    if profile is None:
+        return []
+    return [
+        {
+            "template_id": str(item["template_id"]),
+            "template_label": str(item["template_label"]),
+        }
+        for item in profile["templates"]
+        if isinstance(item, dict)
+    ]
+
+
+def select_default_archetype_for_context(
+    profile_id: str | None,
+    *,
+    delivery_context: str,
+) -> str | None:
+    if resolve_question_style_profile_id(profile_id) != PSCPP_QUESTION_STYLE_PROFILE_ID:
+        return None
+    defaults = {
+        "simulado": "technical_operational_scenario",
+        "fixation": "statement_combination",
+        "review": "true_false_sequence_multiple_choice",
+        "summary_reading": "incorrect_alternative",
+    }
+    return defaults.get(delivery_context, "technical_operational_scenario")
+
+
 def build_question_style_validation(
     *,
     exam_profile_id: str | None,
@@ -228,24 +269,71 @@ def build_question_style_validation(
     formula_supported: bool,
     per_statement_source_support: bool,
     negative_command: bool,
+    bibliography_anchor_present: bool | None = None,
+    source_title_visible: bool | None = None,
+    current_edital_alignment_present: bool | None = None,
+    exact_source_value_present: bool = False,
+    scenario_present: bool = False,
+    normative_source_present: bool = False,
+    units_present: bool = False,
+    delivery_context: str = "simulado",
 ) -> dict[str, object]:
     if resolve_question_style_profile_id(exam_profile_id) != PSCPP_QUESTION_STYLE_PROFILE_ID:
         return {}
 
+    allowed_archetypes = get_allowed_archetypes_for_profile(exam_profile_id)
+    default_archetype = select_default_archetype_for_context(
+        exam_profile_id,
+        delivery_context=delivery_context,
+    )
+    selected_archetype = requested_archetype or default_archetype
     blockers: list[str] = []
     warnings: list[str] = []
     state = "style_profile_ready"
+    invalid_requested_archetype = False
+
+    if requested_archetype and requested_archetype not in allowed_archetypes:
+        invalid_requested_archetype = True
+        warnings.append("invalid_pscpp_archetype_requested")
+        selected_archetype = default_archetype
+        state = "needs_review"
+
+    bibliography_anchor_present = source_present if bibliography_anchor_present is None else bibliography_anchor_present
+    source_title_visible = bibliography_anchor_present if source_title_visible is None else source_title_visible
+    current_edital_alignment_present = (
+        source_present if current_edital_alignment_present is None else current_edital_alignment_present
+    )
 
     if not source_present:
         blockers.append("blocked_by_missing_source")
         state = "blocked_by_missing_source"
 
-    if requested_archetype == "applied_calculation" and not formula_supported:
-        warnings.append("numeric_source_or_formula_validation_required")
+    if not bibliography_anchor_present:
+        warnings.append("bibliography_anchor_missing")
         if not blockers:
             state = "needs_review"
 
-    if requested_archetype in {
+    if not source_title_visible:
+        warnings.append("source_title_visibility_missing")
+        if not blockers:
+            state = "needs_review"
+
+    if not current_edital_alignment_present:
+        warnings.append("current_edital_alignment_missing")
+        if not blockers:
+            state = "needs_review"
+
+    if selected_archetype == "applied_calculation":
+        if not formula_supported:
+            warnings.append("numeric_source_or_formula_validation_required")
+            if not blockers:
+                state = "needs_review"
+        if not units_present:
+            warnings.append("calculation_units_required")
+            if not blockers:
+                state = "needs_review"
+
+    if selected_archetype in {
         "statement_combination",
         "true_false_sequence_multiple_choice",
     } and not per_statement_source_support:
@@ -253,15 +341,91 @@ def build_question_style_validation(
         if not blockers:
             state = "needs_review"
 
-    if negative_command or requested_archetype == "incorrect_alternative":
+    if selected_archetype == "technical_gap_fill_multiple_choice" and not exact_source_value_present:
+        warnings.append("exact_source_value_required")
+        if not blockers:
+            state = "needs_review"
+
+    if selected_archetype == "technical_operational_scenario" and not scenario_present:
+        warnings.append("technical_operational_scenario_context_required")
+        if not blockers:
+            state = "needs_review"
+
+    if selected_archetype == "normative_case_application" and not normative_source_present:
+        warnings.append("normative_reference_required")
+        if not blockers:
+            state = "needs_review"
+
+    if negative_command or selected_archetype == "incorrect_alternative":
         warnings.append("negative_command_review_marker_required")
         if not blockers and state == "style_profile_ready":
             state = "needs_review"
 
+    source_grounding_state = "ready" if source_present else "blocked"
+    bibliography_anchor_state = "ready" if bibliography_anchor_present else "needs_review"
+    source_title_visibility_state = "ready" if source_title_visible else "needs_review"
+    current_edital_alignment_state = "ready" if current_edital_alignment_present else "needs_review"
+
+    if selected_archetype == "applied_calculation" and not formula_supported:
+        source_grounding_state = "needs_review"
+    if selected_archetype in {"statement_combination", "true_false_sequence_multiple_choice"} and not per_statement_source_support:
+        source_grounding_state = "needs_review"
+    if selected_archetype == "technical_gap_fill_multiple_choice" and not exact_source_value_present:
+        source_grounding_state = "needs_review"
+
+    archetype_requirements = {}
+    if selected_archetype == "statement_combination":
+        archetype_requirements = {
+            "statement_count_min": 4,
+            "statement_count_max": 5,
+            "source_support_per_statement_required": True,
+        }
+    elif selected_archetype == "true_false_sequence_multiple_choice":
+        archetype_requirements = {
+            "statement_count_min": 4,
+            "statement_count_max": 5,
+            "answer_format": "sequence_option",
+            "source_support_per_statement_required": True,
+        }
+    elif selected_archetype == "incorrect_alternative":
+        archetype_requirements = {
+            "negative_command": True,
+            "trap_risk": "high",
+        }
+    elif selected_archetype == "applied_calculation":
+        archetype_requirements = {
+            "requires_numeric_reasoning": True,
+            "requires_units": True,
+            "requires_formula_or_explicit_source": True,
+        }
+    elif selected_archetype == "technical_operational_scenario":
+        archetype_requirements = {
+            "scenario_required": True,
+            "role_context": ["pratico", "comandante", "oficial_de_quarto"],
+        }
+    elif selected_archetype == "technical_gap_fill_multiple_choice":
+        archetype_requirements = {
+            "requires_exact_source_value": True,
+        }
+    elif selected_archetype == "normative_case_application":
+        archetype_requirements = {
+            "normative_reference_required": True,
+        }
+
     return {
         "state": state,
         "blockers": blockers,
-        "warnings": warnings,
+        "warnings": sorted(set(warnings)),
+        "requested_archetype": requested_archetype,
+        "selected_archetype": selected_archetype,
+        "recommended_archetype": default_archetype,
+        "allowed_archetypes": allowed_archetypes,
+        "invalid_requested_archetype": invalid_requested_archetype,
+        "archetype_requirements": archetype_requirements,
+        "source_grounding_state": source_grounding_state,
+        "bibliography_anchor_state": bibliography_anchor_state,
+        "source_title_visibility_state": source_title_visibility_state,
+        "current_edital_alignment_state": current_edital_alignment_state,
         "source_required": True,
         "bibliography_anchor_required": True,
         "requires_human_review_for_answer_key": True,
@@ -279,6 +443,13 @@ def enrich_question_generation_blueprint_with_style_profile(
     formula_supported: bool = False,
     per_statement_source_support: bool = False,
     negative_command: bool = False,
+    bibliography_anchor_present: bool | None = None,
+    source_title_visible: bool | None = None,
+    current_edital_alignment_present: bool | None = None,
+    exact_source_value_present: bool = False,
+    scenario_present: bool = False,
+    normative_source_present: bool = False,
+    units_present: bool = False,
     delivery_context: str = "simulado",
 ) -> dict[str, object]:
     metadata = dict(blueprint_metadata or {})
@@ -300,26 +471,27 @@ def enrich_question_generation_blueprint_with_style_profile(
         formula_supported=formula_supported,
         per_statement_source_support=per_statement_source_support,
         negative_command=negative_command,
+        bibliography_anchor_present=bibliography_anchor_present,
+        source_title_visible=source_title_visible,
+        current_edital_alignment_present=current_edital_alignment_present,
+        exact_source_value_present=exact_source_value_present,
+        scenario_present=scenario_present,
+        normative_source_present=normative_source_present,
+        units_present=units_present,
+        delivery_context=delivery_context,
     )
-    archetypes = [
-        str(item["archetype_id"])
-        for item in profile["question_archetypes"]
-        if isinstance(item, dict) and "archetype_id" in item
-    ]
-    templates = [
-        {
-            "template_id": str(item["template_id"]),
-            "template_label": str(item["template_label"]),
-        }
-        for item in profile["templates"]
-        if isinstance(item, dict)
-    ]
+    archetypes = get_allowed_archetypes_for_profile(exam_profile_id)
+    templates = get_profile_template_hints(exam_profile_id)
+    resolved_exam_profile_id = resolve_question_style_profile_id(exam_profile_id)
 
     metadata.update(
         {
-            "exam_profile_id": exam_profile_id,
+            "exam_profile_id": resolved_exam_profile_id,
             "question_style_profile_id": profile["profile_id"],
             "question_style_profile_name": profile["profile_name"],
+            "format": profile["format"],
+            "options_count": profile["options"]["options_count"],
+            "answer_labels": list(profile["options"]["answer_labels"]),
             "source_required": True,
             "bibliography_anchor_required": True,
             "source_title_should_be_visible_in_blueprint": True,
@@ -337,7 +509,13 @@ def enrich_question_generation_blueprint_with_style_profile(
             "applicable_generation_flows": list(profile["applicable_generation_flows"]),
             "delivery_context": delivery_context,
             "requested_question_archetype": requested_archetype,
+            "selected_question_archetype": validation.get("selected_archetype"),
+            "recommended_question_archetype": validation.get("recommended_archetype"),
             "visible_source_titles": unique_source_titles,
+            "source_grounding_validation_state": validation.get("source_grounding_state"),
+            "bibliography_anchor_validation_state": validation.get("bibliography_anchor_state"),
+            "source_title_visibility_validation_state": validation.get("source_title_visibility_state"),
+            "current_edital_alignment_validation_state": validation.get("current_edital_alignment_state"),
             "question_style_validation": validation,
         }
     )

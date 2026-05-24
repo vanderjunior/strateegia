@@ -59,3 +59,12 @@
 - No OCR/base64 or raw document body in profile metadata
 - No LLM, RAG, or vector behavior
 - No runtime apply or progress mutation
+
+## Generation Integration
+
+- The PSCPP profile enriches metadata for `simulado`, `fixation`, `review`, and `summary_reading`
+- Source-grounding validation checks source presence, bibliography anchor visibility, source-title visibility, and current edital alignment
+- Archetype validation keeps PSCPP generation within the allowed maritime archetype set and adds review markers when constraints are missing
+- Scoring and distractor hints stay metadata-only and deterministic
+- Answer-key handling remains human-review-only
+- `PSCPP/2012 Prova Rosa` remains historical style evidence only, never current edital scope

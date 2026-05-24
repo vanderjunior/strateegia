@@ -92,3 +92,80 @@ def pscpp_draft_fixture(tmp_path):
     )
     draft_service = QuestionDraftGenerationService(fixture.context.repository)
     return draft_service.build_draft_set(blueprint_set.blueprint_set_id, user_id=fixture.context.user_id)
+
+
+def pscpp_direct_metadata_fixture(
+    *,
+    context: str,
+    requested_archetype: str | None = None,
+    source_present: bool = True,
+    bibliography_anchor_present: bool | None = None,
+    source_title_visible: bool | None = None,
+    current_edital_alignment_present: bool | None = None,
+    formula_supported: bool = False,
+    per_statement_source_support: bool = False,
+    negative_command: bool = False,
+    exact_source_value_present: bool = False,
+    scenario_present: bool = False,
+    normative_source_present: bool = False,
+    units_present: bool = False,
+) -> dict[str, object]:
+    return enrich_question_generation_blueprint_with_style_profile(
+        exam_profile_id=PSCPP_EXAM_PROFILE_ID,
+        blueprint_metadata={"question_context": context},
+        source_titles=["NORMAM-12/DPC"] if source_present else [],
+        source_present=source_present,
+        requested_archetype=requested_archetype,
+        bibliography_anchor_present=bibliography_anchor_present,
+        source_title_visible=source_title_visible,
+        current_edital_alignment_present=current_edital_alignment_present,
+        formula_supported=formula_supported,
+        per_statement_source_support=per_statement_source_support,
+        negative_command=negative_command,
+        exact_source_value_present=exact_source_value_present,
+        scenario_present=scenario_present,
+        normative_source_present=normative_source_present,
+        units_present=units_present,
+        delivery_context=context,
+    )
+
+
+def pscpp_archetype_slot_fixture(
+    tmp_path,
+    *,
+    requested_archetype: str,
+    slot_metadata: dict[str, object] | None = None,
+):
+    fixture = pscpp_ready_blueprint_fixture(tmp_path)
+    context = fixture.context
+    slot = build_slot(
+        topic_id="topic:ripeam-pscpp",
+        format_type="multiple_choice_5",
+        readiness_state="ready_for_generation",
+        source_evidence_ids=["e:ripeam:pscpp"],
+    ).model_copy(
+        update={
+            "metadata": {
+                "requested_archetype": requested_archetype,
+                **(slot_metadata or {}),
+            }
+        }
+    )
+    simulado = persist_simulado(
+        context,
+        graph_id=fixture.graph.graph_id,
+        profile_id=PSCPP_EXAM_PROFILE_ID,
+        format_type="multiple_choice_5",
+        question_slots=[slot],
+        exam_family="PSCPP",
+        artifact_key=f"pscpp-archetype-{requested_archetype}",
+    )
+    return QuestionGenerationFixture(
+        context=context,
+        simulado_blueprint=simulado,
+        graph=fixture.graph,
+        expected_slot_state="ready_for_draft",
+        expected_set_state="ready_for_review",
+        uploaded_material=fixture.uploaded_material,
+        chunk=fixture.chunk,
+    )
