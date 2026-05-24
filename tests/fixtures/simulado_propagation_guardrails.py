@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from app.domain.models import (
     SimuladoAppliedEventLedger,
@@ -133,6 +134,15 @@ def _mark_source_propagation_state_unsafe(
     return _persist_applied_event_ledger(fixture)
 
 
+def _mark_propagation_disabled(
+    fixture: SimuladoPropagationGuardrailFixture,
+) -> SimuladoPropagationGuardrailFixture:
+    ledger = fixture.applied_event_ledger
+    assert ledger is not None
+    ledger.metadata["propagation_disabled"] = True
+    return _persist_applied_event_ledger(fixture)
+
+
 def _mark_final_event_globally_applied(
     fixture: SimuladoPropagationGuardrailFixture,
 ) -> SimuladoPropagationGuardrailFixture:
@@ -213,6 +223,24 @@ def blocked_source_ledger_fixture(
     )
 
 
+def source_ledger_blocked_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return blocked_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def source_ledger_not_recorded_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return blocked_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def zero_source_event_records_fixture(
     tmp_path,
     *,
@@ -224,6 +252,15 @@ def zero_source_event_records_fixture(
             _successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
         )
     )
+
+
+def source_ledger_zero_event_records_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return zero_source_event_records_fixture(tmp_path, user_id=user_id, repository=repository)
 
 
 def source_ledger_not_replay_safe_fixture(
@@ -252,6 +289,19 @@ def source_ledger_missing_deduplication_fixture(
     )
 
 
+def source_ledger_deduplication_missing_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return source_ledger_missing_deduplication_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
+    )
+
+
 def source_ledger_propagation_state_unsafe_fixture(
     tmp_path,
     *,
@@ -259,6 +309,19 @@ def source_ledger_propagation_state_unsafe_fixture(
     repository: JsonStudyRepository | None = None,
 ) -> SimuladoPropagationGuardrailFixture:
     return _mark_source_propagation_state_unsafe(
+        _wrap_fixture(
+            _successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+        )
+    )
+
+
+def propagation_disabled_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return _mark_propagation_disabled(
         _wrap_fixture(
             _successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
         )
@@ -304,6 +367,15 @@ def unsafe_public_exposure_fixture(
     )
 
 
+def public_answer_key_exposure_forbidden_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return unsafe_public_exposure_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
 def successful_source_ledger_fixture(
     tmp_path,
     *,
@@ -312,6 +384,163 @@ def successful_source_ledger_fixture(
 ) -> SimuladoPropagationGuardrailFixture:
     return _wrap_fixture(
         _successful_source_apply_fixture(tmp_path, user_id=user_id, repository=repository)
+    )
+
+
+def safe_source_ledger_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return successful_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def readiness_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def source_ledger_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def candidate_ranking_targets_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def candidate_retention_targets_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def candidate_scheduler_targets_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def candidate_study_cycle_targets_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def candidate_curriculum_graph_targets_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def candidate_adaptive_tuning_targets_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def surface_risk_summary_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def audit_trail_shape_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_propagation_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_runtime_update_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def no_leakage_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def user_scope_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def api_readonly_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return safe_source_ledger_fixture(tmp_path, user_id=user_id, repository=repository)
+
+
+def mixed_guardrail_fixture(
+    tmp_path,
+    *,
+    user_id: str = "user-a",
+    repository: JsonStudyRepository | None = None,
+) -> SimuladoPropagationGuardrailFixture:
+    return source_ledger_propagation_state_unsafe_fixture(
+        tmp_path,
+        user_id=user_id,
+        repository=repository,
     )
 
 
@@ -359,3 +588,43 @@ def capture_propagation_guardrail_source_snapshot(
             repository.list_user_simulado_propagation_guardrails(user_id=user_id)
         ),
     )
+
+
+def stabilization_fixture_builders() -> dict[
+    str,
+    Callable[..., SimuladoPropagationGuardrailFixture],
+]:
+    return {
+        "missing_applied_event_ledger": missing_applied_event_ledger_fixture,
+        "source_ledger_blocked": source_ledger_blocked_fixture,
+        "source_ledger_not_recorded": source_ledger_not_recorded_fixture,
+        "source_ledger_zero_event_records": source_ledger_zero_event_records_fixture,
+        "source_ledger_not_replay_safe": source_ledger_not_replay_safe_fixture,
+        "source_ledger_deduplication_missing": source_ledger_deduplication_missing_fixture,
+        "source_ledger_propagation_state_unsafe": source_ledger_propagation_state_unsafe_fixture,
+        "final_event_globally_applied": final_event_globally_applied_fixture,
+        "source_progress_mutation_detected": source_progress_mutation_detected_fixture,
+        "public_answer_key_exposure_forbidden": public_answer_key_exposure_forbidden_fixture,
+        "propagation_disabled": propagation_disabled_fixture,
+        "safe_source_ledger": safe_source_ledger_fixture,
+        "readiness_summary_shape": readiness_summary_shape_fixture,
+        "source_ledger_summary_shape": source_ledger_summary_shape_fixture,
+        "candidate_ranking_targets_shape": candidate_ranking_targets_shape_fixture,
+        "candidate_retention_targets_shape": candidate_retention_targets_shape_fixture,
+        "candidate_scheduler_targets_shape": candidate_scheduler_targets_shape_fixture,
+        "candidate_study_cycle_targets_shape": candidate_study_cycle_targets_shape_fixture,
+        "candidate_curriculum_graph_targets_shape": (
+            candidate_curriculum_graph_targets_shape_fixture
+        ),
+        "candidate_adaptive_tuning_targets_shape": (
+            candidate_adaptive_tuning_targets_shape_fixture
+        ),
+        "surface_risk_summary_shape": surface_risk_summary_shape_fixture,
+        "audit_trail_shape": audit_trail_shape_fixture,
+        "no_propagation": no_propagation_fixture,
+        "no_runtime_update": no_runtime_update_fixture,
+        "no_leakage": no_leakage_fixture,
+        "user_scope": user_scope_fixture,
+        "api_readonly": api_readonly_fixture,
+        "mixed_guardrail": mixed_guardrail_fixture,
+    }

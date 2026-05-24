@@ -208,6 +208,8 @@ class SimuladoPropagationGuardrailService:
     def _blocker_code(self, source_ledger: SimuladoAppliedEventLedger) -> str:
         if source_ledger.answer_key_publicly_exposed or source_ledger.gabarito_publicly_exposed:
             return "blocked_by_public_answer_key_exposure_forbidden"
+        if bool(source_ledger.metadata.get("propagation_disabled")):
+            return "blocked_by_propagation_disabled"
         if not source_ledger.ledger_event_recorded:
             return "blocked_by_source_ledger_not_recorded"
         if source_ledger.ledger_event_count <= 0 or not source_ledger.applied_event_records:
@@ -510,6 +512,7 @@ class SimuladoPropagationGuardrailService:
             "blocked_by_final_event_already_globally_applied": "Final event is already marked as globally applied.",
             "blocked_by_source_progress_mutation_detected": "Source ledger indicates progress mutation outside the isolated ledger boundary.",
             "blocked_by_public_answer_key_exposure_forbidden": "Public answer key and gabarito exposure remain forbidden.",
+            "blocked_by_propagation_disabled": "Propagation remains explicitly disabled for this propagation guardrail foundation.",
         }
         return [
             PropagationGuardrailBlocker(
