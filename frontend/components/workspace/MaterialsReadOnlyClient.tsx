@@ -15,6 +15,7 @@ import {
 } from "@/components/workspace/WorkspaceShared";
 import { Badge } from "@/components/ui/badge";
 import { sourceLabel } from "@/lib/adapters/capabilities";
+import Link from "next/link";
 
 export function MaterialsReadOnlyClient() {
   const [viewModel, setViewModel] = useState<MaterialsWorkspaceViewModel>(buildMockMaterialsWorkspaceViewModel());
@@ -42,6 +43,26 @@ export function MaterialsReadOnlyClient() {
         subtitle="Acompanhe materiais enviados, leitura de texto e necessidade de revisão."
         connection={viewModel.connection}
       />
+
+      <Card className="border-[rgba(201,169,110,0.14)] bg-[rgba(255,255,255,0.02)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="section-kicker">entrada controlada</div>
+            <CardTitle className="mt-4 text-[1.8rem]">Enviar material</CardTitle>
+            <p className="mt-3 text-sm leading-7 text-silver">
+              Adicione um PDF, TXT ou Markdown para validação inicial. Envio e processamento ocorrem em etapas controladas.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/materials/upload"
+              className="inline-flex items-center justify-center rounded-xl border border-[rgba(201,169,110,0.24)] bg-[rgba(201,169,110,0.10)] px-5 py-3 text-sm text-ink transition hover:-translate-y-0.5 hover:bg-[rgba(201,169,110,0.16)]"
+            >
+              Enviar material
+            </Link>
+          </div>
+        </div>
+      </Card>
 
       <WorkspaceSummaryGrid items={viewModel.summary} />
 

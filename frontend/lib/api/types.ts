@@ -29,6 +29,10 @@ export interface ApiErrorDetails {
     | "timeout"
     | "unauthorized"
     | "not_found"
+    | "bad_request"
+    | "payload_too_large"
+    | "unsupported_media"
+    | "validation_error"
     | "http_error"
     | "invalid_json";
   message: string;
@@ -363,4 +367,43 @@ export interface PipelineDetailViewModel {
   chunksCount: number | null;
   notes: string[];
   steps: PipelineStep[];
+}
+
+export type UploadValidationState =
+  | "idle"
+  | "validating"
+  | "valid"
+  | "invalid_type"
+  | "invalid_size"
+  | "missing_confirmation";
+
+export type UploadEntryState =
+  | "idle"
+  | "validating"
+  | "ready_to_send"
+  | "sending"
+  | "received"
+  | "failed"
+  | "mock_only"
+  | "endpoint_unavailable";
+
+export interface AcceptedUploadType {
+  id: string;
+  label: string;
+  extensions: string[];
+  mimeTypes: string[];
+  note?: string;
+}
+
+export interface UploadMaterialResult {
+  documentId: string;
+  filename: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  processingStatus: string;
+  extractionStatus: string;
+  reviewState: string;
+  source: ApiSource;
+  demoOnly: boolean;
 }
