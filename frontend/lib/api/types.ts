@@ -51,6 +51,7 @@ export interface ApiFailure {
 export type ApiResult<T> = ApiSuccess<T> | ApiFailure;
 
 export interface StudyOverviewCard {
+  id?: string;
   internalKey?: string;
   title: string;
   value: string;

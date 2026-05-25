@@ -58,12 +58,14 @@ function buildOverviewCardsFromBackend(overview: BackendDashboardOverview): Stud
 
   return [
     {
+      id: "dashboard-materials-active",
       title: "Materiais ativos",
       value: `${overview.materials.total_materials} materiais`,
       note: `${overview.materials.ocr_required_count} com OCR em validacao e ${overview.materials.pending_count} pendentes`,
       metric: Math.max(6, processedRatio)
     },
     {
+      id: "dashboard-cycle-current",
       title: "Ciclo atual",
       value: overview.study_cycle.cycle_available
         ? `${overview.study_cycle.topic_slot_count} slots de topico`
@@ -74,6 +76,7 @@ function buildOverviewCardsFromBackend(overview: BackendDashboardOverview): Stud
       metric: overview.study_cycle.cycle_available ? 64 : 18
     },
     {
+      id: "dashboard-simulado-readiness",
       title: "Simulado readiness",
       value: overview.simulado_blueprint.blueprint_available
         ? `${overview.simulado_blueprint.question_slot_count} slots de questoes`

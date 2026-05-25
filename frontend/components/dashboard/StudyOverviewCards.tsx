@@ -11,8 +11,8 @@ export function StudyOverviewCards({
 }) {
   return (
     <div className="grid gap-5 xl:grid-cols-3">
-      {cards.map((card) => (
-        <Card key={card.internalKey ?? card.title}>
+      {cards.map((card, index) => (
+        <Card key={card.id ?? `${card.internalKey ?? "study-card"}-${card.title}-${index}`}>
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
             estudo
           </div>

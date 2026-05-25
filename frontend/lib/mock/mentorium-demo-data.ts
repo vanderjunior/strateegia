@@ -83,6 +83,7 @@ export const dashboardSidebar = [
 
 export const studyOverviewCards: StudyOverviewCard[] = [
   {
+    id: "study-overview-dominant-block",
     internalKey: "pscpp_study_cycle_profile",
     title: "Bloco dominante",
     value: "Manobrabilidade e rebocadores",
@@ -90,6 +91,7 @@ export const studyOverviewCards: StudyOverviewCard[] = [
     metric: 78
   },
   {
+    id: "study-overview-current-rotation",
     internalKey: "pscpp_study_cycle_profile",
     title: "Rotacao atual",
     value: "Sessao 7 de 12",
@@ -97,6 +99,7 @@ export const studyOverviewCards: StudyOverviewCard[] = [
     metric: 58
   },
   {
+    id: "study-overview-weekly-training",
     internalKey: "question_generation_blueprint",
     title: "Treino da semana",
     value: "40 questoes por topico",
