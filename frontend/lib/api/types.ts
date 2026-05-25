@@ -445,6 +445,71 @@ export interface PscppQuestionsViewModel {
   relationToSimulado: string[];
 }
 
+export interface PscppCrosswalkMaterialRef {
+  id: string;
+  title: string;
+  typeLabel: string;
+  statusLabel: string;
+  linkHref: string;
+}
+
+export interface PscppCrosswalkEditalRef {
+  id: string;
+  title: string;
+  statusLabel: string;
+  linkHref: string;
+}
+
+export interface PscppCrosswalkSessionRef {
+  id: string;
+  index: number;
+  label: string;
+  detail: string;
+  emphasis?: "default" | "gap_focus";
+}
+
+export interface PscppCrosswalkBlockItem {
+  id: string;
+  priorityNumber: number;
+  title: string;
+  coverageLabel: string;
+  reviewState: string;
+  materialsCount: number;
+  gapsCount: number;
+  suggestedSessions: PscppCrosswalkSessionRef[];
+  relatedMaterials: PscppCrosswalkMaterialRef[];
+  relatedEditais: PscppCrosswalkEditalRef[];
+  gaps: string[];
+  notes: string[];
+}
+
+export interface PscppCrosswalkGapItem {
+  id: string;
+  title: string;
+  affectedBlockTitle: string;
+  whyItMatters: string;
+  suggestedAction: string;
+  reviewState: string;
+  relatedSessions: PscppCrosswalkSessionRef[];
+}
+
+export interface PscppCrosswalkRelationshipItem {
+  id: string;
+  material: PscppCrosswalkMaterialRef;
+  edital: PscppCrosswalkEditalRef;
+  blockTitle: string;
+  contributionLabel: string;
+}
+
+export interface PscppCrosswalkViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  blocks: PscppCrosswalkBlockItem[];
+  mainGaps: PscppCrosswalkGapItem[];
+  relationships: PscppCrosswalkRelationshipItem[];
+  highlightedSessions: PscppCrosswalkSessionRef[];
+}
+
 export type UploadValidationState =
   | "idle"
   | "validating"

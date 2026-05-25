@@ -8,6 +8,11 @@ import type {
   MaterialDetail,
   MaterialListItem,
   PipelineDetailViewModel,
+  PscppCrosswalkBlockItem,
+  PscppCrosswalkGapItem,
+  PscppCrosswalkRelationshipItem,
+  PscppCrosswalkSessionRef,
+  PscppCrosswalkViewModel,
   PscppCycleViewModel,
   PscppNotebookItem,
   PscppPhaseItem,
@@ -703,5 +708,302 @@ export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
     "Questões candidatas",
     "Revisão necessária",
     "Ainda não finalizadas"
+  ]
+};
+
+const pscppCrosswalkSessionRefs: Record<string, PscppCrosswalkSessionRef> = {
+  "1": { id: "rotation-1", index: 1, label: "Sessão 1", detail: "Manobrabilidade: forças, resistência, propulsão" },
+  "2": { id: "rotation-2", index: 2, label: "Sessão 2", detail: "COLREG: regras de governo e navegação" },
+  "3": { id: "rotation-3", index: 3, label: "Sessão 3", detail: "Arte Naval: nomenclatura, geometria, estabilidade" },
+  "4": { id: "rotation-4", index: 4, label: "Sessão 4", detail: "Navegação: rumos, marcações, agulhas, LDP" },
+  "5": { id: "rotation-5", index: 5, label: "Sessão 5", detail: "Manobrabilidade: leme, curva de giro, zigue-zague, stopping" },
+  "6": { id: "rotation-6", index: 6, label: "Sessão 6", detail: "Legislação: NORMAM, LESTA/RLESTA, praticagem" },
+  "7": { id: "rotation-7", index: 7, label: "Sessão 7", detail: "Shiphandling: atracação, desatracação, fundeio" },
+  "8": { id: "rotation-8", index: 8, label: "Sessão 8", detail: "COLREG: luzes, marcas, sinais sonoros" },
+  "9": { id: "rotation-9", index: 9, label: "Sessão 9", detail: "Navegação restrita: radar, ECDIS, AIS, passage planning" },
+  "10": { id: "rotation-10", index: 10, label: "Sessão 10", detail: "Rebocadores, interação, bollard pull, escort" },
+  "11": { id: "rotation-11", index: 11, label: "Sessão 11", detail: "Meteorologia, oceanografia, marés, METAREA" },
+  "12": { id: "rotation-12", index: 12, label: "Sessão 12", detail: "Simulado curto + revisão de erros" }
+};
+
+export const pscppCrosswalkBlocks: PscppCrosswalkBlockItem[] = [
+  {
+    id: "crosswalk-block-1",
+    priorityNumber: 1,
+    title: "Manobrabilidade, águas rasas, canal, interação, squat, rebocadores e atracação",
+    coverageLabel: "Cobertura parcial",
+    reviewState: "Alinhamento preliminar",
+    materialsCount: 2,
+    gapsCount: 1,
+    suggestedSessions: [
+      { ...pscppCrosswalkSessionRefs["1"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["5"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["10"], emphasis: "gap_focus" }
+    ],
+    relatedMaterials: [
+      {
+        id: "material-shiphandling-manobra",
+        title: "Shiphandling for the Mariner - capítulo manobra.pdf",
+        typeLabel: "PDF textual",
+        statusLabel: "Pronto para revisão",
+        linkHref: "/materials/material-shiphandling-manobra"
+      },
+      {
+        id: "material-arte-naval",
+        title: "PSCPP bibliografia - Arte Naval.pdf",
+        typeLabel: "PDF textual",
+        statusLabel: "Pronto para revisão",
+        linkHref: "/materials/material-arte-naval"
+      }
+    ],
+    relatedEditais: [
+      {
+        id: "edital-pscpp-referencia",
+        title: "PSCPP/Praticagem - edital de referência",
+        statusLabel: "Análise candidata",
+        linkHref: "/editais/edital-pscpp-referencia"
+      }
+    ],
+    gaps: ["Squat e interação em canal estreito precisam de reforço."],
+    notes: ["Sugestão de reforço baseada em materiais já processados e leitura preliminar do edital."]
+  },
+  {
+    id: "crosswalk-block-2",
+    priorityNumber: 2,
+    title: "COLREG, luzes, marcas, sinais sonoros e canais estreitos",
+    coverageLabel: "Cobertura parcial",
+    reviewState: "Precisa de conferência",
+    materialsCount: 1,
+    gapsCount: 1,
+    suggestedSessions: [
+      { ...pscppCrosswalkSessionRefs["2"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["8"], emphasis: "gap_focus" }
+    ],
+    relatedMaterials: [
+      {
+        id: "material-arte-naval",
+        title: "PSCPP bibliografia - Arte Naval.pdf",
+        typeLabel: "PDF textual",
+        statusLabel: "Processado",
+        linkHref: "/materials/material-arte-naval"
+      }
+    ],
+    relatedEditais: [
+      {
+        id: "edital-pscpp-referencia",
+        title: "PSCPP/Praticagem - edital de referência",
+        statusLabel: "Análise candidata",
+        linkHref: "/editais/edital-pscpp-referencia"
+      }
+    ],
+    gaps: ["Luzes e sinais em visibilidade restrita precisam de revisão."],
+    notes: ["Comando negativo e exceções normativas pedem revisão humana adicional."]
+  },
+  {
+    id: "crosswalk-block-3",
+    priorityNumber: 3,
+    title: "Navegação em águas restritas, radar, ECDIS, marés, agulhas e passage planning",
+    coverageLabel: "Precisa de material",
+    reviewState: "Gap identificado",
+    materialsCount: 1,
+    gapsCount: 1,
+    suggestedSessions: [
+      { ...pscppCrosswalkSessionRefs["4"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["9"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["11"], emphasis: "gap_focus" }
+    ],
+    relatedMaterials: [
+      {
+        id: "material-roteiro-porto",
+        title: "Roteiro escaneado - trecho porto.pdf",
+        typeLabel: "PDF digitalizado",
+        statusLabel: "OCR em validação",
+        linkHref: "/materials/material-roteiro-porto"
+      }
+    ],
+    relatedEditais: [
+      {
+        id: "edital-pscpp-referencia",
+        title: "PSCPP/Praticagem - edital de referência",
+        statusLabel: "Precisa de conferência",
+        linkHref: "/editais/edital-pscpp-referencia"
+      }
+    ],
+    gaps: ["Radar, ECDIS e AIS precisam de material mais completo."],
+    notes: ["O principal material relacionado ainda depende de validação de OCR."]
+  },
+  {
+    id: "crosswalk-block-4",
+    priorityNumber: 4,
+    title: "Arte Naval: nomenclatura, geometria, estabilidade, cabos, fundeio e aparelho de governo",
+    coverageLabel: "Cobertura boa",
+    reviewState: "Pronto para revisão",
+    materialsCount: 1,
+    gapsCount: 1,
+    suggestedSessions: [
+      { ...pscppCrosswalkSessionRefs["3"] },
+      { ...pscppCrosswalkSessionRefs["7"] }
+    ],
+    relatedMaterials: [
+      {
+        id: "material-arte-naval",
+        title: "PSCPP bibliografia - Arte Naval.pdf",
+        typeLabel: "PDF textual",
+        statusLabel: "Pronto para revisão",
+        linkHref: "/materials/material-arte-naval"
+      }
+    ],
+    relatedEditais: [
+      {
+        id: "edital-pscpp-referencia",
+        title: "PSCPP/Praticagem - edital de referência",
+        statusLabel: "Análise candidata",
+        linkHref: "/editais/edital-pscpp-referencia"
+      }
+    ],
+    gaps: ["Revisar números e nomenclaturas confundíveis."],
+    notes: ["Boa base atual, com foco em consolidação de termos e parâmetros."]
+  },
+  {
+    id: "crosswalk-block-5",
+    priorityNumber: 5,
+    title: "Legislação, meteorologia/oceanografia, comunicações e conhecimentos gerais",
+    coverageLabel: "Gap encontrado",
+    reviewState: "Precisa de conferência",
+    materialsCount: 0,
+    gapsCount: 1,
+    suggestedSessions: [
+      { ...pscppCrosswalkSessionRefs["6"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["11"], emphasis: "gap_focus" },
+      { ...pscppCrosswalkSessionRefs["12"], emphasis: "gap_focus" }
+    ],
+    relatedMaterials: [],
+    relatedEditais: [
+      {
+        id: "edital-pscpp-referencia",
+        title: "PSCPP/Praticagem - edital de referência",
+        statusLabel: "Precisa de conferência",
+        linkHref: "/editais/edital-pscpp-referencia"
+      }
+    ],
+    gaps: ["NORMAM, Tribunal Marítimo e GMDSS precisam de reforço."],
+    notes: ["Alinhamento preliminar indica reforço normativo antes de ampliar revisão por cenário."]
+  }
+];
+
+export const pscppCrosswalkGaps: PscppCrosswalkGapItem[] = [
+  {
+    id: "crosswalk-gap-1",
+    title: "Squat e interação em canal estreito",
+    affectedBlockTitle: pscppCrosswalkBlocks[0].title,
+    whyItMatters: "Afeta leitura de cenário operacional e decisão de manobra em águas restritas.",
+    suggestedAction: "Reforçar capítulos de shiphandling e revisar cenários de canal com rebocadores.",
+    reviewState: "Sugestão de reforço",
+    relatedSessions: pscppCrosswalkBlocks[0].suggestedSessions
+  },
+  {
+    id: "crosswalk-gap-2",
+    title: "Luzes e sinais em visibilidade restrita",
+    affectedBlockTitle: pscppCrosswalkBlocks[1].title,
+    whyItMatters: "A banca costuma explorar exceções e comandos negativos em COLREG.",
+    suggestedAction: "Revisar sequências de luzes, marcas e sinais sonoros com conferência humana.",
+    reviewState: "Precisa de conferência",
+    relatedSessions: pscppCrosswalkBlocks[1].suggestedSessions
+  },
+  {
+    id: "crosswalk-gap-3",
+    title: "Radar, ECDIS e AIS",
+    affectedBlockTitle: pscppCrosswalkBlocks[2].title,
+    whyItMatters: "Sem material sólido, a revisão de navegação restrita fica incompleta.",
+    suggestedAction: "Buscar material complementar e validar o roteiro escaneado antes da revisão final.",
+    reviewState: "Gap identificado",
+    relatedSessions: pscppCrosswalkBlocks[2].suggestedSessions
+  },
+  {
+    id: "crosswalk-gap-4",
+    title: "NORMAM, Tribunal Marítimo e GMDSS",
+    affectedBlockTitle: pscppCrosswalkBlocks[4].title,
+    whyItMatters: "Esses temas fecham lacunas normativas e sustentam questões de legislação e comunicações.",
+    suggestedAction: "Cruzar o edital de referência com materiais complementares e revisar os tópicos normativos prioritários.",
+    reviewState: "Alinhamento preliminar",
+    relatedSessions: pscppCrosswalkBlocks[4].suggestedSessions
+  }
+];
+
+export const pscppCrosswalkRelationships: PscppCrosswalkRelationshipItem[] = [
+  {
+    id: "crosswalk-rel-arte",
+    material: pscppCrosswalkBlocks[3].relatedMaterials[0],
+    edital: pscppCrosswalkBlocks[3].relatedEditais[0],
+    blockTitle: pscppCrosswalkBlocks[3].title,
+    contributionLabel: "Cobertura boa"
+  },
+  {
+    id: "crosswalk-rel-shiphandling",
+    material: pscppCrosswalkBlocks[0].relatedMaterials[0],
+    edital: pscppCrosswalkBlocks[0].relatedEditais[0],
+    blockTitle: pscppCrosswalkBlocks[0].title,
+    contributionLabel: "Cobertura parcial"
+  },
+  {
+    id: "crosswalk-rel-porto",
+    material: pscppCrosswalkBlocks[2].relatedMaterials[0],
+    edital: pscppCrosswalkBlocks[2].relatedEditais[0],
+    blockTitle: pscppCrosswalkBlocks[2].title,
+    contributionLabel: "Precisa de material"
+  }
+];
+
+export const pscppCrosswalkViewModelMock: PscppCrosswalkViewModel = {
+  connection: {
+    state: "mock",
+    source: "mock",
+    title: "Guia de cobertura",
+    detail: "Mapa PSCPP montado por fallback auditado a partir de materiais, edital, gaps e ciclo sugerido."
+  },
+  summary: [
+    {
+      id: "pscpp-map-summary-blocks",
+      label: "Blocos prioritários",
+      value: "5",
+      detail: "Leitura consolidada dos blocos que mais orientam a preparação."
+    },
+    {
+      id: "pscpp-map-summary-good",
+      label: "Cobertura boa",
+      value: "1",
+      detail: "Há bloco com base técnica já pronta para revisão."
+    },
+    {
+      id: "pscpp-map-summary-partial",
+      label: "Cobertura parcial",
+      value: "2",
+      detail: "Exige reforço e conferência antes de ampliar a revisão."
+    },
+    {
+      id: "pscpp-map-summary-gaps",
+      label: "Gaps encontrados",
+      value: "4",
+      detail: "Lacunas principais conectadas ao edital de referência."
+    },
+    {
+      id: "pscpp-map-summary-sessions",
+      label: "Sessões sugeridas",
+      value: "8",
+      detail: "Sessões do ciclo ligadas aos gaps mais urgentes."
+    }
+  ],
+  blocks: pscppCrosswalkBlocks,
+  mainGaps: pscppCrosswalkGaps,
+  relationships: pscppCrosswalkRelationships,
+  highlightedSessions: [
+    { ...pscppCrosswalkSessionRefs["1"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["2"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["4"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["5"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["6"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["8"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["10"], emphasis: "gap_focus" },
+    { ...pscppCrosswalkSessionRefs["11"], emphasis: "gap_focus" }
   ]
 };

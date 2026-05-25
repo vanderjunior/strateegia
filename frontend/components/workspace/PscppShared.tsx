@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 const pscppNavItems = [
   { href: "/pscpp", label: "Workspace" },
   { href: "/pscpp/ciclo", label: "Ciclo" },
-  { href: "/pscpp/questoes", label: "Questões" }
+  { href: "/pscpp/questoes", label: "Questões" },
+  { href: "/pscpp/mapa", label: "Mapa" }
 ] as const;
 
 export function PscppSectionNav() {
