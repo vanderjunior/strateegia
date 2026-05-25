@@ -76,12 +76,15 @@ export async function uploadMaterialFile(file: File): Promise<ApiResult<UploadMa
   formData.append("file", file, file.name);
 
   try {
-    const response = await fetch(`${baseUrl}/api/materials/upload`, {
+    const response = await fetch("/api/materials/upload", {
       method: "POST",
       credentials: "include",
       body: formData
     });
 
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+    }
     if (response.status === 401 || response.status === 403) {
       return makeApiFailure("backend", "auth_required", "Sessão necessária para enviar material.", response.status);
     }
