@@ -25,8 +25,8 @@ export function HowItWorksSection() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {[
-                    index === 0 ? "pipeline" : index === 1 ? "coverage" : "runtime",
-                    index === 0 ? "bounded docs" : index === 1 ? "perfil PSCPP" : "ledger"
+                    index === 0 ? "pipeline" : index === 1 ? "cobertura" : "simulado",
+                    index === 0 ? "docs preparados" : index === 1 ? "perfil PSCPP" : "registro seguro"
                   ].map((chip) => (
                     <span
                       key={chip}

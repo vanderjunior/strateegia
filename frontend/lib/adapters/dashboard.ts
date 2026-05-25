@@ -31,7 +31,7 @@ function baseConnection(
     source: "mock",
     title: "Mock fallback ativo",
     detail:
-      "O shell permanece utilizavel sem backend e exibe apenas o snapshot auditado das capacidades.",
+      "O painel permanece utilizavel sem backend e exibe apenas o snapshot auditado das capacidades.",
     ...overrides
   };
 }
@@ -70,7 +70,7 @@ function buildOverviewCardsFromBackend(overview: BackendDashboardOverview): Stud
         : "Ciclo ainda nao gerado",
       note: overview.study_cycle.cycle_available
         ? `Estado ${overview.study_cycle.status} com leitura ${overview.study_readiness}`
-        : "Permanece guidance-only ate existir artefato do usuario",
+        : "Permanece como sugestao ate existir um ciclo confirmado para o usuario",
       metric: overview.study_cycle.cycle_available ? 64 : 18
     },
     {
@@ -259,7 +259,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     connection = {
       state: "connected",
       source: "backend",
-      title: "Backend conectado com surface parcial",
+      title: "Backend conectado com leitura parcial",
       detail: "Os endpoints publicos responderam, mas o overview nao esta disponivel nesta instalacao.",
       endpoint: "/api/dashboard/overview"
     };

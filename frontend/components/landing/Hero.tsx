@@ -30,7 +30,7 @@ export function Hero() {
           <span className="ghost-stroke block font-light">Nada alem.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-[rgba(232,238,242,0.75)]">
-          Ambiente em validacao para materiais, editais, bibliografia, questoes, simulados, perfil PSCPP/Praticagem e uma cadeia auditavel de tentativa, correcao, score e ledger.
+          Ambiente em validacao para materiais, editais, bibliografia, questoes, simulados, perfil PSCPP/Praticagem e um fluxo auditavel de tentativa, correcao, resultado e registro seguro.
         </p>
         <p className="mt-4 max-w-2xl text-base leading-7 text-[rgba(232,238,242,0.68)]">
           Leitura de PDFs textuais ja suportada. OCR permanece experimental e sujeito a validacao. A geracao automatica completa de simulado ainda nao deve ser tratada como capacidade final verificada.
@@ -57,7 +57,7 @@ export function Hero() {
         <div className="grid min-h-[27rem] lg:grid-cols-[11rem_1fr]">
           <div className="border-r border-[rgba(168,184,196,0.1)] bg-[rgba(10,21,32,0.94)] p-4">
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[rgba(168,184,196,0.52)]">
-              shell
+              painel
             </div>
             <div className="mt-5 space-y-2">
               {["Dashboard", "Materiais", "Editais", "Ciclo", "PSCPP", "Runtime"].map((item, index) => (

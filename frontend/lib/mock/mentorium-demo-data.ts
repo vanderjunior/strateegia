@@ -14,7 +14,7 @@ export const landingFeatures = [
   {
     title: "PDFs textuais e materiais",
     description:
-      "Leitura de PDFs textuais, TXT e Markdown com pipeline user-scoped e artefatos deterministas.",
+      "Leitura de PDFs textuais, TXT e Markdown com pipeline user-scoped e registros deterministas.",
     badge: "suportado"
   },
   {
@@ -38,7 +38,7 @@ export const landingFeatures = [
   {
     title: "Runtime auditavel de simulado",
     description:
-      "Tentativa, correcao, score, ledger e guardrails auditaveis sem mutacoes amplas nao aprovadas.",
+      "Tentativa, correcao, resultado e registros seguros dentro de limites controlados.",
     badge: "testado"
   },
   {
@@ -60,7 +60,7 @@ export const howItWorksSteps = [
     id: "02",
     title: "Mapeie cobertura e prioridades",
     body:
-      "Cruze bibliografia, coverage, gaps, ciclo de estudo e perfil PSCPP para orientar o treinamento."
+      "Cruze bibliografia, cobertura, gaps, ciclo de estudo e perfil PSCPP para orientar o treinamento."
   },
   {
     id: "03",
@@ -83,18 +83,21 @@ export const dashboardSidebar = [
 
 export const studyOverviewCards: StudyOverviewCard[] = [
   {
+    internalKey: "pscpp_study_cycle_profile",
     title: "Bloco dominante",
     value: "Manobrabilidade e rebocadores",
     note: "prioridade 1 no guia PSCPP",
     metric: 78
   },
   {
+    internalKey: "pscpp_study_cycle_profile",
     title: "Rotacao atual",
     value: "Sessao 7 de 12",
     note: "atracacao, desatracacao e fundeio",
     metric: 58
   },
   {
+    internalKey: "question_generation_blueprint",
     title: "Treino da semana",
     value: "40 questoes por topico",
     note: "fase de consolidacao por cenarios",
@@ -104,24 +107,28 @@ export const studyOverviewCards: StudyOverviewCard[] = [
 
 export const documentStatusCards: CapabilityCard[] = [
   {
+    internalKey: "pdf_text_extraction",
     title: "PDF textual",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Suportado hoje com extracao, chunking e sectioning deterministas.",
     detail: "TXT, Markdown e PDFs textuais entram no pipeline atual."
   },
   {
+    internalKey: "ocr_adapter",
     title: "PDF escaneado / OCR",
     status: "implemented_but_needs_manual_validation" as CapabilityStatus,
     summary: "Fallback opcional com Tesseract, desabilitado por padrao.",
     detail: "Nao tratar como producao pronta sem validacao de campo."
   },
   {
+    internalKey: "edital_ingestion",
     title: "Ingestao de edital",
     status: "partially_implemented" as CapabilityStatus,
     summary: "Extracao heuristica de secoes, topicos e bibliografia.",
     detail: "Artefato candidato e review-friendly."
   },
   {
+    internalKey: "bibliography_alignment",
     title: "Alinhamento bibliografico",
     status: "partially_implemented" as CapabilityStatus,
     summary: "Coverage, gaps e redundancias com evidencias bounded.",
@@ -131,36 +138,42 @@ export const documentStatusCards: CapabilityCard[] = [
 
 export const runtimeStatusCards: CapabilityCard[] = [
   {
+    internalKey: "attempt_session",
     title: "Tentativa / correcao / score",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Cadeia auditavel e bem testada.",
     detail: "A etapa de entrega executavel ainda nao esta aberta."
   },
   {
+    internalKey: "minimal_progress_ledger_apply",
     title: "Minimal progress ledger",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Aplica apenas ledger minimo com idempotencia e rollback metadata.",
     detail: "Sem mutar ranking, retention, scheduler ou study cycle."
   },
   {
+    internalKey: "applied_event_ledger",
     title: "Applied event ledger",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Replay-safe e deduplicado para eventos aplicados.",
     detail: "Camada auditavel para downstream review."
   },
   {
+    internalKey: "propagation_guardrail",
     title: "Propagation guardrail",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Readiness-only para superficies futuras.",
     detail: "Nao propaga ranking, retention, scheduler, ciclo ou graph."
   },
   {
+    internalKey: "controlled_propagation_apply",
     title: "Controlled propagation ledger",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Registra entradas isoladas de propagacao controlada.",
     detail: "Ledger-only, sem apply direto em runtime."
   },
   {
+    internalKey: "simulado_assembly",
     title: "Geracao automatica completa de simulado",
     status: "foundation_only" as CapabilityStatus,
     summary: "Blueprint, drafts e assembly existem, mas a prova final executavel nao esta verificada.",
@@ -170,18 +183,21 @@ export const runtimeStatusCards: CapabilityCard[] = [
 
 export const pscppProfileCards: CapabilityCard[] = [
   {
+    internalKey: "pscpp_question_style_profile",
     title: "Question style profile",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Perfil PSCPP/Praticagem com ancora bibliografica, formato A-E e arquetipos tecnicos.",
     detail: "Base testada para orientar blueprint e draft metadata com regras de seguranca."
   },
   {
+    internalKey: "question_generation_blueprint",
     title: "Question generation integration",
     status: "metadata_only" as CapabilityStatus,
     summary: "Integracao de metadata e validacao para simulado, fixation, review e summary.",
     detail: "Source-grounding, arquetipos e human review seguem sem gerar respostas finais sensiveis."
   },
   {
+    internalKey: "pscpp_study_cycle_profile",
     title: "Study cycle guide",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Rotacao de 12 sessoes, fases de estudo e guidance proporcional para PSCPP.",

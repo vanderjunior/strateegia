@@ -4,7 +4,12 @@ export type CapabilityStatus =
   | "partially_implemented"
   | "foundation_only"
   | "metadata_only"
-  | "not_implemented";
+  | "mocked_or_demo_only"
+  | "not_implemented"
+  | "intentionally_deferred"
+  | "unclear_needs_follow_up";
+
+export type Audience = "public" | "student" | "mentor" | "admin" | "developer";
 
 export type ApiSource = "backend" | "mock" | "offline" | "unsupported";
 
@@ -46,6 +51,7 @@ export interface ApiFailure {
 export type ApiResult<T> = ApiSuccess<T> | ApiFailure;
 
 export interface StudyOverviewCard {
+  internalKey?: string;
   title: string;
   value: string;
   note: string;
@@ -53,6 +59,7 @@ export interface StudyOverviewCard {
 }
 
 export interface CapabilityCard {
+  internalKey?: string;
   title: string;
   status: CapabilityStatus;
   summary: string;
@@ -61,6 +68,7 @@ export interface CapabilityCard {
 
 export interface CapabilityStatusItem {
   id: string;
+  internalKey?: string;
   label: string;
   status: CapabilityStatus;
   source: ApiSource;

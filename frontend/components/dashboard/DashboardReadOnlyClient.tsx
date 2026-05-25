@@ -41,7 +41,7 @@ export function DashboardReadOnlyClient() {
           </h2>
           <p className="mt-4 max-w-3xl text-sm leading-8 text-silver">
             Este painel combina fallback local auditado com leitura read-only do backend quando ela esta disponivel.
-            O produto continua cauteloso com OCR, geracao completa de simulado e qualquer mutacao de runtime.
+            O produto continua cauteloso com OCR, geracao completa de simulado e qualquer atualizacao ampla do progresso.
           </p>
         </div>
         <div className="naval-window">
@@ -69,7 +69,7 @@ export function DashboardReadOnlyClient() {
 
       <section className="space-y-4">
         <div className="section-kicker">
-          capability matrix
+          mapa de capacidades
         </div>
         <CapabilityStatusPanel items={viewModel.capabilityItems} />
       </section>
@@ -90,7 +90,7 @@ export function DashboardReadOnlyClient() {
 
       <section className="space-y-4">
         <div className="section-kicker">
-          runtime e ledger
+          fluxo auditavel
         </div>
         <RuntimeStatusCards cards={viewModel.runtimeCards} />
       </section>

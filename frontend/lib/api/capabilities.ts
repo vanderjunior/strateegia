@@ -4,6 +4,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
   return [
     {
       id: "text-pdf",
+      internalKey: "pdf_text_extraction",
       label: "Leitura de PDF textual",
       status: "implemented_and_tested",
       source,
@@ -11,6 +12,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "scanned-ocr",
+      internalKey: "ocr_adapter",
       label: "OCR para PDF escaneado",
       status: "implemented_but_needs_manual_validation",
       source,
@@ -18,6 +20,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "edital-ingestion",
+      internalKey: "edital_ingestion",
       label: "Ingestao de edital",
       status: "partially_implemented",
       source,
@@ -25,6 +28,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "bibliography-alignment",
+      internalKey: "bibliography_alignment",
       label: "Alinhamento bibliografico",
       status: "partially_implemented",
       source,
@@ -32,6 +36,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "pscpp-style",
+      internalKey: "pscpp_question_style_profile",
       label: "Perfil PSCPP de questoes",
       status: "implemented_and_tested",
       source,
@@ -39,6 +44,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "pscpp-generation",
+      internalKey: "question_generation_blueprint",
       label: "Integracao PSCPP na geracao",
       status: "metadata_only",
       source,
@@ -46,6 +52,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "pscpp-cycle",
+      internalKey: "pscpp_study_cycle_profile",
       label: "Perfil PSCPP de ciclo",
       status: "implemented_and_tested",
       source,
@@ -53,6 +60,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "simulado-generation",
+      internalKey: "simulado_assembly",
       label: "Geracao completa de simulado",
       status: "foundation_only",
       source,
@@ -60,6 +68,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "simulado-runtime",
+      internalKey: "attempt_session",
       label: "Tentativa, correcao e score",
       status: "implemented_and_tested",
       source,
@@ -67,6 +76,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "minimal-ledger",
+      internalKey: "minimal_progress_ledger_apply",
       label: "Minimal progress ledger",
       status: "implemented_and_tested",
       source,
@@ -74,6 +84,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "applied-ledger",
+      internalKey: "applied_event_ledger",
       label: "Applied event ledger",
       status: "implemented_and_tested",
       source,
@@ -81,6 +92,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "propagation-guardrail",
+      internalKey: "propagation_guardrail",
       label: "Propagation guardrail",
       status: "implemented_and_tested",
       source,
@@ -88,6 +100,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "controlled-propagation",
+      internalKey: "controlled_propagation_apply",
       label: "Controlled propagation ledger",
       status: "implemented_and_tested",
       source,
@@ -95,6 +108,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "persistence",
+      internalKey: "json_store",
       label: "Persistencia",
       status: "partially_implemented",
       source,
@@ -102,6 +116,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     },
     {
       id: "deploy",
+      internalKey: "deployment",
       label: "Deploy",
       status: "not_implemented",
       source,
