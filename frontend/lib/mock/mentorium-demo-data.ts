@@ -21,7 +21,10 @@ import type {
   PscppQuestionsViewModel,
   PscppRotationSession,
   PscppWorkspaceViewModel,
-  StudyOverviewCard
+  StudyOverviewCard,
+  StudySessionDetail,
+  StudySessionRelatedGap,
+  StudySessionWorkspaceViewModel
 } from "@/lib/api/types";
 
 export const landingPipeline = [
@@ -1005,5 +1008,256 @@ export const pscppCrosswalkViewModelMock: PscppCrosswalkViewModel = {
     { ...pscppCrosswalkSessionRefs["8"], emphasis: "gap_focus" },
     { ...pscppCrosswalkSessionRefs["10"], emphasis: "gap_focus" },
     { ...pscppCrosswalkSessionRefs["11"], emphasis: "gap_focus" }
+  ]
+};
+
+const studySessionRelatedGaps: Record<string, StudySessionRelatedGap> = {
+  "gap-squat": {
+    id: "gap-squat",
+    title: "Squat e interação em canal estreito",
+    detail: "Precisa de reforço para leitura de cenário e decisão de manobra."
+  },
+  "gap-colreg-signals": {
+    id: "gap-colreg-signals",
+    title: "Luzes e sinais em visibilidade restrita",
+    detail: "Exige revisão de exceções e comando negativo em COLREG."
+  },
+  "gap-radar-ecdis": {
+    id: "gap-radar-ecdis",
+    title: "Radar, ECDIS e AIS",
+    detail: "Precisa de material mais completo antes de uma revisão segura."
+  },
+  "gap-arte-naval": {
+    id: "gap-arte-naval",
+    title: "Números e nomenclaturas confundíveis",
+    detail: "Pede consolidação de termos fatais e pares que a banca troca."
+  },
+  "gap-normam-gmdss": {
+    id: "gap-normam-gmdss",
+    title: "NORMAM, Tribunal Marítimo e GMDSS",
+    detail: "Pede reforço normativo e alinhamento preliminar com o edital."
+  }
+};
+
+export const studySessionDetailsById: Record<string, StudySessionDetail> = {
+  "session-1-manobrabilidade-forcas": {
+    id: "session-1-manobrabilidade-forcas",
+    sessionNumber: 1,
+    title: "Sessão 1 — Manobrabilidade: forças, resistência e propulsão",
+    objective: "Entender como forças externas, resistência e propulsão afetam a decisão de manobra.",
+    priorityBlockTitle: pscppCrosswalkBlocks[0].title,
+    durationLabel: "20 + 60-90 + 40 + 20 min",
+    relatedMaterialsCount: 2,
+    relatedGapsCount: 1,
+    statusLabel: "Pronto para estudo",
+    note: "Base para o bloco dominante do caminho PSCPP.",
+    structure: [...pscppSessionStructure],
+    relatedMaterials: pscppCrosswalkBlocks[0].relatedMaterials,
+    relatedEditais: pscppCrosswalkBlocks[0].relatedEditais,
+    relatedGaps: [studySessionRelatedGaps["gap-squat"]],
+    checklist: [
+      { id: "s1-c1", label: "Revisar forças de vento e corrente sobre o casco." },
+      { id: "s1-c2", label: "Mapear resistência, propulsão e efeito do leme." },
+      { id: "s1-c3", label: "Criar mapa de causa e efeito da manobra." },
+      { id: "s1-c4", label: "Registrar conceitos confundíveis." }
+    ],
+    outputs: [
+      { id: "s1-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
+      { id: "s1-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
+      { id: "s1-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
+      { id: "s1-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+    ],
+    cautions: [
+      "Esta tela não altera seu progresso.",
+      "Questões candidatas ainda exigem revisão."
+    ]
+  },
+  "session-2-colreg-regras": {
+    id: "session-2-colreg-regras",
+    sessionNumber: 2,
+    title: "Sessão 2 — COLREG: regras de governo e navegação",
+    objective: "Aplicar regras de governo em cenários operacionais, sem tratar a norma como decoreba isolada.",
+    priorityBlockTitle: pscppCrosswalkBlocks[1].title,
+    durationLabel: "20 + 60-90 + 40 + 20 min",
+    relatedMaterialsCount: 1,
+    relatedGapsCount: 1,
+    statusLabel: "Requer revisão",
+    note: "Priorize exceções, cenários e sinais em sequência.",
+    structure: [...pscppSessionStructure],
+    relatedMaterials: pscppCrosswalkBlocks[1].relatedMaterials,
+    relatedEditais: pscppCrosswalkBlocks[1].relatedEditais,
+    relatedGaps: [studySessionRelatedGaps["gap-colreg-signals"]],
+    checklist: [
+      { id: "s2-c1", label: "Classificar embarcação e condição operacional." },
+      { id: "s2-c2", label: "Identificar a regra aplicável ao cenário." },
+      { id: "s2-c3", label: "Separar regra geral e exceção." },
+      { id: "s2-c4", label: "Criar um cenário com pegadinha provável." }
+    ],
+    outputs: [
+      { id: "s2-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
+      { id: "s2-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
+      { id: "s2-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
+      { id: "s2-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+    ],
+    cautions: [
+      "Esta tela não altera seu progresso.",
+      "Questões candidatas ainda exigem revisão."
+    ]
+  },
+  "session-3-arte-naval": {
+    id: "session-3-arte-naval",
+    sessionNumber: 3,
+    title: "Sessão 3 — Arte Naval: nomenclatura, geometria e estabilidade",
+    objective: "Consolidar vocabulário técnico e pares que a banca pode confundir.",
+    priorityBlockTitle: pscppCrosswalkBlocks[3].title,
+    durationLabel: "20 + 60-90 + 40 + 20 min",
+    relatedMaterialsCount: 1,
+    relatedGapsCount: 1,
+    statusLabel: "Pronto para estudo",
+    note: "Boa base técnica, com foco em termos fatais e nomenclaturas.",
+    structure: [...pscppSessionStructure],
+    relatedMaterials: pscppCrosswalkBlocks[3].relatedMaterials,
+    relatedEditais: pscppCrosswalkBlocks[3].relatedEditais,
+    relatedGaps: [studySessionRelatedGaps["gap-arte-naval"]],
+    checklist: [
+      { id: "s3-c1", label: "Revisar nomenclatura e geometria." },
+      { id: "s3-c2", label: "Separar conceitos confundíveis." },
+      { id: "s3-c3", label: "Registrar números e termos fatais." },
+      { id: "s3-c4", label: "Fazer flashcards bilíngues quando útil." }
+    ],
+    outputs: [
+      { id: "s3-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
+      { id: "s3-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
+      { id: "s3-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
+      { id: "s3-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+    ],
+    cautions: [
+      "Esta tela não altera seu progresso.",
+      "Questões candidatas ainda exigem revisão."
+    ]
+  },
+  "session-9-navegacao-restrita": {
+    id: "session-9-navegacao-restrita",
+    sessionNumber: 9,
+    title: "Sessão 9 — Navegação restrita: radar, ECDIS, AIS e passage planning",
+    objective: "Conectar navegação restrita, instrumentos e planejamento de derrota a decisões de praticagem.",
+    priorityBlockTitle: pscppCrosswalkBlocks[2].title,
+    durationLabel: "20 + 60-90 + 40 + 20 min",
+    relatedMaterialsCount: 1,
+    relatedGapsCount: 1,
+    statusLabel: "Requer revisão",
+    note: "A sessão depende de material complementar e validação do roteiro escaneado.",
+    structure: [...pscppSessionStructure],
+    relatedMaterials: pscppCrosswalkBlocks[2].relatedMaterials,
+    relatedEditais: pscppCrosswalkBlocks[2].relatedEditais,
+    relatedGaps: [studySessionRelatedGaps["gap-radar-ecdis"]],
+    checklist: [
+      { id: "s9-c1", label: "Revisar uso prático de radar, ECDIS e AIS." },
+      { id: "s9-c2", label: "Conectar instrumentos ao passage planning." },
+      { id: "s9-c3", label: "Separar limitações operacionais e alertas de cenário." },
+      { id: "s9-c4", label: "Registrar o que ainda precisa de material mais completo." }
+    ],
+    outputs: [
+      { id: "s9-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
+      { id: "s9-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
+      { id: "s9-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
+      { id: "s9-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+    ],
+    cautions: [
+      "Esta tela não altera seu progresso.",
+      "Questões candidatas ainda exigem revisão."
+    ]
+  },
+  "session-12-simulado-curto-revisao": {
+    id: "session-12-simulado-curto-revisao",
+    sessionNumber: 12,
+    title: "Sessão 12 — Simulado curto + revisão de erros",
+    objective: "Revisar lacunas e transformar erros em próximos passos.",
+    priorityBlockTitle: pscppCrosswalkBlocks[4].title,
+    durationLabel: "20 + 60-90 + 40 + 20 min",
+    relatedMaterialsCount: 0,
+    relatedGapsCount: 1,
+    statusLabel: "Requer revisão",
+    note: "Usa revisão curta e não representa geração executável de simulado.",
+    structure: [...pscppSessionStructure],
+    relatedMaterials: [],
+    relatedEditais: pscppCrosswalkBlocks[4].relatedEditais,
+    relatedGaps: [studySessionRelatedGaps["gap-normam-gmdss"]],
+    checklist: [
+      { id: "s12-c1", label: "Revisar os erros mais recorrentes do bloco normativo." },
+      { id: "s12-c2", label: "Separar falhas de conceito, regra e leitura de enunciado." },
+      { id: "s12-c3", label: "Transformar os erros em próximos passos de estudo." },
+      { id: "s12-c4", label: "Atualizar o caderno de cenários e conceitos confundíveis." }
+    ],
+    outputs: [
+      { id: "s12-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
+      { id: "s12-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
+      { id: "s12-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
+      { id: "s12-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+    ],
+    cautions: [
+      "Esta tela não altera seu progresso.",
+      "Questões candidatas ainda exigem revisão.",
+      "Simulado curto ainda não executável."
+    ]
+  }
+};
+
+export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel = {
+  connection: {
+    state: "mock",
+    source: "mock",
+    title: "Dados de demonstração",
+    detail: "Sessões sugeridas montadas por fallback auditado a partir do ciclo PSCPP, materiais e gaps conectados."
+  },
+  summary: [
+    {
+      id: "study-summary-sessions",
+      label: "Sessões sugeridas",
+      value: "5",
+      detail: "Sessões priorizadas para orientar o próximo estudo."
+    },
+    {
+      id: "study-summary-gaps",
+      label: "Gaps conectados",
+      value: "5",
+      detail: "Lacunas ligadas diretamente às sessões do caminho PSCPP."
+    },
+    {
+      id: "study-summary-materials",
+      label: "Materiais relacionados",
+      value: "3",
+      detail: "Materiais já conectados ao estudo de hoje."
+    },
+    {
+      id: "study-summary-questions",
+      label: "Questões candidatas em revisão",
+      value: "5",
+      detail: "As saídas esperadas seguem como revisão necessária."
+    }
+  ],
+  nextSuggestedSessionId: "session-1-manobrabilidade-forcas",
+  sessions: Object.values(studySessionDetailsById).map((item) => ({
+    id: item.id,
+    sessionNumber: item.sessionNumber,
+    title: item.title,
+    objective: item.objective,
+    priorityBlockTitle: item.priorityBlockTitle,
+    durationLabel: item.durationLabel,
+    relatedMaterialsCount: item.relatedMaterialsCount,
+    relatedGapsCount: item.relatedGapsCount,
+    statusLabel: item.statusLabel,
+    note: item.note
+  })),
+  highlightedGaps: [
+    studySessionRelatedGaps["gap-squat"],
+    studySessionRelatedGaps["gap-colreg-signals"],
+    studySessionRelatedGaps["gap-radar-ecdis"],
+    studySessionRelatedGaps["gap-normam-gmdss"]
+  ],
+  starterMaterials: [
+    pscppCrosswalkBlocks[0].relatedMaterials[0],
+    pscppCrosswalkBlocks[0].relatedMaterials[1],
+    pscppCrosswalkBlocks[2].relatedMaterials[0]
   ]
 };

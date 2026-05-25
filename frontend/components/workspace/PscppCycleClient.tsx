@@ -65,6 +65,7 @@ export function PscppCycleClient() {
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
             <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+            <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
           </div>
         </Card>
 

@@ -244,6 +244,7 @@ export function PscppCrosswalkClient() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/pscpp/ciclo">Ver ciclo completo</WorkspaceLink>
+            <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
           </div>
         </Card>
 

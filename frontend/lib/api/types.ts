@@ -510,6 +510,55 @@ export interface PscppCrosswalkViewModel {
   highlightedSessions: PscppCrosswalkSessionRef[];
 }
 
+export interface StudySessionChecklistItem {
+  id: string;
+  label: string;
+}
+
+export interface StudySessionRelatedGap {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface StudySessionOutputExpectation {
+  id: string;
+  label: string;
+  statusLabel: string;
+}
+
+export interface StudySessionListItem {
+  id: string;
+  sessionNumber: number;
+  title: string;
+  objective: string;
+  priorityBlockTitle: string;
+  durationLabel: string;
+  relatedMaterialsCount: number;
+  relatedGapsCount: number;
+  statusLabel: string;
+  note: string;
+}
+
+export interface StudySessionDetail extends StudySessionListItem {
+  structure: string[];
+  relatedMaterials: PscppCrosswalkMaterialRef[];
+  relatedEditais: PscppCrosswalkEditalRef[];
+  relatedGaps: StudySessionRelatedGap[];
+  checklist: StudySessionChecklistItem[];
+  outputs: StudySessionOutputExpectation[];
+  cautions: string[];
+}
+
+export interface StudySessionWorkspaceViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  nextSuggestedSessionId: string;
+  sessions: StudySessionListItem[];
+  highlightedGaps: StudySessionRelatedGap[];
+  starterMaterials: PscppCrosswalkMaterialRef[];
+}
+
 export type UploadValidationState =
   | "idle"
   | "validating"

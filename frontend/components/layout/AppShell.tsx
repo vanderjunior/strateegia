@@ -11,6 +11,7 @@ const navigationItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Materiais", href: "/materials" },
   { label: "Editais", href: "/editais" },
+  { label: "Estudo", href: "/study" },
   { label: "Ciclo" },
   { label: "Questões" },
   { label: "Simulados" },
@@ -31,6 +32,18 @@ function headerCopy(pathname: string) {
     return {
       eyebrow: "mentorium / editais",
       title: "Editais em análise preliminar"
+    };
+  }
+  if (pathname.startsWith("/study/session")) {
+    return {
+      eyebrow: "mentorium / estudo / sessao",
+      title: "Sessão sugerida"
+    };
+  }
+  if (pathname.startsWith("/study")) {
+    return {
+      eyebrow: "mentorium / estudo",
+      title: "Estudo de hoje"
     };
   }
   if (pathname.startsWith("/pscpp/ciclo")) {
