@@ -25,14 +25,14 @@ import { UploadDropzone } from "@/components/workspace/UploadDropzone";
 import { UploadValidationSummary } from "@/components/workspace/UploadValidationSummary";
 
 const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md", ".markdown"] as const;
+const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md"] as const;
 const ACCEPTED_MIME_TYPES = [
   "application/pdf",
   "text/plain",
   "text/markdown",
   "text/x-markdown"
 ] as const;
-const ACCEPT_STRING = ".pdf,.txt,.md,.markdown,text/plain,text/markdown,application/pdf";
+const ACCEPT_STRING = ".pdf,.txt,.md,text/plain,text/markdown,application/pdf";
 
 const acceptedUploadTypes: AcceptedUploadType[] = [
   {
@@ -50,7 +50,7 @@ const acceptedUploadTypes: AcceptedUploadType[] = [
   {
     id: "markdown",
     label: "Markdown",
-    extensions: [".md", ".markdown"],
+    extensions: [".md"],
     mimeTypes: ["text/markdown", "text/x-markdown"],
     note: "Validação"
   },
@@ -97,6 +97,14 @@ function extensionFor(file: File): string {
   return file.name.slice(dotIndex).toLowerCase();
 }
 
+function extensionForName(filename: string): string {
+  const dotIndex = filename.lastIndexOf(".");
+  if (dotIndex < 0) {
+    return "";
+  }
+  return filename.slice(dotIndex).toLowerCase();
+}
+
 function isAcceptedFile(file: File): { valid: boolean; message: string } {
   const ext = extensionFor(file);
   if (!ACCEPTED_EXTENSIONS.includes(ext as (typeof ACCEPTED_EXTENSIONS)[number])) {
@@ -105,11 +113,8 @@ function isAcceptedFile(file: File): { valid: boolean; message: string } {
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
     return { valid: false, message: "O arquivo excede o limite de 5 MB." };
   }
-  if (file.type && !ACCEPTED_MIME_TYPES.includes(file.type as (typeof ACCEPTED_MIME_TYPES)[number]) && ext !== ".markdown") {
+  if (file.type && !ACCEPTED_MIME_TYPES.includes(file.type as (typeof ACCEPTED_MIME_TYPES)[number])) {
     return { valid: false, message: "O arquivo não passou na validação de tipo." };
-  }
-  if (ext === ".markdown") {
-    return { valid: true, message: "Arquivo válido para validação inicial. O endpoint atual pode solicitar a extensão .md." };
   }
   return { valid: true, message: "Arquivo pronto para validação." };
 }
@@ -135,6 +140,13 @@ function buildMockResult(file: File): UploadMaterialResult {
     source: "mock",
     demoOnly: true
   };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function MaterialUploadEntryClient() {
@@ -237,13 +249,25 @@ export function MaterialUploadEntryClient() {
       : connection.source === "mock"
         ? "Modo de demonstração"
         : "Configuração necessária";
+  const submitLabel =
+    connection.source === "backend"
+      ? "Enviar para validação"
+      : connection.source === "mock"
+        ? "Simular envio em demonstração"
+        : "Configuração necessária";
 
   const buttonDisabled =
     !selectedFile ||
     validationState === "invalid_size" ||
     validationState === "invalid_type" ||
     entryState === "sending" ||
+    connection.source === "unsupported" ||
     !confirmationChecked;
+  const showAuthGuidance = validationMessage === "Sessão necessária para enviar material.";
+  const showOfflineGuidance = validationMessage === "Não foi possível conectar ao backend.";
+  const showMissingBaseGuidance = validationMessage === "URL do backend não configurada para envio real.";
+  const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
+  const returnedExtension = result ? extensionForName(result.filename) || "sem extensão" : "";
 
   return (
     <div className="space-y-8">
@@ -252,7 +276,7 @@ export function MaterialUploadEntryClient() {
       <WorkspaceSourcePanel
         eyebrow="enviar material"
         title="Enviar material"
-        subtitle="Adicione um PDF, TXT ou Markdown para validação inicial. O processamento será controlado e revisável."
+        subtitle="Adicione um PDF, TXT ou Markdown (.md) para validação inicial. O processamento será controlado e revisável."
         connection={connection}
       />
 
@@ -303,10 +327,25 @@ export function MaterialUploadEntryClient() {
           <p className="mt-5 text-sm leading-7 text-silver">
             Nenhum processamento amplo, OCR, geração de questões ou atualização de progresso será iniciado nesta etapa.
           </p>
-          {validationMessage === "Sessão necessária para enviar material." ? (
+          {showAuthGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
               Entre na aplicação para enviar materiais reais. O modo demonstração continua disponível sem envio.
             </p>
+          ) : null}
+          {showOfflineGuidance ? (
+            <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+              Verifique se o backend está rodando em NEXT_PUBLIC_API_BASE_URL.
+            </p>
+          ) : null}
+          {showLocalSetup ? (
+            <div className="mt-4 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">ambiente local</div>
+              <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
+                <li>• Backend: http://127.0.0.1:8000</li>
+                <li>• NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000</li>
+                <li>• NEXT_PUBLIC_USE_MOCK_API=false</li>
+              </ul>
+            </div>
           ) : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <Button
@@ -317,7 +356,7 @@ export function MaterialUploadEntryClient() {
                 void handleUpload();
               }}
             >
-              {connection.source === "backend" ? "Enviar para validação" : "Simular envio em demonstração"}
+              {submitLabel}
             </Button>
             <Link
               href="/materials"
@@ -345,10 +384,33 @@ export function MaterialUploadEntryClient() {
             <Badge className={productStatusClass(result.extractionStatus)}>{result.extractionStatus}</Badge>
             <Badge className={productStatusClass(result.reviewState)}>{result.reviewState}</Badge>
           </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">arquivo</div>
+              <p className="mt-3 break-words text-sm text-ink">{result.filename}</p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">tipo</div>
+              <p className="mt-3 text-sm text-ink">{returnedExtension || result.contentType || "Arquivo enviado"}</p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">tamanho</div>
+              <p className="mt-3 text-sm text-ink">{formatBytes(result.sizeBytes)}</p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">identificador</div>
+              <p className="mt-3 break-words text-sm text-ink">{result.documentId}</p>
+            </div>
+          </div>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             <li>• Próximo estado esperado: Texto extraído ou aguardando validação.</li>
             <li>• Se for PDF digitalizado, o arquivo pode seguir como OCR necessário.</li>
             <li>• Após validação, o material pode ficar pronto para revisão.</li>
+            {result.demoOnly ? (
+              <li>• Modo de demonstração: nenhum arquivo foi persistido.</li>
+            ) : (
+              <li>• Este material foi recebido nesta sessão. A listagem real depende da sessão autenticada.</li>
+            )}
           </ul>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -358,12 +420,20 @@ export function MaterialUploadEntryClient() {
               Voltar para materiais
             </Link>
             {!result.demoOnly ? (
-              <Link
-                href={`/materials/${result.documentId}`}
-                className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
-              >
-                Ver material
-              </Link>
+              <>
+                <Link
+                  href={`/materials/${result.documentId}`}
+                  className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
+                >
+                  Ver material
+                </Link>
+                <Link
+                  href={`/pipeline/${result.documentId}`}
+                  className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
+                >
+                  Ver pipeline
+                </Link>
+              </>
             ) : null}
           </div>
         </Card>

@@ -25,7 +25,7 @@ export function UploadDropzone({
       <div className="section-kicker">arquivo</div>
       <CardTitle className="mt-5 text-[1.8rem]">Selecione um material</CardTitle>
       <label className="mt-5 flex cursor-pointer flex-col rounded-[24px] border border-dashed border-[rgba(168,184,196,0.18)] bg-[rgba(255,255,255,0.02)] p-6 transition hover:border-[rgba(201,169,110,0.24)] hover:bg-[rgba(255,255,255,0.04)]">
-        <span className="text-sm text-ink">Escolha um arquivo PDF, TXT, MD ou Markdown</span>
+        <span className="text-sm text-ink">Escolha um arquivo PDF, TXT ou Markdown (.md)</span>
         <span className="mt-2 text-sm leading-7 text-silver">
           PDFs escaneados podem exigir OCR em validação e revisão manual.
         </span>

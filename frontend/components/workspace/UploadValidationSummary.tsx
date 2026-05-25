@@ -16,7 +16,7 @@ function entryStateLabel(state: UploadEntryState): string {
     case "mock_only":
       return "Modo de demonstração";
     case "endpoint_unavailable":
-      return "Endpoint indisponível";
+      return "Configuração necessária";
     case "ready_to_send":
       return "Pronto para envio";
     default:
@@ -78,6 +78,7 @@ export function UploadValidationSummary({
           <li>• PDFs escaneados podem exigir OCR e revisão manual.</li>
           <li>• OCR está em validação e pode não estar disponível para todos os arquivos.</li>
           <li>• Não prometa suporte completo a PDF escaneado.</li>
+          <li>• Para envio real, use PDF, TXT ou Markdown (.md).</li>
           {validationState === "missing_confirmation" && !confirmationChecked ? (
             <li>• Confirme o envio antes de liberar a ação.</li>
           ) : null}
