@@ -31,9 +31,9 @@ export const mentoriumTokens = {
     mist: "radial-gradient(circle at top, rgba(42,74,97,0.34), transparent 38%), radial-gradient(circle at right top, rgba(201,169,110,0.12), transparent 24%)"
   },
   fonts: {
-    serif: "Cormorant",
-    sans: "Geist",
-    mono: "JetBrains Mono"
+    serif: 'Georgia, "Times New Roman", serif',
+    sans: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    mono: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
   }
 } as const;
 
