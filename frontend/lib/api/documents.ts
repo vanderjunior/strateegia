@@ -65,11 +65,11 @@ export async function uploadMaterialFile(file: File): Promise<ApiResult<UploadMa
   const { baseUrl, forceMock } = getApiConfig();
 
   if (forceMock) {
-    return makeApiFailure("mock", "mock_mode", "Mock mode is forcing local fallback.");
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: nenhum arquivo foi enviado.");
   }
 
   if (!baseUrl) {
-    return makeApiFailure("unsupported", "missing_base_url", "No API base URL is configured.");
+    return makeApiFailure("unsupported", "api_base_missing", "URL do backend não configurada para envio real.");
   }
 
   const formData = new FormData();
@@ -82,23 +82,23 @@ export async function uploadMaterialFile(file: File): Promise<ApiResult<UploadMa
       body: formData
     });
 
-    if (response.status === 401) {
-      return makeApiFailure("backend", "unauthorized", "Authentication is required for this endpoint.", 401);
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Sessão necessária para enviar material.", response.status);
     }
     if (response.status === 404) {
-      return makeApiFailure("unsupported", "not_found", "Endpoint not found.", 404);
+      return makeApiFailure("unsupported", "endpoint_unavailable", "Endpoint de envio indisponível neste ambiente.", 404);
+    }
+    if (response.status === 405) {
+      return makeApiFailure("backend", "method_not_allowed", "Endpoint encontrado, mas o método de envio não foi aceito.", 405);
     }
     if (response.status === 413) {
-      return makeApiFailure("backend", "payload_too_large", "O arquivo excede o limite suportado.", 413);
+      return makeApiFailure("backend", "file_too_large", "O arquivo excede o limite atual de 5 MB.", 413);
     }
     if (response.status === 415) {
-      return makeApiFailure("backend", "unsupported_media", "Tipo de arquivo não suportado.", 415);
+      return makeApiFailure("backend", "unsupported_file_type", "Tipo de arquivo não aceito.", 415);
     }
-    if (response.status === 400) {
-      return makeApiFailure("backend", "bad_request", "O arquivo não passou na validação do endpoint.", 400);
-    }
-    if (response.status === 422) {
-      return makeApiFailure("backend", "validation_error", "O upload precisa de ajustes antes do envio.", 422);
+    if (response.status === 400 || response.status === 422) {
+      return makeApiFailure("backend", "validation_failed", "Arquivo não pôde ser validado.", response.status);
     }
     if (!response.ok) {
       return makeApiFailure(
@@ -121,6 +121,6 @@ export async function uploadMaterialFile(file: File): Promise<ApiResult<UploadMa
       return makeApiFailure("backend", "invalid_json", "Backend returned invalid JSON.", response.status);
     }
   } catch {
-    return makeApiFailure("offline", "network_error", "Backend is offline or unreachable.");
+    return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.");
   }
 }

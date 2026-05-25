@@ -77,8 +77,8 @@ function buildConnection(): BackendConnectionInfo {
     return {
       state: "unsupported",
       source: "unsupported",
-      title: "Endpoint indisponível",
-      detail: "Envio real será habilitado após validação do endpoint."
+      title: "URL do backend não configurada",
+      detail: "URL do backend não configurada para envio real."
     };
   }
   return {
@@ -190,7 +190,7 @@ export function MaterialUploadEntryClient() {
       setValidationMessage(
         connection.source === "mock"
           ? "Modo de demonstração: nenhum arquivo foi enviado."
-          : "Envio real será habilitado após validação do endpoint."
+          : "URL do backend não configurada para envio real."
       );
       return;
     }
@@ -200,14 +200,25 @@ export function MaterialUploadEntryClient() {
     const uploadResult = await uploadMaterialFile(selectedFile);
 
     if (!uploadResult.ok) {
-      if (uploadResult.status === 404) {
+      if (uploadResult.error.code === "endpoint_unavailable") {
         setEntryState("endpoint_unavailable");
-        setValidationMessage("Envio real será habilitado após validação do endpoint.");
+        setValidationMessage("Endpoint de envio indisponível neste ambiente.");
         return;
       }
-      if (uploadResult.status === 401) {
+      if (uploadResult.error.code === "auth_required") {
         setEntryState("failed");
-        setValidationMessage("Sessão necessária para envio real.");
+        setValidationMessage("Sessão necessária para enviar material.");
+        return;
+      }
+      if (uploadResult.error.code === "api_base_missing") {
+        setEntryState("endpoint_unavailable");
+        setValidationMessage("URL do backend não configurada para envio real.");
+        return;
+      }
+      if (uploadResult.error.code === "mock_mode") {
+        setEntryState("mock_only");
+        setValidationMessage("Modo de demonstração: nenhum arquivo foi enviado.");
+        setResult(buildMockResult(selectedFile));
         return;
       }
       setEntryState("failed");
@@ -225,7 +236,7 @@ export function MaterialUploadEntryClient() {
       ? "Envio real"
       : connection.source === "mock"
         ? "Modo de demonstração"
-        : "Endpoint indisponível";
+        : "Configuração necessária";
 
   const buttonDisabled =
     !selectedFile ||
@@ -292,6 +303,11 @@ export function MaterialUploadEntryClient() {
           <p className="mt-5 text-sm leading-7 text-silver">
             Nenhum processamento amplo, OCR, geração de questões ou atualização de progresso será iniciado nesta etapa.
           </p>
+          {validationMessage === "Sessão necessária para enviar material." ? (
+            <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+              Entre na aplicação para enviar materiais reais. O modo demonstração continua disponível sem envio.
+            </p>
+          ) : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <Button
               variant="secondary"

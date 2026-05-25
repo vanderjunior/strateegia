@@ -23,6 +23,14 @@ export type DashboardConnectionState =
 
 export interface ApiErrorDetails {
   code:
+    | "api_base_missing"
+    | "backend_offline"
+    | "endpoint_unavailable"
+    | "auth_required"
+    | "method_not_allowed"
+    | "file_too_large"
+    | "unsupported_file_type"
+    | "validation_failed"
     | "missing_base_url"
     | "mock_mode"
     | "network_error"
