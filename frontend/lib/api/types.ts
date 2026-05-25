@@ -377,6 +377,74 @@ export interface PipelineDetailViewModel {
   steps: PipelineStep[];
 }
 
+export interface PscppPriorityBlock {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface PscppPhaseItem {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface PscppRotationSession {
+  id: string;
+  index: number;
+  title: string;
+  detail: string;
+}
+
+export interface PscppNotebookItem {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface PscppQuestionGuidanceItem {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface PscppWorkspaceViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  profileTitle: string;
+  profileDescription: string;
+  statusLabel: string;
+  modeLabel: string;
+  examProfileId: string;
+  questionStyleProfileId: string;
+  studyCycleProfileId: string;
+  evidence: string[];
+  evidenceNotes: string[];
+  priorityBlocks: PscppPriorityBlock[];
+}
+
+export interface PscppCycleViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  modeLabel: string;
+  weeklyGuidance: string;
+  overrideLabel: string;
+  baselineLabel: string;
+  sessionStructure: string[];
+  phasePlan: PscppPhaseItem[];
+  notebookSystem: PscppNotebookItem[];
+  rotation: PscppRotationSession[];
+}
+
+export interface PscppQuestionsViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  archetypes: PscppQuestionGuidanceItem[];
+  sourceRules: PscppQuestionGuidanceItem[];
+  reviewRules: PscppQuestionGuidanceItem[];
+  relationToSimulado: string[];
+}
+
 export type UploadValidationState =
   | "idle"
   | "validating"

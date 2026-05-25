@@ -1,0 +1,220 @@
+import { fetchPscppExamProfile } from "@/lib/api/pscpp";
+import type {
+  ApiSource,
+  BackendConnectionInfo,
+  BackendExamProfile,
+  PscppCycleViewModel,
+  PscppQuestionsViewModel,
+  PscppWorkspaceViewModel
+} from "@/lib/api/types";
+import {
+  pscppCycleViewModelMock,
+  pscppQuestionsViewModelMock,
+  pscppWorkspaceViewModelMock
+} from "@/lib/mock/mentorium-demo-data";
+
+function cloneConnection(connection: BackendConnectionInfo): BackendConnectionInfo {
+  return { ...connection };
+}
+
+function sourceConnection(
+  source: ApiSource,
+  title: string,
+  detail: string,
+  state: BackendConnectionInfo["state"]
+): BackendConnectionInfo {
+  return {
+    source,
+    title,
+    detail,
+    state
+  };
+}
+
+function buildWorkspaceFromProfile(profile: BackendExamProfile): PscppWorkspaceViewModel {
+  return {
+    ...pscppWorkspaceViewModelMock,
+    connection: sourceConnection(
+      "backend",
+      "Perfil lido do backend",
+      "Perfil PSCPP confirmado via backend. Ciclo sugerido e orientação de questões permanecem em guia auditado somente leitura.",
+      "connected"
+    ),
+    profileTitle: profile.profile_name || pscppWorkspaceViewModelMock.profileTitle,
+    profileDescription: profile.description || pscppWorkspaceViewModelMock.profileDescription,
+    examProfileId: profile.profile_id || pscppWorkspaceViewModelMock.examProfileId,
+    questionStyleProfileId:
+      profile.question_style_profile?.profile_id ||
+      pscppWorkspaceViewModelMock.questionStyleProfileId
+  };
+}
+
+function buildCycleView(source: ApiSource): PscppCycleViewModel {
+  if (source === "backend") {
+    return {
+      ...pscppCycleViewModelMock,
+      connection: sourceConnection(
+        "backend",
+        "Guia PSCPP auditado",
+        "A leitura do perfil veio do backend, mas o ciclo continua guidance-only, sem agenda automática ou alteração de progresso.",
+        "connected"
+      )
+    };
+  }
+
+  if (source === "offline") {
+    return {
+      ...pscppCycleViewModelMock,
+      connection: sourceConnection(
+        "offline",
+        "Backend offline",
+        "Mostrando o ciclo sugerido por fallback auditado enquanto o backend não responde.",
+        "offline"
+      )
+    };
+  }
+
+  if (source === "unsupported") {
+    return {
+      ...pscppCycleViewModelMock,
+      connection: sourceConnection(
+        "unsupported",
+        "Painel em modo de validação",
+        "Não há endpoint dedicado para o ciclo PSCPP nesta etapa; o guia continua em fallback auditado.",
+        "unsupported"
+      )
+    };
+  }
+
+  return {
+    ...pscppCycleViewModelMock,
+    connection: cloneConnection(pscppCycleViewModelMock.connection)
+  };
+}
+
+function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
+  if (source === "backend") {
+    return {
+      ...pscppQuestionsViewModelMock,
+      connection: sourceConnection(
+        "backend",
+        "Orientação por perfil",
+        "O perfil PSCPP foi confirmado no backend. Esta tela continua guidance-only para questões candidatas e revisão.",
+        "connected"
+      )
+    };
+  }
+
+  if (source === "offline") {
+    return {
+      ...pscppQuestionsViewModelMock,
+      connection: sourceConnection(
+        "offline",
+        "Backend offline",
+        "Mostrando orientação de questões por fallback auditado enquanto o backend não responde.",
+        "offline"
+      )
+    };
+  }
+
+  if (source === "unsupported") {
+    return {
+      ...pscppQuestionsViewModelMock,
+      connection: sourceConnection(
+        "unsupported",
+        "Painel em modo de validação",
+        "Não há endpoint dedicado para orientação de questões PSCPP nesta etapa; a tela permanece em fallback auditado.",
+        "unsupported"
+      )
+    };
+  }
+
+  return {
+    ...pscppQuestionsViewModelMock,
+    connection: cloneConnection(pscppQuestionsViewModelMock.connection)
+  };
+}
+
+export function buildMockPscppWorkspaceViewModel(): PscppWorkspaceViewModel {
+  return {
+    ...pscppWorkspaceViewModelMock,
+    connection: cloneConnection(pscppWorkspaceViewModelMock.connection)
+  };
+}
+
+export function buildMockPscppCycleViewModel(): PscppCycleViewModel {
+  return {
+    ...pscppCycleViewModelMock,
+    connection: cloneConnection(pscppCycleViewModelMock.connection)
+  };
+}
+
+export function buildMockPscppQuestionsViewModel(): PscppQuestionsViewModel {
+  return {
+    ...pscppQuestionsViewModelMock,
+    connection: cloneConnection(pscppQuestionsViewModelMock.connection)
+  };
+}
+
+export async function loadPscppWorkspaceViewModel(): Promise<PscppWorkspaceViewModel> {
+  const fallback = buildMockPscppWorkspaceViewModel();
+  const result = await fetchPscppExamProfile();
+
+  if (result.ok) {
+    return buildWorkspaceFromProfile(result.data);
+  }
+
+  if (result.source === "offline") {
+    return {
+      ...fallback,
+      connection: sourceConnection(
+        "offline",
+        "Backend offline",
+        "Perfil PSCPP em fallback auditado enquanto a leitura do backend está indisponível.",
+        "offline"
+      )
+    };
+  }
+
+  if (result.source === "unsupported") {
+    return {
+      ...fallback,
+      connection: sourceConnection(
+        "unsupported",
+        "Painel em modo de validação",
+        "O endpoint do perfil PSCPP não está disponível neste ambiente; usando fallback auditado.",
+        "unsupported"
+      )
+    };
+  }
+
+  return fallback;
+}
+
+export async function loadPscppCycleViewModel(): Promise<PscppCycleViewModel> {
+  const result = await fetchPscppExamProfile();
+  if (result.ok) {
+    return buildCycleView("backend");
+  }
+  if (result.source === "offline") {
+    return buildCycleView("offline");
+  }
+  if (result.source === "unsupported") {
+    return buildCycleView("unsupported");
+  }
+  return buildMockPscppCycleViewModel();
+}
+
+export async function loadPscppQuestionsViewModel(): Promise<PscppQuestionsViewModel> {
+  const result = await fetchPscppExamProfile();
+  if (result.ok) {
+    return buildQuestionsView("backend");
+  }
+  if (result.source === "offline") {
+    return buildQuestionsView("offline");
+  }
+  if (result.source === "unsupported") {
+    return buildQuestionsView("unsupported");
+  }
+  return buildMockPscppQuestionsViewModel();
+}

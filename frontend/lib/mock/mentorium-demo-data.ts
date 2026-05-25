@@ -8,6 +8,14 @@ import type {
   MaterialDetail,
   MaterialListItem,
   PipelineDetailViewModel,
+  PscppCycleViewModel,
+  PscppNotebookItem,
+  PscppPhaseItem,
+  PscppPriorityBlock,
+  PscppQuestionGuidanceItem,
+  PscppQuestionsViewModel,
+  PscppRotationSession,
+  PscppWorkspaceViewModel,
   StudyOverviewCard
 } from "@/lib/api/types";
 
@@ -443,3 +451,257 @@ export const betaSignals = [
   "convite",
   "ambiente em validacao"
 ] as const;
+
+export const pscppEvidence = ["PSCPP/2011", "PSCPP/2012 Prova Rosa"] as const;
+
+export const pscppEvidenceNotes = [
+  "Referência de estratégia e estilo.",
+  "Não substitui o escopo do edital atual.",
+  "Exige alinhamento com edital e bibliografia em uso."
+] as const;
+
+export const pscppPriorityBlocks: PscppPriorityBlock[] = [
+  {
+    id: "priority-manoeuvrability",
+    title: "Manobrabilidade, águas rasas, canal, interação, squat, rebocadores e atracação",
+    detail: "Bloco dominante para cenários operacionais, controle de navio e tomada de decisão."
+  },
+  {
+    id: "priority-colreg",
+    title: "COLREG, luzes, marcas, sinais sonoros e canais estreitos",
+    detail: "Leitura normativa aplicada, comandos negativos e sequências de afirmativas."
+  },
+  {
+    id: "priority-navigation",
+    title: "Navegação em águas restritas, radar, ECDIS, marés, agulhas e passage planning",
+    detail: "Base para navegação técnica, instrumentos e tomada de rumo sob restrição."
+  },
+  {
+    id: "priority-arte-naval",
+    title: "Arte Naval: nomenclatura, geometria, estabilidade, cabos, fundeio e aparelho de governo",
+    detail: "Vocabulário técnico e fundamentos estruturais que a banca costuma tensionar."
+  },
+  {
+    id: "priority-general",
+    title: "Legislação, meteorologia/oceanografia, comunicações e conhecimentos gerais",
+    detail: "Fechamento de lacunas normativas e apoio a cenários curtos de prova."
+  }
+];
+
+export const pscppPhasePlan: PscppPhaseItem[] = [
+  {
+    id: "phase-base",
+    title: "Base técnica e vocabulário",
+    detail: "Consolidar terminologia marítima, regras fatais e conceitos que a banca troca."
+  },
+  {
+    id: "phase-scenarios",
+    title: "Consolidação por cenários",
+    detail: "Cruzar fontes, cenários operacionais e afirmativas em sequência."
+  },
+  {
+    id: "phase-advanced",
+    title: "Aprofundamento e produção de questões inéditas",
+    detail: "Usar bibliografia visível e revisão humana para lapidar questões candidatas."
+  },
+  {
+    id: "phase-post-edital",
+    title: "Pós-edital e ajuste fino",
+    detail: "Repriorizar blocos com base no edital atual, gaps e erros recorrentes."
+  }
+];
+
+export const pscppRotation: PscppRotationSession[] = [
+  { id: "rotation-1", index: 1, title: "Manobrabilidade", detail: "Forças, resistência, propulsão" },
+  { id: "rotation-2", index: 2, title: "COLREG", detail: "Regras de governo e navegação" },
+  { id: "rotation-3", index: 3, title: "Arte Naval", detail: "Nomenclatura, geometria, estabilidade" },
+  { id: "rotation-4", index: 4, title: "Navegação", detail: "Rumos, marcações, agulhas, LDP" },
+  { id: "rotation-5", index: 5, title: "Manobrabilidade", detail: "Leme, curva de giro, zigue-zague, stopping" },
+  { id: "rotation-6", index: 6, title: "Legislação", detail: "NORMAM, LESTA/RLESTA, praticagem" },
+  { id: "rotation-7", index: 7, title: "Shiphandling", detail: "Atracação, desatracação, fundeio" },
+  { id: "rotation-8", index: 8, title: "COLREG", detail: "Luzes, marcas, sinais sonoros" },
+  { id: "rotation-9", index: 9, title: "Navegação restrita", detail: "Radar, ECDIS, AIS, passage planning" },
+  { id: "rotation-10", index: 10, title: "Rebocadores", detail: "Interação, bollard pull, escort" },
+  { id: "rotation-11", index: 11, title: "Meteorologia", detail: "Oceanografia, marés, METAREA" },
+  { id: "rotation-12", index: 12, title: "Simulado curto + revisão", detail: "Erros recorrentes e ajuste fino" }
+];
+
+export const pscppSessionStructure = [
+  "20 min revisão ativa",
+  "60 a 90 min teoria dirigida",
+  "40 min questões ou criação de questões",
+  "20 min caderno de erros/flashcards"
+] as const;
+
+export const pscppNotebookSystem: PscppNotebookItem[] = [
+  {
+    id: "notebook-concepts",
+    title: "Conceitos que a banca troca",
+    detail: "Definições próximas, pegadinhas normativas e vocabulário técnico."
+  },
+  {
+    id: "notebook-rules",
+    title: "Números e regras fatais",
+    detail: "Regras de governo, sinais, parâmetros e referências que exigem memória limpa."
+  },
+  {
+    id: "notebook-scenarios",
+    title: "Caderno de cenários",
+    detail: "Situações operacionais curtas para treino de julgamento técnico."
+  }
+];
+
+export const pscppQuestionArchetypes: PscppQuestionGuidanceItem[] = [
+  { id: "arch-i-v", title: "Afirmativas I-V", detail: "Sequências de validação técnica com leitura atenta de cada proposição." },
+  { id: "arch-vf", title: "V/F em sequência", detail: "Combina regras, exceções e contexto operacional." },
+  { id: "arch-incorrect", title: "Assinale a incorreta", detail: "Exige comando negativo claro e distractores plausíveis." },
+  { id: "arch-calc", title: "Cálculo aplicado", detail: "Cuidado com unidades, sinais e contexto náutico." },
+  { id: "arch-scenario", title: "Cenário operacional", detail: "Traz praticagem, manobra e navegação restrita para a decisão." },
+  { id: "arch-gap", title: "Lacuna técnica", detail: "Pede termo, referência ou regra exata a partir da fonte." }
+];
+
+export const pscppQuestionSourceRules: PscppQuestionGuidanceItem[] = [
+  { id: "rule-source", title: "Fonte obrigatória", detail: "Cada questão candidata precisa nascer de uma fonte ou edital claramente identificado." },
+  { id: "rule-bibliography", title: "Bibliografia visível", detail: "A âncora bibliográfica deve ficar explícita para revisão posterior." },
+  { id: "rule-scenario", title: "Cenário operacional", detail: "Priorizar situações técnicas compatíveis com a banca e a praticagem." },
+  { id: "rule-distractors", title: "Distratores tecnicamente plausíveis", detail: "Alternativas erradas devem parecer críveis sem distorcer a fonte." }
+];
+
+export const pscppQuestionReviewRules: PscppQuestionGuidanceItem[] = [
+  { id: "review-human", title: "Revisão humana da resposta final", detail: "Não fechar resposta final sem revisão humana e confronto com a fonte." },
+  { id: "review-negative", title: "Cuidado com comando negativo", detail: "Destacar instruções como incorreta, exceto ou falsa para evitar ruído." },
+  { id: "review-weights", title: "Pesos variados como guia", detail: "Usar dificuldade e peso apenas como orientação, não como nota definitiva." },
+  { id: "review-status", title: "Questões candidatas", detail: "Tratar a saída como revisão necessária e ainda não finalizada." }
+];
+
+export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
+  connection: {
+    state: "mock",
+    source: "mock",
+    title: "Guia auditado",
+    detail: "Perfil PSCPP, ciclo e orientacao de questoes exibidos por fallback auditado enquanto a leitura do perfil no backend nao e confirmada."
+  },
+  summary: [
+    {
+      id: "pscpp-summary-profile",
+      label: "Perfil PSCPP configurado",
+      value: "Perfil configurado",
+      detail: "Base técnico-operacional marítima com âncora bibliográfica."
+    },
+    {
+      id: "pscpp-summary-cycle",
+      label: "Ciclo sugerido",
+      value: "12 sessões",
+      detail: "Rotação flexível, ajustável pelo candidato."
+    },
+    {
+      id: "pscpp-summary-questions",
+      label: "Questões candidatas",
+      value: "Fonte obrigatória",
+      detail: "Orientação por fonte, bibliografia e revisão humana."
+    },
+    {
+      id: "pscpp-summary-simulado",
+      label: "Simulado",
+      value: "Em preparação",
+      detail: "Ainda não executável de ponta a ponta."
+    }
+  ],
+  profileTitle: "PSCPP / Praticagem",
+  profileDescription:
+    "Prova técnico-operacional marítima com forte dependência de bibliografia, COLREG, NORMAM, navegação, meteorologia e manobra.",
+  statusLabel: "Perfil configurado",
+  modeLabel: "Guia flexível",
+  examProfileId: "exam-profile:marinha-pscpp",
+  questionStyleProfileId: "marinha_dpc_pscpp_praticagem",
+  studyCycleProfileId: "marinha_dpc_pscpp_praticagem_study_cycle",
+  evidence: [...pscppEvidence],
+  evidenceNotes: [...pscppEvidenceNotes],
+  priorityBlocks: pscppPriorityBlocks
+};
+
+export const pscppCycleViewModelMock: PscppCycleViewModel = {
+  connection: {
+    state: "mock",
+    source: "mock",
+    title: "Sugestao flexivel",
+    detail: "O ciclo PSCPP e guidance-only: nao cria agenda automaticamente e nao altera progresso."
+  },
+  summary: [
+    {
+      id: "pscpp-cycle-guidance",
+      label: "Modo de uso",
+      value: "Guia flexível",
+      detail: "Ajustável pelo candidato e sem agenda fixa."
+    },
+    {
+      id: "pscpp-cycle-baseline",
+      label: "Base semanal",
+      value: "24h",
+      detail: "Distribuicao de referencia, nunca obrigatoria."
+    },
+    {
+      id: "pscpp-cycle-rotation",
+      label: "Rotacao",
+      value: "12 sessões",
+      detail: "Revezamento entre manobra, COLREG, navegação e revisão."
+    },
+    {
+      id: "pscpp-cycle-override",
+      label: "Override",
+      value: "Permitido",
+      detail: "Não altera seu progresso nem cria agenda automaticamente."
+    }
+  ],
+  modeLabel: "Sugestão flexível",
+  weeklyGuidance: "Distribuição semanal base de 24 horas, usada apenas como orientação.",
+  overrideLabel: "Ajustável pelo candidato",
+  baselineLabel: "Não cria agenda automaticamente",
+  sessionStructure: [...pscppSessionStructure],
+  phasePlan: pscppPhasePlan,
+  notebookSystem: pscppNotebookSystem,
+  rotation: pscppRotation
+};
+
+export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
+  connection: {
+    state: "mock",
+    source: "mock",
+    title: "Orientacao de questoes",
+    detail: "Regras de estilo e revisao exibidas por fallback auditado; nao ha geracao automatica final nesta tela."
+  },
+  summary: [
+    {
+      id: "pscpp-questions-source",
+      label: "Fonte obrigatoria",
+      value: "Bibliografia visível",
+      detail: "Questões candidatas precisam de âncora clara em fonte ou edital."
+    },
+    {
+      id: "pscpp-questions-review",
+      label: "Revisao",
+      value: "Necessária",
+      detail: "Não tratar questão candidata como finalizada."
+    },
+    {
+      id: "pscpp-questions-simulado",
+      label: "Simulado",
+      value: "Ainda em preparação",
+      detail: "Integração existe como guia, mas a execução final ainda requer revisão."
+    },
+    {
+      id: "pscpp-questions-weights",
+      label: "Pesos",
+      value: "Orientativos",
+      detail: "Usar variação de peso e dificuldade apenas como guia."
+    }
+  ],
+  archetypes: pscppQuestionArchetypes,
+  sourceRules: pscppQuestionSourceRules,
+  reviewRules: pscppQuestionReviewRules,
+  relationToSimulado: [
+    "Questões candidatas",
+    "Revisão necessária",
+    "Ainda não finalizadas"
+  ]
+};

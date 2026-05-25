@@ -14,7 +14,7 @@ const navigationItems = [
   { label: "Ciclo" },
   { label: "Questões" },
   { label: "Simulados" },
-  { label: "PSCPP" },
+  { label: "PSCPP", href: "/pscpp" },
   { label: "Runtime" }
 ] as const;
 
@@ -31,6 +31,24 @@ function headerCopy(pathname: string) {
     return {
       eyebrow: "mentorium / editais",
       title: "Editais em análise preliminar"
+    };
+  }
+  if (pathname.startsWith("/pscpp/ciclo")) {
+    return {
+      eyebrow: "mentorium / pscpp / ciclo",
+      title: "Ciclo PSCPP sugerido"
+    };
+  }
+  if (pathname.startsWith("/pscpp/questoes")) {
+    return {
+      eyebrow: "mentorium / pscpp / questoes",
+      title: "Orientacao de questoes PSCPP"
+    };
+  }
+  if (pathname.startsWith("/pscpp")) {
+    return {
+      eyebrow: "mentorium / pscpp",
+      title: "Workspace PSCPP / Praticagem"
     };
   }
   return {
