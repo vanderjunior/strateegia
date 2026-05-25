@@ -65,13 +65,15 @@ export function WorkspaceSourcePanel({
 }) {
   return (
     <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-3xl">
+      <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-nowrap">
+        <div className="min-w-0 max-w-3xl">
           <div className="section-kicker">{eyebrow}</div>
-          <CardTitle className="mt-5 text-[2.2rem]">{title}</CardTitle>
+          <CardTitle className="mt-5 break-words text-[2rem] leading-[0.95] sm:text-[2.2rem]">
+            {title}
+          </CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">{subtitle}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex max-w-full flex-wrap gap-2 lg:max-w-[22rem] lg:justify-end">
           <Badge className={sourceBadgeClass(connection.source)}>{sourceLabel(connection.source)}</Badge>
           <Badge className="border-[rgba(201,169,110,0.22)] bg-[rgba(201,169,110,0.10)] text-ink">
             {connection.title}
@@ -113,6 +115,24 @@ export function WorkspaceLink({
       className="inline-flex items-center justify-center rounded-xl border border-[rgba(201,169,110,0.24)] bg-[rgba(201,169,110,0.10)] px-4 py-2 text-sm text-ink transition hover:-translate-y-0.5 hover:bg-[rgba(201,169,110,0.16)]"
     >
       {children}
+    </Link>
+  );
+}
+
+export function WorkspaceBackLink({
+  href,
+  children = "Voltar"
+}: {
+  href: string;
+  children?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-2 text-sm text-silver transition hover:text-ink"
+    >
+      <span aria-hidden="true">←</span>
+      <span>{children}</span>
     </Link>
   );
 }

@@ -10,6 +10,7 @@ import { sourceLabel } from "@/lib/adapters/capabilities";
 import {
   productStatusClass,
   sourceBadgeClass,
+  WorkspaceBackLink,
   WorkspaceLink,
   WorkspaceSourcePanel
 } from "@/components/workspace/WorkspaceShared";
@@ -47,6 +48,8 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
 
   return (
     <div className="space-y-8">
+      <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>
+
       <WorkspaceSourcePanel
         eyebrow="material"
         title={detail.title}
@@ -93,7 +96,9 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
           {detail.warnings.length ? (
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {detail.warnings.map((warning) => (
-                <li key={warning}>• {warning}</li>
+                <li key={warning} className="break-words">
+                  • {warning}
+                </li>
               ))}
             </ul>
           ) : (
@@ -116,8 +121,8 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
                   key={section.id}
                   className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm text-ink">{section.title}</p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="break-words text-sm text-ink">{section.title}</p>
                     <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-silver">
                       {section.chunkRangeLabel}
                     </span>

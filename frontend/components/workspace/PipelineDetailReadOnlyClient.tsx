@@ -7,7 +7,12 @@ import { Card, CardTitle } from "@/components/ui/card";
 import type { PipelineDetailViewModel } from "@/lib/api/types";
 import { buildMockPipelineDetail, loadPipelineDetail } from "@/lib/adapters/pipeline";
 import { sourceLabel } from "@/lib/adapters/capabilities";
-import { productStatusClass, sourceBadgeClass, WorkspaceSourcePanel } from "@/components/workspace/WorkspaceShared";
+import {
+  productStatusClass,
+  sourceBadgeClass,
+  WorkspaceBackLink,
+  WorkspaceSourcePanel
+} from "@/components/workspace/WorkspaceShared";
 
 function toneClass(tone: PipelineDetailViewModel["steps"][number]["tone"]): string {
   switch (tone) {
@@ -39,6 +44,8 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
 
   return (
     <div className="space-y-8">
+      <WorkspaceBackLink href={`/materials/${documentId}`}>Voltar para o material</WorkspaceBackLink>
+
       <WorkspaceSourcePanel
         eyebrow="pipeline documental"
         title={viewModel.title}
@@ -68,9 +75,11 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
         {viewModel.steps.map((step) => (
           <Card key={step.id} className={`border ${toneClass(step.tone)}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="section-kicker">{step.label}</div>
-                <CardTitle className="mt-4 text-[1.8rem]">{step.statusLabel}</CardTitle>
+                <CardTitle className="mt-4 break-words text-[1.6rem] leading-[1.02] sm:text-[1.8rem]">
+                  {step.statusLabel}
+                </CardTitle>
               </div>
               <Badge className={productStatusClass(step.statusLabel)}>{step.statusLabel}</Badge>
             </div>

@@ -7,7 +7,12 @@ import { Card, CardTitle } from "@/components/ui/card";
 import type { BackendConnectionInfo, EditalDetail } from "@/lib/api/types";
 import { buildMockEditalDetail, loadEditalDetail } from "@/lib/adapters/editais";
 import { sourceLabel } from "@/lib/adapters/capabilities";
-import { productStatusClass, sourceBadgeClass, WorkspaceSourcePanel } from "@/components/workspace/WorkspaceShared";
+import {
+  productStatusClass,
+  sourceBadgeClass,
+  WorkspaceBackLink,
+  WorkspaceSourcePanel
+} from "@/components/workspace/WorkspaceShared";
 
 function buildFallback(editalId: string): { connection: BackendConnectionInfo; detail: EditalDetail } {
   return {
@@ -42,6 +47,8 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
 
   return (
     <div className="space-y-8">
+      <WorkspaceBackLink href="/editais">Voltar para editais</WorkspaceBackLink>
+
       <WorkspaceSourcePanel
         eyebrow="edital"
         title={detail.title}
@@ -118,7 +125,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
           {detail.bibliographyCandidates.length ? (
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {detail.bibliographyCandidates.map((item) => (
-                <li key={item}>• {item}</li>
+                <li key={item} className="break-words">
+                  • {item}
+                </li>
               ))}
             </ul>
           ) : (
@@ -138,7 +147,7 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-ink">{item.title}</p>
+                  <p className="break-words text-sm text-ink">{item.title}</p>
                   <Badge className={productStatusClass(item.coverageLabel)}>{item.coverageLabel}</Badge>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-silver">{item.detail}</p>
@@ -157,7 +166,7 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-ink">{item.title}</p>
+                  <p className="break-words text-sm text-ink">{item.title}</p>
                   <Badge className={productStatusClass(item.severityLabel)}>{item.severityLabel}</Badge>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-silver">{item.detail}</p>

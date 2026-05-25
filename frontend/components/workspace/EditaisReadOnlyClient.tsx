@@ -45,13 +45,16 @@ export function EditaisReadOnlyClient() {
 
       <WorkspaceSummaryGrid items={viewModel.summary} />
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        {viewModel.items.map((item) => (
+      {viewModel.items.length ? (
+        <section className="grid gap-4 lg:grid-cols-2">
+          {viewModel.items.map((item) => (
           <Card key={item.id} className="flex h-full flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="max-w-[19rem]">
+              <div className="min-w-0 max-w-[19rem]">
                 <div className="section-kicker">edital</div>
-                <CardTitle className="mt-4 text-[1.8rem]">{item.title}</CardTitle>
+                <CardTitle className="mt-4 break-words text-[1.55rem] leading-[1.02] sm:text-[1.8rem]">
+                  {item.title}
+                </CardTitle>
               </div>
               <Badge className={sourceBadgeClass(item.source)}>{sourceLabel(item.source)}</Badge>
             </div>
@@ -86,15 +89,24 @@ export function EditaisReadOnlyClient() {
               {alignmentCopy?.description ??
                 "O sistema compara materiais, bibliografia e tópicos para apontar cobertura e gaps."}
             </p>
-            <div className="mt-6 flex items-center justify-between gap-4">
-              <span className="text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
+            <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+              <span className="max-w-[18rem] text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
                 A leitura de edital seguirá em etapa controlada.
               </span>
               <WorkspaceLink href={`/editais/${item.id}`}>Ver edital</WorkspaceLink>
             </div>
           </Card>
-        ))}
-      </section>
+          ))}
+        </section>
+      ) : (
+        <Card>
+          <div className="section-kicker">editais</div>
+          <CardTitle className="mt-5 text-[1.8rem]">Nenhum edital para exibir ainda</CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            O painel continua em modo somente leitura e exibirá análises candidatas quando houver dados disponíveis.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }

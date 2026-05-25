@@ -19,22 +19,18 @@ const navigationItems = [
 ] as const;
 
 function headerCopy(pathname: string) {
-  if (pathname.startsWith("/materials")) {
+  if (pathname.startsWith("/materials") || pathname.startsWith("/pipeline")) {
     return {
-      eyebrow: "mentorium / materiais",
-      title: "Materiais em leitura controlada"
+      eyebrow: pathname.startsWith("/pipeline") ? "mentorium / pipeline" : "mentorium / materiais",
+      title: pathname.startsWith("/pipeline")
+        ? "Fluxo documental em revisão"
+        : "Materiais em leitura controlada"
     };
   }
   if (pathname.startsWith("/editais")) {
     return {
       eyebrow: "mentorium / editais",
       title: "Editais em análise preliminar"
-    };
-  }
-  if (pathname.startsWith("/pipeline")) {
-    return {
-      eyebrow: "mentorium / pipeline",
-      title: "Fluxo documental em revisão"
     };
   }
   return {
@@ -62,7 +58,9 @@ export function AppShell({ children }: PropsWithChildren) {
             {navigationItems.map((item) => {
               const href = "href" in item ? item.href : undefined;
               const active = href
-                ? pathname === href || pathname.startsWith(`${href}/`)
+                ? href === "/materials"
+                  ? pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith("/pipeline/")
+                  : pathname === href || pathname.startsWith(`${href}/`)
                 : false;
               const className = `block rounded-2xl border px-4 py-3 text-sm transition ${
                 active
