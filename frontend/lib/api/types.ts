@@ -165,3 +165,202 @@ export interface BackendDashboardOverview {
     readiness_state: string;
   };
 }
+
+export interface BackendDocumentSummary {
+  id: string;
+  title: string;
+  source_filename: string;
+  created_at?: string;
+}
+
+export interface BackendDocumentPipelineState {
+  document_id: string;
+  current_stage: string;
+  stages_completed: string[];
+  extraction_status: string;
+  chunking_status: string;
+  sectioning_status: string;
+  metadata_status: string;
+  error_count: number;
+  text_length: number;
+  chunk_count: number;
+  section_count: number;
+}
+
+export interface BackendDocumentSection {
+  section_id: string;
+  document_id: string;
+  title: string;
+  level: number;
+  order_index: number;
+  start_chunk_index: number;
+  end_chunk_index: number;
+}
+
+export interface BackendDocumentChunk {
+  chunk_id: string;
+  document_id: string;
+}
+
+export interface BackendEditalWarning {
+  code: string;
+  message: string;
+  severity?: string;
+}
+
+export interface BackendEditalTopicCandidate {
+  topic_id: string;
+  title: string;
+  confidence?: number;
+}
+
+export interface BackendEditalBibliographyCandidate {
+  bibliography_id: string;
+  title?: string;
+  raw_reference: string;
+}
+
+export interface BackendEditalExtraction {
+  edital_id: string;
+  document_id: string;
+  topics: BackendEditalTopicCandidate[];
+  bibliography: BackendEditalBibliographyCandidate[];
+  warnings: BackendEditalWarning[];
+}
+
+export interface BackendTopicCoverageCandidate {
+  topic_id: string;
+  topic_title: string;
+  coverage_state: string;
+}
+
+export interface BackendCoverageGap {
+  gap_id: string;
+  gap_type: string;
+  target_title: string;
+  reason: string;
+  severity?: string;
+}
+
+export interface BackendBibliographyAlignmentItem {
+  bibliography_id: string;
+  raw_reference: string;
+  match_state: string;
+}
+
+export interface BackendAlignmentWarning {
+  code: string;
+  message: string;
+  severity?: string;
+}
+
+export interface BackendBibliographyAlignment {
+  alignment_id: string;
+  edital_id: string;
+  topic_coverage: BackendTopicCoverageCandidate[];
+  gaps: BackendCoverageGap[];
+  bibliography_alignments: BackendBibliographyAlignmentItem[];
+  warnings: BackendAlignmentWarning[];
+}
+
+export interface WorkspaceSummaryMetric {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+}
+
+export interface MaterialListItem {
+  id: string;
+  title: string;
+  typeLabel: string;
+  processingStatus: string;
+  extractionStatus: string;
+  sectionsCount: number | null;
+  chunksCount: number | null;
+  reviewState: string;
+  source: ApiSource;
+  relatedGaps: number;
+}
+
+export interface MaterialSectionPreview {
+  id: string;
+  title: string;
+  level: number;
+  chunkRangeLabel: string;
+}
+
+export interface MaterialDetail extends MaterialListItem {
+  warnings: string[];
+  sectionPreviews: MaterialSectionPreview[];
+  sourceNote: string;
+}
+
+export interface MaterialsWorkspaceViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  items: MaterialListItem[];
+}
+
+export interface CoverageItem {
+  id: string;
+  title: string;
+  coverageLabel: string;
+  detail: string;
+  source: ApiSource;
+}
+
+export interface GapItem {
+  id: string;
+  title: string;
+  detail: string;
+  severityLabel: string;
+  source: ApiSource;
+}
+
+export interface EditalListItem {
+  id: string;
+  title: string;
+  statusLabel: string;
+  topicsCount: number;
+  bibliographyItemsCount: number;
+  gapsCount: number;
+  reviewState: string;
+  source: ApiSource;
+}
+
+export interface EditalDetail extends EditalListItem {
+  topicCandidates: string[];
+  bibliographyCandidates: string[];
+  coverageItems: CoverageItem[];
+  gapItems: GapItem[];
+  warnings: string[];
+  notes: string[];
+}
+
+export interface EditaisWorkspaceViewModel {
+  connection: BackendConnectionInfo;
+  summary: WorkspaceSummaryMetric[];
+  items: EditalListItem[];
+}
+
+export interface PipelineStep {
+  id: string;
+  label: string;
+  statusLabel: string;
+  tone: "complete" | "current" | "warning" | "pending";
+  detail: string;
+}
+
+export interface PipelineDetailViewModel {
+  connection: BackendConnectionInfo;
+  documentId: string;
+  title: string;
+  source: ApiSource;
+  extractionStatus: string;
+  reviewState: string;
+  sectionsCount: number | null;
+  chunksCount: number | null;
+  notes: string[];
+  steps: PipelineStep[];
+}

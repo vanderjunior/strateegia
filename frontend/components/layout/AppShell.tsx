@@ -1,10 +1,52 @@
+"use client";
+
 import type { PropsWithChildren } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { MentoriumLogo } from "@/components/brand/MentoriumLogo";
 import { Badge } from "@/components/ui/badge";
-import { dashboardSidebar } from "@/lib/mock/mentorium-demo-data";
+
+const navigationItems = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Materiais", href: "/materials" },
+  { label: "Editais", href: "/editais" },
+  { label: "Ciclo" },
+  { label: "Questões" },
+  { label: "Simulados" },
+  { label: "PSCPP" },
+  { label: "Runtime" }
+] as const;
+
+function headerCopy(pathname: string) {
+  if (pathname.startsWith("/materials")) {
+    return {
+      eyebrow: "mentorium / materiais",
+      title: "Materiais em leitura controlada"
+    };
+  }
+  if (pathname.startsWith("/editais")) {
+    return {
+      eyebrow: "mentorium / editais",
+      title: "Editais em análise preliminar"
+    };
+  }
+  if (pathname.startsWith("/pipeline")) {
+    return {
+      eyebrow: "mentorium / pipeline",
+      title: "Fluxo documental em revisão"
+    };
+  }
+  return {
+    eyebrow: "mentorium / dashboard",
+    title: "Painel de capacidades auditadas"
+  };
+}
 
 export function AppShell({ children }: PropsWithChildren) {
+  const pathname = usePathname();
+  const header = headerCopy(pathname);
+
   return (
     <div className="min-h-screen bg-[var(--color-s3)] text-ink">
       <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
@@ -17,27 +59,42 @@ export function AppShell({ children }: PropsWithChildren) {
             </p>
           </div>
           <nav className="mt-10 space-y-2">
-            {dashboardSidebar.map((item, index) => (
-              <div
-                key={item}
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  index === 0
-                    ? "border-[rgba(201,169,110,0.26)] bg-[rgba(201,169,110,0.10)] text-ink"
-                    : "border-transparent text-silver"
-                }`}
-              >
-                {item}
-              </div>
-            ))}
+            {navigationItems.map((item) => {
+              const href = "href" in item ? item.href : undefined;
+              const active = href
+                ? pathname === href || pathname.startsWith(`${href}/`)
+                : false;
+              const className = `block rounded-2xl border px-4 py-3 text-sm transition ${
+                active
+                  ? "border-[rgba(201,169,110,0.26)] bg-[rgba(201,169,110,0.10)] text-ink"
+                  : href
+                    ? "border-transparent text-silver hover:border-[rgba(168,184,196,0.10)] hover:bg-[rgba(255,255,255,0.02)]"
+                    : "border-transparent text-[rgba(168,184,196,0.45)]"
+              }`;
+
+              if (!href) {
+                return (
+                  <div key={item.label} className={className}>
+                    {item.label}
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={item.label} href={href} className={className}>
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         </aside>
         <div className="bg-radial-shell">
           <header className="flex items-center justify-between border-b border-[rgba(168,184,196,0.08)] bg-[rgba(10,21,32,0.44)] px-6 py-5 lg:px-10">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-silver">
-                mentorium / dashboard
+                {header.eyebrow}
               </div>
-              <h1 className="mt-2 font-serif text-3xl text-ink">Painel de capacidades auditadas</h1>
+              <h1 className="mt-2 font-serif text-3xl text-ink">{header.title}</h1>
             </div>
             <Badge>read-only beta</Badge>
           </header>

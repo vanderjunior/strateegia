@@ -1,4 +1,15 @@
-import type { CapabilityCard, CapabilityStatus, StudyOverviewCard } from "@/lib/api/types";
+import type {
+  CapabilityCard,
+  CapabilityStatus,
+  CoverageItem,
+  EditalDetail,
+  EditalListItem,
+  GapItem,
+  MaterialDetail,
+  MaterialListItem,
+  PipelineDetailViewModel,
+  StudyOverviewCard
+} from "@/lib/api/types";
 
 export const landingPipeline = [
   "Upload de materiais",
@@ -207,6 +218,223 @@ export const pscppProfileCards: CapabilityCard[] = [
     detail: "Guidance-only, sem agenda forcada e com override do usuario."
   }
 ] as const;
+
+export const materialsWorkspaceItems: MaterialListItem[] = [
+  {
+    id: "material-arte-naval",
+    title: "PSCPP bibliografia - Arte Naval.pdf",
+    typeLabel: "PDF textual",
+    processingStatus: "Processado",
+    extractionStatus: "Texto extraído",
+    sectionsCount: 18,
+    chunksCount: 124,
+    reviewState: "Pronto para revisão",
+    source: "mock",
+    relatedGaps: 1
+  },
+  {
+    id: "material-shiphandling-manobra",
+    title: "Shiphandling for the Mariner - capítulo manobra.pdf",
+    typeLabel: "PDF textual",
+    processingStatus: "Processado",
+    extractionStatus: "Texto extraído",
+    sectionsCount: 9,
+    chunksCount: 76,
+    reviewState: "Pronto para revisão",
+    source: "mock",
+    relatedGaps: 2
+  },
+  {
+    id: "material-roteiro-porto",
+    title: "Roteiro escaneado - trecho porto.pdf",
+    typeLabel: "PDF digitalizado",
+    processingStatus: "OCR necessário",
+    extractionStatus: "OCR em validação",
+    sectionsCount: null,
+    chunksCount: null,
+    reviewState: "OCR em validação",
+    source: "mock",
+    relatedGaps: 1
+  }
+] as const;
+
+export const materialDetailsById: Record<string, MaterialDetail> = {
+  "material-arte-naval": {
+    ...materialsWorkspaceItems[0],
+    warnings: ["Texto extraído sujeito a revisão."],
+    sectionPreviews: [
+      { id: "arte-1", title: "Nomenclatura e geometria naval", level: 1, chunkRangeLabel: "Trechos 1 a 8" },
+      { id: "arte-2", title: "Estabilidade inicial", level: 1, chunkRangeLabel: "Trechos 9 a 18" },
+      { id: "arte-3", title: "Cabos, fundeio e governo", level: 1, chunkRangeLabel: "Trechos 19 a 31" }
+    ],
+    sourceNote: "Material processado em modo de demonstração, pronto para revisão assistida."
+  },
+  "material-shiphandling-manobra": {
+    ...materialsWorkspaceItems[1],
+    warnings: ["Texto extraído sujeito a revisão."],
+    sectionPreviews: [
+      { id: "ship-1", title: "Turning circle e stopping distance", level: 1, chunkRangeLabel: "Trechos 1 a 10" },
+      { id: "ship-2", title: "Berthing com vento de través", level: 1, chunkRangeLabel: "Trechos 11 a 22" },
+      { id: "ship-3", title: "Interação em canal restrito", level: 1, chunkRangeLabel: "Trechos 23 a 36" }
+    ],
+    sourceNote: "Capítulo tratado como base técnica para revisão de manobra e cenários."
+  },
+  "material-roteiro-porto": {
+    ...materialsWorkspaceItems[2],
+    warnings: [
+      "Este arquivo pode precisar de OCR antes da revisão.",
+      "OCR em validação."
+    ],
+    sectionPreviews: [],
+    sourceNote: "Arquivo digitalizado mantido em etapa de revisão até existir leitura confiável."
+  }
+};
+
+export const editalCoverageItems: CoverageItem[] = [
+  {
+    id: "coverage-arte-naval",
+    title: "Arte Naval",
+    coverageLabel: "Cobertura boa",
+    detail: "Referências compatíveis já aparecem nos materiais processados.",
+    source: "mock"
+  },
+  {
+    id: "coverage-shiphandling",
+    title: "Shiphandling",
+    coverageLabel: "Cobertura parcial",
+    detail: "Há material útil, mas ainda sujeito a revisão por cenário.",
+    source: "mock"
+  },
+  {
+    id: "coverage-colreg",
+    title: "COLREG",
+    coverageLabel: "Cobertura parcial",
+    detail: "Boa base normativa, mas ainda com lacunas em aplicação operacional.",
+    source: "mock"
+  },
+  {
+    id: "coverage-normam",
+    title: "NORMAM",
+    coverageLabel: "Gap encontrado",
+    detail: "Faltam materiais consolidados para revisão segura.",
+    source: "mock"
+  },
+  {
+    id: "coverage-nav-restrita",
+    title: "Navegação restrita",
+    coverageLabel: "Precisa de material",
+    detail: "Cobertura ainda insuficiente para revisão com confiança.",
+    source: "mock"
+  }
+] as const;
+
+export const editalGapItems: GapItem[] = [
+  {
+    id: "gap-normam",
+    title: "NORMAM",
+    detail: "Gap encontrado em referências normativas atualizadas.",
+    severityLabel: "Revisão necessária",
+    source: "mock"
+  },
+  {
+    id: "gap-nav-restrita",
+    title: "Navegação restrita",
+    detail: "Precisa de material complementar para cobertura mais segura.",
+    severityLabel: "Precisa de material",
+    source: "mock"
+  }
+] as const;
+
+export const editaisWorkspaceItems: EditalListItem[] = [
+  {
+    id: "edital-pscpp-referencia",
+    title: "PSCPP/Praticagem - edital de referência",
+    statusLabel: "Análise candidata",
+    topicsCount: 24,
+    bibliographyItemsCount: 11,
+    gapsCount: 4,
+    reviewState: "Precisa de conferência",
+    source: "mock"
+  }
+] as const;
+
+export const editalDetailsById: Record<string, EditalDetail> = {
+  "edital-pscpp-referencia": {
+    ...editaisWorkspaceItems[0],
+    topicCandidates: [
+      "Manobrabilidade e rebocadores",
+      "COLREG e sinais sonoros",
+      "Navegação restrita",
+      "Arte Naval",
+      "NORMAM e legislação marítima",
+      "Meteorologia e oceanografia"
+    ],
+    bibliographyCandidates: [
+      "Arte Naval",
+      "Shiphandling for the Mariner",
+      "COLREG",
+      "NORMAM aplicáveis",
+      "Radar and ARPA Manual"
+    ],
+    coverageItems: editalCoverageItems,
+    gapItems: editalGapItems,
+    warnings: [
+      "Os tópicos exibidos são candidatos e ainda precisam de conferência.",
+      "A bibliografia identificada é preliminar e sujeita a revisão."
+    ],
+    notes: [
+      "Alinhamento preliminar baseado em leitura heurística do edital.",
+      "Não trate esta análise como verdade final sem revisão humana."
+    ]
+  }
+};
+
+export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
+  "material-arte-naval": {
+    connection: {
+      state: "mock",
+      source: "mock",
+      title: "Dados de demonstração",
+      detail: "Linha do tempo local usada até existir leitura segura do backend para este material."
+    },
+    documentId: "material-arte-naval",
+    title: "PSCPP bibliografia - Arte Naval.pdf",
+    source: "mock",
+    extractionStatus: "Texto extraído",
+    reviewState: "Pronto para revisão",
+    sectionsCount: 18,
+    chunksCount: 124,
+    notes: ["Texto extraído sujeito a revisão antes de uso em fluxos posteriores."],
+    steps: [
+      { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material já está registrado." },
+      { id: "extracted", label: "Texto extraído", statusLabel: "Concluído", tone: "complete", detail: "Leitura textual disponível." },
+      { id: "chunked", label: "Segmentado", statusLabel: "Concluído", tone: "complete", detail: "Trechos preparados para revisão." },
+      { id: "review", label: "Pronto para revisão", statusLabel: "Concluído", tone: "current", detail: "Material pronto para etapa de revisão." }
+    ]
+  },
+  "material-roteiro-porto": {
+    connection: {
+      state: "mock",
+      source: "mock",
+      title: "Dados de demonstração",
+      detail: "Linha do tempo local usada até existir leitura segura do backend para este material."
+    },
+    documentId: "material-roteiro-porto",
+    title: "Roteiro escaneado - trecho porto.pdf",
+    source: "mock",
+    extractionStatus: "OCR em validação",
+    reviewState: "OCR necessário",
+    sectionsCount: null,
+    chunksCount: null,
+    notes: ["Este arquivo pode precisar de OCR antes da revisão."],
+    steps: [
+      { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material já está registrado." },
+      { id: "extracted", label: "Texto extraído", statusLabel: "OCR necessário", tone: "warning", detail: "A leitura textual ainda não está pronta." },
+      { id: "chunked", label: "Segmentado", statusLabel: "Pendente", tone: "pending", detail: "A segmentação depende de validação do OCR." },
+      { id: "review", label: "Pronto para revisão", statusLabel: "Em validação", tone: "warning", detail: "Arquivo mantido em revisão controlada." }
+    ]
+  }
+};
 
 export const betaSignals = [
   "beta fechado",
