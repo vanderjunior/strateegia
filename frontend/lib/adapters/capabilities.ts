@@ -28,13 +28,13 @@ export function capabilityStatusBadgeClass(status: CapabilityStatus): string {
 export function sourceLabel(source: ApiSource): string {
   switch (source) {
     case "backend":
-      return "backend";
+      return "Backend disponível";
     case "offline":
-      return "offline";
+      return "Backend offline";
     case "unsupported":
-      return "unsupported";
+      return "Painel em validação";
     default:
-      return "mock";
+      return "Dados de demonstração";
   }
 }
 

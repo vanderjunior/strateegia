@@ -63,15 +63,17 @@ export function PscppCrosswalkClient() {
           <div className="section-kicker">cobertura por bloco</div>
           <h2 className="mt-3 font-serif text-[2rem] text-ink">Cobertura por bloco prioritário</h2>
         </div>
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-4 2xl:grid-cols-2">
           {viewModel.blocks.map((block) => (
             <Card key={block.id} className="h-full">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 max-w-3xl">
+                <div className="min-w-0 flex-1">
                   <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
                     prioridade {block.priorityNumber}
                   </div>
-                  <CardTitle className="mt-4 text-[1.7rem] leading-[1.04]">{block.title}</CardTitle>
+                  <CardTitle className="mt-4 break-words text-[1.45rem] leading-[1.08] sm:text-[1.6rem] xl:text-[1.7rem]">
+                    {block.title}
+                  </CardTitle>
                 </div>
                 <Badge className={productStatusClass(block.coverageLabel)}>{block.coverageLabel}</Badge>
               </div>
@@ -86,22 +88,30 @@ export function PscppCrosswalkClient() {
                 </Badge>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                <div className="min-w-0 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
                     materiais relacionados
                   </div>
                   <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
                     {block.relatedMaterials.length ? (
                       block.relatedMaterials.map((item) => (
-                        <li key={item.id}>• {item.title}</li>
+                        <li key={item.id}>
+                          •{" "}
+                          <Link
+                            href={item.linkHref}
+                            className="break-words text-silver transition hover:text-ink"
+                          >
+                            {item.title}
+                          </Link>
+                        </li>
                       ))
                     ) : (
                       <li>• Nenhum material relacionado com cobertura suficiente.</li>
                     )}
                   </ul>
                 </div>
-                <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                <div className="min-w-0 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
                     sessões sugeridas
                   </div>
@@ -131,7 +141,7 @@ export function PscppCrosswalkClient() {
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
-                <WorkspaceLink href="/editais/edital-pscpp-referencia">Ver edital</WorkspaceLink>
+                <WorkspaceLink href="/editais/edital-pscpp-referencia">Ver edital de referência</WorkspaceLink>
                 <WorkspaceLink href="/pscpp/ciclo">Ver ciclo</WorkspaceLink>
                 <WorkspaceLink href="/pscpp/questoes">Ver questões PSCPP</WorkspaceLink>
               </div>
@@ -140,7 +150,7 @@ export function PscppCrosswalkClient() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <section className="grid gap-4 2xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="h-full">
           <div className="section-kicker">gaps principais</div>
           <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Gaps encontrados</CardTitle>
@@ -151,8 +161,8 @@ export function PscppCrosswalkClient() {
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 max-w-2xl">
-                    <p className="text-sm text-ink">{gap.title}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm text-ink">{gap.title}</p>
                     <p className="mt-2 text-sm leading-7 text-silver">{gap.affectedBlockTitle}</p>
                   </div>
                   <Badge className={productStatusClass(gap.reviewState)}>{gap.reviewState}</Badge>
@@ -183,7 +193,7 @@ export function PscppCrosswalkClient() {
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 max-w-2xl">
+                  <div className="min-w-0 flex-1">
                     <p className="break-words text-sm text-ink">{item.material.title}</p>
                     <p className="mt-2 text-sm leading-7 text-silver">{item.blockTitle}</p>
                   </div>
@@ -219,9 +229,9 @@ export function PscppCrosswalkClient() {
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-4 2xl:grid-cols-[0.9fr_1.1fr]">
         <Card className="h-full">
-          <div className="section-kicker">conexao com o ciclo</div>
+          <div className="section-kicker">conexão com o ciclo</div>
           <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Sessões sugeridas para reforço</CardTitle>
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge className={productStatusClass("Sugestão flexível")}>Sugestão flexível</Badge>
@@ -240,14 +250,14 @@ export function PscppCrosswalkClient() {
         <Card className="h-full">
           <div className="section-kicker">preview do ciclo</div>
           <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Sessões destacadas</CardTitle>
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
             {viewModel.highlightedSessions.map((session) => (
               <div
                 key={session.id}
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
                       {session.label}
                     </div>

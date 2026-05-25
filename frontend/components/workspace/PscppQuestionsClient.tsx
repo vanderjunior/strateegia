@@ -101,8 +101,8 @@ export function PscppQuestionsClient() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <GuidanceList title="Regras de ancoragem" eyebrow="fonte obrigatoria" items={viewModel.sourceRules} />
-        <GuidanceList title="Revisão humana e cautelas" eyebrow="revisao" items={viewModel.reviewRules} />
+        <GuidanceList title="Regras de ancoragem" eyebrow="fonte obrigatória" items={viewModel.sourceRules} />
+        <GuidanceList title="Revisão humana e cautelas" eyebrow="revisão" items={viewModel.reviewRules} />
       </section>
     </div>
   );

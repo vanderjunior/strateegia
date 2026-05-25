@@ -110,7 +110,7 @@ export function PscppCycleClient() {
         </Card>
 
         <Card className="h-full">
-          <div className="section-kicker">rotacao</div>
+          <div className="section-kicker">rotação</div>
           <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Rotação de 12 sessões</CardTitle>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {viewModel.rotation.map((item) => (
@@ -119,7 +119,7 @@ export function PscppCycleClient() {
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                  sessao {item.index}
+                  sessão {item.index}
                 </div>
                 <p className="mt-3 text-sm text-ink">{item.title}</p>
                 <p className="mt-2 text-sm leading-7 text-silver">{item.detail}</p>

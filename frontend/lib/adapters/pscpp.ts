@@ -36,7 +36,7 @@ function buildWorkspaceFromProfile(profile: BackendExamProfile): PscppWorkspaceV
     ...pscppWorkspaceViewModelMock,
     connection: sourceConnection(
       "backend",
-      "Perfil lido do backend",
+      "Backend disponível",
       "Perfil PSCPP confirmado via backend. Ciclo sugerido e orientação de questões permanecem em guia auditado somente leitura.",
       "connected"
     ),
@@ -55,7 +55,7 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       ...pscppCycleViewModelMock,
       connection: sourceConnection(
         "backend",
-        "Guia PSCPP auditado",
+        "Backend disponível",
         "A leitura do perfil veio do backend, mas o ciclo continua guidance-only, sem agenda automática ou alteração de progresso.",
         "connected"
       )
@@ -98,7 +98,7 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       ...pscppQuestionsViewModelMock,
       connection: sourceConnection(
         "backend",
-        "Orientação por perfil",
+        "Backend disponível",
         "O perfil PSCPP foi confirmado no backend. Esta tela continua guidance-only para questões candidatas e revisão.",
         "connected"
       )

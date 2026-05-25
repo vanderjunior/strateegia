@@ -583,8 +583,8 @@ export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
   connection: {
     state: "mock",
     source: "mock",
-    title: "Guia auditado",
-    detail: "Perfil PSCPP, ciclo e orientacao de questoes exibidos por fallback auditado enquanto a leitura do perfil no backend nao e confirmada."
+    title: "Dados de demonstração",
+    detail: "Perfil PSCPP, ciclo e orientação de questões exibidos por fallback auditado enquanto a leitura do perfil no backend não é confirmada."
   },
   summary: [
     {
@@ -629,8 +629,8 @@ export const pscppCycleViewModelMock: PscppCycleViewModel = {
   connection: {
     state: "mock",
     source: "mock",
-    title: "Sugestao flexivel",
-    detail: "O ciclo PSCPP e guidance-only: nao cria agenda automaticamente e nao altera progresso."
+    title: "Dados de demonstração",
+    detail: "O ciclo PSCPP é guidance-only: não cria agenda automaticamente e não altera progresso."
   },
   summary: [
     {
@@ -643,11 +643,11 @@ export const pscppCycleViewModelMock: PscppCycleViewModel = {
       id: "pscpp-cycle-baseline",
       label: "Base semanal",
       value: "24h",
-      detail: "Distribuicao de referencia, nunca obrigatoria."
+      detail: "Distribuição de referência, nunca obrigatória."
     },
     {
       id: "pscpp-cycle-rotation",
-      label: "Rotacao",
+      label: "Rotação",
       value: "12 sessões",
       detail: "Revezamento entre manobra, COLREG, navegação e revisão."
     },
@@ -672,19 +672,19 @@ export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
   connection: {
     state: "mock",
     source: "mock",
-    title: "Orientacao de questoes",
-    detail: "Regras de estilo e revisao exibidas por fallback auditado; nao ha geracao automatica final nesta tela."
+    title: "Dados de demonstração",
+    detail: "Regras de estilo e revisão exibidas por fallback auditado; não há geração automática final nesta tela."
   },
   summary: [
     {
       id: "pscpp-questions-source",
-      label: "Fonte obrigatoria",
+      label: "Fonte obrigatória",
       value: "Bibliografia visível",
       detail: "Questões candidatas precisam de âncora clara em fonte ou edital."
     },
     {
       id: "pscpp-questions-review",
-      label: "Revisao",
+      label: "Revisão",
       value: "Necessária",
       detail: "Não tratar questão candidata como finalizada."
     },
@@ -958,7 +958,7 @@ export const pscppCrosswalkViewModelMock: PscppCrosswalkViewModel = {
   connection: {
     state: "mock",
     source: "mock",
-    title: "Guia de cobertura",
+    title: "Dados de demonstração",
     detail: "Mapa PSCPP montado por fallback auditado a partir de materiais, edital, gaps e ciclo sugerido."
   },
   summary: [

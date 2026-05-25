@@ -40,7 +40,7 @@ export async function loadPscppCrosswalkViewModel(): Promise<PscppCrosswalkViewM
       ...fallback,
       connection: sourceConnection(
         "backend",
-        "Guia de cobertura",
+        "Backend disponível",
         "Perfil PSCPP confirmado via backend. O mapa continua como orientação somente leitura a partir de dados auditados.",
         "connected"
       )

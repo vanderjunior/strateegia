@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const pscppNavItems = [
-  { href: "/pscpp", label: "Workspace" },
+  { href: "/pscpp", label: "Visão geral" },
   { href: "/pscpp/ciclo", label: "Ciclo" },
   { href: "/pscpp/questoes", label: "Questões" },
   { href: "/pscpp/mapa", label: "Mapa" }

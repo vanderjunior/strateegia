@@ -42,7 +42,7 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/pscpp/questoes")) {
     return {
       eyebrow: "mentorium / pscpp / questoes",
-      title: "Orientacao de questoes PSCPP"
+      title: "Orientação de questões PSCPP"
     };
   }
   if (pathname.startsWith("/pscpp/mapa")) {
@@ -54,7 +54,7 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/pscpp")) {
     return {
       eyebrow: "mentorium / pscpp",
-      title: "Workspace PSCPP / Praticagem"
+      title: "Visão geral PSCPP / Praticagem"
     };
   }
   return {
