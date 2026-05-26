@@ -95,7 +95,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <div className="mt-6 space-y-3">
             <Badge>acesso antecipado</Badge>
             <p className="max-w-[220px] text-sm leading-6 text-silver">
-              Shell de produto em modo experimental, refletindo apenas capacidades auditadas do backend.
+              Painel de produto em modo experimental, refletindo apenas capacidades auditadas do backend.
             </p>
           </div>
           <nav className="mt-10 space-y-2">

@@ -8,8 +8,8 @@ import type { OnboardingStepItem } from "@/lib/api/types";
 export function OnboardingStepCard({ step }: { step: OnboardingStepItem }) {
   return (
     <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
+        <div className="flex min-w-0 flex-1 items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[rgba(201,169,110,0.24)] bg-[rgba(201,169,110,0.10)] font-mono text-sm tracking-[0.18em] text-ink">
             {String(step.stepNumber).padStart(2, "0")}
           </div>
@@ -20,11 +20,15 @@ export function OnboardingStepCard({ step }: { step: OnboardingStepItem }) {
             </CardTitle>
           </div>
         </div>
-        <Badge className={productStatusClass(step.statusLabel)}>{step.statusLabel}</Badge>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+          <Badge className={productStatusClass(step.statusLabel)}>{step.statusLabel}</Badge>
+        </div>
       </div>
 
-      <p className="mt-5 text-sm leading-7 text-silver">{step.description}</p>
-      <p className="mt-4 text-sm leading-7 text-[rgba(232,238,242,0.72)]">{step.note}</p>
+      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+        <p className="text-sm leading-7 text-silver">{step.description}</p>
+        <p className="text-sm leading-7 text-[rgba(232,238,242,0.72)]">{step.note}</p>
+      </div>
 
       <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">revisão necessária</div>

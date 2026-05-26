@@ -47,7 +47,15 @@ export function DashboardReadOnlyClient() {
             Este painel combina fallback local auditado com leitura read-only do backend quando ela esta disponivel.
             O produto continua cauteloso com OCR, geracao completa de simulado e qualquer atualizacao ampla do progresso.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
+              orientação inicial
+            </div>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
+              Veja o caminho seguro para usar a plataforma sem pular etapas de revisão.
+            </p>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
             <WorkspaceLink href="/onboarding">Comece sua preparação</WorkspaceLink>
           </div>
         </div>

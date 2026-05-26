@@ -28,10 +28,18 @@ export function OnboardingReadOnlyClient() {
             </p>
           </div>
           <div className="flex max-w-full flex-wrap gap-2 lg:justify-end">
+            <Badge className={productStatusClass("Orientação inicial")}>Orientação inicial</Badge>
             <Badge className={productStatusClass("Upload controlado")}>Upload controlado</Badge>
             <Badge className={productStatusClass("Análise candidata")}>Análise candidata</Badge>
             <Badge className={productStatusClass("Guia flexível")}>Guia flexível</Badge>
           </div>
+        </div>
+        <div className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">caminho seguro</div>
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
+            Esta orientação inicial conecta materiais, edital, mapa PSCPP e estudo sugerido sem criar
+            agenda automaticamente e sem alterar seu progresso.
+          </p>
         </div>
       </Card>
 
@@ -39,6 +47,7 @@ export function OnboardingReadOnlyClient() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-5">
+          <div className="section-kicker">etapas principais</div>
           {viewModel.steps.map((step) => (
             <OnboardingStepCard key={step.id} step={step} />
           ))}
