@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 const navigationItems = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Começar", href: "/onboarding" },
   { label: "Materiais", href: "/materials" },
   { label: "Editais", href: "/editais" },
   { label: "Estudo", href: "/study" },
@@ -20,6 +21,12 @@ const navigationItems = [
 ] as const;
 
 function headerCopy(pathname: string) {
+  if (pathname.startsWith("/onboarding")) {
+    return {
+      eyebrow: "mentorium / onboarding",
+      title: "Comece sua preparação"
+    };
+  }
   if (pathname.startsWith("/materials") || pathname.startsWith("/pipeline")) {
     return {
       eyebrow: pathname.startsWith("/pipeline") ? "mentorium / pipeline" : "mentorium / materiais",

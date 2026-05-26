@@ -10,6 +10,7 @@ import { PSCPPProfileCards } from "@/components/dashboard/PSCPPProfileCards";
 import { RuntimeStatusCards } from "@/components/dashboard/RuntimeStatusCards";
 import { StudyOverviewCards } from "@/components/dashboard/StudyOverviewCards";
 import { Badge } from "@/components/ui/badge";
+import { WorkspaceLink } from "@/components/workspace/WorkspaceShared";
 import type { DashboardViewModel } from "@/lib/api/types";
 import { buildMockDashboardViewModel, loadDashboardViewModel } from "@/lib/adapters/dashboard";
 
@@ -46,6 +47,9 @@ export function DashboardReadOnlyClient() {
             Este painel combina fallback local auditado com leitura read-only do backend quando ela esta disponivel.
             O produto continua cauteloso com OCR, geracao completa de simulado e qualquer atualizacao ampla do progresso.
           </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/onboarding">Comece sua preparação</WorkspaceLink>
+          </div>
         </div>
         <div className="naval-window">
           <div className="naval-window-bar">

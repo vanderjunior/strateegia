@@ -559,6 +559,30 @@ export interface StudySessionWorkspaceViewModel {
   starterMaterials: PscppCrosswalkMaterialRef[];
 }
 
+export interface OnboardingStepLink {
+  label: string;
+  href: string;
+}
+
+export interface OnboardingStepItem {
+  id: string;
+  stepNumber: number;
+  title: string;
+  description: string;
+  statusLabel: string;
+  note: string;
+  cautionLabel: string;
+  primaryLink: OnboardingStepLink;
+  secondaryLinks: OnboardingStepLink[];
+}
+
+export interface OnboardingViewModel {
+  summary: WorkspaceSummaryMetric[];
+  readyHighlights: string[];
+  reviewHighlights: string[];
+  steps: OnboardingStepItem[];
+}
+
 export type UploadValidationState =
   | "idle"
   | "validating"

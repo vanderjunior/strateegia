@@ -7,6 +7,8 @@ import type {
   GapItem,
   MaterialDetail,
   MaterialListItem,
+  OnboardingStepItem,
+  OnboardingViewModel,
   PipelineDetailViewModel,
   PscppCrosswalkBlockItem,
   PscppCrosswalkGapItem,
@@ -1261,4 +1263,113 @@ export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel 
     pscppCrosswalkBlocks[0].relatedMaterials[1],
     pscppCrosswalkBlocks[2].relatedMaterials[0]
   ]
+};
+
+export const onboardingSteps: OnboardingStepItem[] = [
+  {
+    id: "onboarding-step-1",
+    stepNumber: 1,
+    title: "Envie material",
+    description: "Adicione PDFs, TXT ou Markdown para validação inicial.",
+    statusLabel: "Upload controlado",
+    note: "Validação inicial disponível com leitura cautelosa do formato enviado.",
+    cautionLabel: "PDFs escaneados podem exigir OCR em validação.",
+    primaryLink: {
+      label: "Enviar material",
+      href: "/materials/upload"
+    },
+    secondaryLinks: [
+      {
+        label: "Ver materiais",
+        href: "/materials"
+      }
+    ]
+  },
+  {
+    id: "onboarding-step-2",
+    stepNumber: 2,
+    title: "Revise edital",
+    description: "Confira tópicos, bibliografia identificada e lacunas antes de tratar a análise como final.",
+    statusLabel: "Análise candidata",
+    note: "Use a leitura do edital como base de conferência, não como verdade final automática.",
+    cautionLabel: "O alinhamento é preliminar e precisa de conferência.",
+    primaryLink: {
+      label: "Ver editais",
+      href: "/editais"
+    },
+    secondaryLinks: []
+  },
+  {
+    id: "onboarding-step-3",
+    stepNumber: 3,
+    title: "Veja o mapa PSCPP",
+    description: "Cruze materiais, edital, gaps e blocos prioritários da prova.",
+    statusLabel: "Mapa de preparação",
+    note: "O mapa mostra cobertura e gaps sem criar plano automático.",
+    cautionLabel: "Gaps encontrados ainda pedem leitura guiada e revisão necessária.",
+    primaryLink: {
+      label: "Ver mapa PSCPP",
+      href: "/pscpp/mapa"
+    },
+    secondaryLinks: [
+      {
+        label: "Ver ciclo PSCPP",
+        href: "/pscpp/ciclo"
+      }
+    ]
+  },
+  {
+    id: "onboarding-step-4",
+    stepNumber: 4,
+    title: "Siga o estudo de hoje",
+    description: "Abra a sessão sugerida, consulte materiais relacionados e use o checklist de estudo.",
+    statusLabel: "Guia flexível",
+    note: "A sessão sugerida ajuda a decidir o que estudar agora, com foco em materiais e gaps conectados.",
+    cautionLabel: "A tela não altera seu progresso e não cria agenda automaticamente.",
+    primaryLink: {
+      label: "Ver estudo de hoje",
+      href: "/study"
+    },
+    secondaryLinks: []
+  }
+];
+
+export const onboardingViewModelMock: OnboardingViewModel = {
+  summary: [
+    {
+      id: "onboarding-summary-upload",
+      label: "Upload controlado",
+      value: "1",
+      detail: "Entrada segura já conectada ao fluxo de materiais."
+    },
+    {
+      id: "onboarding-summary-edital",
+      label: "Análise candidata",
+      value: "1",
+      detail: "Edital de referência pronto para conferência cuidadosa."
+    },
+    {
+      id: "onboarding-summary-map",
+      label: "Mapa de preparação",
+      value: "5",
+      detail: "Blocos prioritários já conectados a gaps e materiais."
+    },
+    {
+      id: "onboarding-summary-study",
+      label: "Guia flexível",
+      value: "5",
+      detail: "Sessões sugeridas prontas para consulta read-only."
+    }
+  ],
+  readyHighlights: [
+    "Upload controlado já aponta para a entrada segura de materiais.",
+    "Edital de referência, mapa PSCPP e estudo de hoje já podem orientar a leitura inicial.",
+    "Os links principais levam apenas para páginas read-only e revisáveis."
+  ],
+  reviewHighlights: [
+    "OCR em validação ainda exige cautela para PDFs escaneados.",
+    "A análise de edital continua preliminar e precisa de conferência.",
+    "Questões candidatas e simulado curto seguem em revisão, sem execução automática."
+  ],
+  steps: onboardingSteps
 };
