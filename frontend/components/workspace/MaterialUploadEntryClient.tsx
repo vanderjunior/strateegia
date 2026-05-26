@@ -6,10 +6,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import {
+  ACCEPT_STRING,
+  acceptedUploadTypes,
+  extensionForFileName,
+  formatUploadFileSize,
+  isScannedPdfFile,
+  validateUploadFile
+} from "@/components/workspace/upload-validation";
 import { uploadMaterialFile } from "@/lib/api/documents";
 import { getApiConfig } from "@/lib/api/config";
 import type {
-  AcceptedUploadType,
   BackendConnectionInfo,
   UploadEntryState,
   UploadMaterialResult,
@@ -23,45 +30,6 @@ import {
 } from "@/components/workspace/WorkspaceShared";
 import { UploadDropzone } from "@/components/workspace/UploadDropzone";
 import { UploadValidationSummary } from "@/components/workspace/UploadValidationSummary";
-
-const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md"] as const;
-const ACCEPTED_MIME_TYPES = [
-  "application/pdf",
-  "text/plain",
-  "text/markdown",
-  "text/x-markdown"
-] as const;
-const ACCEPT_STRING = ".pdf,.txt,.md,text/plain,text/markdown,application/pdf";
-
-const acceptedUploadTypes: AcceptedUploadType[] = [
-  {
-    id: "pdf-textual",
-    label: "PDF textual",
-    extensions: [".pdf"],
-    mimeTypes: ["application/pdf"]
-  },
-  {
-    id: "txt",
-    label: "TXT",
-    extensions: [".txt"],
-    mimeTypes: ["text/plain"]
-  },
-  {
-    id: "markdown",
-    label: "Markdown",
-    extensions: [".md"],
-    mimeTypes: ["text/markdown", "text/x-markdown"],
-    note: "Validação"
-  },
-  {
-    id: "pdf-scanned",
-    label: "PDF digitalizado",
-    extensions: [".pdf"],
-    mimeTypes: ["application/pdf"],
-    note: "OCR em validação"
-  }
-];
 
 function buildConnection(): BackendConnectionInfo {
   const config = getApiConfig();
@@ -89,45 +57,8 @@ function buildConnection(): BackendConnectionInfo {
   };
 }
 
-function extensionFor(file: File): string {
-  const dotIndex = file.name.lastIndexOf(".");
-  if (dotIndex < 0) {
-    return "";
-  }
-  return file.name.slice(dotIndex).toLowerCase();
-}
-
-function extensionForName(filename: string): string {
-  const dotIndex = filename.lastIndexOf(".");
-  if (dotIndex < 0) {
-    return "";
-  }
-  return filename.slice(dotIndex).toLowerCase();
-}
-
-function isAcceptedFile(file: File): { valid: boolean; message: string } {
-  const ext = extensionFor(file);
-  if (!ACCEPTED_EXTENSIONS.includes(ext as (typeof ACCEPTED_EXTENSIONS)[number])) {
-    return { valid: false, message: "Tipo de arquivo não suportado." };
-  }
-  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    return { valid: false, message: "O arquivo excede o limite de 5 MB." };
-  }
-  if (file.type && !ACCEPTED_MIME_TYPES.includes(file.type as (typeof ACCEPTED_MIME_TYPES)[number])) {
-    return { valid: false, message: "O arquivo não passou na validação de tipo." };
-  }
-  return { valid: true, message: "Arquivo pronto para validação." };
-}
-
-function isScannedPdf(file: File | null): boolean {
-  if (!file) {
-    return false;
-  }
-  return extensionFor(file) === ".pdf" && file.name.toLowerCase().includes("scan");
-}
-
 function buildMockResult(file: File): UploadMaterialResult {
-  const scanned = isScannedPdf(file);
+  const scanned = isScannedPdfFile(file);
   return {
     documentId: `demo-${file.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
     filename: file.name,
@@ -140,13 +71,6 @@ function buildMockResult(file: File): UploadMaterialResult {
     source: "mock",
     demoOnly: true
   };
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) {
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function MaterialUploadEntryClient() {
@@ -173,7 +97,7 @@ export function MaterialUploadEntryClient() {
     }
 
     setValidationState("validating");
-    const outcome = isAcceptedFile(file);
+    const outcome = validateUploadFile(file);
     if (!outcome.valid) {
       setValidationState(outcome.message.includes("limite") ? "invalid_size" : "invalid_type");
       setEntryState("failed");
@@ -267,7 +191,7 @@ export function MaterialUploadEntryClient() {
   const showOfflineGuidance = validationMessage === "Não foi possível conectar ao backend.";
   const showMissingBaseGuidance = validationMessage === "URL do backend não configurada para envio real.";
   const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
-  const returnedExtension = result ? extensionForName(result.filename) || "sem extensão" : "";
+  const returnedExtension = result ? extensionForFileName(result.filename) || "sem extensão" : "";
 
   return (
     <div className="space-y-8">
@@ -395,7 +319,7 @@ export function MaterialUploadEntryClient() {
             </div>
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">tamanho</div>
-              <p className="mt-3 text-sm text-ink">{formatBytes(result.sizeBytes)}</p>
+              <p className="mt-3 text-sm text-ink">{formatUploadFileSize(result.sizeBytes)}</p>
             </div>
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">identificador</div>

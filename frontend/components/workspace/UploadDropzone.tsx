@@ -1,13 +1,7 @@
 "use client";
 
 import { Card, CardTitle } from "@/components/ui/card";
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) {
-    return `${Math.round(bytes / 1024)} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import { formatUploadFileSize } from "@/components/workspace/upload-validation";
 
 export function UploadDropzone({
   selectedFile,
@@ -42,7 +36,7 @@ export function UploadDropzone({
         <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">arquivo selecionado</div>
           <p className="mt-3 break-words text-sm text-ink">{selectedFile.name}</p>
-          <p className="mt-2 text-sm text-silver">{formatBytes(selectedFile.size)}</p>
+          <p className="mt-2 text-sm text-silver">{formatUploadFileSize(selectedFile.size)}</p>
         </div>
       ) : null}
     </Card>
