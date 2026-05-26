@@ -41,18 +41,19 @@ export function DashboardReadOnlyClient() {
         <div className="rounded-[32px] border border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)] p-6">
           <Badge>beta fechado</Badge>
           <h2 className="mt-5 font-serif text-4xl text-ink">
-            Estado atual do produto, sem esconder o que ainda esta em validacao
+            Painel atual da preparação, sem esconder o que ainda exige revisão
           </h2>
           <p className="mt-4 max-w-3xl text-sm leading-8 text-silver">
-            Este painel combina fallback local auditado com leitura read-only do backend quando ela esta disponivel.
-            O produto continua cauteloso com OCR, geracao completa de simulado e qualquer atualizacao ampla do progresso.
+            Este painel combina dados de demonstração auditados com leitura de consulta do backend quando
+            ela está disponível. O foco continua em materiais, edital, mapa PSCPP e estudo guiado.
           </p>
           <div className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
               orientação inicial
             </div>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
-              Veja o caminho seguro para usar a plataforma sem pular etapas de revisão.
+              Veja o caminho seguro para usar a plataforma sem pular etapas de revisão, sem agenda automática
+              e sem promessas de geração final.
             </p>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -64,17 +65,17 @@ export function DashboardReadOnlyClient() {
             <span className="naval-window-dot bg-[#e17d69]" />
             <span className="naval-window-dot bg-[#d6c477]" />
             <span className="naval-window-dot bg-[#8fc9a9]" />
-            <div className="window-url">restricoes e safeguards</div>
+            <div className="window-url">limites e revisão</div>
           </div>
           <div className="p-6">
             <div className="section-kicker">
-              restricoes claras
+              limites atuais
             </div>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-              <li>Somente GET read-only nesta camada</li>
-              <li>Sem mutacao real de scheduler ou calendario</li>
+              <li>Somente leitura nesta camada</li>
+              <li>Sem agenda automática nem alteração real de progresso</li>
               <li>Sem overclaim de OCR para PDF escaneado</li>
-              <li>Sem exposicao de respostas finais sensiveis</li>
+              <li>Sem exposição de respostas finais sensíveis</li>
             </ul>
           </div>
         </div>
@@ -105,7 +106,7 @@ export function DashboardReadOnlyClient() {
 
       <section className="space-y-4">
         <div className="section-kicker">
-          fluxo auditavel
+          preparação e revisão
         </div>
         <RuntimeStatusCards cards={viewModel.runtimeCards} />
       </section>

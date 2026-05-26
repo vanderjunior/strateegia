@@ -17,7 +17,7 @@ const navigationItems = [
   { label: "Questões" },
   { label: "Simulados" },
   { label: "PSCPP", href: "/pscpp" },
-  { label: "Runtime" }
+  { label: "Execução" }
 ] as const;
 
 function headerCopy(pathname: string) {
@@ -79,7 +79,7 @@ function headerCopy(pathname: string) {
   }
   return {
     eyebrow: "mentorium / dashboard",
-    title: "Painel de capacidades auditadas"
+    title: "Painel de preparação em revisão"
   };
 }
 
@@ -95,7 +95,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <div className="mt-6 space-y-3">
             <Badge>acesso antecipado</Badge>
             <p className="max-w-[220px] text-sm leading-6 text-silver">
-              Painel de produto em modo experimental, refletindo apenas capacidades auditadas do backend.
+              Painel de produto em modo experimental, refletindo apenas o que já foi validado na plataforma.
             </p>
           </div>
           <nav className="mt-10 space-y-2">
@@ -138,7 +138,7 @@ export function AppShell({ children }: PropsWithChildren) {
               </div>
               <h1 className="mt-2 font-serif text-3xl text-ink">{header.title}</h1>
             </div>
-            <Badge>read-only beta</Badge>
+            <Badge>beta fechado</Badge>
           </header>
           <main className="px-6 py-8 lg:px-10">{children}</main>
         </div>

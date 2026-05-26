@@ -22,23 +22,40 @@ export function Hero() {
           <MentoriumLogo compact />
         </div>
         <div className="mt-5">
-          <Badge>plataforma edital-aware para estudo tecnico</Badge>
+          <Badge>beta fechado para preparação guiada</Badge>
         </div>
         <h1 className="mt-5 max-w-4xl font-serif text-5xl font-light leading-[0.9] tracking-[-0.04em] text-ink md:text-6xl xl:text-[6.4rem]">
-          Estude o que <br />
-          <em className="font-bold italic text-gold">vai cair.</em>
-          <span className="ghost-stroke mt-1 block font-light">Nada alem.</span>
+          Comece pela <br />
+          <em className="font-bold italic text-gold">rota segura.</em>
+          <span className="ghost-stroke mt-1 block font-light">Sem pular revisão.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-[rgba(232,238,242,0.84)] md:text-[1.05rem]">
-          Ambiente em validacao para materiais, editais, bibliografia, questoes, simulados, perfil PSCPP/Praticagem e um fluxo auditavel de tentativa, correcao, resultado e registro seguro.
+          Mentorium conecta materiais, edital, mapa PSCPP e estudo de hoje em um uso experimental, com
+          preparação auditável e leitura cautelosa do que já está pronto.
         </p>
         <p className="mt-4 max-w-2xl text-[0.96rem] leading-7 text-[rgba(232,238,242,0.76)]">
-          Leitura de PDFs textuais ja suportada. OCR permanece experimental e sujeito a validacao. A geracao automatica completa de simulado ainda nao deve ser tratada como capacidade final verificada.
+          PDFs textuais já entram em leitura controlada. OCR permanece em validação para arquivos
+          escaneados, e o simulado completo segue em preparação com revisão necessária.
         </p>
         <div className="mt-7 flex flex-wrap gap-4">
-          <Button>Solicitar convite</Button>
-          <Link href="/dashboard">
-            <Button variant="ghost">Entrar</Button>
+          <Link href="/onboarding">
+            <Button>Comece sua preparação</Button>
+          </Link>
+          <Link href="/study">
+            <Button variant="ghost">Ver estudo de hoje</Button>
+          </Link>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3 text-sm text-silver">
+          <Link href="/materials/upload" className="transition hover:text-ink">
+            Enviar material
+          </Link>
+          <span aria-hidden="true">•</span>
+          <Link href="/pscpp/mapa" className="transition hover:text-ink">
+            Ver mapa PSCPP
+          </Link>
+          <span aria-hidden="true">•</span>
+          <Link href="/onboarding" className="transition hover:text-ink">
+            Solicitar convite
           </Link>
         </div>
       </motion.div>
@@ -52,15 +69,15 @@ export function Hero() {
           <span className="naval-window-dot bg-[#e17d69]" />
           <span className="naval-window-dot bg-[#d6c477]" />
           <span className="naval-window-dot bg-[#8fc9a9]" />
-          <div className="window-url">mentorium / preview read-only</div>
+          <div className="window-url">mentorium / visão de preparo</div>
         </div>
         <div className="grid min-h-[22rem] lg:grid-cols-[9.5rem_minmax(0,1fr)] xl:min-h-[24rem]">
           <div className="border-r border-[rgba(168,184,196,0.1)] bg-[rgba(10,21,32,0.94)] p-4">
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[rgba(168,184,196,0.52)]">
-              painel
+              jornada
             </div>
             <div className="mt-5 space-y-2">
-              {["Dashboard", "Materiais", "Editais", "Ciclo", "PSCPP", "Runtime"].map((item, index) => (
+              {["Começar", "Materiais", "Editais", "Mapa PSCPP", "Estudo", "Execução"].map((item, index) => (
                 <div
                   key={item}
                   className={`rounded-xl px-3 py-2 text-sm ${
@@ -77,9 +94,9 @@ export function Hero() {
           <div className="min-w-0 space-y-4 bg-[rgba(26,47,63,0.78)] p-4 lg:p-5">
             <div className="grid grid-cols-1 gap-3.5 min-[980px]:grid-cols-[repeat(3,minmax(0,1fr))]">
               {[
-                { label: "DOCUMENTOS", value: "PDF textual", note: "Suportado" },
-                { label: "OCR", value: "Experimental", note: "Em validação" },
-                { label: "RUNTIME", value: "Auditável", note: "Testado" }
+                { label: "MATERIAIS", value: "PDF textual", note: "Leitura controlada" },
+                { label: "OCR", value: "Em validação", note: "Revisão necessária" },
+                { label: "ESTUDO", value: "Guia flexível", note: "Hoje" }
               ].map((item) => (
                 <div key={item.label} className="min-w-0 rounded-2xl border border-[rgba(168,184,196,0.1)] bg-[rgba(21,39,56,0.76)] px-3.5 py-3.5 lg:px-4 lg:py-4">
                   <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[rgba(168,184,196,0.54)]">
@@ -95,13 +112,13 @@ export function Hero() {
               ))}
             </div>
             <div className="rounded-[24px] border border-[rgba(168,184,196,0.1)] bg-[rgba(10,21,32,0.72)] p-4">
-              <div className="section-kicker">pipeline auditado</div>
+              <div className="section-kicker">caminho de preparação</div>
               <div className="mt-5 space-y-4">
                 {[
-                  { label: "Leitura documental", fill: "88%", tone: "ok" },
-                  { label: "Perfil PSCPP", fill: "92%", tone: "ok" },
-                  { label: "Ciclo flexivel", fill: "74%", tone: "ok" },
-                  { label: "Simulado completo", fill: "38%", tone: "warn" }
+                  { label: "Enviar material", fill: "88%", tone: "ok" },
+                  { label: "Revisar edital", fill: "76%", tone: "ok" },
+                  { label: "Mapa PSCPP", fill: "82%", tone: "ok" },
+                  { label: "Simulado em preparação", fill: "38%", tone: "warn" }
                 ].map((item) => (
                   <div key={item.label} className="flex min-w-0 items-center gap-3 border-b border-[rgba(168,184,196,0.08)] pb-3 last:border-b-0 last:pb-0">
                     <span className="flex-1 text-sm leading-6 text-silver">{item.label}</span>

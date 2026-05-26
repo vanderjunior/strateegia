@@ -12,15 +12,15 @@ export function PublicNav() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <MentoriumLogo compact />
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-10 text-sm text-silver md:flex">
-          <a href="#pipeline" className="transition hover:text-ink">Pipeline</a>
+          <a href="#pipeline" className="transition hover:text-ink">Caminho seguro</a>
           <a href="#funcionalidades" className="transition hover:text-ink">Funcionalidades</a>
           <a href="#como-funciona" className="transition hover:text-ink">Como funciona</a>
           <a href="#acesso-antecipado" className="transition hover:text-ink">Acesso antecipado</a>
         </nav>
         <div className="flex items-center gap-3">
           <Badge>beta fechado</Badge>
-          <Link href="/dashboard">
-            <Button variant="ghost">Entrar</Button>
+          <Link href="/onboarding">
+            <Button variant="ghost">Comece sua preparação</Button>
           </Link>
         </div>
       </div>

@@ -9,12 +9,13 @@ export function PipelineSection() {
   return (
     <section id="pipeline" className="mx-auto max-w-7xl px-6 py-14">
       <div className="mb-8 max-w-3xl">
-        <div className="section-kicker">pipeline</div>
+        <div className="section-kicker">caminho seguro</div>
         <h2 className="mt-3 font-serif text-4xl text-ink">
-          Da base documental ao runtime auditavel
+          De materiais e edital ao estudo guiado
         </h2>
         <p className="mt-4 text-base leading-8 text-silver">
-          A leitura visual do pipeline agora segue melhor a linguagem instrumental da referencia naval, sem mudar o escopo real do produto.
+          A plataforma já mostra um fluxo real de entrada, revisão e preparação, sem prometer execução
+          automática do que ainda exige validação.
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -41,10 +42,10 @@ export function PipelineSection() {
                   <CardTitle className="mt-4 text-[1.6rem]">{step}</CardTitle>
                   <p className="mt-3 text-sm leading-7 text-silver">
                     {index < 4
-                      ? "Camada estruturante e bounded para preparar a leitura tecnica."
+                      ? "Etapa de leitura e conferência antes de avançar para o próximo bloco."
                       : index < 6
-                        ? "Zona de interpretacao orientada por perfil e evidencia."
-                        : "Estado final auditavel, sem mutacao ampla automatica."}
+                        ? "Camada guiada por perfil PSCPP, gaps encontrados e revisão necessária."
+                        : "Superfície ainda em preparação, sem alteração automática nem execução final."}
                   </p>
                 </div>
               </div>

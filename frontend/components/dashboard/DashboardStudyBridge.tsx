@@ -97,7 +97,7 @@ export function DashboardStudyBridge() {
           </Card>
 
           <Card className="h-full min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
-            <div className="section-kicker">atalhos read-only</div>
+            <div className="section-kicker">atalhos de consulta</div>
             <CardTitle className="mt-5 text-[1.7rem] leading-[1.04]">Próximos passos de leitura</CardTitle>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               <li>Revise o mapa PSCPP para entender cobertura, gaps e prioridade do bloco atual.</li>

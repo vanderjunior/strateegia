@@ -29,9 +29,9 @@ function baseConnection(
   return {
     state: "mock",
     source: "mock",
-    title: "Mock fallback ativo",
+    title: "Dados de demonstração ativos",
     detail:
-      "O painel permanece utilizavel sem backend e exibe apenas o snapshot auditado das capacidades.",
+      "O painel permanece utilizável sem backend e exibe apenas o recorte auditado das capacidades.",
     ...overrides
   };
 }
@@ -61,29 +61,29 @@ function buildOverviewCardsFromBackend(overview: BackendDashboardOverview): Stud
       id: "dashboard-materials-active",
       title: "Materiais ativos",
       value: `${overview.materials.total_materials} materiais`,
-      note: `${overview.materials.ocr_required_count} com OCR em validacao e ${overview.materials.pending_count} pendentes`,
+      note: `${overview.materials.ocr_required_count} com OCR em validação e ${overview.materials.pending_count} pendentes`,
       metric: Math.max(6, processedRatio)
     },
     {
       id: "dashboard-cycle-current",
       title: "Ciclo atual",
       value: overview.study_cycle.cycle_available
-        ? `${overview.study_cycle.topic_slot_count} slots de topico`
-        : "Ciclo ainda nao gerado",
+        ? `${overview.study_cycle.topic_slot_count} blocos sugeridos`
+        : "Ciclo ainda não sugerido",
       note: overview.study_cycle.cycle_available
-        ? `Estado ${overview.study_cycle.status} com leitura ${overview.study_readiness}`
-        : "Permanece como sugestao ate existir um ciclo confirmado para o usuario",
+        ? "Ciclo sugerido disponível para consulta, com leitura flexível do momento atual."
+        : "Permanece como sugestão até existir um ciclo confirmado para o usuário",
       metric: overview.study_cycle.cycle_available ? 64 : 18
     },
     {
       id: "dashboard-simulado-readiness",
-      title: "Simulado readiness",
+      title: "Simulado em preparação",
       value: overview.simulado_blueprint.blueprint_available
-        ? `${overview.simulado_blueprint.question_slot_count} slots de questoes`
-        : "Blueprint ainda nao disponivel",
+        ? `${overview.simulado_blueprint.question_slot_count} questões candidatas`
+        : "Estrutura ainda não disponível",
       note: overview.simulado_blueprint.blueprint_available
-        ? `Estado ${overview.simulado_blueprint.readiness_state}`
-        : "Foundation existe, mas o fluxo completo nao e automatico",
+        ? "Questões candidatas organizadas para revisão, ainda sem execução automática."
+        : "A base existe, mas o fluxo completo ainda não é automático",
       metric: overview.simulado_blueprint.blueprint_available ? 71 : 22
     }
   ];
@@ -97,20 +97,20 @@ function enhanceDocumentCards(
     if (card.title === "PDF textual") {
       return {
         ...card,
-        detail: `${overview.document_pipeline.total_documents} documentos no pipeline atual, ${overview.document_pipeline.extracted_count} com extracao concluida.`
+        detail: `${overview.document_pipeline.total_documents} documentos no fluxo atual, ${overview.document_pipeline.extracted_count} com extração concluída.`
       };
     }
     if (card.title === "PDF escaneado / OCR") {
       return {
         ...card,
-        detail: `${overview.materials.ocr_required_count} materiais ainda dependem de OCR ou validacao humana.`
+        detail: `${overview.materials.ocr_required_count} materiais ainda dependem de OCR ou validação humana.`
       };
     }
     if (card.title === "Ingestao de edital") {
       return {
         ...card,
         detail: overview.edital.edital_available
-          ? `Ha um edital disponivel para o usuario autenticado com estado ${overview.edital.status}.`
+          ? `Há um edital disponível para o usuário autenticado com estado ${overview.edital.status}.`
           : card.detail
       };
     }
@@ -118,7 +118,7 @@ function enhanceDocumentCards(
       return {
         ...card,
         detail: overview.alignment.alignment_available
-          ? `Alignment disponivel com ${overview.alignment.gaps_detected} gaps detectados.`
+          ? `Alinhamento disponível com ${overview.alignment.gaps_detected} gaps detectados.`
           : card.detail
       };
     }
@@ -131,13 +131,13 @@ function enhancePscppCards(cards: CapabilityCard[], profile: BackendExamProfile)
     if (card.title === "Question style profile") {
       return {
         ...card,
-        detail: `Perfil publico lido do backend: ${profile.profile_name} (${profile.profile_id}).`
+        detail: `Perfil público lido do backend: ${profile.profile_name} (${profile.profile_id}).`
       };
     }
     if (card.title === "Question generation integration") {
       return {
         ...card,
-        detail: "A integracao continua declarativa e segura; a UI usa metadata sem gerar respostas finais sensiveis."
+        detail: "A integração continua declarativa e segura; a interface usa metadados sem gerar respostas finais sensíveis."
       };
     }
     if (card.title === "Study cycle guide") {
@@ -155,8 +155,8 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Backend sem endpoint compativel",
-      detail: message,
+      title: "Endpoint ainda não validado",
+      detail: "Este painel depende de um endpoint ainda não validado neste ambiente.",
       endpoint
     });
   }
@@ -164,15 +164,15 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend offline ou indisponivel",
-      detail: message,
+      title: "Backend offline ou indisponível",
+      detail: "Não foi possível conectar ao backend.",
       endpoint
     });
   }
   return baseConnection({
     state: "mock",
     source,
-    title: "Fallback local ativo",
+    title: "Dados de demonstração ativos",
     detail: message,
     endpoint
   });
@@ -183,15 +183,15 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
   if (config.forceMock) {
     return buildMockDashboardViewModel({
       connection: baseConnection({
-        title: "Mock forçado por configuracao",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve o painel em modo local."
+        title: "Modo de demonstração ativo",
+        detail: "A configuração local manteve o painel em modo de demonstração."
       })
     });
   }
   if (!config.baseUrl) {
     return buildMockDashboardViewModel({
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar leitura read-only do backend."
+        detail: "A URL do backend ainda não foi configurada para leitura real."
       })
     });
   }
@@ -211,8 +211,8 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
   let connection = baseConnection({
     state: "connected",
     source: "backend",
-    title: "Backend conectado",
-    detail: "Perfis publicos do backend foram carregados em modo read-only.",
+    title: "Backend disponível",
+    detail: "Perfis públicos do backend foram carregados em modo de consulta.",
     endpoint: "/api/exam-profiles/exam-profile:marinha-pscpp"
   });
 
@@ -234,8 +234,8 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     connection = {
       state: "connected",
       source: "backend",
-      title: "Backend conectado com overview autenticado",
-      detail: "O dashboard recebeu dados reais do overview do usuario sem abandonar o fallback local.",
+      title: "Backend disponível com visão autenticada",
+      detail: "O dashboard recebeu dados reais da visão do usuário sem abandonar o fallback local.",
       endpoint: "/api/dashboard/overview"
     };
     overviewCards = buildOverviewCardsFromBackend(overviewResult.data);
@@ -253,17 +253,17 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     connection = {
       state: "auth_required",
       source: "backend",
-      title: "Backend conectado, sessao necessaria",
+      title: "Backend disponível, sessão necessária",
       detail:
-        "Os perfis publicos foram lidos do backend, mas o overview pessoal continua protegido ate existir sessao valida.",
+        "Os perfis públicos foram lidos do backend, mas a visão pessoal continua protegida até existir sessão válida.",
       endpoint: "/api/dashboard/overview"
     };
   } else if (overviewResult.source === "unsupported") {
     connection = {
       state: "connected",
       source: "backend",
-      title: "Backend conectado com leitura parcial",
-      detail: "Os endpoints publicos responderam, mas o overview nao esta disponivel nesta instalacao.",
+      title: "Backend disponível com leitura parcial",
+      detail: "Os perfis principais responderam, mas esta visão ainda não está disponível neste ambiente.",
       endpoint: "/api/dashboard/overview"
     };
   }

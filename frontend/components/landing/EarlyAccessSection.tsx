@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -9,13 +11,11 @@ export function EarlyAccessSection() {
         <div>
           <Badge>acesso antecipado</Badge>
           <CardTitle className="mt-6 text-4xl">
-            Beta fechado para uma plataforma ainda em validacao
+            Beta fechado para uma plataforma ainda em validação
           </CardTitle>
           <p className="mt-5 max-w-2xl text-base leading-8 text-silver">
-            Mentorium nao esta se apresentando como produto publico pronto.
-            O objetivo desta fase e validar a camada documental, o fluxo
-            edital-aware, os perfis PSCPP e a cadeia auditavel de simulado antes
-            de qualquer abertura ampla.
+            Mentorium não está se apresentando como produto público pronto. O objetivo desta fase é
+            validar materiais, edital, mapa PSCPP e estudo guiado antes de qualquer abertura ampla.
           </p>
         </div>
         <div className="naval-window">
@@ -32,14 +32,18 @@ export function EarlyAccessSection() {
               </div>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-silver">
                 <li>Leitura de PDFs textuais suportada</li>
-                <li>OCR experimental sujeito a validacao</li>
-                <li>Perfis PSCPP e ciclo flexivel implementados</li>
-                <li>Runtime de tentativa/correcao/score testado</li>
+                <li>OCR em validação para arquivos escaneados</li>
+                <li>Mapa PSCPP e ciclo sugerido já disponíveis</li>
+                <li>Simulado em preparação e revisão necessária</li>
               </ul>
             </div>
             <div className="flex flex-wrap gap-4">
-              <Button>Solicitar convite</Button>
-              <Button variant="ghost">Entrar</Button>
+              <Link href="/onboarding">
+                <Button>Solicitar convite</Button>
+              </Link>
+              <Link href="/materials/upload">
+                <Button variant="ghost">Enviar material</Button>
+              </Link>
             </div>
           </div>
         </div>

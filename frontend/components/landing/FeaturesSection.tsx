@@ -8,7 +8,7 @@ export function FeaturesSection() {
       <div className="mb-8 max-w-3xl">
         <div className="section-kicker">funcionalidades</div>
         <h2 className="mt-3 font-serif text-4xl text-ink">
-          Superficie atual do produto, sem promessas alem do que o backend prova
+          Superfície atual do produto, sem promessas além do que já foi validado
         </h2>
       </div>
       <div className="grid gap-px overflow-hidden rounded-[30px] border border-[rgba(168,184,196,0.1)] bg-[rgba(168,184,196,0.1)] md:grid-cols-2 xl:grid-cols-3">

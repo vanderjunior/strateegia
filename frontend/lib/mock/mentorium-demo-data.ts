@@ -30,84 +30,85 @@ import type {
 } from "@/lib/api/types";
 
 export const landingPipeline = [
-  "Upload de materiais",
-  "Leitura e segmentacao documental",
-  "Ingestao de edital",
-  "Alinhamento bibliografico e gaps",
-  "Ciclo de estudo flexivel",
-  "Questoes e simulados por perfil",
-  "Tentativa, correcao e score auditaveis"
+  "Envio de material",
+  "Leitura e segmentação documental",
+  "Revisão de edital",
+  "Mapa de preparação e gaps",
+  "Ciclo de estudo flexível",
+  "Questões candidatas em revisão",
+  "Simulado em preparação"
 ] as const;
 
 export const landingFeatures = [
   {
     title: "PDFs textuais e materiais",
     description:
-      "Leitura de PDFs textuais, TXT e Markdown com pipeline user-scoped e registros deterministas.",
-    badge: "suportado"
+      "Leitura de PDFs textuais, TXT e Markdown para validação inicial e revisão controlada.",
+    badge: "upload controlado"
   },
   {
     title: "Editais e bibliografia",
     description:
-      "Extracao candidata, alinhamento bibliografico e mapeamento de gaps com revisao humana.",
-    badge: "em validacao"
+      "Análise candidata, bibliografia identificada e gaps encontrados com revisão humana.",
+    badge: "análise candidata"
   },
   {
     title: "Perfil PSCPP/Praticagem",
     description:
-      "Questoes e simulados orientados por estilo tecnico-operacional maritimo, com ancora bibliografica.",
-    badge: "implementado"
+      "Mapa de preparação, prioridades e estudo guiado orientados pelo caminho técnico-operacional marítimo.",
+    badge: "mapa de preparação"
   },
   {
-    title: "Ciclo de estudos flexivel",
+    title: "Estudo de hoje",
     description:
-      "Perfil PSCPP com distribuicao semanal proporcional, rotacao de 12 sessoes e override do usuario.",
-    badge: "guia editavel"
+      "Sessão sugerida, materiais relacionados e checklist de estudo sem agenda automática.",
+    badge: "guia flexível"
   },
   {
-    title: "Runtime auditavel de simulado",
+    title: "Simulado em preparação",
     description:
-      "Tentativa, correcao, resultado e registros seguros dentro de limites controlados.",
-    badge: "testado"
+      "Questões candidatas e montagem ainda exigem revisão antes de qualquer uso final.",
+    badge: "revisão necessária"
   },
   {
-    title: "OCR experimental",
+    title: "OCR em validação",
     description:
-      "Fallback opcional com Tesseract para PDFs escaneados, sujeito a validacao manual em documentos reais.",
-    badge: "experimental"
+      "PDFs escaneados podem exigir OCR e conferência manual antes de uma revisão segura.",
+    badge: "uso experimental"
   }
 ] as const;
 
 export const howItWorksSteps = [
   {
     id: "01",
-    title: "Estruture o terreno",
+    title: "Comece sua preparação",
     body:
-      "Suba materiais, processe PDFs textuais e consolide o edital como base candidata para revisao tecnica."
+      "Envie material, revise o edital e confirme o que já pode ser lido com segurança."
   },
   {
     id: "02",
-    title: "Mapeie cobertura e prioridades",
+    title: "Entenda o mapa PSCPP",
     body:
-      "Cruze bibliografia, cobertura, gaps, ciclo de estudo e perfil PSCPP para orientar o treinamento."
+      "Cruze bibliografia, cobertura, gaps e blocos prioritários antes de decidir o foco."
   },
   {
     id: "03",
-    title: "Treine com trilha auditavel",
+    title: "Siga o estudo de hoje",
     body:
-      "Use questoes, simulados e a cadeia de tentativa/correcao/score com estados claros e sem overclaim operacional."
+      "Use a sessão sugerida como guia flexível, com checklist, materiais relacionados e revisão necessária."
   }
 ] as const;
 
 export const dashboardSidebar = [
   "Dashboard",
+  "Começar",
   "Materiais",
   "Editais",
   "Ciclo",
   "Questoes",
   "Simulados",
   "PSCPP",
-  "Runtime"
+  "Execução"
 ] as const;
 
 export const studyOverviewCards: StudyOverviewCard[] = [
@@ -171,45 +172,45 @@ export const documentStatusCards: CapabilityCard[] = [
 export const runtimeStatusCards: CapabilityCard[] = [
   {
     internalKey: "attempt_session",
-    title: "Tentativa / correcao / score",
+    title: "Sessão de treino em revisão",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Cadeia auditavel e bem testada.",
-    detail: "A etapa de entrega executavel ainda nao esta aberta."
+    summary: "Estrutura auditável de tentativa e revisão já existe.",
+    detail: "A etapa de entrega executável ainda não está aberta para uso final."
   },
   {
     internalKey: "minimal_progress_ledger_apply",
-    title: "Minimal progress ledger",
+    title: "Registro mínimo de progresso",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Aplica apenas ledger minimo com idempotencia e rollback metadata.",
-    detail: "Sem mutar ranking, retention, scheduler ou study cycle."
+    summary: "Mantido apenas como base técnica interna, sem uso visível para o candidato.",
+    detail: "Sem alterar ranking, retenção, agenda ou ciclo de estudo."
   },
   {
     internalKey: "applied_event_ledger",
-    title: "Applied event ledger",
+    title: "Registro auditável de aplicação",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Replay-safe e deduplicado para eventos aplicados.",
-    detail: "Camada auditavel para downstream review."
+    summary: "Camada interna mantida para revisão auditável.",
+    detail: "Não representa uma ação aberta na interface do candidato."
   },
   {
     internalKey: "propagation_guardrail",
-    title: "Propagation guardrail",
+    title: "Proteção de atualização ampla",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Readiness-only para superficies futuras.",
-    detail: "Nao propaga ranking, retention, scheduler, ciclo ou graph."
+    summary: "Proteção interna para superfícies futuras.",
+    detail: "Não libera ranking, retenção, agenda ou ciclo automaticamente."
   },
   {
     internalKey: "controlled_propagation_apply",
-    title: "Controlled propagation ledger",
+    title: "Registro controlado de atualização",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Registra entradas isoladas de propagacao controlada.",
-    detail: "Ledger-only, sem apply direto em runtime."
+    summary: "Registro interno de atualizações isoladas.",
+    detail: "Mantido sem aplicação direta na experiência atual."
   },
   {
     internalKey: "simulado_assembly",
     title: "Geracao automatica completa de simulado",
     status: "foundation_only" as CapabilityStatus,
-    summary: "Blueprint, drafts e assembly existem, mas a prova final executavel nao esta verificada.",
-    detail: "Evitar prometer simulado perfeito a partir de qualquer PDF."
+    summary: "A montagem existe como base, mas a prova final ainda não está verificada.",
+    detail: "Evitar prometer simulado completo a partir de qualquer material."
   }
 ] as const;
 
@@ -1358,13 +1359,13 @@ export const onboardingViewModelMock: OnboardingViewModel = {
       id: "onboarding-summary-study",
       label: "Guia flexível",
       value: "5",
-      detail: "Sessões sugeridas prontas para consulta read-only."
+      detail: "Sessões sugeridas prontas para consulta guiada."
     }
   ],
   readyHighlights: [
     "Upload controlado já aponta para a entrada segura de materiais.",
     "Edital de referência, mapa PSCPP e estudo de hoje já podem orientar a leitura inicial.",
-    "Os links principais levam apenas para páginas read-only e revisáveis."
+    "Os links principais levam apenas para páginas de consulta e revisão."
   ],
   reviewHighlights: [
     "OCR em validação ainda exige cautela para PDFs escaneados.",
