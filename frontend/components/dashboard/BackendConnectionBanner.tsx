@@ -35,7 +35,7 @@ function stateLabel(state: BackendConnectionInfo["state"]): string {
     case "error":
       return "Revisão necessária";
     default:
-      return "Dados de demonstração";
+      return "Consulta local";
   }
 }
 

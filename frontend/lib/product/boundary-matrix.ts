@@ -58,12 +58,12 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     internalKey: "pdf_text_extraction",
     groupKey: "documents",
     userFacingLabel: "Leitura de PDF textual",
-    userFacingDescription: "PDFs com texto selecionavel podem ser processados.",
+    userFacingDescription: "PDFs com texto selecionável já entram na leitura controlada.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Disponivel", "Validado", "Em validacao"],
+    safeStatusLabels: ["Disponível", "Validado", "Em validação"],
     avoidTerms: ["extraction engine"],
     recommendedUiStatus: "Validado",
     actionMode: "read_only"
@@ -72,12 +72,12 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     internalKey: "ocr_adapter",
     groupKey: "documents",
     userFacingLabel: "OCR para PDF digitalizado",
-    userFacingDescription: "A leitura de PDFs escaneados esta em validacao e pode exigir revisao.",
+    userFacingDescription: "A leitura de PDFs escaneados está em validação e pode exigir revisão.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Experimental", "Requer validacao", "OCR necessario"],
+    safeStatusLabels: ["Experimental", "Requer validação", "OCR necessário"],
     avoidTerms: ["OCR provider", "binary OCR"],
     recommendedUiStatus: "Experimental",
     actionMode: "read_only"
@@ -85,13 +85,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "edital_ingestion",
     groupKey: "edital",
-    userFacingLabel: "Leitura de edital",
-    userFacingDescription: "O edital e analisado para identificar topicos, bibliografia, pesos e lacunas.",
+    userFacingLabel: "Edital analisado",
+    userFacingDescription: "O edital é analisado para identificar tópicos, bibliografia, pesos e lacunas.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Em revisao", "Analise candidata", "Precisa de conferencia"],
+    safeStatusLabels: ["Em revisão", "Análise candidata", "Precisa de conferência"],
     avoidTerms: ["ingestion"],
     recommendedUiStatus: "Analise candidata",
     actionMode: "review_only"
@@ -99,13 +99,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "bibliography_alignment",
     groupKey: "edital",
-    userFacingLabel: "Alinhamento bibliografico",
-    userFacingDescription: "O sistema compara materiais, bibliografia e topicos para apontar cobertura e gaps.",
+    userFacingLabel: "Cobertura e gaps do edital",
+    userFacingDescription: "O sistema compara materiais, bibliografia e tópicos para apontar cobertura e gaps encontrados.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Gaps encontrados", "Cobertura parcial", "Candidato a revisao"],
+    safeStatusLabels: ["Gaps encontrados", "Cobertura parcial", "Candidato a revisão"],
     avoidTerms: ["alignment engine"],
     recommendedUiStatus: "Cobertura parcial",
     actionMode: "review_only"
@@ -113,13 +113,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "question_generation_blueprint",
     groupKey: "questions",
-    userFacingLabel: "Planejamento de questoes",
-    userFacingDescription: "Estrutura candidatos de questoes com base em fonte, tema e perfil da prova.",
+    userFacingLabel: "Questões candidatas",
+    userFacingDescription: "Organiza questões candidatas com base em fonte, tema e perfil da prova.",
     studentVisibility: "student_summary_only",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Em preparacao", "Requer fonte", "Pronto para revisao"],
+    safeStatusLabels: ["Em preparação", "Requer fonte", "Pronto para revisão"],
     avoidTerms: ["blueprint", "artifact"],
     recommendedUiStatus: "Em preparacao",
     actionMode: "review_only"
@@ -133,7 +133,7 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Candidato", "Revisao necessaria", "Ainda nao finalizado"],
+    safeStatusLabels: ["Candidato", "Revisão necessária", "Ainda não finalizado"],
     avoidTerms: ["draft generation"],
     recommendedUiStatus: "Revisao necessaria",
     actionMode: "review_only"
@@ -141,13 +141,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "simulado_assembly",
     groupKey: "simulado",
-    userFacingLabel: "Montagem de simulado",
-    userFacingDescription: "O simulado pode ser organizado a partir de questoes candidatas e criterios de prova.",
+    userFacingLabel: "Simulado em preparação",
+    userFacingDescription: "O simulado pode ser organizado a partir de questões candidatas e critérios de prova.",
     studentVisibility: "student_summary_only",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Em preparacao", "Ainda nao executavel", "Revisao necessaria"],
+    safeStatusLabels: ["Em preparação", "Ainda não executável", "Revisão necessária"],
     avoidTerms: ["assembly"],
     recommendedUiStatus: "Ainda nao executavel",
     actionMode: "review_only"
@@ -155,13 +155,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "attempt_session",
     groupKey: "simulado",
-    userFacingLabel: "Tentativa de simulado",
-    userFacingDescription: "Uma prova pode ser aberta quando o simulado estiver pronto.",
+    userFacingLabel: "Sessão de treino",
+    userFacingDescription: "Uma sessão de treino só deve ser aberta quando o simulado estiver pronto.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Disponivel", "Nao iniciado", "Em andamento", "Concluido"],
+    safeStatusLabels: ["Disponível", "Não iniciado", "Em andamento", "Concluído"],
     avoidTerms: ["session shell"],
     recommendedUiStatus: "Disponivel",
     actionMode: "read_only"
@@ -175,7 +175,7 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Corrigido", "Aguardando correcao", "Revisao necessaria"],
+    safeStatusLabels: ["Corrigido", "Aguardando correção", "Revisão necessária"],
     avoidTerms: ["correction artifact"],
     recommendedUiStatus: "Corrigido",
     actionMode: "read_only"
@@ -189,7 +189,7 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Calculado", "Aguardando respostas", "Indisponivel"],
+    safeStatusLabels: ["Calculado", "Aguardando respostas", "Indisponível"],
     avoidTerms: ["scoring artifact"],
     recommendedUiStatus: "Calculado",
     actionMode: "read_only"
@@ -209,7 +209,7 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Protegido", "Revisao controlada"],
+    safeStatusLabels: ["Protegido", "Revisão controlada"],
     avoidTerms: ["boundary"],
     recommendedUiStatus: "Protegido",
     actionMode: "hidden"
@@ -217,13 +217,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "runtime_apply_policy",
     groupKey: "runtime",
-    userFacingLabel: "Politica de aplicacao segura",
-    userFacingDescription: "Define se uma atualizacao pode ser aplicada com seguranca.",
+    userFacingLabel: "Política de aplicação segura",
+    userFacingDescription: "Define se uma atualização pode ser aplicada com segurança.",
     studentVisibility: "student_summary_only",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Em revisao", "Controlado"],
+    safeStatusLabels: ["Em revisão", "Controlado"],
     avoidTerms: ["apply policy"],
     recommendedUiStatus: "Controlado",
     actionMode: "controlled_action"
@@ -231,10 +231,10 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "minimal_progress_ledger_apply",
     groupKey: "runtime",
-    userFacingLabel: "Registro minimo de progresso",
-    userFacingDescription: "Registra progresso de forma limitada e auditavel.",
+    userFacingLabel: "Registro mínimo de progresso",
+    userFacingDescription: "Registra progresso de forma limitada e auditável.",
     audienceLabels: {
-      student: "Progresso registrado com seguranca"
+      student: "Progresso registrado com segurança"
     },
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
@@ -248,10 +248,10 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "applied_event_ledger",
     groupKey: "runtime",
-    userFacingLabel: "Registro de aplicacao",
-    userFacingDescription: "Mantem o historico de atualizacoes confirmadas em modo seguro.",
+    userFacingLabel: "Registro de aplicação",
+    userFacingDescription: "Mantém o histórico de atualizações confirmadas em modo seguro.",
     audienceLabels: {
-      student: "Atualizacao registrada"
+      student: "Atualização registrada"
     },
     studentVisibility: "student_summary_only",
     mentorVisibility: "mentor_visible",
@@ -265,16 +265,16 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "propagation_guardrail",
     groupKey: "runtime",
-    userFacingLabel: "Protecao contra atualizacao indevida",
-    userFacingDescription: "Evita que atualizacoes amplas ocorram sem a revisao certa.",
+    userFacingLabel: "Proteção contra atualização indevida",
+    userFacingDescription: "Evita que atualizações amplas ocorram sem a revisão certa.",
     audienceLabels: {
-      student: "Atualizacoes amplas protegidas"
+      student: "Atualizações amplas protegidas"
     },
     studentVisibility: "student_summary_only",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Protegido", "Em revisao"],
+    safeStatusLabels: ["Protegido", "Em revisão"],
     avoidTerms: ["guardrail", "propagation"],
     recommendedUiStatus: "Protegido",
     actionMode: "controlled_action"
@@ -282,10 +282,10 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "controlled_propagation_apply",
     groupKey: "runtime",
-    userFacingLabel: "Registro controlado de atualizacao",
-    userFacingDescription: "Registra uma atualizacao controlada sem implicar mudanca ampla no sistema.",
+    userFacingLabel: "Registro controlado de atualização",
+    userFacingDescription: "Registra uma atualização controlada sem implicar mudança ampla no sistema.",
     audienceLabels: {
-      student: "Atualizacao controlada registrada"
+      student: "Atualização controlada registrada"
     },
     studentVisibility: "student_summary_only",
     mentorVisibility: "mentor_visible",
@@ -300,7 +300,7 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     internalKey: "pscpp_question_style_profile",
     groupKey: "pscpp",
     userFacingLabel: "Perfil PSCPP/Praticagem",
-    userFacingDescription: "Ajusta questoes ao estilo tecnico-operacional da banca da Marinha.",
+    userFacingDescription: "Ajusta questões ao estilo técnico-operacional da banca da Marinha.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
@@ -313,13 +313,13 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
   {
     internalKey: "pscpp_study_cycle_profile",
     groupKey: "pscpp",
-    userFacingLabel: "Ciclo PSCPP sugerido",
-    userFacingDescription: "Guia flexivel de estudo para PSCPP, editavel pelo usuario.",
+    userFacingLabel: "Ciclo sugerido",
+    userFacingDescription: "Guia flexível de estudo para PSCPP, ajustável pelo candidato.",
     studentVisibility: "student_visible",
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Disponivel", "Editavel"],
+    safeStatusLabels: ["Disponível", "Editável"],
     avoidTerms: ["profile runtime"],
     recommendedUiStatus: "Disponivel",
     actionMode: "read_only"

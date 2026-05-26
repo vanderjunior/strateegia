@@ -14,7 +14,7 @@ export const statusCopy: Record<CapabilityStatus, UserFacingStatusCopy> = {
     tone: "positive"
   },
   implemented_but_needs_manual_validation: {
-    label: "Implementado, precisa validacao real",
+    label: "Revisão necessária",
     tone: "warning"
   },
   partially_implemented: {
@@ -22,19 +22,19 @@ export const statusCopy: Record<CapabilityStatus, UserFacingStatusCopy> = {
     tone: "warning"
   },
   foundation_only: {
-    label: "Base criada",
+    label: "Ainda não executável",
     tone: "neutral"
   },
   metadata_only: {
-    label: "Metadados",
+    label: "Orientação guiada",
     tone: "neutral"
   },
   mocked_or_demo_only: {
-    label: "Demonstracao",
+    label: "Demonstração",
     tone: "neutral"
   },
   not_implemented: {
-    label: "Nao implementado",
+    label: "Não implementado",
     tone: "muted"
   },
   intentionally_deferred: {
@@ -42,7 +42,7 @@ export const statusCopy: Record<CapabilityStatus, UserFacingStatusCopy> = {
     tone: "muted"
   },
   unclear_needs_follow_up: {
-    label: "Precisa verificacao",
+    label: "Painel em validação",
     tone: "warning"
   }
 };

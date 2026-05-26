@@ -1,16 +1,16 @@
 const protectedAnswerBoundaryKey = ["answer", "key", "boundary"].join("_");
 
 export const userFacingLabels = {
-  progressRegisteredSafely: "Progresso registrado com seguranca",
-  applicationRecorded: "Atualizacao registrada",
-  broadUpdatesProtected: "Atualizacoes amplas protegidas",
-  controlledUpdateRecorded: "Atualizacao controlada registrada",
-  safeApplyPolicy: "Politica de aplicacao segura",
-  simuladoFlow: "Fluxo auditavel de simulado",
+  progressRegisteredSafely: "Progresso registrado com segurança",
+  applicationRecorded: "Atualização registrada",
+  broadUpdatesProtected: "Atualizações amplas protegidas",
+  controlledUpdateRecorded: "Atualização controlada registrada",
+  safeApplyPolicy: "Política de aplicação segura",
+  simuladoFlow: "Fluxo auditável de simulado",
   materialProcessed: "Material processado",
   gapsFound: "Gaps encontrados",
-  summaryReadyForReview: "Resumo pronto para revisao",
-  simuladoPreparing: "Simulado em preparacao",
-  notExecutableYet: "Ainda nao executavel",
+  summaryReadyForReview: "Resumo pronto para revisão",
+  simuladoPreparing: "Simulado em preparação",
+  notExecutableYet: "Ainda não executável",
   protectedAnswerBoundaryKey
 } as const;

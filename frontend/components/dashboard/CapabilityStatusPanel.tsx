@@ -9,13 +9,13 @@ export function CapabilityStatusPanel({ items }: { items: CapabilityStatusItem[]
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {items.map((item) => (
-        <Card key={item.id} className="flex h-full flex-col justify-between gap-4">
+        <Card key={item.id} className="flex h-full min-w-0 flex-col justify-between gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <div className="section-kicker">
                 capacidade
               </div>
-              <h3 className="mt-3 font-serif text-2xl text-ink">
+              <h3 className="mt-3 break-words font-serif text-2xl text-ink">
                 {item.internalKey
                   ? (getUserFacingCapability(item.internalKey, "student")?.label ?? translateInternalTerm(item.label, "student"))
                   : translateInternalTerm(item.label, "student")}

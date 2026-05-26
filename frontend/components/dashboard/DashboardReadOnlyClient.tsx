@@ -85,7 +85,7 @@ export function DashboardReadOnlyClient() {
 
       <section className="space-y-4">
         <div className="section-kicker">
-          mapa de capacidades
+          o que já está preparado
         </div>
         <CapabilityStatusPanel items={viewModel.capabilityItems} />
       </section>
@@ -106,7 +106,7 @@ export function DashboardReadOnlyClient() {
 
       <section className="space-y-4">
         <div className="section-kicker">
-          preparação e revisão
+          uso controlado
         </div>
         <RuntimeStatusCards cards={viewModel.runtimeCards} />
       </section>

@@ -115,25 +115,25 @@ export const studyOverviewCards: StudyOverviewCard[] = [
   {
     id: "study-overview-dominant-block",
     internalKey: "pscpp_study_cycle_profile",
-    title: "Bloco dominante",
+    title: "Bloco prioritário",
     value: "Manobrabilidade e rebocadores",
-    note: "prioridade 1 no guia PSCPP",
+    note: "prioridade atual no mapa PSCPP",
     metric: 78
   },
   {
     id: "study-overview-current-rotation",
     internalKey: "pscpp_study_cycle_profile",
-    title: "Rotacao atual",
-    value: "Sessao 7 de 12",
-    note: "atracacao, desatracacao e fundeio",
+    title: "Ciclo sugerido",
+    value: "Sessão 7 de 12",
+    note: "atracação, desatracação e fundeio",
     metric: 58
   },
   {
     id: "study-overview-weekly-training",
     internalKey: "question_generation_blueprint",
-    title: "Treino da semana",
-    value: "40 questoes por topico",
-    note: "fase de consolidacao por cenarios",
+    title: "Questões candidatas",
+    value: "40 questões por tópico",
+    note: "fase de consolidação por cenários",
     metric: 66
   }
 ] as const;
@@ -143,29 +143,29 @@ export const documentStatusCards: CapabilityCard[] = [
     internalKey: "pdf_text_extraction",
     title: "PDF textual",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Suportado hoje com extracao, chunking e sectioning deterministas.",
-    detail: "TXT, Markdown e PDFs textuais entram no pipeline atual."
+    summary: "Material processado com texto extraído e trechos organizados para revisão.",
+    detail: "TXT, Markdown e PDFs textuais já entram na leitura controlada."
   },
   {
     internalKey: "ocr_adapter",
     title: "PDF escaneado / OCR",
     status: "implemented_but_needs_manual_validation" as CapabilityStatus,
-    summary: "Fallback opcional com Tesseract, desabilitado por padrao.",
-    detail: "Nao tratar como producao pronta sem validacao de campo."
+    summary: "OCR em validação para PDFs escaneados e materiais com leitura mais delicada.",
+    detail: "PDFs escaneados podem exigir revisão antes da leitura confiável."
   },
   {
     internalKey: "edital_ingestion",
-    title: "Ingestao de edital",
+    title: "Edital analisado",
     status: "partially_implemented" as CapabilityStatus,
-    summary: "Extracao heuristica de secoes, topicos e bibliografia.",
-    detail: "Artefato candidato e review-friendly."
+    summary: "Análise candidata de tópicos, bibliografia e lacunas do edital.",
+    detail: "Tópicos e bibliografia ainda precisam de conferência."
   },
   {
     internalKey: "bibliography_alignment",
-    title: "Alinhamento bibliografico",
+    title: "Cobertura e gaps do edital",
     status: "partially_implemented" as CapabilityStatus,
-    summary: "Coverage, gaps e redundancias com evidencias bounded.",
-    detail: "Ainda nao e um mapeamento final verificado."
+    summary: "Cobertura parcial e gaps encontrados com base nos materiais atuais.",
+    detail: "Ainda não representa um mapeamento final verificado."
   }
 ] as const;
 
@@ -175,28 +175,28 @@ export const runtimeStatusCards: CapabilityCard[] = [
     title: "Sessão de treino em revisão",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Estrutura auditável de tentativa e revisão já existe.",
-    detail: "A etapa de entrega executável ainda não está aberta para uso final."
+    detail: "A etapa ainda exige revisão antes de qualquer uso executável."
   },
   {
     internalKey: "minimal_progress_ledger_apply",
     title: "Registro mínimo de progresso",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Mantido apenas como base técnica interna, sem uso visível para o candidato.",
-    detail: "Sem alterar ranking, retenção, agenda ou ciclo de estudo."
+    detail: "Sem alterar ranking, retenção, agenda ou ciclo sugerido."
   },
   {
     internalKey: "applied_event_ledger",
     title: "Registro auditável de aplicação",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Camada interna mantida para revisão auditável.",
-    detail: "Não representa uma ação aberta na interface do candidato."
+    detail: "Não representa uma ação aberta para o candidato."
   },
   {
     internalKey: "propagation_guardrail",
     title: "Proteção de atualização ampla",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Proteção interna para superfícies futuras.",
-    detail: "Não libera ranking, retenção, agenda ou ciclo automaticamente."
+    detail: "Não libera agenda, ciclo ou progresso automaticamente."
   },
   {
     internalKey: "controlled_propagation_apply",
@@ -207,34 +207,34 @@ export const runtimeStatusCards: CapabilityCard[] = [
   },
   {
     internalKey: "simulado_assembly",
-    title: "Geracao automatica completa de simulado",
+    title: "Simulado em preparação",
     status: "foundation_only" as CapabilityStatus,
     summary: "A montagem existe como base, mas a prova final ainda não está verificada.",
-    detail: "Evitar prometer simulado completo a partir de qualquer material."
+    detail: "Questões candidatas e montagem ainda exigem revisão antes do uso final."
   }
 ] as const;
 
 export const pscppProfileCards: CapabilityCard[] = [
   {
     internalKey: "pscpp_question_style_profile",
-    title: "Question style profile",
+    title: "Perfil PSCPP/Praticagem",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Perfil PSCPP/Praticagem com ancora bibliografica, formato A-E e arquetipos tecnicos.",
-    detail: "Base testada para orientar blueprint e draft metadata com regras de seguranca."
+    detail: "Base validada para orientar mapa PSCPP, fontes e revisão técnica."
   },
   {
     internalKey: "question_generation_blueprint",
-    title: "Question generation integration",
+    title: "Questões candidatas",
     status: "metadata_only" as CapabilityStatus,
     summary: "Integracao de metadata e validacao para simulado, fixation, review e summary.",
-    detail: "Source-grounding, arquetipos e human review seguem sem gerar respostas finais sensiveis."
+    detail: "Questões candidatas seguem com revisão humana e sem respostas finais expostas."
   },
   {
     internalKey: "pscpp_study_cycle_profile",
-    title: "Study cycle guide",
+    title: "Ciclo sugerido",
     status: "implemented_and_tested" as CapabilityStatus,
     summary: "Rotacao de 12 sessoes, fases de estudo e guidance proporcional para PSCPP.",
-    detail: "Guidance-only, sem agenda forcada e com override do usuario."
+    detail: "Guia flexível, sem agenda automática e com ajuste pelo candidato."
   }
 ] as const;
 

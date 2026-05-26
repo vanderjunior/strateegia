@@ -26,14 +26,14 @@ export function ProductCapabilityCard({
   const detail = translateInternalTerm(card.detail, audience);
 
   return (
-    <Card className="h-full">
+    <Card className="h-full min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <FriendlyStatusBadge status={card.status} audience={audience} />
         {trailingContent}
       </div>
-      <CardTitle className="mt-5">{title}</CardTitle>
+      <CardTitle className="mt-5 break-words text-[1.65rem] leading-[1.06]">{title}</CardTitle>
       <p className="mt-4 text-sm leading-7 text-silver">{summary}</p>
-      <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">{detail}</p>
+      <p className="mt-3 break-words text-sm leading-7 text-[rgba(232,238,242,0.68)]">{detail}</p>
       {technicalDetails && card.internalKey ? (
         <div className="mt-4 rounded-full border border-[rgba(168,184,196,0.14)] bg-[rgba(168,184,196,0.06)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
           detalhe tecnico

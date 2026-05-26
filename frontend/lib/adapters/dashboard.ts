@@ -94,19 +94,19 @@ function enhanceDocumentCards(
   overview: BackendDashboardOverview
 ): CapabilityCard[] {
   return cards.map((card) => {
-    if (card.title === "PDF textual") {
+    if (card.internalKey === "pdf_text_extraction") {
       return {
         ...card,
         detail: `${overview.document_pipeline.total_documents} documentos no fluxo atual, ${overview.document_pipeline.extracted_count} com extração concluída.`
       };
     }
-    if (card.title === "PDF escaneado / OCR") {
+    if (card.internalKey === "ocr_adapter") {
       return {
         ...card,
         detail: `${overview.materials.ocr_required_count} materiais ainda dependem de OCR ou validação humana.`
       };
     }
-    if (card.title === "Ingestao de edital") {
+    if (card.internalKey === "edital_ingestion") {
       return {
         ...card,
         detail: overview.edital.edital_available
@@ -114,7 +114,7 @@ function enhanceDocumentCards(
           : card.detail
       };
     }
-    if (card.title === "Alinhamento bibliografico") {
+    if (card.internalKey === "bibliography_alignment") {
       return {
         ...card,
         detail: overview.alignment.alignment_available
@@ -128,19 +128,19 @@ function enhanceDocumentCards(
 
 function enhancePscppCards(cards: CapabilityCard[], profile: BackendExamProfile): CapabilityCard[] {
   return cards.map((card) => {
-    if (card.title === "Question style profile") {
+    if (card.internalKey === "pscpp_question_style_profile") {
       return {
         ...card,
         detail: `Perfil público lido do backend: ${profile.profile_name} (${profile.profile_id}).`
       };
     }
-    if (card.title === "Question generation integration") {
+    if (card.internalKey === "question_generation_blueprint") {
       return {
         ...card,
         detail: "A integração continua declarativa e segura; a interface usa metadados sem gerar respostas finais sensíveis."
       };
     }
-    if (card.title === "Study cycle guide") {
+    if (card.internalKey === "pscpp_study_cycle_profile") {
       return {
         ...card,
         detail: "Ainda sem endpoint dedicado; o frontend preserva fallback local auditado para o ciclo PSCPP."

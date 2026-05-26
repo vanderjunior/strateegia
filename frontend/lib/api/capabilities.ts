@@ -8,7 +8,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
       label: "Leitura de PDF textual",
       status: "implemented_and_tested",
       source,
-      detail: "Pipeline textual implementado e testado."
+      detail: "Leitura textual validada para materiais com texto selecionável."
     },
     {
       id: "scanned-ocr",
@@ -16,95 +16,95 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
       label: "OCR para PDF escaneado",
       status: "implemented_but_needs_manual_validation",
       source,
-      detail: "Fallback opcional com Tesseract ainda sujeito a validacao real."
+      detail: "PDFs escaneados ainda podem exigir revisão antes de uma leitura confiável."
     },
     {
       id: "edital-ingestion",
       internalKey: "edital_ingestion",
-      label: "Ingestao de edital",
+      label: "Edital analisado",
       status: "partially_implemented",
       source,
-      detail: "Extracao heuristica e review-friendly, sem parser final autoritativo."
+      detail: "Tópicos, bibliografia e lacunas seguem como análise candidata."
     },
     {
       id: "bibliography-alignment",
       internalKey: "bibliography_alignment",
-      label: "Alinhamento bibliografico",
+      label: "Cobertura e gaps do edital",
       status: "partially_implemented",
       source,
-      detail: "Coverage e gaps candidatos, ainda sem verificacao final automatica."
+      detail: "Cobertura parcial e gaps encontrados ainda exigem conferência."
     },
     {
       id: "pscpp-style",
       internalKey: "pscpp_question_style_profile",
-      label: "Perfil PSCPP de questoes",
+      label: "Perfil PSCPP/Praticagem",
       status: "implemented_and_tested",
       source,
-      detail: "Perfil de estilo e seguranca do PSCPP implementado e testado."
+      detail: "Perfil técnico-operacional validado para orientar revisão e preparação."
     },
     {
       id: "pscpp-generation",
       internalKey: "question_generation_blueprint",
-      label: "Integracao PSCPP na geracao",
+      label: "Questões candidatas",
       status: "metadata_only",
       source,
-      detail: "Metadata e validacao integradas sem expor respostas finais sensiveis."
+      detail: "Questões candidatas seguem em orientação guiada, sem respostas finais expostas."
     },
     {
       id: "pscpp-cycle",
       internalKey: "pscpp_study_cycle_profile",
-      label: "Perfil PSCPP de ciclo",
+      label: "Ciclo sugerido",
       status: "implemented_and_tested",
       source,
-      detail: "Guidance flexivel testado, sem agenda forcada."
+      detail: "Guia flexível disponível, sem agenda automática."
     },
     {
       id: "simulado-generation",
       internalKey: "simulado_assembly",
-      label: "Geracao completa de simulado",
+      label: "Simulado em preparação",
       status: "foundation_only",
       source,
-      detail: "Foundation existe, mas o fluxo completo fim a fim nao esta validado."
+      detail: "A base existe, mas a prova final ainda exige revisão e não está executável."
     },
     {
       id: "simulado-runtime",
       internalKey: "attempt_session",
-      label: "Tentativa, correcao e score",
+      label: "Sessão de treino",
       status: "implemented_and_tested",
       source,
-      detail: "Runtime auditavel e testado."
+      detail: "A sessão de treino só deve avançar quando o simulado estiver realmente pronto."
     },
     {
       id: "minimal-ledger",
       internalKey: "minimal_progress_ledger_apply",
-      label: "Minimal progress ledger",
+      label: "Progresso registrado com segurança",
       status: "implemented_and_tested",
       source,
-      detail: "Aplicacao minima e auditavel, sem mutacoes amplas."
+      detail: "Registro limitado e auditável, sem atualização ampla."
     },
     {
       id: "applied-ledger",
       internalKey: "applied_event_ledger",
-      label: "Applied event ledger",
+      label: "Atualização registrada",
       status: "implemented_and_tested",
       source,
-      detail: "Replay-safe e deduplicado."
+      detail: "Histórico seguro de atualização, sem ação aberta ao candidato."
     },
     {
       id: "propagation-guardrail",
       internalKey: "propagation_guardrail",
-      label: "Propagation guardrail",
+      label: "Proteção contra atualização indevida",
       status: "implemented_and_tested",
       source,
-      detail: "Readiness-only, sem propagacao real."
+      detail: "Proteção mantida para evitar atualização ampla sem revisão."
     },
     {
       id: "controlled-propagation",
       internalKey: "controlled_propagation_apply",
-      label: "Controlled propagation ledger",
+      label: "Atualização controlada registrada",
       status: "implemented_and_tested",
       source,
-      detail: "Ledger isolado, sem mutacao direta de runtime."
+      detail: "Registro controlado, sem mudança ampla na experiência atual."
     },
     {
       id: "persistence",

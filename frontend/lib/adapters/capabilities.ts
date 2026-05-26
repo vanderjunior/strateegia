@@ -28,9 +28,9 @@ export function capabilityStatusBadgeClass(status: CapabilityStatus): string {
 export function sourceLabel(source: ApiSource): string {
   switch (source) {
     case "backend":
-      return "Backend disponível";
+      return "Dados auditados";
     case "offline":
-      return "Backend offline";
+      return "Consulta local";
     case "unsupported":
       return "Painel em validação";
     default:

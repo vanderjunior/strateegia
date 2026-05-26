@@ -36,10 +36,10 @@ describe("product language helpers", () => {
     const ocr = getUserFacingCapability("ocr_adapter", "student");
     const draft = getUserFacingCapability("question_draft_generation", "student");
 
-    expect(progress?.label).toBe("Progresso registrado com seguranca");
+    expect(progress?.label).toBe("Progresso registrado com segurança");
     expect(ocr?.label).toBe("OCR para PDF digitalizado");
     expect(ocr?.safeStatusLabels).toContain("Experimental");
-    expect(draft?.safeStatusLabels).toContain("Revisao necessaria");
+    expect(draft?.safeStatusLabels).toContain("Revisão necessária");
     expect(shouldShowCapability("runtime_apply_policy", "student")).toBe(true);
   });
 
@@ -53,11 +53,11 @@ describe("product language helpers", () => {
       tone: "warning"
     });
     expect(getUserFacingStatus("foundation_only", "student")).toMatchObject({
-      label: "Base criada",
+      label: "Ainda não executável",
       tone: "neutral"
     });
     expect(getUserFacingStatus("not_implemented", "student")).toMatchObject({
-      label: "Nao implementado",
+      label: "Não implementado",
       tone: "muted"
     });
   });
@@ -65,6 +65,6 @@ describe("product language helpers", () => {
   it("exposes product-safe copy labels for dashboard and workspaces", () => {
     expect(getSafeProductCopy("materialProcessed")).toBe("Material processado");
     expect(getSafeProductCopy("gapsFound")).toBe("Gaps encontrados");
-    expect(getSafeProductCopy("notExecutableYet")).toBe("Ainda nao executavel");
+    expect(getSafeProductCopy("notExecutableYet")).toBe("Ainda não executável");
   });
 });
