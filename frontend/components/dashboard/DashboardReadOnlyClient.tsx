@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { BackendConnectionBanner } from "@/components/dashboard/BackendConnectionBanner";
 import { CapabilityStatusPanel } from "@/components/dashboard/CapabilityStatusPanel";
+import { DashboardStudyBridge } from "@/components/dashboard/DashboardStudyBridge";
 import { DocumentStatusCards } from "@/components/dashboard/DocumentStatusCards";
 import { PSCPPProfileCards } from "@/components/dashboard/PSCPPProfileCards";
 import { RuntimeStatusCards } from "@/components/dashboard/RuntimeStatusCards";
@@ -32,6 +33,8 @@ export function DashboardReadOnlyClient() {
   return (
     <div className="space-y-8">
       <BackendConnectionBanner connection={viewModel.connection} />
+
+      <DashboardStudyBridge />
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="rounded-[32px] border border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)] p-6">
