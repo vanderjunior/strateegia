@@ -20,11 +20,7 @@ import {
 import { sourceLabel } from "@/lib/adapters/capabilities";
 import { StudySessionMetaRow } from "@/components/workspace/StudySessionShared";
 
-function buildFallback(sessionId: string): { connection: BackendConnectionInfo; detail: StudySessionDetail } {
-  const detail =
-    buildMockStudySessionDetail(sessionId) ??
-    buildMockStudySessionDetail("session-1-manobrabilidade-forcas")!;
-
+function buildFallback(sessionId: string): { connection: BackendConnectionInfo; detail: StudySessionDetail | null } {
   return {
     connection: {
       state: "mock",
@@ -32,12 +28,12 @@ function buildFallback(sessionId: string): { connection: BackendConnectionInfo; 
       title: "Dados de demonstração",
       detail: "Sessão exibida por fallback auditado enquanto a leitura do perfil PSCPP no backend não é necessária para este detalhe."
     },
-    detail
+    detail: buildMockStudySessionDetail(sessionId)
   };
 }
 
 export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
-  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: StudySessionDetail }>(
+  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: StudySessionDetail | null }>(
     buildFallback(sessionId)
   );
 
@@ -61,6 +57,34 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
 
   const { connection, detail } = viewModel;
 
+  if (!detail) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceBackLink href="/study">Voltar para estudo</WorkspaceBackLink>
+
+        <WorkspaceSourcePanel
+          eyebrow="estudo / sessão"
+          title="Sessão sugerida não encontrada"
+          subtitle="Nenhuma sessão pôde ser exibida com este identificador. O guia segue disponível no workspace de estudo."
+          connection={connection}
+        />
+
+        <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+          <CardTitle className="text-[1.8rem] leading-[1.04]">Escolha outra sessão sugerida</CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            Esta rota não altera seu progresso e não cria agenda automaticamente. Use o workspace de estudo
+            ou o mapa PSCPP para retomar a trilha sugerida.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
+            <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
+            <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <WorkspaceBackLink href="/study">Voltar para estudo</WorkspaceBackLink>
@@ -75,7 +99,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="h-full">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 max-w-3xl">
+            <div className="min-w-0 max-w-3xl flex-1">
               <div className="section-kicker">objetivo</div>
               <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Sessão sugerida</CardTitle>
               <p className="mt-4 text-sm leading-7 text-silver">{detail.objective}</p>

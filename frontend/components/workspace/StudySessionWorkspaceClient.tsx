@@ -87,35 +87,49 @@ export function StudySessionWorkspaceClient() {
           <div className="section-kicker">sessões sugeridas</div>
           <h2 className="mt-3 font-serif text-[2rem] text-ink">Todas as sessões</h2>
         </div>
-        <div className="grid gap-4 2xl:grid-cols-2">
-          {viewModel.sessions.map((session) => (
-            <Card key={session.id} className="h-full">
-              <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
-                sessão {session.sessionNumber}
-              </div>
-              <CardTitle className="mt-5 break-words text-[1.55rem] leading-[1.05] sm:text-[1.7rem]">
-                {session.title}
-              </CardTitle>
-              <p className="mt-4 text-sm leading-7 text-silver">{session.objective}</p>
-              <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-                {session.priorityBlockTitle}
-              </p>
-              <div className="mt-5">
-                <StudySessionMetaRow
-                  durationLabel={session.durationLabel}
-                  relatedMaterialsCount={session.relatedMaterialsCount}
-                  relatedGapsCount={session.relatedGapsCount}
-                  statusLabel={session.statusLabel}
-                />
-              </div>
-              <p className="mt-5 text-sm leading-7 text-silver">{session.note}</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <WorkspaceLink href={`/study/session/${session.id}`}>Ver sessão</WorkspaceLink>
-                <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {viewModel.sessions.length ? (
+          <div className="grid gap-4 2xl:grid-cols-2">
+            {viewModel.sessions.map((session) => (
+              <Card key={session.id} className="h-full">
+                <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
+                  sessão {session.sessionNumber}
+                </div>
+                <CardTitle className="mt-5 break-words text-[1.55rem] leading-[1.05] sm:text-[1.7rem]">
+                  {session.title}
+                </CardTitle>
+                <p className="mt-4 text-sm leading-7 text-silver">{session.objective}</p>
+                <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+                  {session.priorityBlockTitle}
+                </p>
+                <div className="mt-5">
+                  <StudySessionMetaRow
+                    durationLabel={session.durationLabel}
+                    relatedMaterialsCount={session.relatedMaterialsCount}
+                    relatedGapsCount={session.relatedGapsCount}
+                    statusLabel={session.statusLabel}
+                  />
+                </div>
+                <p className="mt-5 text-sm leading-7 text-silver">{session.note}</p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <WorkspaceLink href={`/study/session/${session.id}`}>Ver sessão</WorkspaceLink>
+                  <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+            <CardTitle className="text-[1.7rem] leading-[1.05]">Nenhuma sessão para exibir ainda</CardTitle>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+              O guia de estudo segue em validação neste ambiente. Use o mapa PSCPP para revisar blocos
+              prioritários e materiais relacionados enquanto as sessões são confirmadas.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
+              <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
+            </div>
+          </Card>
+        )}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">

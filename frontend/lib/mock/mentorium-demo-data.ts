@@ -1198,7 +1198,8 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
     cautions: [
       "Esta tela não altera seu progresso.",
       "Questões candidatas ainda exigem revisão.",
-      "Simulado curto ainda não executável."
+      "Simulado curto ainda não executável.",
+      "Esta tela não gera prova nem corrige respostas."
     ]
   }
 };
