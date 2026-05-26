@@ -41,7 +41,7 @@ export async function loadPscppCrosswalkViewModel(): Promise<PscppCrosswalkViewM
       connection: sourceConnection(
         "backend",
         "Backend disponível",
-        "Perfil PSCPP confirmado via backend. O mapa continua como orientação somente leitura a partir de dados auditados.",
+        "Perfil PSCPP confirmado via backend. O mapa continua como orientação de consulta a partir de dados auditados.",
         "connected"
       )
     };
@@ -64,7 +64,7 @@ export async function loadPscppCrosswalkViewModel(): Promise<PscppCrosswalkViewM
       ...fallback,
       connection: sourceConnection(
         "unsupported",
-        "Painel em modo de validação",
+        "Painel em validação",
         "O perfil PSCPP não pôde ser confirmado neste ambiente; o mapa segue em fallback auditado.",
         "unsupported"
       )

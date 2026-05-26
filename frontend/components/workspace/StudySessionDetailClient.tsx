@@ -26,7 +26,7 @@ function buildFallback(sessionId: string): { connection: BackendConnectionInfo; 
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Sessão exibida por fallback auditado enquanto a leitura do perfil PSCPP no backend não é necessária para este detalhe."
+      detail: "Sessão exibida por consulta local auditada enquanto a leitura do perfil PSCPP no backend não é necessária para este detalhe."
     },
     detail: buildMockStudySessionDetail(sessionId)
   };
@@ -65,14 +65,14 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
         <WorkspaceSourcePanel
           eyebrow="estudo / sessão"
           title="Sessão sugerida não encontrada"
-          subtitle="Nenhuma sessão pôde ser exibida com este identificador. O guia segue disponível no workspace de estudo."
+          subtitle="Nenhuma sessão pôde ser exibida com este identificador. O guia segue disponível na área de estudo."
           connection={connection}
         />
 
         <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
           <CardTitle className="text-[1.8rem] leading-[1.04]">Escolha outra sessão sugerida</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            Esta rota não altera seu progresso e não cria agenda automaticamente. Use o workspace de estudo
+            Esta rota não altera seu progresso e não cria agenda automaticamente. Use a área de estudo
             ou o mapa PSCPP para retomar a trilha sugerida.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -92,16 +92,16 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
       <WorkspaceSourcePanel
         eyebrow="estudo / sessão"
         title={detail.title}
-        subtitle="Guia prático de estudo com materiais, gaps, checklist e saídas esperadas, sem alterar progresso."
+        subtitle="Guia prático de estudo com materiais, gaps, checklist e saídas esperadas, sem alterar seu progresso."
         connection={connection}
       />
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 max-w-3xl flex-1">
               <div className="section-kicker">objetivo</div>
-              <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Sessão sugerida</CardTitle>
+              <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Sessão sugerida</CardTitle>
               <p className="mt-4 text-sm leading-7 text-silver">{detail.objective}</p>
             </div>
             <Badge className={productStatusClass(detail.statusLabel)}>{detail.statusLabel}</Badge>
@@ -124,9 +124,9 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">estrutura</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Checklist de tempo</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Estrutura da sessão</CardTitle>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             {detail.structure.map((item) => (
               <li key={item}>• {item}</li>
@@ -140,9 +140,9 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">materiais e edital</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Materiais relacionados</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Materiais relacionados</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.relatedMaterials.length ? (
               detail.relatedMaterials.map((material) => (
@@ -180,9 +180,9 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">gaps conectados</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Checklist de estudo</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Checklist de estudo</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.relatedGaps.map((gap) => (
               <div
@@ -203,9 +203,9 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">saídas esperadas</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Resultados de estudo</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Saídas esperadas</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.outputs.map((output) => (
               <div
@@ -221,9 +221,9 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">cautelas</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Limites desta tela</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Limites desta tela</CardTitle>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             {detail.cautions.map((item) => (
               <li key={item}>• {item}</li>

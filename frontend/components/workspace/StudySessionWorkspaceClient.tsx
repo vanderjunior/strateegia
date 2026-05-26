@@ -57,7 +57,7 @@ export function StudySessionWorkspaceClient() {
       <WorkspaceSummaryGrid items={viewModel.summary} />
 
       {nextSession ? (
-        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+        <Card className="min-w-0 border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
           <div className="section-kicker">próxima sessão sugerida</div>
           <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 max-w-3xl">
@@ -85,12 +85,12 @@ export function StudySessionWorkspaceClient() {
       <section className="space-y-4">
         <div>
           <div className="section-kicker">sessões sugeridas</div>
-          <h2 className="mt-3 font-serif text-[2rem] text-ink">Todas as sessões</h2>
+          <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">Todas as sessões sugeridas</h2>
         </div>
         {viewModel.sessions.length ? (
           <div className="grid gap-4 2xl:grid-cols-2">
             {viewModel.sessions.map((session) => (
-              <Card key={session.id} className="h-full">
+              <Card key={session.id} className="h-full min-w-0">
                 <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
                   sessão {session.sessionNumber}
                 </div>
@@ -133,9 +133,9 @@ export function StudySessionWorkspaceClient() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">gaps que orientam o estudo</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Gaps conectados</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Gaps conectados</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.highlightedGaps.map((gap) => (
               <div
@@ -149,9 +149,9 @@ export function StudySessionWorkspaceClient() {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">materiais para começar</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Materiais relacionados</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Materiais relacionados</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.starterMaterials.map((material) => (
               <div

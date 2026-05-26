@@ -37,7 +37,7 @@ function buildWorkspaceFromProfile(profile: BackendExamProfile): PscppWorkspaceV
     connection: sourceConnection(
       "backend",
       "Backend disponível",
-      "Perfil PSCPP confirmado via backend. Ciclo sugerido e orientação de questões permanecem em guia auditado somente leitura.",
+      "Perfil PSCPP confirmado via backend. O ciclo sugerido e a orientação de questões seguem como guia auditado de consulta.",
       "connected"
     ),
     profileTitle: profile.profile_name || pscppWorkspaceViewModelMock.profileTitle,
@@ -56,7 +56,7 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       connection: sourceConnection(
         "backend",
         "Backend disponível",
-        "A leitura do perfil veio do backend, mas o ciclo continua guidance-only, sem agenda automática ou alteração de progresso.",
+        "A leitura do perfil veio do backend, mas o ciclo continua como guia flexível, sem agenda automática ou alteração de progresso.",
         "connected"
       )
     };
@@ -79,7 +79,7 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       ...pscppCycleViewModelMock,
       connection: sourceConnection(
         "unsupported",
-        "Painel em modo de validação",
+        "Painel em validação",
         "Não há endpoint dedicado para o ciclo PSCPP nesta etapa; o guia continua em fallback auditado.",
         "unsupported"
       )
@@ -99,7 +99,7 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       connection: sourceConnection(
         "backend",
         "Backend disponível",
-        "O perfil PSCPP foi confirmado no backend. Esta tela continua guidance-only para questões candidatas e revisão.",
+        "O perfil PSCPP foi confirmado no backend. Esta tela continua como guia de questões candidatas e revisão.",
         "connected"
       )
     };
@@ -122,7 +122,7 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       ...pscppQuestionsViewModelMock,
       connection: sourceConnection(
         "unsupported",
-        "Painel em modo de validação",
+        "Painel em validação",
         "Não há endpoint dedicado para orientação de questões PSCPP nesta etapa; a tela permanece em fallback auditado.",
         "unsupported"
       )
@@ -181,7 +181,7 @@ export async function loadPscppWorkspaceViewModel(): Promise<PscppWorkspaceViewM
       ...fallback,
       connection: sourceConnection(
         "unsupported",
-        "Painel em modo de validação",
+        "Painel em validação",
         "O endpoint do perfil PSCPP não está disponível neste ambiente; usando fallback auditado.",
         "unsupported"
       )

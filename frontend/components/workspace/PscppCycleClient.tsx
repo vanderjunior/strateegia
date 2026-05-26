@@ -48,9 +48,9 @@ export function PscppCycleClient() {
       <WorkspaceSummaryGrid items={viewModel.summary} />
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">modo de uso</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Guia flexível</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Guia flexível</CardTitle>
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge className={productStatusClass(viewModel.modeLabel)}>{viewModel.modeLabel}</Badge>
             <Badge className={productStatusClass(viewModel.overrideLabel)}>{viewModel.overrideLabel}</Badge>
@@ -69,9 +69,9 @@ export function PscppCycleClient() {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">estrutura de sessão</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Bloco base de estudo</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Checklist de estudo</CardTitle>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             {viewModel.sessionStructure.map((item) => (
               <li key={item}>• {item}</li>
@@ -93,9 +93,9 @@ export function PscppCycleClient() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">fases</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Plano em quatro fases</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Plano em quatro fases</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.phasePlan.map((phase, index) => (
               <div
@@ -110,9 +110,9 @@ export function PscppCycleClient() {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">rotação</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Rotação de 12 sessões</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Rotação de 12 sessões</CardTitle>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {viewModel.rotation.map((item) => (
               <div

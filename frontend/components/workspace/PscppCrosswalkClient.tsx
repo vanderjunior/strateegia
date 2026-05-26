@@ -61,11 +61,11 @@ export function PscppCrosswalkClient() {
       <section className="space-y-4">
         <div>
           <div className="section-kicker">cobertura por bloco</div>
-          <h2 className="mt-3 font-serif text-[2rem] text-ink">Cobertura por bloco prioritário</h2>
+          <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">Cobertura por bloco prioritário</h2>
         </div>
         <div className="grid gap-4 2xl:grid-cols-2">
           {viewModel.blocks.map((block) => (
-            <Card key={block.id} className="h-full">
+            <Card key={block.id} className="h-full min-w-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
@@ -142,7 +142,7 @@ export function PscppCrosswalkClient() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
                 <WorkspaceLink href="/editais/edital-pscpp-referencia">Ver edital de referência</WorkspaceLink>
-                <WorkspaceLink href="/pscpp/ciclo">Ver ciclo</WorkspaceLink>
+                <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
                 <WorkspaceLink href="/pscpp/questoes">Ver questões PSCPP</WorkspaceLink>
               </div>
             </Card>
@@ -151,9 +151,9 @@ export function PscppCrosswalkClient() {
       </section>
 
       <section className="grid gap-4 2xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">gaps principais</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Gaps encontrados</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Gaps encontrados</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.mainGaps.map((gap) => (
               <div
@@ -183,9 +183,9 @@ export function PscppCrosswalkClient() {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">materiais e edital</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Materiais relacionados</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Materiais relacionados</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.relationships.map((item) => (
               <div
@@ -230,9 +230,9 @@ export function PscppCrosswalkClient() {
       </section>
 
       <section className="grid gap-4 2xl:grid-cols-[0.9fr_1.1fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">conexão com o ciclo</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Sessões sugeridas para reforço</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Sessões sugeridas para reforço</CardTitle>
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge className={productStatusClass("Sugestão flexível")}>Sugestão flexível</Badge>
             <Badge className={productStatusClass("Não cria agenda automaticamente")}>
@@ -240,17 +240,18 @@ export function PscppCrosswalkClient() {
             </Badge>
           </div>
           <p className="mt-5 text-sm leading-7 text-silver">
-            Este mapa conecta gaps e cobertura às sessões do ciclo sugerido, sem criar agenda e sem alterar progresso.
+            Este mapa conecta gaps e cobertura às sessões do ciclo sugerido, sem criar agenda e sem alterar seu
+            progresso.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <WorkspaceLink href="/pscpp/ciclo">Ver ciclo completo</WorkspaceLink>
+            <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
             <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
           </div>
         </Card>
 
-        <Card className="h-full">
-          <div className="section-kicker">preview do ciclo</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Sessões destacadas</CardTitle>
+        <Card className="h-full min-w-0">
+          <div className="section-kicker">ciclo sugerido</div>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Sessões destacadas</CardTitle>
           <div className="mt-5 grid gap-3 lg:grid-cols-2">
             {viewModel.highlightedSessions.map((session) => (
               <div

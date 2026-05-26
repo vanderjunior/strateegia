@@ -219,21 +219,21 @@ export const pscppProfileCards: CapabilityCard[] = [
     internalKey: "pscpp_question_style_profile",
     title: "Perfil PSCPP/Praticagem",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Perfil PSCPP/Praticagem com ancora bibliografica, formato A-E e arquetipos tecnicos.",
+    summary: "Perfil PSCPP/Praticagem com âncora bibliográfica, formato A-E e arquétipos técnicos.",
     detail: "Base validada para orientar mapa PSCPP, fontes e revisão técnica."
   },
   {
     internalKey: "question_generation_blueprint",
     title: "Questões candidatas",
     status: "metadata_only" as CapabilityStatus,
-    summary: "Integracao de metadata e validacao para simulado, fixation, review e summary.",
+    summary: "Organização de questões candidatas com fonte obrigatória, bibliografia visível e revisão humana.",
     detail: "Questões candidatas seguem com revisão humana e sem respostas finais expostas."
   },
   {
     internalKey: "pscpp_study_cycle_profile",
     title: "Ciclo sugerido",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Rotacao de 12 sessoes, fases de estudo e guidance proporcional para PSCPP.",
+    summary: "Rotação de 12 sessões, fases de estudo e orientação proporcional para PSCPP.",
     detail: "Guia flexível, sem agenda automática e com ajuste pelo candidato."
   }
 ] as const;
@@ -590,7 +590,7 @@ export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Perfil PSCPP, ciclo e orientação de questões exibidos por fallback auditado enquanto a leitura do perfil no backend não é confirmada."
+    detail: "Perfil PSCPP, ciclo sugerido e orientação de questões exibidos por fallback auditado enquanto a leitura do perfil no backend não é confirmada."
   },
   summary: [
     {
@@ -614,7 +614,7 @@ export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
     {
       id: "pscpp-summary-simulado",
       label: "Simulado",
-      value: "Em preparação",
+      value: "Simulado em preparação",
       detail: "Ainda não executável de ponta a ponta."
     }
   ],
@@ -636,7 +636,7 @@ export const pscppCycleViewModelMock: PscppCycleViewModel = {
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "O ciclo PSCPP é guidance-only: não cria agenda automaticamente e não altera progresso."
+    detail: "O ciclo PSCPP segue como guia flexível: não cria agenda automaticamente e não altera seu progresso."
   },
   summary: [
     {
@@ -659,7 +659,7 @@ export const pscppCycleViewModelMock: PscppCycleViewModel = {
     },
     {
       id: "pscpp-cycle-override",
-      label: "Override",
+      label: "Ajuste livre",
       value: "Permitido",
       detail: "Não altera seu progresso nem cria agenda automaticamente."
     }
@@ -691,14 +691,14 @@ export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
     {
       id: "pscpp-questions-review",
       label: "Revisão",
-      value: "Necessária",
+      value: "Revisão necessária",
       detail: "Não tratar questão candidata como finalizada."
     },
     {
       id: "pscpp-questions-simulado",
       label: "Simulado",
-      value: "Ainda em preparação",
-      detail: "Integração existe como guia, mas a execução final ainda requer revisão."
+      value: "Simulado em preparação",
+      detail: "A organização existe como guia, mas a execução final ainda requer revisão."
     },
     {
       id: "pscpp-questions-weights",
@@ -1053,7 +1053,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
     relatedMaterialsCount: 2,
     relatedGapsCount: 1,
     statusLabel: "Pronto para estudo",
-    note: "Base para o bloco dominante do caminho PSCPP.",
+    note: "Base para o bloco prioritário do caminho PSCPP.",
     structure: [...pscppSessionStructure],
     relatedMaterials: pscppCrosswalkBlocks[0].relatedMaterials,
     relatedEditais: pscppCrosswalkBlocks[0].relatedEditais,
@@ -1068,7 +1068,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s1-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s1-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s1-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s1-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+      { id: "s1-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
@@ -1084,7 +1084,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
     durationLabel: "20 + 60-90 + 40 + 20 min",
     relatedMaterialsCount: 1,
     relatedGapsCount: 1,
-    statusLabel: "Requer revisão",
+    statusLabel: "Revisão necessária",
     note: "Priorize exceções, cenários e sinais em sequência.",
     structure: [...pscppSessionStructure],
     relatedMaterials: pscppCrosswalkBlocks[1].relatedMaterials,
@@ -1100,7 +1100,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s2-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s2-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s2-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s2-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+      { id: "s2-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
@@ -1132,7 +1132,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s3-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s3-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s3-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s3-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+      { id: "s3-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
@@ -1148,7 +1148,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
     durationLabel: "20 + 60-90 + 40 + 20 min",
     relatedMaterialsCount: 1,
     relatedGapsCount: 1,
-    statusLabel: "Requer revisão",
+    statusLabel: "Revisão necessária",
     note: "A sessão depende de material complementar e validação do roteiro escaneado.",
     structure: [...pscppSessionStructure],
     relatedMaterials: pscppCrosswalkBlocks[2].relatedMaterials,
@@ -1164,7 +1164,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s9-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s9-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s9-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s9-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+      { id: "s9-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
@@ -1180,7 +1180,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
     durationLabel: "20 + 60-90 + 40 + 20 min",
     relatedMaterialsCount: 0,
     relatedGapsCount: 1,
-    statusLabel: "Requer revisão",
+    statusLabel: "Revisão necessária",
     note: "Usa revisão curta e não representa geração executável de simulado.",
     structure: [...pscppSessionStructure],
     relatedMaterials: [],
@@ -1196,7 +1196,7 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s12-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s12-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s12-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s12-o4", label: "Questões candidatas para revisão", statusLabel: "Ainda não geradas" }
+      { id: "s12-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
@@ -1212,7 +1212,7 @@ export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel 
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Sessões sugeridas montadas por fallback auditado a partir do ciclo PSCPP, materiais e gaps conectados."
+    detail: "Sessões sugeridas montadas por fallback auditado a partir do ciclo PSCPP, materiais relacionados e gaps conectados."
   },
   summary: [
     {

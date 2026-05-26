@@ -27,9 +27,9 @@ function GuidanceList({
   items: PscppQuestionsViewModel["archetypes"];
 }) {
   return (
-    <Card className="h-full">
+    <Card className="h-full min-w-0">
       <div className="section-kicker">{eyebrow}</div>
-      <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">{title}</CardTitle>
+      <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">{title}</CardTitle>
       <div className="mt-5 space-y-3">
         {items.map((item) => (
           <div
@@ -66,8 +66,8 @@ export function PscppQuestionsClient() {
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="pscpp / questões"
-        title="Orientação de questões PSCPP"
-        subtitle="Guia de estilo, fonte e revisão para questões candidatas e relação com simulados ainda não finalizados."
+        title="Questões candidatas PSCPP"
+        subtitle="Guia de fonte, bibliografia e revisão para questões candidatas e sua relação com simulados em preparação."
         connection={viewModel.connection}
       />
 
@@ -77,9 +77,9 @@ export function PscppQuestionsClient() {
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <GuidanceList title="Arquétipos de questão" eyebrow="formatos" items={viewModel.archetypes} />
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="section-kicker">estado atual</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">Relação com simulado</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Relação com simulado</CardTitle>
           <div className="mt-5 flex flex-wrap gap-2">
             {viewModel.relationToSimulado.map((item) => (
               <Badge key={item} className={productStatusClass(item)}>
@@ -89,13 +89,13 @@ export function PscppQuestionsClient() {
           </div>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             <li>• Questões candidatas precisam de revisão antes de qualquer uso avaliativo.</li>
-            <li>• O simulado completo ainda exige preparação e conferência humanas.</li>
+            <li>• O simulado completo ainda exige preparação e conferência humana.</li>
             <li>• Esta tela não gera questões, não gera simulados e não mostra respostas finais.</li>
           </ul>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
             <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
-            <WorkspaceLink href="/pscpp">Voltar ao workspace PSCPP</WorkspaceLink>
+            <WorkspaceLink href="/pscpp">Voltar à área PSCPP</WorkspaceLink>
           </div>
         </Card>
       </section>

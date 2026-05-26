@@ -63,6 +63,9 @@ export function WorkspaceSourcePanel({
   subtitle: string;
   connection: BackendConnectionInfo;
 }) {
+  const sourceText = sourceLabel(connection.source);
+  const showTitleBadge = connection.title.trim() !== sourceText.trim();
+
   return (
     <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
       <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-nowrap">
@@ -74,10 +77,12 @@ export function WorkspaceSourcePanel({
           <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">{subtitle}</p>
         </div>
         <div className="flex max-w-full flex-wrap gap-2 lg:max-w-[22rem] lg:justify-end">
-          <Badge className={sourceBadgeClass(connection.source)}>{sourceLabel(connection.source)}</Badge>
-          <Badge className="border-[rgba(201,169,110,0.22)] bg-[rgba(201,169,110,0.10)] text-ink">
-            {connection.title}
-          </Badge>
+          <Badge className={sourceBadgeClass(connection.source)}>{sourceText}</Badge>
+          {showTitleBadge ? (
+            <Badge className="border-[rgba(201,169,110,0.22)] bg-[rgba(201,169,110,0.10)] text-ink">
+              {connection.title}
+            </Badge>
+          ) : null}
         </div>
       </div>
       <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">{connection.detail}</p>

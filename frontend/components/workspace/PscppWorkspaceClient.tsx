@@ -49,11 +49,11 @@ export function PscppWorkspaceClient() {
       <WorkspaceSummaryGrid items={viewModel.summary} />
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="h-full">
+        <Card className="h-full min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 max-w-3xl">
-              <div className="section-kicker">perfil</div>
-              <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">
+              <div className="section-kicker">perfil da prova</div>
+              <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">
                 Perfil PSCPP configurado
               </CardTitle>
               <p className="mt-4 text-sm leading-7 text-silver">{viewModel.profileDescription}</p>
@@ -64,24 +64,24 @@ export function PscppWorkspaceClient() {
             <Badge className={productStatusClass(viewModel.statusLabel)}>{viewModel.statusLabel}</Badge>
             <Badge className={productStatusClass(viewModel.modeLabel)}>{viewModel.modeLabel}</Badge>
             <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
-              {viewModel.examProfileId}
+              Bibliografia identificada
             </Badge>
           </div>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">perfil de questões</div>
-              <p className="mt-3 break-words text-sm text-ink">{viewModel.questionStyleProfileId}</p>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">questões candidatas</div>
+              <p className="mt-3 break-words text-sm text-ink">Fonte obrigatória e revisão necessária.</p>
             </div>
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">perfil de ciclo</div>
-              <p className="mt-3 break-words text-sm text-ink">{viewModel.studyCycleProfileId}</p>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">ciclo sugerido</div>
+              <p className="mt-3 break-words text-sm text-ink">Rotação flexível de 12 sessões, ajustável pelo candidato.</p>
             </div>
           </div>
         </Card>
 
-        <Card className="h-full">
-          <div className="section-kicker">cautela</div>
-          <CardTitle className="mt-5 text-[1.9rem] leading-[1.02]">
+        <Card className="h-full min-w-0">
+          <div className="section-kicker">revisão necessária</div>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">
             Evidência histórica e uso atual
           </CardTitle>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -108,11 +108,11 @@ export function PscppWorkspaceClient() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         {viewModel.priorityBlocks.map((block, index) => (
-          <Card key={block.id} className="h-full">
+          <Card key={block.id} className="h-full min-w-0">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
               prioridade {index + 1}
             </div>
-            <CardTitle className="mt-5 text-[1.7rem] leading-[1.04]">{block.title}</CardTitle>
+            <CardTitle className="mt-5 break-words text-[1.7rem] leading-[1.04]">{block.title}</CardTitle>
             <p className="mt-4 text-sm leading-7 text-silver">{block.detail}</p>
           </Card>
         ))}
