@@ -42,12 +42,12 @@ export function DashboardStudyBridge() {
   );
 
   return (
-    <section className="rounded-[32px] border border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)] p-6">
+    <section className="overflow-hidden rounded-[32px] border border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)] p-6 lg:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-3xl">
           <div className="section-kicker">estudo de hoje</div>
           <CardTitle className="mt-5 break-words text-[2rem] leading-[0.98] sm:text-[2.2rem]">
-            Comece pela sessão sugerida
+            Estudo de hoje
           </CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
             Comece pela sessão sugerida a partir do perfil PSCPP, materiais e gaps identificados.
@@ -61,18 +61,23 @@ export function DashboardStudyBridge() {
       </div>
 
       {nextSession ? (
-        <div className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="h-full border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
+        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <Card className="h-full min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
-              sessão sugerida
+              Sessão sugerida
             </div>
             <CardTitle className="mt-5 break-words text-[1.8rem] leading-[1.02] sm:text-[1.95rem]">
               {nextSession.title}
             </CardTitle>
             <p className="mt-4 text-sm leading-7 text-silver">{nextSession.objective}</p>
-            <p className="mt-4 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              {nextSession.priorityBlockTitle}
-            </p>
+            <div className="mt-4 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                bloco prioritário
+              </div>
+              <p className="mt-2 break-words text-sm leading-7 text-[rgba(232,238,242,0.72)]">
+                {nextSession.priorityBlockTitle}
+              </p>
+            </div>
             <div className="mt-5">
               <StudySessionMetaRow
                 durationLabel={nextSession.durationLabel}
@@ -91,7 +96,7 @@ export function DashboardStudyBridge() {
             </div>
           </Card>
 
-          <Card className="h-full border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
+          <Card className="h-full min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
             <div className="section-kicker">atalhos read-only</div>
             <CardTitle className="mt-5 text-[1.7rem] leading-[1.04]">Próximos passos de leitura</CardTitle>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
@@ -99,6 +104,9 @@ export function DashboardStudyBridge() {
               <li>Use o ciclo PSCPP como sugestão flexível, sem criar agenda automaticamente.</li>
               <li>Abra os materiais relacionados antes de revisar questões candidatas.</li>
             </ul>
+            <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+              Guia flexível, sem agenda, sem progresso automático e sem geração de questões ou simulado.
+            </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
               <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
@@ -108,11 +116,10 @@ export function DashboardStudyBridge() {
         </div>
       ) : (
         <div className="mt-6">
-          <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
+          <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
             <CardTitle className="text-[1.7rem] leading-[1.05]">Nenhuma sessão sugerida para exibir agora</CardTitle>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-              Consulte o ciclo PSCPP para revisar o caminho de estudo enquanto esta camada permanece em
-              guia flexível.
+              Consulte o ciclo PSCPP para revisar o caminho de estudo.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
