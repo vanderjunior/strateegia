@@ -119,10 +119,10 @@ export function StudySessionWorkspaceClient() {
           </div>
         ) : (
           <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
-            <CardTitle className="text-[1.7rem] leading-[1.05]">Nenhuma sessão para exibir ainda</CardTitle>
+            <CardTitle className="text-[1.7rem] leading-[1.05]">Nenhuma sessão sugerida para exibir agora</CardTitle>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-              O guia de estudo segue em validação neste ambiente. Use o mapa PSCPP para revisar blocos
-              prioritários e materiais relacionados enquanto as sessões são confirmadas.
+              Consulte o ciclo PSCPP para revisar o caminho de estudo. O guia continua disponível sem criar agenda
+              automaticamente e sem alterar seu progresso.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>

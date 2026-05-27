@@ -22,12 +22,27 @@ function buildFallback(editalId: string): { connection: BackendConnectionInfo; d
       title: "Dados de demonstração",
       detail: "Consulta local exibida até existir leitura segura do backend para este edital."
     },
-    detail: buildMockEditalDetail(editalId)
+    detail: buildMockEditalDetail(editalId) ?? {
+      id: editalId,
+      title: "Item não encontrado",
+      statusLabel: "Análise candidata",
+      topicsCount: 0,
+      bibliographyItemsCount: 0,
+      gapsCount: 0,
+      reviewState: "Revisão necessária",
+      source: "mock",
+      topicCandidates: [],
+      bibliographyCandidates: [],
+      coverageItems: [],
+      gapItems: [],
+      warnings: ["Este conteúdo não está disponível nesta sessão."],
+      notes: ["Consulte os dados de demonstração ou volte para a listagem de editais."]
+    }
   };
 }
 
 export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
-  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: EditalDetail }>(
+  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: EditalDetail | null }>(
     buildFallback(editalId)
   );
 
@@ -44,6 +59,32 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
   }, [editalId]);
 
   const { connection, detail } = viewModel;
+
+  if (!detail) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceBackLink href="/editais">Voltar para editais</WorkspaceBackLink>
+
+        <WorkspaceSourcePanel
+          eyebrow="edital"
+          title="Item não encontrado"
+          subtitle="Este conteúdo não está disponível nesta sessão. Consulte os dados de demonstração ou volte para editais."
+          connection={connection}
+        />
+
+        <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+          <CardTitle className="text-[1.8rem] leading-[1.04]">Consulte os editais disponíveis</CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            A listagem real depende de sessão autenticada quando o backend estiver disponível. Enquanto isso,
+            os dados auditados continuam acessíveis nesta área.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceBackLink href="/editais">Voltar para editais</WorkspaceBackLink>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

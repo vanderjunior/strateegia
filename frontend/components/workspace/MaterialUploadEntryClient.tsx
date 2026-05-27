@@ -39,7 +39,7 @@ function buildConnection(): BackendConnectionInfo {
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "NEXT_PUBLIC_USE_MOCK_API=true mantém este fluxo em demonstração. Nenhum arquivo será enviado."
+      detail: "Este fluxo segue em demonstração local neste ambiente. Nenhum arquivo será enviado."
     };
   }
   if (!config.baseUrl) {
@@ -47,7 +47,7 @@ function buildConnection(): BackendConnectionInfo {
       state: "unsupported",
       source: "unsupported",
       title: "Painel em validação",
-      detail: "URL do backend não configurada para envio real."
+      detail: "O envio real não está disponível neste ambiente. A validação local continua acessível."
     };
   }
   return {
@@ -127,7 +127,7 @@ export function MaterialUploadEntryClient() {
       setValidationMessage(
         connection.source === "mock"
           ? "Modo de demonstração: nenhum arquivo foi enviado."
-          : "URL do backend não configurada para envio real."
+          : "Envio real indisponível neste ambiente."
       );
       return;
     }
@@ -139,7 +139,7 @@ export function MaterialUploadEntryClient() {
     if (!uploadResult.ok) {
       if (uploadResult.error.code === "endpoint_unavailable") {
         setEntryState("endpoint_unavailable");
-        setValidationMessage("Endpoint de envio indisponível neste ambiente.");
+        setValidationMessage("Envio real indisponível neste ambiente.");
         return;
       }
       if (uploadResult.error.code === "auth_required") {
@@ -149,7 +149,7 @@ export function MaterialUploadEntryClient() {
       }
       if (uploadResult.error.code === "api_base_missing") {
         setEntryState("endpoint_unavailable");
-        setValidationMessage("URL do backend não configurada para envio real.");
+        setValidationMessage("Envio real indisponível neste ambiente.");
         return;
       }
       if (uploadResult.error.code === "mock_mode") {
@@ -190,7 +190,7 @@ export function MaterialUploadEntryClient() {
     !confirmationChecked;
   const showAuthGuidance = validationMessage === "Sessão necessária para enviar material.";
   const showOfflineGuidance = validationMessage === "Não foi possível conectar ao backend.";
-  const showMissingBaseGuidance = validationMessage === "URL do backend não configurada para envio real.";
+  const showMissingBaseGuidance = validationMessage === "Envio real indisponível neste ambiente.";
   const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
   const returnedExtension = result ? extensionForFileName(result.filename) || "sem extensão" : "";
 
@@ -259,16 +259,16 @@ export function MaterialUploadEntryClient() {
           ) : null}
           {showOfflineGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              Verifique se o backend está rodando em NEXT_PUBLIC_API_BASE_URL.
+              O envio real depende do backend disponível. Enquanto isso, a validação local continua acessível.
             </p>
           ) : null}
           {showLocalSetup ? (
             <div className="mt-4 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">ambiente local</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">consulta local</div>
               <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
-                <li>• Backend: http://127.0.0.1:8000</li>
-                <li>• NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000</li>
-                <li>• NEXT_PUBLIC_USE_MOCK_API=false</li>
+                <li>• O envio real depende do backend disponível.</li>
+                <li>• O modo de demonstração continua acessível sem persistir arquivos.</li>
+                <li>• A confirmação continua obrigatória antes de qualquer envio.</li>
               </ul>
             </div>
           ) : null}
@@ -323,7 +323,7 @@ export function MaterialUploadEntryClient() {
               <p className="mt-3 text-sm text-ink">{formatUploadFileSize(result.sizeBytes)}</p>
             </div>
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">identificador</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">referência</div>
               <p className="mt-3 break-words text-sm text-ink">{result.documentId}</p>
             </div>
           </div>

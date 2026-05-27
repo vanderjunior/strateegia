@@ -23,12 +23,26 @@ function buildFallback(materialId: string): { connection: BackendConnectionInfo;
       title: "Dados de demonstração",
       detail: "Consulta local exibida até existir leitura segura do backend para este material."
     },
-    detail: buildMockMaterialDetail(materialId)
+    detail: buildMockMaterialDetail(materialId) ?? {
+      id: materialId,
+      title: "Item não encontrado",
+      typeLabel: "Material",
+      processingStatus: "Revisão necessária",
+      extractionStatus: "Consulta local",
+      sectionsCount: null,
+      chunksCount: null,
+      reviewState: "Revisão necessária",
+      source: "mock",
+      relatedGaps: 0,
+      warnings: ["Este conteúdo não está disponível nesta sessão."],
+      sectionPreviews: [],
+      sourceNote: "Consulte os dados de demonstração ou volte para a listagem de materiais."
+    }
   };
 }
 
 export function MaterialDetailReadOnlyClient({ materialId }: { materialId: string }) {
-  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: MaterialDetail }>(
+  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: MaterialDetail | null }>(
     buildFallback(materialId)
   );
 
@@ -45,6 +59,33 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
   }, [materialId]);
 
   const { connection, detail } = viewModel;
+
+  if (!detail) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>
+
+        <WorkspaceSourcePanel
+          eyebrow="material"
+          title="Item não encontrado"
+          subtitle="Este conteúdo não está disponível nesta sessão. Consulte os dados de demonstração ou volte para materiais."
+          connection={connection}
+        />
+
+        <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+          <CardTitle className="text-[1.8rem] leading-[1.04]">Consulte os materiais disponíveis</CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            A listagem real depende de sessão autenticada quando o backend estiver disponível. Enquanto isso,
+            a consulta local continua acessível nesta área.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
+            <WorkspaceLink href="/materials/upload">Enviar material</WorkspaceLink>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

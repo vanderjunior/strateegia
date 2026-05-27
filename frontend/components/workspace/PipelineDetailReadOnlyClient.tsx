@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
-import type { PipelineDetailViewModel } from "@/lib/api/types";
+import type { BackendConnectionInfo, PipelineDetailViewModel } from "@/lib/api/types";
 import { buildMockPipelineDetail, loadPipelineDetail } from "@/lib/adapters/pipeline";
 import { sourceLabel } from "@/lib/adapters/capabilities";
 import {
@@ -27,8 +27,22 @@ function toneClass(tone: PipelineDetailViewModel["steps"][number]["tone"]): stri
   }
 }
 
+function buildFallback(documentId: string): { connection: BackendConnectionInfo; detail: PipelineDetailViewModel | null } {
+  return {
+    connection: {
+      state: "mock",
+      source: "mock",
+      title: "Dados de demonstração",
+      detail: "Consulta local exibida até existir leitura segura do backend para este material."
+    },
+    detail: buildMockPipelineDetail(documentId)
+  };
+}
+
 export function PipelineDetailReadOnlyClient({ documentId }: { documentId: string }) {
-  const [viewModel, setViewModel] = useState<PipelineDetailViewModel>(buildMockPipelineDetail(documentId));
+  const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: PipelineDetailViewModel | null }>(
+    buildFallback(documentId)
+  );
 
   useEffect(() => {
     let active = true;
@@ -42,39 +56,67 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
     };
   }, [documentId]);
 
+  const { connection, detail } = viewModel;
+
+  if (!detail) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>
+
+        <WorkspaceSourcePanel
+          eyebrow="pipeline"
+          title="Item não encontrado"
+          subtitle="Este conteúdo não está disponível nesta sessão. Consulte os dados de demonstração ou volte para materiais."
+          connection={connection}
+        />
+
+        <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+          <CardTitle className="text-[1.8rem] leading-[1.04]">Consulte os materiais disponíveis</CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            A listagem real depende de sessão autenticada quando o backend estiver disponível. Enquanto isso,
+            a consulta local continua acessível nesta área.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <WorkspaceBackLink href={`/materials/${documentId}`}>Voltar para o material</WorkspaceBackLink>
 
       <WorkspaceSourcePanel
         eyebrow="pipeline"
-        title={viewModel.title}
+        title={detail.title}
         subtitle="Acompanhe a linha do processamento com foco em extração, segmentação e revisão."
-        connection={viewModel.connection}
+        connection={connection}
       />
 
       <Card className="min-w-0">
         <div className="section-kicker">processamento</div>
         <CardTitle className="mt-5 break-words text-[1.8rem]">Linha do processamento</CardTitle>
         <div className="flex flex-wrap gap-2">
-          <Badge className={sourceBadgeClass(viewModel.source)}>{sourceLabel(viewModel.source)}</Badge>
-          <Badge className={productStatusClass(viewModel.extractionStatus)}>{viewModel.extractionStatus}</Badge>
-          <Badge className={productStatusClass(viewModel.reviewState)}>{viewModel.reviewState}</Badge>
+          <Badge className={sourceBadgeClass(detail.source)}>{sourceLabel(detail.source)}</Badge>
+          <Badge className={productStatusClass(detail.extractionStatus)}>{detail.extractionStatus}</Badge>
+          <Badge className={productStatusClass(detail.reviewState)}>{detail.reviewState}</Badge>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">seções</div>
-            <p className="mt-2 text-sm text-ink">{viewModel.sectionsCount ?? 0}</p>
+            <p className="mt-2 text-sm text-ink">{detail.sectionsCount ?? 0}</p>
           </div>
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">trechos</div>
-            <p className="mt-2 text-sm text-ink">{viewModel.chunksCount ?? 0}</p>
+            <p className="mt-2 text-sm text-ink">{detail.chunksCount ?? 0}</p>
           </div>
         </div>
       </Card>
 
       <section className="space-y-4">
-        {viewModel.steps.map((step, index) => (
+        {detail.steps.map((step, index) => (
           <Card key={step.id} className={`min-w-0 border ${toneClass(step.tone)}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
@@ -94,7 +136,7 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
         <div className="section-kicker">notas</div>
         <CardTitle className="mt-5 break-words text-[1.8rem]">Limites desta tela</CardTitle>
         <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-          {viewModel.notes.map((note) => (
+          {detail.notes.map((note) => (
             <li key={note}>• {note}</li>
           ))}
           <li>• Nenhum texto bruto do documento é exibido nesta tela.</li>

@@ -102,48 +102,34 @@ function buildSteps(state: BackendDocumentPipelineState): PipelineStep[] {
   ];
 }
 
-export function buildMockPipelineDetail(documentId: string): PipelineDetailViewModel {
-  const detail = pipelineDetailsById[documentId] ?? {
-    connection: baseConnection(),
-    documentId,
-    title: "Pipeline em validação",
-    source: "mock" as const,
-    extractionStatus: "Leitura em validação",
-    reviewState: "Precisa de revisão",
-    sectionsCount: null,
-    chunksCount: null,
-    notes: ["Nenhum detalhe adicional disponível ainda."],
-    steps: [
-      { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material registrado." },
-      { id: "extracted", label: "Texto extraído", statusLabel: "Validação pendente", tone: "pending", detail: "Leitura textual ainda não confirmada." },
-      { id: "segmented", label: "Segmentado", statusLabel: "Validação pendente", tone: "pending", detail: "Segmentação ainda não disponível." },
-      { id: "review", label: "Pronto para revisão", statusLabel: "Validação pendente", tone: "pending", detail: "Etapa de revisão ainda não liberada." }
-    ]
-  };
-
-  return cloneViewModel(detail);
+export function buildMockPipelineDetail(documentId: string): PipelineDetailViewModel | null {
+  const detail = pipelineDetailsById[documentId];
+  return detail ? cloneViewModel(detail) : null;
 }
 
-export async function loadPipelineDetail(documentId: string): Promise<PipelineDetailViewModel> {
+export async function loadPipelineDetail(documentId: string): Promise<{
+  connection: BackendConnectionInfo;
+  detail: PipelineDetailViewModel | null;
+}> {
   const config = getApiConfig();
   const fallback = buildMockPipelineDetail(documentId);
 
   if (config.forceMock) {
     return {
-      ...fallback,
       connection: baseConnection({
         title: "Dados de demonstração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este painel em demonstração local."
-      })
+        detail: "Este painel segue em dados de demonstração locais neste ambiente."
+      }),
+      detail: fallback
     };
   }
 
   if (!config.baseUrl) {
     return {
-      ...fallback,
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar consultar este pipeline com segurança."
-      })
+        detail: "A consulta local continua acessível enquanto este pipeline ainda não pode ser lido pelo backend neste ambiente."
+      }),
+      detail: fallback
     };
   }
 
@@ -157,23 +143,23 @@ export async function loadPipelineDetail(documentId: string): Promise<PipelineDe
   if (!pipelineResult.ok) {
     if (pipelineResult.status === 401) {
       return {
-        ...fallback,
         connection: {
           state: "auth_required",
           source: "backend",
           title: "Requer sessão",
           detail: "O pipeline real do material exige uma sessão válida para consulta protegida.",
           endpoint: `/api/materials/${documentId}/pipeline`
-        }
+        },
+        detail: fallback
       };
     }
     return {
-      ...fallback,
       connection: connectionFromFailure(
         pipelineResult.source,
         pipelineResult.error.message,
         `/api/materials/${documentId}/pipeline`
-      )
+      ),
+      detail: fallback
     };
   }
 
@@ -187,21 +173,30 @@ export async function loadPipelineDetail(documentId: string): Promise<PipelineDe
       detail: "O pipeline foi consultado no backend e resumido em linguagem de produto.",
       endpoint: `/api/materials/${documentId}/pipeline`
     },
-    documentId,
-    title: documentResult.ok ? documentResult.data.title : fallback.title,
-    source: "backend",
-    extractionStatus: pipeline.extraction_status.includes("ocr") ? "OCR em validação" : "Texto extraído",
-    reviewState:
-      pipeline.metadata_status === "ready" || pipeline.metadata_status === "metadata_ready"
-        ? "Pronto para revisão"
-        : pipeline.extraction_status.includes("ocr")
-          ? "OCR necessário"
-          : "Precisa de revisão",
-    sectionsCount: sectionsResult.ok ? sectionsResult.data.length : pipeline.section_count,
-    chunksCount: chunksResult.ok ? chunksResult.data.length : pipeline.chunk_count,
-    notes: pipeline.extraction_status.includes("ocr")
-      ? ["Este arquivo pode precisar de OCR antes da revisão."]
-      : ["Texto extraído sujeito a revisão."],
-    steps: buildSteps(pipeline)
+    detail: {
+      documentId,
+      title: documentResult.ok ? documentResult.data.title : fallback?.title ?? "Pipeline em validação",
+      source: "backend",
+      extractionStatus: pipeline.extraction_status.includes("ocr") ? "OCR em validação" : "Texto extraído",
+      reviewState:
+        pipeline.metadata_status === "ready" || pipeline.metadata_status === "metadata_ready"
+          ? "Pronto para revisão"
+          : pipeline.extraction_status.includes("ocr")
+            ? "OCR necessário"
+            : "Precisa de revisão",
+      sectionsCount: sectionsResult.ok ? sectionsResult.data.length : pipeline.section_count,
+      chunksCount: chunksResult.ok ? chunksResult.data.length : pipeline.chunk_count,
+      notes: pipeline.extraction_status.includes("ocr")
+        ? ["Este arquivo pode precisar de OCR antes da revisão."]
+        : ["Texto extraído sujeito a revisão."],
+      steps: buildSteps(pipeline),
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Backend disponível",
+        detail: "O pipeline foi consultado no backend e resumido em linguagem de produto.",
+        endpoint: `/api/materials/${documentId}/pipeline`
+      }
+    }
   };
 }

@@ -98,7 +98,8 @@ export function EditaisReadOnlyClient() {
           <div className="section-kicker">editais</div>
           <CardTitle className="mt-5 text-[1.8rem]">Nenhum edital para exibir ainda</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            O painel continua disponível para consulta e exibirá análises candidatas quando houver dados disponíveis.
+            Consulte os dados de demonstração enquanto a listagem real depende de sessão autenticada ou de leitura
+            disponível para esta área.
           </p>
         </Card>
       )}

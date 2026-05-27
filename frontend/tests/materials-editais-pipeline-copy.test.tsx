@@ -55,7 +55,15 @@ vi.mock("@/lib/adapters/pipeline", async () => {
 
   return {
     ...actual,
-    loadPipelineDetail: vi.fn(async (documentId: string) => actual.buildMockPipelineDetail(documentId))
+    loadPipelineDetail: vi.fn(async (documentId: string) => ({
+      connection: {
+        state: "mock",
+        source: "mock",
+        title: "Dados de demonstração",
+        detail: "Consulta local exibida até existir leitura segura do backend para este material."
+      },
+      detail: actual.buildMockPipelineDetail(documentId)
+    }))
   };
 });
 

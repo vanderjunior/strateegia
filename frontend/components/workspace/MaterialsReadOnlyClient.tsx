@@ -121,7 +121,7 @@ export function MaterialsReadOnlyClient() {
           <div className="section-kicker">materiais</div>
           <CardTitle className="mt-5 text-[1.8rem]">Nenhum material para exibir ainda</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            O painel continua disponível para consulta. O envio segue controlado e a leitura posterior continua sujeita
+            Envie um material para iniciar a validação. O envio segue controlado e a leitura posterior continua sujeita
             a revisão.
           </p>
         </Card>

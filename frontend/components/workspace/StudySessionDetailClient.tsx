@@ -64,16 +64,16 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
 
         <WorkspaceSourcePanel
           eyebrow="estudo / sessão"
-          title="Sessão sugerida não encontrada"
-          subtitle="Nenhuma sessão pôde ser exibida com este identificador. O guia segue disponível na área de estudo."
+          title="Item não encontrado"
+          subtitle="Este conteúdo não está disponível nesta sessão. O guia segue acessível na área de estudo."
           connection={connection}
         />
 
         <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
           <CardTitle className="text-[1.8rem] leading-[1.04]">Escolha outra sessão sugerida</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            Esta rota não altera seu progresso e não cria agenda automaticamente. Use a área de estudo
-            ou o mapa PSCPP para retomar a trilha sugerida.
+            Este conteúdo não está disponível nesta sessão. Consulte os dados de demonstração ou use a área de estudo
+            para retomar a trilha sugerida sem alterar seu progresso.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>

@@ -232,7 +232,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
       ...fallback,
       connection: baseConnection({
         title: "Dados de demonstração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta área em demonstração local."
+        detail: "Esta área segue em dados de demonstração locais neste ambiente."
       })
     };
   }
@@ -241,7 +241,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar consulta protegida quando disponível."
+        detail: "A consulta local continua acessível enquanto a leitura protegida do backend não está disponível neste ambiente."
       })
     };
   }
@@ -289,30 +289,14 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
   };
 }
 
-export function buildMockEditalDetail(editalId: string): EditalDetail {
-  const detail = editalDetailsById[editalId] ?? {
-    id: editalId,
-    title: "Edital em validação",
-    statusLabel: "Análise candidata",
-    topicsCount: 0,
-    bibliographyItemsCount: 0,
-    gapsCount: 0,
-    reviewState: "Precisa de conferência",
-    source: "mock" as const,
-    topicCandidates: [],
-    bibliographyCandidates: [],
-    coverageItems: cloneCoverage(editalCoverageItems),
-    gapItems: cloneGaps(editalGapItems),
-    warnings: ["Nenhum detalhe adicional disponível ainda."],
-    notes: ["Alinhamento preliminar sujeito a revisão."]
-  };
-
-  return cloneDetail(detail);
+export function buildMockEditalDetail(editalId: string): EditalDetail | null {
+  const detail = editalDetailsById[editalId];
+  return detail ? cloneDetail(detail) : null;
 }
 
 export async function loadEditalDetail(editalId: string): Promise<{
   connection: BackendConnectionInfo;
-  detail: EditalDetail;
+  detail: EditalDetail | null;
 }> {
   const config = getApiConfig();
   const fallback = buildMockEditalDetail(editalId);
@@ -321,7 +305,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
     return {
       connection: baseConnection({
         title: "Dados de demonstração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este edital em demonstração local."
+        detail: "Este edital segue em dados de demonstração locais neste ambiente."
       }),
       detail: fallback
     };
@@ -330,7 +314,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar consultar este edital com segurança."
+        detail: "A consulta local continua acessível enquanto este edital ainda não pode ser lido pelo backend neste ambiente."
       }),
       detail: fallback
     };

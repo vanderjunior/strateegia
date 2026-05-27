@@ -6,11 +6,13 @@ describe("pipeline adapter", () => {
   it("returns read-only user-facing timeline steps", () => {
     const textual = buildMockPipelineDetail("material-arte-naval");
     const scanned = buildMockPipelineDetail("material-roteiro-porto");
+    expect(textual).not.toBeNull();
+    expect(scanned).not.toBeNull();
 
-    expect(textual.steps.map((step) => step.label)).toEqual(
+    expect(textual?.steps.map((step) => step.label)).toEqual(
       expect.arrayContaining(["Enviado", "Texto extraído", "Segmentado", "Pronto para revisão"])
     );
-    expect(scanned.steps.some((step) => step.statusLabel.includes("OCR"))).toBe(true);
+    expect(scanned?.steps.some((step) => step.statusLabel.includes("OCR"))).toBe(true);
   });
 
   it("does not expose backend internals, raw text, or process actions", () => {
@@ -26,5 +28,9 @@ describe("pipeline adapter", () => {
     expect(payload).not.toContain(["base", "64"].join(""));
     expect(payload).not.toContain("Processar");
     expect(payload).not.toContain("Reprocessar");
+  });
+
+  it("returns null for an unknown pipeline detail id", () => {
+    expect(buildMockPipelineDetail("pipeline-desconhecido")).toBeNull();
   });
 });

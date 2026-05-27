@@ -13,7 +13,6 @@ import type {
   WorkspaceSummaryMetric
 } from "@/lib/api/types";
 import { materialDetailsById, materialsWorkspaceItems } from "@/lib/mock/mentorium-demo-data";
-import { getUserFacingCapability } from "@/lib/product/product-language";
 
 function cloneItems<T>(items: readonly T[]): T[] {
   return items.map((item) => ({ ...item }));
@@ -174,7 +173,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
       ...fallback,
       connection: baseConnection({
         title: "Dados de demonstração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta área em demonstração local."
+        detail: "Esta área segue em dados de demonstração locais neste ambiente."
       })
     };
   }
@@ -183,7 +182,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar consulta protegida quando disponível."
+        detail: "A consulta local continua acessível enquanto a leitura protegida do backend não está disponível neste ambiente."
       })
     };
   }
@@ -227,29 +226,14 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
   };
 }
 
-export function buildMockMaterialDetail(materialId: string): MaterialDetail {
-  const detail = materialDetailsById[materialId] ?? {
-    id: materialId,
-    title: "Material em validação",
-    typeLabel: getUserFacingCapability("document_pipeline", "student")?.label ?? "Material",
-    processingStatus: "Precisa de revisão",
-    extractionStatus: "Leitura em validação",
-    sectionsCount: null,
-    chunksCount: null,
-    reviewState: "Precisa de revisão",
-    source: "mock" as const,
-    relatedGaps: 0,
-    warnings: ["Nenhum detalhe adicional disponível ainda."],
-    sectionPreviews: [],
-    sourceNote: "Este material ainda não possui leitura detalhada disponível nesta área."
-  };
-
-  return cloneDetail(detail);
+export function buildMockMaterialDetail(materialId: string): MaterialDetail | null {
+  const detail = materialDetailsById[materialId];
+  return detail ? cloneDetail(detail) : null;
 }
 
 export async function loadMaterialDetail(materialId: string): Promise<{
   connection: BackendConnectionInfo;
-  detail: MaterialDetail;
+  detail: MaterialDetail | null;
 }> {
   const config = getApiConfig();
   const fallback = buildMockMaterialDetail(materialId);
@@ -258,7 +242,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
     return {
       connection: baseConnection({
         title: "Dados de demonstração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este material em demonstração local."
+        detail: "Este material segue em dados de demonstração locais neste ambiente."
       }),
       detail: fallback
     };
@@ -267,7 +251,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar consultar este material com segurança."
+        detail: "A consulta local continua acessível enquanto este material ainda não pode ser lido pelo backend neste ambiente."
       }),
       detail: fallback
     };
@@ -305,7 +289,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
   }
 
   const pipeline = pipelineResult.data;
-  const title = documentResult.ok ? documentResult.data.title : fallback.title;
+  const title = documentResult.ok ? documentResult.data.title : fallback?.title ?? "Material em validação";
   const detail: MaterialDetail = {
     id: materialId,
     title,
@@ -316,9 +300,9 @@ export async function loadMaterialDetail(materialId: string): Promise<{
     chunksCount: chunksResult.ok ? chunksResult.data.length : pipeline.chunk_count,
     reviewState: normalizeReviewState(pipeline),
     source: "backend",
-    relatedGaps: fallback.relatedGaps,
+    relatedGaps: fallback?.relatedGaps ?? 0,
     warnings: normalizeWarnings(pipeline),
-    sectionPreviews: sectionsResult.ok ? mapSectionPreview(sectionsResult.data) : fallback.sectionPreviews,
+    sectionPreviews: sectionsResult.ok ? mapSectionPreview(sectionsResult.data) : fallback?.sectionPreviews ?? [],
     sourceNote: "Dados lidos do backend em consulta segura e apresentados sem conteúdo bruto."
   };
 

@@ -28,16 +28,22 @@ describe("materials adapter", () => {
   it("returns safe detail previews and OCR warnings without raw content", () => {
     const scanned = buildMockMaterialDetail("material-roteiro-porto");
     const textual = buildMockMaterialDetail("material-arte-naval");
+    expect(scanned).not.toBeNull();
+    expect(textual).not.toBeNull();
     const payload = JSON.stringify({ scanned, textual });
 
-    expect(scanned.warnings.some((warning) => warning.includes("OCR"))).toBe(true);
-    expect(scanned.sectionPreviews.every((section) => Boolean(section.title))).toBe(true);
-    expect(textual.sectionPreviews.every((section) => Boolean(section.chunkRangeLabel))).toBe(true);
+    expect(scanned?.warnings.some((warning) => warning.includes("OCR"))).toBe(true);
+    expect(scanned?.sectionPreviews.every((section) => Boolean(section.title))).toBe(true);
+    expect(textual?.sectionPreviews.every((section) => Boolean(section.chunkRangeLabel))).toBe(true);
 
     expect(payload).not.toContain(["raw", "document", "body"].join(" "));
     expect(payload).not.toContain(["raw", "OCR", "text", "dump"].join(" "));
     expect(payload).not.toContain(["base", "64"].join(""));
     expect(payload).not.toContain("/Users/");
     expect(payload).not.toContain(["gaba", "rito"].join(""));
+  });
+
+  it("returns null for an unknown material detail id", () => {
+    expect(buildMockMaterialDetail("material-desconhecido")).toBeNull();
   });
 });
