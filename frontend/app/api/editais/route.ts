@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-import type {
-  BackendDashboardOverview,
-  BackendProtectedEditaisList,
-  BackendProtectedEditaisListItem
-} from "@/lib/api/types";
+import type { BackendProtectedEditaisList } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,46 +10,73 @@ function getBackendBaseUrl(): string | null {
   return value ? value.replace(/\/+$/, "") : null;
 }
 
-function coverageStatusForOverview(overview: BackendDashboardOverview): string {
-  if (!overview.alignment.alignment_available) {
+function toSafeNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function toSafeString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function statusLabelForReviewState(value: string): string {
+  if (value === "ready_for_review") {
+    return "Análise candidata";
+  }
+  return "Análise candidata";
+}
+
+function reviewLabelForState(value: string): string {
+  if (value === "ready_for_review") {
+    return "Pronto para revisão";
+  }
+  if (value === "pending") {
     return "Alinhamento preliminar";
   }
-  if (overview.alignment.gaps_detected > 0) {
+  return "Precisa de conferência";
+}
+
+function coverageLabelForState(value: string): string {
+  if (value === "good") {
+    return "Cobertura boa";
+  }
+  if (value === "gap_found") {
+    return "Gap encontrado";
+  }
+  if (value === "needs_material") {
+    return "Precisa de material";
+  }
+  if (value === "partial") {
     return "Cobertura parcial";
   }
-  return "Cobertura boa";
+  return "Alinhamento preliminar";
 }
 
-function buildItemFromOverview(overview: BackendDashboardOverview): BackendProtectedEditaisListItem | null {
-  if (!overview.edital.edital_available || !overview.edital.latest_edital_id) {
-    return null;
-  }
+function sanitizeEditaisList(payload: unknown): BackendProtectedEditaisList {
+  const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const rawItems = Array.isArray(raw.items) ? raw.items : [];
+  const items = rawItems.map((item) => {
+    const rawItem = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    const reviewState = toSafeString(rawItem.review_state);
+    const coverageStatus = toSafeString(rawItem.coverage_status);
 
-  const needsReview = Boolean(overview.edital.needs_review) || Boolean(overview.alignment.needs_review);
-
-  return {
-    edital_id: overview.edital.latest_edital_id,
-    title: "Edital analisado da sessão",
-    status: "Análise candidata",
-    review_state: needsReview ? "Precisa de conferência" : "Pronto para revisão",
-    topics_count: overview.edital.topics_detected ?? overview.alignment.topics_total ?? 0,
-    bibliography_count:
-      overview.edital.bibliography_items_detected ?? overview.alignment.bibliography_items_total ?? 0,
-    gaps_count: overview.alignment.gaps_detected,
-    coverage_status: coverageStatusForOverview(overview),
-    latest_document_id: overview.edital.latest_document_id ?? null
-  };
-}
-
-function sanitizeEditaisList(overview: BackendDashboardOverview): BackendProtectedEditaisList {
-  const item = buildItemFromOverview(overview);
-  const items = item ? [item] : [];
+    return {
+      edital_id: toSafeString(rawItem.edital_id),
+      title: toSafeString(rawItem.title) || "Edital analisado da sessão",
+      status: statusLabelForReviewState(reviewState),
+      review_state: reviewLabelForState(reviewState),
+      topics_count: toSafeNumber(rawItem.topics_count),
+      bibliography_count: toSafeNumber(rawItem.bibliography_count),
+      gaps_count: toSafeNumber(rawItem.gaps_count),
+      coverage_status: coverageLabelForState(coverageStatus),
+      latest_document_id: toSafeString(rawItem.document_id) || null
+    };
+  });
 
   return {
-    total_editais: items.length,
-    total_topics: item?.topics_count ?? 0,
-    total_bibliography_items: item?.bibliography_count ?? 0,
-    total_gaps: item?.gaps_count ?? 0,
+    total_editais: toSafeNumber(raw.count) || items.length,
+    total_topics: items.reduce((total, item) => total + item.topics_count, 0),
+    total_bibliography_items: items.reduce((total, item) => total + item.bibliography_count, 0),
+    total_gaps: items.reduce((total, item) => total + item.gaps_count, 0),
     items
   };
 }
@@ -69,7 +92,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const backendResponse = await fetch(`${baseUrl}/api/dashboard/overview`, {
+    const backendResponse = await fetch(`${baseUrl}/api/editais`, {
       method: "GET",
       headers: request.headers.get("cookie")
         ? {
@@ -89,8 +112,8 @@ export async function GET(request: Request) {
       });
     }
 
-    const overview = (await backendResponse.json()) as BackendDashboardOverview;
-    return NextResponse.json(sanitizeEditaisList(overview), { status: 200 });
+    const payload = await backendResponse.json();
+    return NextResponse.json(sanitizeEditaisList(payload), { status: 200 });
   } catch {
     return NextResponse.json(
       { detail: "Não foi possível conectar ao backend." },

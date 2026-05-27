@@ -68,14 +68,14 @@ describe("editais list API wrapper", () => {
             items: [
               {
                 edital_id: "edital-user-1",
+                latest_document_id: "doc-1",
                 title: "Edital analisado da sessão",
                 status: "Análise candidata",
                 review_state: "Precisa de conferência",
                 topics_count: 12,
                 bibliography_count: 8,
                 gaps_count: 3,
-                coverage_status: "Cobertura parcial",
-                latest_document_id: "doc-1"
+                coverage_status: "Cobertura parcial"
               }
             ]
           }),
