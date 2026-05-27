@@ -1,6 +1,21 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/adapters/session", () => ({
+  buildDefaultSessionState: vi.fn(() => ({
+    status: "unauthenticated",
+    label: "Sessão necessária",
+    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+    source: "backend"
+  })),
+  loadSessionState: vi.fn(async () => ({
+    status: "unauthenticated",
+    label: "Sessão necessária",
+    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+    source: "backend"
+  }))
+}));
+
 vi.mock("@/lib/adapters/dashboard", async () => {
   const actual = await vi.importActual<typeof import("@/lib/adapters/dashboard")>(
     "@/lib/adapters/dashboard"
@@ -35,6 +50,8 @@ describe("dashboard product language", () => {
     expect(screen.getAllByText("Questões candidatas").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Simulado em preparação").length).toBeGreaterThan(0);
     expect(screen.getByText("Consulta local")).toBeInTheDocument();
+    expect(screen.getAllByText("Requer sessão").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/dados reais da sessão/i)).not.toBeInTheDocument();
 
     expect(screen.queryByText(/ledger/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/guardrail/i)).not.toBeInTheDocument();

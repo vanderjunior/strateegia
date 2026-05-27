@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Card, CardTitle } from "@/components/ui/card";
+import { ProtectedReadPolicyNotice } from "@/components/layout/ProtectedReadPolicyNotice";
 import type { MaterialsWorkspaceViewModel } from "@/lib/api/types";
 import { buildMockMaterialsWorkspaceViewModel, loadMaterialsWorkspaceViewModel } from "@/lib/adapters/materials";
 import {
@@ -39,6 +40,8 @@ export function MaterialsReadOnlyClient() {
         subtitle="Acompanhe materiais adicionados, leitura segura e pontos que ainda exigem revisão."
         connection={viewModel.connection}
       />
+
+      <ProtectedReadPolicyNotice surfaceLabel="Materiais" />
 
       <Card className="min-w-0 border-[rgba(201,169,110,0.14)] bg-[rgba(255,255,255,0.02)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

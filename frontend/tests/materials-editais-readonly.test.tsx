@@ -1,6 +1,21 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/adapters/session", () => ({
+  buildDefaultSessionState: vi.fn(() => ({
+    status: "unauthenticated",
+    label: "Sessão necessária",
+    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+    source: "backend"
+  })),
+  loadSessionState: vi.fn(async () => ({
+    status: "unauthenticated",
+    label: "Sessão necessária",
+    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+    source: "backend"
+  }))
+}));
+
 vi.mock("@/lib/api/config", () => ({
   getApiConfig: vi.fn(() => ({
     baseUrl: "http://127.0.0.1:8000",
@@ -62,6 +77,7 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.getAllByText("Texto extraído").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pronto para revisão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("OCR necessário").length).toBeGreaterThan(0);
+    expect(screen.getByText("Requer sessão")).toBeInTheDocument();
 
     expect(screen.queryByText("Processar")).not.toBeInTheDocument();
     expect(screen.queryByText("Reprocessar")).not.toBeInTheDocument();
@@ -84,6 +100,7 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Gaps encontrados").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Cobertura parcial").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Requer sessão").length).toBeGreaterThan(0);
 
     expect(screen.queryByText("Ingerir edital")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();

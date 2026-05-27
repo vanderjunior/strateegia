@@ -133,6 +133,25 @@ export interface SessionState {
   userLabel?: string;
 }
 
+export type ProtectedReadMode =
+  | "real_authenticated"
+  | "requires_session"
+  | "demo"
+  | "backend_offline"
+  | "unsupported";
+
+export interface ProtectedReadPolicy {
+  mode: ProtectedReadMode;
+  label: "Dados reais da sessão" | "Requer sessão" | "Modo demonstração" | "Backend offline" | "Consulta local";
+  description: string;
+  badgeTone: "positive" | "warning" | "neutral" | "muted";
+  canUseRealData: boolean;
+  shouldShowDemoFallback: boolean;
+  shouldShowSessionRequired: boolean;
+  shouldAttemptProtectedRead: boolean;
+  recommendedUserCopy: string;
+}
+
 export interface BackendExamProfileSummary {
   format_summary?: string;
   timing_summary?: string;

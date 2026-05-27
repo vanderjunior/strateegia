@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { ProtectedReadPolicyNotice } from "@/components/layout/ProtectedReadPolicyNotice";
 import { Card, CardTitle } from "@/components/ui/card";
 import type { EditaisWorkspaceViewModel } from "@/lib/api/types";
 import { buildMockEditaisWorkspaceViewModel, loadEditaisWorkspaceViewModel } from "@/lib/adapters/editais";
@@ -38,6 +39,8 @@ export function EditaisReadOnlyClient() {
         subtitle="Revise tópicos candidatos, bibliografia identificada e gaps encontrados."
         connection={viewModel.connection}
       />
+
+      <ProtectedReadPolicyNotice surfaceLabel="Editais" />
 
       <WorkspaceSummaryGrid items={viewModel.summary} />
 

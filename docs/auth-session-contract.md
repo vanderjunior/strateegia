@@ -139,6 +139,28 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
   - no real user-scoped list integration yet
   - no provider integration yet
 
+## Protected Read UX Policy
+
+- Protected read surfaces now distinguish five frontend modes:
+  - `real_authenticated`
+  - `requires_session`
+  - `demo`
+  - `backend_offline`
+  - `unsupported`
+- Current product behavior:
+  - authenticated users may see real protected reads when the endpoint exists
+  - unauthenticated users are shown `Requer sessão` and never told that personal data was loaded
+  - mock mode stays on `Dados de demonstração`
+  - backend offline keeps local/demo fallback without implying data loss
+  - unsupported environments stay on `Consulta local` or `Painel em validação`
+
+## Recommended Future Protected Read Strategy
+
+- Prefer same-origin Next proxies for protected browser reads when cookie or CORS behavior is ambiguous.
+- Avoid direct cross-origin cookie-backed protected reads unless the CORS/session contract is deliberately configured and documented.
+- Public GETs may remain direct when they do not depend on protected browser session state.
+- Keep the existing upload proxy as the reference pattern for authenticated browser-to-backend communication.
+
 ## Critical Gaps Before Real Auth UX
 
 1. No frontend login/logout/session-status UX.
