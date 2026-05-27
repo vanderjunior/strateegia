@@ -22,7 +22,7 @@ Backend-first study platform with deterministic artifacts, user-scoped JSON pers
 | Applied event ledger/idempotency | `implemented_and_tested` | `app/services/simulado_applied_event_ledger.py` records replay-safe, deduplicated applied-event entries from the minimal progress ledger apply. | Preserve as the auditable idempotency layer for downstream review. |
 | Propagation guardrail | `implemented_and_tested` | `app/services/simulado_propagation_guardrail.py` creates user-scoped readiness artifacts and candidate propagation targets without mutating ranking, retention, scheduler, study cycle, curriculum graph, or adaptive tuning. | Keep as readiness-only unless propagation is explicitly approved in the future. |
 | Controlled propagation apply | `implemented_and_tested` | `app/services/simulado_controlled_propagation_apply.py` records isolated controlled propagation ledger entries only. It is tested for idempotency, owner scope, no leakage, and no direct runtime mutation. | Keep ledger-only unless surface-specific propagation is explicitly approved later. |
-| Frontend | `partially_implemented` | The repo contains a static app shell under `app/static/` with an inspection page and a read-only dashboard. There is no Next.js/React frontend, no integrated TSX prototype, and no evidence of a production API client layer. | Build the frontend app shell and API client on top of the already-tested backend surfaces. |
+| Frontend | `partially_implemented` | The repo now includes a Next.js frontend under `frontend/` with landing, onboarding, dashboard, materials/editais/pipeline read-only workspaces, PSCPP guidance surfaces, study-session guidance, a same-origin upload proxy, and Vitest/RTL coverage. It remains guidance-first and backend-light, with controlled upload entry as the only existing write path. | Audit auth/session UX and connect real user-scoped backend lists before deploy/staging work. |
 | Persistence | `partially_implemented` | Persistence is currently JSON-store based through `app/repositories/json_store.py`. User scoping and many artifact types are well covered by tests, but services still depend directly on the JSON store implementation. | Introduce cleaner repository boundaries before attempting PostgreSQL. |
 | Deployment | `not_implemented` | The repo has no Docker image, staging config, cloud deployment config, or production packaging. Product/server readiness tests exist, but deploy infrastructure does not. | Add staging/deploy packaging after persistence and auth decisions are settled. |
 
@@ -35,15 +35,15 @@ Backend-first study platform with deterministic artifacts, user-scoped JSON pers
 - PSCPP question-style and PSCPP study-cycle profiles exist and are reusable as metadata layers.
 - Minimal progress ledger apply, applied event ledger, propagation guardrail, and controlled propagation apply are implemented with explicit no-leakage and no-broad-mutation safeguards.
 - Public answer key/gabarito exposure remains blocked across the tested simulado chain.
-- The repo includes local cookie-based auth plus a static read-only dashboard/inspection shell.
+- The repo includes local cookie-based auth plus a Next.js frontend with guidance-first dashboard, onboarding, PSCPP, materials/editais/pipeline, and study surfaces.
 
 ## What Still Needs Verification
 
 - Real scanned PDF support with a real OCR binary and representative documents.
 - Full automatic simulado generation from edital + bibliography/material into a complete executable prova with new questions.
 - Final question finalization and release behavior beyond blueprint/draft/assembly artifacts.
-- Frontend app shell integration beyond the static dashboard.
-- Backend API client integration for a modern frontend.
+- Auth/session UX and backend contract alignment for the existing frontend.
+- Real user-scoped backend list integration for the existing frontend.
 - Production-grade auth provider needs, if local auth is not enough for the intended product.
 - PostgreSQL migration readiness.
 - Deployment and staging readiness.
