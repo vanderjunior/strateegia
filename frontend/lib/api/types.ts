@@ -259,11 +259,17 @@ export interface BackendProtectedMaterialsListItem {
   document_id: string;
   display_filename: string;
   content_type: string;
-  status: string;
+  status?: string;
+  processing_status?: string;
   uploaded_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   extraction_status: string;
-  current_stage: string;
-  metadata_status: string;
+  current_stage?: string;
+  metadata_status?: string;
+  review_state?: string;
+  warnings_count?: number;
+  latest_pipeline_status?: string | null;
   chunk_count: number | null;
   section_count: number | null;
 }

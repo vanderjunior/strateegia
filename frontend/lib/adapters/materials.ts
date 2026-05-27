@@ -86,26 +86,30 @@ function fileTypeLabel(item: BackendProtectedMaterialsListItem): string {
   if (item.extraction_status.includes("ocr")) {
     return "PDF digitalizado";
   }
-  if (item.content_type === "text/markdown" || item.display_filename.toLowerCase().endsWith(".md")) {
+  if (item.content_type === "md" || item.content_type === "text/markdown" || item.display_filename.toLowerCase().endsWith(".md")) {
     return "Markdown";
   }
-  if (item.content_type === "text/plain" || item.display_filename.toLowerCase().endsWith(".txt")) {
+  if (item.content_type === "txt" || item.content_type === "text/plain" || item.display_filename.toLowerCase().endsWith(".txt")) {
     return "TXT";
   }
-  if (item.content_type.includes("pdf") || item.display_filename.toLowerCase().endsWith(".pdf")) {
+  if (item.content_type === "pdf" || item.content_type.includes("pdf") || item.display_filename.toLowerCase().endsWith(".pdf")) {
     return "PDF textual";
   }
   return "Material de apoio";
 }
 
 function mapProtectedMaterialItem(item: BackendProtectedMaterialsListItem): MaterialListItem {
-  const normalizedStatus = `${item.status} ${item.current_stage}`.toLowerCase();
+  const normalizedStatus = `${item.status ?? item.processing_status ?? ""} ${item.current_stage ?? item.latest_pipeline_status ?? ""}`.toLowerCase();
   const extraction = item.extraction_status.toLowerCase();
-  const metadataStatus = item.metadata_status.toLowerCase();
+  const metadataStatus = (item.metadata_status ?? item.review_state ?? "").toLowerCase();
 
   const processingStatus = extraction.includes("ocr")
     ? "OCR necessário"
-    : metadataStatus === "ready" || metadataStatus === "metadata_ready" || normalizedStatus.includes("metadata_ready")
+    : metadataStatus === "ready" ||
+        metadataStatus === "metadata_ready" ||
+        metadataStatus === "ready_for_review" ||
+        normalizedStatus.includes("metadata_ready") ||
+        normalizedStatus.includes("ready_for_review")
       ? "Material processado"
       : normalizedStatus.includes("uploaded") || normalizedStatus.includes("pending")
         ? "Recebido para validação"
@@ -119,7 +123,7 @@ function mapProtectedMaterialItem(item: BackendProtectedMaterialsListItem): Mate
 
   const reviewState = extraction.includes("ocr")
     ? "OCR em validação"
-    : metadataStatus === "ready" || metadataStatus === "metadata_ready"
+    : metadataStatus === "ready" || metadataStatus === "metadata_ready" || metadataStatus === "ready_for_review"
       ? "Pronto para revisão"
       : "Precisa de conferência";
 

@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 
-import type {
-  BackendDashboardOverview,
-  BackendDashboardPipelineStateItem,
-  BackendDashboardRecentMaterialItem,
-  BackendProtectedMaterialsList
-} from "@/lib/api/types";
+import type { BackendProtectedMaterialsList } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,33 +14,53 @@ function toSafeNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function sanitizeMaterialsList(overview: BackendDashboardOverview): BackendProtectedMaterialsList {
-  const statesByDocumentId = new Map<string, BackendDashboardPipelineStateItem>(
-    overview.document_pipeline.latest_pipeline_states.map((item) => [item.document_id, item])
-  );
+function toSafeString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function toSafeDateString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function sanitizeMaterialsList(payload: unknown): BackendProtectedMaterialsList {
+  const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const rawItems = Array.isArray(raw.items) ? raw.items : [];
+  const items = rawItems.map((item) => {
+    const rawItem = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    const processingStatus = toSafeString(rawItem.processing_status);
+    const latestPipelineStatus = toSafeString(rawItem.latest_pipeline_status);
+    const extractionStatus = toSafeString(rawItem.extraction_status);
+
+    return {
+      document_id: toSafeString(rawItem.document_id),
+      display_filename: toSafeString(rawItem.display_filename),
+      content_type: toSafeString(rawItem.content_type),
+      status: processingStatus,
+      uploaded_at: toSafeDateString(rawItem.created_at),
+      extraction_status: extractionStatus,
+      current_stage: latestPipelineStatus || processingStatus,
+      metadata_status: rawItem.review_state === "ready_for_review" ? "ready" : "not_ready",
+      chunk_count: toSafeNumber(rawItem.chunk_count),
+      section_count: toSafeNumber(rawItem.section_count)
+    };
+  });
+
+  const processedCount = items.filter((item) =>
+    ["ready_for_review", "text_extracted"].includes(item.status)
+  ).length;
+  const pendingCount = items.filter((item) =>
+    ["uploaded", "extraction_pending", "unknown"].includes(item.status)
+  ).length;
+  const ocrRequiredCount = items.filter((item) =>
+    item.status.includes("ocr") || item.extraction_status.includes("ocr")
+  ).length;
 
   return {
-    total_materials: overview.materials.total_materials,
-    processed_count: overview.materials.processed_count,
-    pending_count: overview.materials.pending_count,
-    ocr_required_count: overview.materials.ocr_required_count,
-    items: overview.materials.recent_materials.map((item: BackendDashboardRecentMaterialItem) => {
-      const state = statesByDocumentId.get(item.document_id);
-      const metadata = state?.metadata ?? {};
-
-      return {
-        document_id: item.document_id,
-        display_filename: item.display_filename,
-        content_type: item.content_type ?? "",
-        status: item.status ?? "",
-        uploaded_at: item.uploaded_at ?? null,
-        extraction_status: state?.extraction_status ?? "",
-        current_stage: state?.current_stage ?? "",
-        metadata_status: state?.metadata_status ?? "",
-        chunk_count: toSafeNumber(metadata.chunk_count),
-        section_count: toSafeNumber(metadata.section_count)
-      };
-    })
+    total_materials: toSafeNumber(raw.count) ?? items.length,
+    processed_count: processedCount,
+    pending_count: pendingCount,
+    ocr_required_count: ocrRequiredCount,
+    items
   };
 }
 
@@ -60,7 +75,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const backendResponse = await fetch(`${baseUrl}/api/dashboard/overview`, {
+    const backendResponse = await fetch(`${baseUrl}/api/materials`, {
       method: "GET",
       headers: request.headers.get("cookie")
         ? {
@@ -80,8 +95,8 @@ export async function GET(request: Request) {
       });
     }
 
-    const overview = (await backendResponse.json()) as BackendDashboardOverview;
-    return NextResponse.json(sanitizeMaterialsList(overview), { status: 200 });
+    const payload = await backendResponse.json();
+    return NextResponse.json(sanitizeMaterialsList(payload), { status: 200 });
   } catch {
     return NextResponse.json(
       { detail: "Não foi possível conectar ao backend." },

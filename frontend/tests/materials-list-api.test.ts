@@ -69,10 +69,10 @@ describe("materials list API wrapper", () => {
               {
                 document_id: "doc-1",
                 display_filename: "roteiro-porto.pdf",
-                content_type: "application/pdf",
-                status: "metadata_ready",
+                content_type: "pdf",
+                status: "ready_for_review",
                 uploaded_at: "2026-05-27T00:00:00Z",
-                extraction_status: "extracted",
+                extraction_status: "textual_pdf",
                 current_stage: "metadata_ready",
                 metadata_status: "ready",
                 chunk_count: 12,
