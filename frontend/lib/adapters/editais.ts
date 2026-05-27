@@ -1,10 +1,9 @@
 import { getApiConfig } from "@/lib/api/config";
-import { fetchEditalAlignment, fetchEditalById, fetchUserEditaisList } from "@/lib/api/editais";
+import { fetchEditalSummary, fetchUserEditaisList } from "@/lib/api/editais";
 import type {
   ApiSource,
-  BackendBibliographyAlignment,
   BackendConnectionInfo,
-  BackendEditalExtraction,
+  BackendEditalSummary,
   BackendProtectedEditaisListItem,
   CoverageItem,
   EditalDetail,
@@ -14,12 +13,9 @@ import type {
   WorkspaceSummaryMetric
 } from "@/lib/api/types";
 import {
-  editalCoverageItems,
   editalDetailsById,
-  editalGapItems,
   editaisWorkspaceItems
 } from "@/lib/mock/mentorium-demo-data";
-import { getUserFacingCapability } from "@/lib/product/product-language";
 
 function cloneItems<T>(items: readonly T[]): T[] {
   return items.map((item) => ({ ...item }));
@@ -147,82 +143,105 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
   });
 }
 
-function mapCoverageItem(coverage: BackendBibliographyAlignment["topic_coverage"][number]): CoverageItem {
-  let coverageLabel = "Cobertura parcial";
-  if (coverage.coverage_state === "covered") {
-    coverageLabel = "Cobertura boa";
-  } else if (coverage.coverage_state === "uncovered") {
-    coverageLabel = "Gap encontrado";
-  } else if (coverage.coverage_state === "weakly_covered") {
-    coverageLabel = "Precisa de material";
+function reviewLabelForState(value: string): string {
+  if (value === "ready_for_review") {
+    return "Pronto para revisão";
   }
-
-  return {
-    id: coverage.topic_id,
-    title: coverage.topic_title,
-    coverageLabel,
-    detail: "Alinhamento preliminar sujeito a revisão.",
-    source: "backend"
-  };
+  if (value === "pending") {
+    return "Alinhamento preliminar";
+  }
+  return "Precisa de conferência";
 }
 
-function mapGapItem(gap: BackendBibliographyAlignment["gaps"][number]): GapItem {
-  let detail = "Gap encontrado em alinhamento preliminar.";
-  let severityLabel = "Revisão necessária";
-
-  if (gap.gap_type === "ocr_required") {
-    detail = "O tópico depende de OCR ou revisão adicional antes de seguir.";
-    severityLabel = "OCR necessário";
-  } else if (gap.gap_type === "missing_bibliography_material") {
-    detail = "Ainda falta material para cobrir este ponto com segurança.";
-    severityLabel = "Precisa de material";
+function coverageLabelForState(value: string): string {
+  if (value === "good") {
+    return "Cobertura boa";
   }
-
-  return {
-    id: gap.gap_id,
-    title: gap.target_title,
-    detail,
-    severityLabel,
-    source: "backend"
-  };
+  if (value === "gap_found") {
+    return "Gap encontrado";
+  }
+  if (value === "needs_material") {
+    return "Precisa de material";
+  }
+  if (value === "partial") {
+    return "Cobertura parcial";
+  }
+  return "Alinhamento preliminar";
 }
 
-function buildDetailFromBackend(
-  editalId: string,
-  edital: BackendEditalExtraction,
-  alignment?: BackendBibliographyAlignment
-): EditalDetail {
-  const fallback = editalDetailsById[editalId];
-  const coverageItems = alignment?.topic_coverage.length
-    ? alignment.topic_coverage.slice(0, 6).map(mapCoverageItem)
-    : cloneCoverage(editalCoverageItems);
-  const gapItems = alignment?.gaps.length
-    ? alignment.gaps.slice(0, 6).map(mapGapItem)
-    : cloneGaps(editalGapItems);
+function alignmentLabelForState(value: string): string {
+  if (value === "aligned") {
+    return "Cobertura boa";
+  }
+  if (value === "partial") {
+    return "Cobertura parcial";
+  }
+  if (value === "needs_review") {
+    return "Revisão necessária";
+  }
+  if (value === "not_available") {
+    return "Precisa de conferência";
+  }
+  return "Alinhamento preliminar";
+}
+
+function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary): EditalDetail {
+  const reviewState = reviewLabelForState(summary.review_state);
+  const coverageLabel = coverageLabelForState(summary.coverage_status);
+  const alignmentLabel = alignmentLabelForState(summary.alignment_status);
 
   return {
     id: editalId,
-    title: fallback?.title ?? getUserFacingCapability("edital_ingestion", "student")?.label ?? "Edital analisado",
+    title: summary.title || "Edital analisado",
     statusLabel: "Análise candidata",
-    topicsCount: edital.topics.length,
-    bibliographyItemsCount: edital.bibliography.length,
-    gapsCount: gapItems.length,
-    reviewState:
-      edital.warnings.length || gapItems.length ? "Precisa de conferência" : "Pronto para revisão",
+    topicsCount: summary.topics_count,
+    bibliographyItemsCount: summary.bibliography_count,
+    gapsCount: summary.gaps_count,
+    reviewState,
     source: "backend",
-    topicCandidates: edital.topics.slice(0, 8).map((topic) => topic.title),
-    bibliographyCandidates: edital.bibliography
-      .slice(0, 8)
-      .map((item) => item.title?.trim() || item.raw_reference),
-    coverageItems,
-    gapItems,
+    topicCandidates: summary.summary.has_topics
+      ? [`${summary.topics_count} tópicos candidatos identificados`]
+      : [],
+    bibliographyCandidates: summary.summary.has_bibliography
+      ? [`${summary.bibliography_count} referências identificadas para conferência`]
+      : [],
+    coverageItems: [
+      {
+        id: `${summary.edital_id}:coverage`,
+        title: "Cobertura do edital",
+        coverageLabel,
+        detail: "Resumo de cobertura calculado por metadados seguros e sujeito a revisão.",
+        source: "backend"
+      },
+      {
+        id: `${summary.edital_id}:alignment`,
+        title: "Alinhamento da bibliografia",
+        coverageLabel: alignmentLabel,
+        detail: "Alinhamento preliminar sem evidências ou trechos brutos nesta tela.",
+        source: "backend"
+      }
+    ],
+    gapItems: summary.summary.has_gaps
+      ? [
+          {
+            id: `${summary.edital_id}:gaps`,
+            title: `${summary.gaps_count} gaps encontrados`,
+            detail: "Os gaps indicam pontos que precisam de cobertura ou conferência antes de orientar o estudo.",
+            severityLabel: "Revisão necessária",
+            source: "backend"
+          }
+        ]
+      : [],
     warnings: [
-      "Os tópicos exibidos são candidatos e ainda precisam de conferência.",
-      ...edital.warnings.slice(0, 3).map((warning) => warning.message)
+      "Este resumo mostra apenas metadados seguros do edital.",
+      summary.summary.needs_review
+        ? "A análise candidata precisa de conferência antes de orientar decisões finais."
+        : "Mesmo quando pronto para revisão, o edital deve ser conferido antes de uso final.",
+      `${summary.warnings_count} avisos registrados para revisão.`
     ],
     notes: [
       "Alinhamento preliminar sujeito a revisão.",
-      "A bibliografia apresentada não deve ser tratada como verdade final sem conferência humana."
+      "Esta tela não exibe texto bruto, evidências ou bibliografia completa do edital."
     ]
   };
 }
@@ -334,40 +353,51 @@ export async function loadEditalDetail(editalId: string): Promise<{
     };
   }
 
-  const editalResult = await fetchEditalById(editalId);
+  const editalResult = await fetchEditalSummary(editalId);
   if (!editalResult.ok) {
-    if (editalResult.status === 401) {
+    if (editalResult.status === 404) {
+      return {
+        connection: {
+          state: "error",
+          source: "backend",
+          title: "Item não encontrado",
+          detail: "Este conteúdo não está disponível nesta sessão.",
+          endpoint: `/api/editais/${editalId}/summary`
+        },
+        detail: null
+      };
+    }
+    if (editalResult.status === 401 || editalResult.status === 403) {
       return {
         connection: {
           state: "auth_required",
           source: "backend",
           title: "Requer sessão",
           detail: "Os detalhes reais do edital exigem uma sessão válida para consulta protegida.",
-          endpoint: `/api/edital/${editalId}`
+          endpoint: `/api/editais/${editalId}/summary`
         },
         detail: fallback
       };
     }
     return {
-      connection: connectionFromFailure(editalResult.source, editalResult.error.message, `/api/edital/${editalId}`),
+      connection: connectionFromFailure(
+        editalResult.source,
+        editalResult.error.message,
+        `/api/editais/${editalId}/summary`
+      ),
       detail: fallback
     };
   }
 
-  const alignmentResult = await fetchEditalAlignment(editalId);
-  const detail = buildDetailFromBackend(
-    editalId,
-    editalResult.data,
-    alignmentResult.ok ? alignmentResult.data : undefined
-  );
+  const detail = buildDetailFromSummary(editalId, editalResult.data);
 
   return {
     connection: {
       state: "connected",
       source: "backend",
-      title: "Backend disponível",
-      detail: "Este edital foi consultado no backend e continua marcado como análise preliminar.",
-      endpoint: `/api/edital/${editalId}`
+      title: "Dados reais da sessão",
+      detail: "Este resumo do edital usa metadados seguros da sua sessão e continua marcado como análise preliminar.",
+      endpoint: `/api/editais/${editalId}/summary`
     },
     detail
   };

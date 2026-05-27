@@ -190,7 +190,15 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
   - it exposes safe edital and alignment metadata only
   - the Next proxy still whitelists fields before returning data to the browser
 - Current limitation:
-  - edital detail and alignment detail still use their existing read paths; only the overview proxy has moved to the dedicated list endpoint
+  - alignment action/detail flows still use their existing read paths; the overview proxy has moved to the dedicated list endpoint
+
+## SummaryProxy-D Strategy
+
+- Edital detail now uses a same-origin proxy at `GET /api/editais/{editalId}/summary` in Next.
+- The proxy reads backend `GET /api/editais/{edital_id}/summary`, forwards the browser cookie server-side, and returns only bounded summary metadata.
+- The detail adapter maps that summary into product-facing copy without raw edital text, evidence snippets, or bibliography bodies.
+- Current limitation:
+  - material detail is not migrated yet and remains a separate follow-up phase
 
 ## Critical Gaps Before Real Auth UX
 

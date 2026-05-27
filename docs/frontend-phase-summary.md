@@ -18,11 +18,13 @@
 - `/study`
 - `/study/session/[sessionId]`
 - `/api/materials/upload`
+- `/api/editais/[editalId]/summary`
 
 ## Current Capabilities
 
 - Landing, onboarding, and dashboard aligned to the real frontend journey.
 - Read-only materials, editais, and pipeline workspaces with backend/mock/offline fallback states.
+- Real user-scoped materials/editais lists and edital summary detail reads use bounded protected endpoints through same-origin proxies.
 - Controlled upload entry using the existing same-origin upload proxy path.
 - PSCPP guidance workspace with profile overview, cycle, map, and question guidance.
 - Study workspace with suggested sessions and dashboard study bridge.
@@ -33,7 +35,7 @@
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
-- Real user-scoped materials/editais lists are not fully integrated yet.
+- Material detail still has not been migrated to the bounded summary read endpoint.
 - Auth/session UX is not finished for end users.
 
 ## Validation Commands

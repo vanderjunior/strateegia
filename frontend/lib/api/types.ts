@@ -302,6 +302,28 @@ export interface BackendProtectedEditaisList {
   items: BackendProtectedEditaisListItem[];
 }
 
+export interface BackendEditalSummary {
+  edital_id: string;
+  document_id: string | null;
+  title: string;
+  created_at: string | null;
+  updated_at: string | null;
+  topics_count: number;
+  bibliography_count: number;
+  gaps_count: number;
+  review_state: string;
+  coverage_status: string;
+  alignment_status: string;
+  warnings_count: number;
+  summary: {
+    has_topics: boolean;
+    has_bibliography: boolean;
+    has_gaps: boolean;
+    needs_review: boolean;
+  };
+  source: "user_scope";
+}
+
 export interface BackendDocumentSummary {
   id: string;
   title: string;

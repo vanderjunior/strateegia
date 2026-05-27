@@ -9,6 +9,7 @@ vi.mock("@/lib/api/editais", async () => {
 
   return {
     ...actual,
+    fetchEditalSummary: vi.fn(),
     fetchUserEditaisList: vi.fn()
   };
 });
@@ -16,10 +17,11 @@ vi.mock("@/lib/api/editais", async () => {
 import {
   buildMockEditalDetail,
   buildMockEditaisWorkspaceViewModel,
+  loadEditalDetail,
   loadEditaisWorkspaceViewModel
 } from "@/lib/adapters/editais";
 import { getApiConfig } from "@/lib/api/config";
-import { fetchUserEditaisList } from "@/lib/api/editais";
+import { fetchEditalSummary, fetchUserEditaisList } from "@/lib/api/editais";
 
 describe("editais adapter", () => {
   beforeEach(() => {
@@ -28,6 +30,7 @@ describe("editais adapter", () => {
       forceMock: false
     });
     vi.mocked(fetchUserEditaisList).mockReset();
+    vi.mocked(fetchEditalSummary).mockReset();
   });
 
   it("returns a mock-first edital overview with cautious product language", () => {
@@ -165,5 +168,91 @@ describe("editais adapter", () => {
 
     expect(viewModel.connection.title).toContain("demonstração");
     expect(fetchUserEditaisList).not.toHaveBeenCalled();
+  });
+
+  it("uses real bounded edital summary for authenticated detail", async () => {
+    vi.mocked(fetchEditalSummary).mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        edital_id: "edital-user-1",
+        document_id: "doc-1",
+        title: "Edital analisado da sessão",
+        created_at: "2026-05-27T00:00:00Z",
+        updated_at: "2026-05-27T00:05:00Z",
+        topics_count: 12,
+        bibliography_count: 8,
+        gaps_count: 3,
+        review_state: "needs_review",
+        coverage_status: "partial",
+        alignment_status: "needs_review",
+        warnings_count: 2,
+        summary: {
+          has_topics: true,
+          has_bibliography: true,
+          has_gaps: true,
+          needs_review: true
+        },
+        source: "user_scope",
+        raw_edital_text: "não deve aparecer",
+        evidence: "não deve aparecer",
+        storage_path: "/Users/private/edital.md"
+      } as never
+    });
+
+    const viewModel = await loadEditalDetail("edital-user-1");
+    const payload = JSON.stringify(viewModel);
+
+    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.endpoint).toBe("/api/editais/edital-user-1/summary");
+    expect(viewModel.detail).toMatchObject({
+      id: "edital-user-1",
+      title: "Edital analisado da sessão",
+      statusLabel: "Análise candidata",
+      reviewState: "Precisa de conferência",
+      topicsCount: 12,
+      bibliographyItemsCount: 8,
+      gapsCount: 3,
+      source: "backend"
+    });
+    expect(payload).not.toContain("raw_edital_text");
+    expect(payload).not.toContain("evidence");
+    expect(payload).not.toContain("storage_path");
+    expect(payload).not.toContain("/Users/");
+  });
+
+  it("keeps safe fallback when edital summary requires session", async () => {
+    vi.mocked(fetchEditalSummary).mockResolvedValue({
+      ok: false,
+      status: 401,
+      source: "backend",
+      error: {
+        code: "unauthorized",
+        message: "Sessão necessária."
+      }
+    });
+
+    const viewModel = await loadEditalDetail("edital-pscpp-referencia");
+
+    expect(viewModel.connection.title).toBe("Requer sessão");
+    expect(viewModel.detail?.source).toBe("mock");
+  });
+
+  it("returns friendly not-found state when edital summary is outside the session", async () => {
+    vi.mocked(fetchEditalSummary).mockResolvedValue({
+      ok: false,
+      status: 404,
+      source: "backend",
+      error: {
+        code: "not_found",
+        message: "Este conteúdo não está disponível nesta sessão."
+      }
+    });
+
+    const viewModel = await loadEditalDetail("edital-fora-da-sessao");
+
+    expect(viewModel.connection.title).toBe("Item não encontrado");
+    expect(viewModel.detail).toBeNull();
   });
 });
