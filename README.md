@@ -57,6 +57,15 @@ Backend-first study platform with deterministic artifacts, user-scoped JSON pers
 - Automatic scheduling, calendar mutation, or forced study plans.
 - Public SaaS packaging, pricing, and payment flows.
 
+## Inspection Server Mode
+
+- `APP_ENV` controls the server mode: `development`, `test`, or `production`.
+- `ENABLE_INSPECTION` controls whether the internal inspection surface is enabled.
+- `REQUIRE_AUTH_FOR_INSPECTION` controls whether inspection routes require authentication.
+- `INSPECTION_ALLOWED_IN_PRODUCTION` is required before inspection can stay enabled in producao.
+- In local debug and test usage, inspection can stay available for internal diagnostics.
+- In production, inspection should remain blocked or explicitly protected.
+
 ## Key Docs
 
 - [PSCPP question style profile](docs/exam-profiles/pscpp-question-style.md)
