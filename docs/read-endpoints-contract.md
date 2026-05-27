@@ -156,7 +156,6 @@ Implemented shape:
       "title": "Edital analisado da sessão",
       "created_at": "2026-05-27T00:00:00Z",
       "updated_at": "2026-05-27T00:05:00Z",
-      "status": "ready_for_review",
       "review_state": "review_required",
       "topics_count": 12,
       "bibliography_count": 8,
@@ -177,7 +176,6 @@ Allowed fields:
 - `title`
 - `created_at`
 - `updated_at`
-- `status`
 - `review_state`
 - `topics_count`
 - `bibliography_count`
