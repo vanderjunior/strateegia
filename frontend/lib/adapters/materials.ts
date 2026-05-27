@@ -1,11 +1,11 @@
 import { getApiConfig } from "@/lib/api/config";
-import { fetchDocumentById } from "@/lib/api/documents";
+import { fetchDocumentById, fetchUserMaterialsList } from "@/lib/api/documents";
 import { fetchMaterialChunks, fetchMaterialPipelineState, fetchMaterialSections } from "@/lib/api/pipeline";
-import { fetchDashboardOverview } from "@/lib/api/runtime";
 import type {
   ApiSource,
   BackendConnectionInfo,
   BackendDocumentPipelineState,
+  BackendProtectedMaterialsListItem,
   BackendDocumentSection,
   MaterialDetail,
   MaterialsWorkspaceViewModel,
@@ -76,6 +76,65 @@ function mockSummary(items: MaterialListItem[]): WorkspaceSummaryMetric[] {
   const readyForReview = items.filter((item) => item.reviewState === "Pronto para revisão").length;
   const relatedGaps = items.reduce((total, item) => total + item.relatedGaps, 0);
   return workspaceSummary(processed, ocrRequired, readyForReview, relatedGaps);
+}
+
+function trimFileExtension(filename: string): string {
+  return filename.replace(/\.[a-z0-9]+$/i, "");
+}
+
+function fileTypeLabel(item: BackendProtectedMaterialsListItem): string {
+  if (item.extraction_status.includes("ocr")) {
+    return "PDF digitalizado";
+  }
+  if (item.content_type === "text/markdown" || item.display_filename.toLowerCase().endsWith(".md")) {
+    return "Markdown";
+  }
+  if (item.content_type === "text/plain" || item.display_filename.toLowerCase().endsWith(".txt")) {
+    return "TXT";
+  }
+  if (item.content_type.includes("pdf") || item.display_filename.toLowerCase().endsWith(".pdf")) {
+    return "PDF textual";
+  }
+  return "Material de apoio";
+}
+
+function mapProtectedMaterialItem(item: BackendProtectedMaterialsListItem): MaterialListItem {
+  const normalizedStatus = `${item.status} ${item.current_stage}`.toLowerCase();
+  const extraction = item.extraction_status.toLowerCase();
+  const metadataStatus = item.metadata_status.toLowerCase();
+
+  const processingStatus = extraction.includes("ocr")
+    ? "OCR necessário"
+    : metadataStatus === "ready" || metadataStatus === "metadata_ready" || normalizedStatus.includes("metadata_ready")
+      ? "Material processado"
+      : normalizedStatus.includes("uploaded") || normalizedStatus.includes("pending")
+        ? "Recebido para validação"
+        : "Precisa de conferência";
+
+  const extractionStatus = extraction.includes("ocr")
+    ? "OCR em validação"
+    : extraction === "extracted" || extraction === "sectioned" || extraction === "chunked"
+      ? "Texto extraído"
+      : "Leitura em validação";
+
+  const reviewState = extraction.includes("ocr")
+    ? "OCR em validação"
+    : metadataStatus === "ready" || metadataStatus === "metadata_ready"
+      ? "Pronto para revisão"
+      : "Precisa de conferência";
+
+  return {
+    id: item.document_id,
+    title: trimFileExtension(item.display_filename),
+    typeLabel: fileTypeLabel(item),
+    processingStatus,
+    extractionStatus,
+    sectionsCount: item.section_count,
+    chunksCount: item.chunk_count,
+    reviewState,
+    source: "backend",
+    relatedGaps: 0
+  };
 }
 
 function connectionFromFailure(source: ApiSource, message: string, endpoint: string): BackendConnectionInfo {
@@ -187,9 +246,9 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     };
   }
 
-  const overviewResult = await fetchDashboardOverview();
-  if (!overviewResult.ok) {
-    if (overviewResult.status === 401) {
+  const materialsResult = await fetchUserMaterialsList();
+  if (!materialsResult.ok) {
+    if (materialsResult.status === 401 || materialsResult.status === 403) {
       return {
         ...fallback,
         connection: {
@@ -197,32 +256,36 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
           source: "backend",
           title: "Requer sessão",
           detail:
-            "O backend está disponível, mas a visão de materiais exige uma sessão válida no navegador.",
-          endpoint: "/api/dashboard/overview"
+            "Entre para usar a listagem real de materiais. Enquanto isso, os dados de demonstração seguem disponíveis.",
+          endpoint: "/api/materials"
         }
       };
     }
     return {
       ...fallback,
-      connection: connectionFromFailure(overviewResult.source, overviewResult.error.message, "/api/dashboard/overview")
+      connection: connectionFromFailure(materialsResult.source, materialsResult.error.message, "/api/materials")
     };
   }
+
+  const items = materialsResult.data.items.map(mapProtectedMaterialItem);
 
   return {
     ...fallback,
     connection: {
       state: "connected",
       source: "backend",
-      title: "Backend disponível",
-      detail: "Os contadores vieram do backend. A lista detalhada continua em dados auditados de demonstração.",
-      endpoint: "/api/dashboard/overview"
+      title: "Dados reais da sessão",
+      detail:
+        "A listagem abaixo mostra os materiais recentes da sua sessão. O fallback auditado continua disponível para campos ainda não entregues pelo backend.",
+      endpoint: "/api/materials"
     },
     summary: workspaceSummary(
-      overviewResult.data.materials.processed_count,
-      overviewResult.data.materials.ocr_required_count,
-      overviewResult.data.document_pipeline.sectioned_count,
-      overviewResult.data.alignment.gaps_detected
-    )
+      materialsResult.data.processed_count,
+      materialsResult.data.ocr_required_count,
+      items.filter((item) => item.reviewState === "Pronto para revisão").length,
+      items.reduce((total, item) => total + item.relatedGaps, 0)
+    ),
+    items
   };
 }
 

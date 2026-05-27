@@ -188,6 +188,7 @@ export interface BackendDashboardOverview {
   };
   materials: {
     total_materials: number;
+    recent_materials: BackendDashboardRecentMaterialItem[];
     processed_count: number;
     pending_count: number;
     ocr_required_count: number;
@@ -197,6 +198,7 @@ export interface BackendDashboardOverview {
     extracted_count: number;
     chunked_count: number;
     sectioned_count: number;
+    latest_pipeline_states: BackendDashboardPipelineStateItem[];
   };
   edital: {
     edital_available: boolean;
@@ -223,6 +225,46 @@ export interface BackendDashboardOverview {
     question_slot_count: number;
     readiness_state: string;
   };
+}
+
+export interface BackendDashboardRecentMaterialItem {
+  document_id: string;
+  display_filename: string;
+  content_type?: string;
+  status?: string;
+  uploaded_at?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BackendDashboardPipelineStateItem {
+  document_id: string;
+  display_filename: string;
+  current_stage?: string;
+  extraction_status?: string;
+  metadata_status?: string;
+  updated_at?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BackendProtectedMaterialsListItem {
+  document_id: string;
+  display_filename: string;
+  content_type: string;
+  status: string;
+  uploaded_at?: string | null;
+  extraction_status: string;
+  current_stage: string;
+  metadata_status: string;
+  chunk_count: number | null;
+  section_count: number | null;
+}
+
+export interface BackendProtectedMaterialsList {
+  total_materials: number;
+  processed_count: number;
+  pending_count: number;
+  ocr_required_count: number;
+  items: BackendProtectedMaterialsListItem[];
 }
 
 export interface BackendDocumentSummary {

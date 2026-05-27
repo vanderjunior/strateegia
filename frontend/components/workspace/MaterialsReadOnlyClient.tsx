@@ -124,8 +124,9 @@ export function MaterialsReadOnlyClient() {
           <div className="section-kicker">materiais</div>
           <CardTitle className="mt-5 text-[1.8rem]">Nenhum material para exibir ainda</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            Envie um material para iniciar a validação. O envio segue controlado e a leitura posterior continua sujeita
-            a revisão.
+            {viewModel.connection.state === "connected" && viewModel.connection.source === "backend"
+              ? "Nenhum material foi encontrado na sua sessão até agora. Você pode enviar um material para iniciar a validação controlada."
+              : "Envie um material para iniciar a validação. O envio segue controlado e a leitura posterior continua sujeita a revisão."}
           </p>
         </Card>
       )}

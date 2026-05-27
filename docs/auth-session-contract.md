@@ -161,6 +161,17 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - Public GETs may remain direct when they do not depend on protected browser session state.
 - Keep the existing upload proxy as the reference pattern for authenticated browser-to-backend communication.
 
+## Materials-A Strategy
+
+- The first real protected read surface uses a same-origin proxy at `GET /api/materials` in Next.
+- The proxy reads backend `GET /api/dashboard/overview`, forwards the browser cookie server-side, and returns only a bounded materials list payload.
+- Rationale:
+  - `GET /api/dashboard/overview` is already auth-required and user-scoped
+  - it exposes safe material metadata through `recent_materials` and `latest_pipeline_states`
+  - it avoids exposing raw document excerpts, OCR dumps, answer keys, or storage paths to the browser
+- Current limitation:
+  - the real frontend list is based on recent session materials exposed by the dashboard overview contract, not yet on a dedicated full materials listing endpoint
+
 ## Critical Gaps Before Real Auth UX
 
 1. No frontend login/logout/session-status UX.
