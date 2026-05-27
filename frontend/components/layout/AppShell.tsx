@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { MentoriumLogo } from "@/components/brand/MentoriumLogo";
+import { SessionStatusNotice } from "@/components/layout/SessionStatusNotice";
 import { Badge } from "@/components/ui/badge";
 
 const navigationItems = [
@@ -43,7 +44,7 @@ function headerCopy(pathname: string) {
   }
   if (pathname.startsWith("/study/session")) {
     return {
-      eyebrow: "mentorium / estudo / sessao",
+      eyebrow: "mentorium / estudo / sessão",
       title: "Sessão sugerida"
     };
   }
@@ -97,6 +98,7 @@ export function AppShell({ children }: PropsWithChildren) {
             <p className="max-w-[220px] text-sm leading-6 text-silver">
               Painel de produto em modo experimental, refletindo apenas o que já foi validado na plataforma.
             </p>
+            <SessionStatusNotice />
           </div>
           <nav className="mt-10 space-y-2">
             {navigationItems.map((item) => {

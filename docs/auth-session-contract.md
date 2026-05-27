@@ -112,6 +112,33 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
   - read-only surfaces mostly degrade to mock/audited fallback
   - upload is the only frontend write path that explicitly surfaces auth-required messaging today
 
+## Auth-B Frontend Session Foundation
+
+- The frontend now reads session status through a same-origin proxy:
+  - `GET /api/auth/me` in Next proxies to backend `GET /api/auth/me`
+  - incoming cookies are forwarded without exposing cookie values in the UI
+- Frontend session states are normalized to:
+  - `authenticated`
+  - `unauthenticated`
+  - `backend_offline`
+  - `mock_mode`
+  - `unsupported`
+- Product-facing labels:
+  - `Sessão ativa`
+  - `Sessão necessária`
+  - `Backend offline`
+  - `Modo demonstração`
+  - `Sessão não configurada`
+- Current UX scope:
+  - AppShell shows a non-blocking session indicator
+  - dashboard shows a small session-aware explanation
+  - upload keeps its existing auth-required messaging
+- Current non-goals:
+  - no login/logout UX yet
+  - no route guards yet
+  - no real user-scoped list integration yet
+  - no provider integration yet
+
 ## Critical Gaps Before Real Auth UX
 
 1. No frontend login/logout/session-status UX.
@@ -134,23 +161,17 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 
 ## Recommended Auth-B Scope
 
-- Keep backend behavior unchanged at first.
-- Add frontend session-awareness, not a full provider yet.
-- Recommended Auth-B scope:
-  - define one canonical session source for the Next frontend
-  - wire a lightweight current-user/session-status call around `GET /api/auth/me`
-  - decide how authenticated frontend reads should reach backend:
-    - same-origin proxy for authenticated GETs, or
-    - explicit CORS/cookie contract if cross-origin is intended
-  - add app-shell session states:
-    - authenticated
-    - unauthenticated
-    - backend offline
-    - mock/demo
-  - add safe UX around protected views:
-    - `Requer sessão`
-    - fallback to audited demo only where product-approved
-  - keep upload behavior unchanged except for clearer shared session-state UX
+Auth-B is now partially implemented as the frontend session foundation:
+
+- one canonical session read exists for the Next frontend through same-origin `GET /api/auth/me`
+- app-shell session states are visible without blocking navigation
+- upload continues to surface `Sessão necessária` on protected write failure
+
+Remaining Auth-B scope:
+
+- decide whether future authenticated reads should also move behind same-origin proxies
+- add a lightweight current-user/session bootstrap for broader app data flows if needed
+- define when protected read surfaces should show `Requer sessão` versus audited demo fallback
 
 ## Explicit Non-goals
 

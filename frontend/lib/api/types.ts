@@ -105,6 +105,34 @@ export interface DashboardViewModel {
   capabilityItems: CapabilityStatusItem[];
 }
 
+export interface BackendSessionUser {
+  user_id?: string | null;
+  username?: string | null;
+  display_name?: string | null;
+  email?: string | null;
+}
+
+export interface BackendCurrentSession {
+  authenticated: boolean;
+  user: BackendSessionUser | null;
+}
+
+export type SessionStateStatus =
+  | "authenticated"
+  | "unauthenticated"
+  | "backend_offline"
+  | "mock_mode"
+  | "unsupported";
+
+export interface SessionState {
+  status: SessionStateStatus;
+  label: "Sessão ativa" | "Sessão necessária" | "Backend offline" | "Modo demonstração" | "Sessão não configurada";
+  description: string;
+  source: ApiSource;
+  userId?: string;
+  userLabel?: string;
+}
+
 export interface BackendExamProfileSummary {
   format_summary?: string;
   timing_summary?: string;

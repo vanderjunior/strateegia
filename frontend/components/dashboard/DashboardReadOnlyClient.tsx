@@ -9,6 +9,7 @@ import { DocumentStatusCards } from "@/components/dashboard/DocumentStatusCards"
 import { PSCPPProfileCards } from "@/components/dashboard/PSCPPProfileCards";
 import { RuntimeStatusCards } from "@/components/dashboard/RuntimeStatusCards";
 import { StudyOverviewCards } from "@/components/dashboard/StudyOverviewCards";
+import { SessionStatusNotice } from "@/components/layout/SessionStatusNotice";
 import { Badge } from "@/components/ui/badge";
 import { WorkspaceLink } from "@/components/workspace/WorkspaceShared";
 import type { DashboardViewModel } from "@/lib/api/types";
@@ -80,6 +81,8 @@ export function DashboardReadOnlyClient() {
           </div>
         </div>
       </section>
+
+      <SessionStatusNotice variant="dashboard" />
 
       <StudyOverviewCards cards={viewModel.studyOverviewCards} />
 
