@@ -161,6 +161,15 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - Public GETs may remain direct when they do not depend on protected browser session state.
 - Keep the existing upload proxy as the reference pattern for authenticated browser-to-backend communication.
 
+## Related Contract
+
+- The next bounded dedicated read contracts are documented in [docs/read-endpoints-contract.md](/Users/vjr/Documents/New%20project/docs/read-endpoints-contract.md).
+- That document defines the proposed backend inventory for:
+  - `GET /api/materials`
+  - `GET /api/editais`
+  - material and edital summary routes
+  - later pipeline and study guidance reads
+
 ## Materials-A Strategy
 
 - The first real protected read surface uses a same-origin proxy at `GET /api/materials` in Next.
