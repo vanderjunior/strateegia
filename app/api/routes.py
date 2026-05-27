@@ -692,6 +692,129 @@ def current_user(request: Request):
     return {"authenticated": True, "user": _public_user_payload(user)}
 
 
+def _material_content_type_label(content_type: str, filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    normalized = content_type.lower()
+    if "pdf" in normalized or suffix == ".pdf":
+        return "pdf"
+    if "markdown" in normalized or suffix == ".md":
+        return "md"
+    if "text/plain" in normalized or suffix == ".txt":
+        return "txt"
+    return "unknown"
+
+
+def _material_display_filename(original_filename: str, stored_filename: str) -> str:
+    candidate = original_filename or stored_filename
+    normalized = candidate.replace("\\", "/").split("/")[-1].strip()
+    if not normalized or normalized in {".", ".."}:
+        return stored_filename
+    return normalized
+
+
+def _material_requires_ocr(extraction, pipeline_state) -> bool:
+    if extraction is not None and (
+        bool(extraction.metadata.get("requires_ocr")) or "ocr_required" in extraction.warnings
+    ):
+        return True
+    if pipeline_state is not None and "ocr" in pipeline_state.extraction_status.lower():
+        return True
+    return False
+
+
+def _bounded_material_item(material, repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    metadata = material.metadata
+    document_id = metadata.document_id
+    pipeline_state = repository.get_document_pipeline_state(document_id, user_id=user_id)
+    extraction = repository.get_document_extraction_result(document_id, user_id=user_id)
+    requires_ocr = _material_requires_ocr(extraction, pipeline_state)
+    current_stage = pipeline_state.current_stage if pipeline_state is not None else metadata.status
+    extraction_status = pipeline_state.extraction_status if pipeline_state is not None else metadata.extraction_status
+    metadata_status = pipeline_state.metadata_status if pipeline_state is not None else "not_ready"
+    chunk_count = pipeline_state.chunk_count if pipeline_state is not None else 0
+    section_count = pipeline_state.section_count if pipeline_state is not None else 0
+
+    if requires_ocr:
+        processing_status = "ocr_required"
+        safe_extraction_status = "ocr_required"
+        review_state = "needs_review"
+    elif metadata_status in {"ready", "metadata_ready"} or current_stage == "metadata_ready":
+        processing_status = "ready_for_review"
+        safe_extraction_status = "extracted"
+        review_state = "ready_for_review"
+    elif extraction_status in {"extracted", "chunked", "sectioned", "metadata_ready"}:
+        processing_status = "text_extracted"
+        safe_extraction_status = (
+            "textual_pdf"
+            if _material_content_type_label(metadata.content_type, metadata.filename) == "pdf"
+            else "extracted"
+        )
+        review_state = "needs_review"
+    elif extraction_status in {"pending_extraction", "extraction_pending"} or current_stage in {
+        "uploaded",
+        "pending_extraction",
+        "extraction_pending",
+        "extraction_started",
+    }:
+        processing_status = "extraction_pending"
+        safe_extraction_status = "pending"
+        review_state = "pending"
+    elif metadata.status == "uploaded":
+        processing_status = "uploaded"
+        safe_extraction_status = "pending"
+        review_state = "pending"
+    else:
+        processing_status = "unknown"
+        safe_extraction_status = "unknown"
+        review_state = "unknown"
+
+    warnings_count = 0
+    if extraction is not None:
+        warnings_count += len(extraction.warnings)
+    if pipeline_state is not None:
+        warnings_count += pipeline_state.error_count
+    if metadata.error_message:
+        warnings_count += 1
+
+    return {
+        "document_id": document_id,
+        "display_filename": _material_display_filename(metadata.original_filename, metadata.filename),
+        "content_type": _material_content_type_label(metadata.content_type, metadata.filename),
+        "created_at": metadata.created_at,
+        "updated_at": metadata.updated_at,
+        "processing_status": processing_status,
+        "extraction_status": safe_extraction_status,
+        "chunk_count": chunk_count,
+        "section_count": section_count,
+        "review_state": review_state,
+        "warnings_count": warnings_count,
+        "latest_pipeline_status": current_stage or None,
+    }
+
+
+@router.get("/materials")
+def list_materials(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    items = [
+        _bounded_material_item(material, repository, user_id)
+        for material in repository.list_uploaded_materials(user_id=user_id)
+    ]
+    items.sort(
+        key=lambda item: (
+            item["updated_at"] or item["created_at"],
+            item["display_filename"],
+            item["document_id"],
+        ),
+        reverse=True,
+    )
+    return {
+        "items": items,
+        "count": len(items),
+        "source": "user_scope",
+    }
+
+
 @router.post("/materials/upload", status_code=201)
 async def upload_material(request: Request, file: UploadFile = File(...)):
     user_id = _require_authenticated_user_id(request)

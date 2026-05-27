@@ -56,31 +56,30 @@ This document is a contract and test-planning artifact only. It does not introdu
 
 Purpose:
 - return a bounded user-scoped list of uploaded materials and their safe processing state
+- implemented in ReadEndpoints-B as an authenticated, user-scoped, metadata-only endpoint
 
-Suggested shape:
+Implemented shape:
 
 ```json
 {
-  "total_materials": 2,
-  "processed_count": 1,
-  "pending_count": 1,
-  "ocr_required_count": 0,
   "items": [
     {
       "document_id": "doc-123",
       "display_filename": "roteiro-praticagem.pdf",
-      "content_type": "application/pdf",
-      "uploaded_at": "2026-05-27T00:00:00Z",
-      "status": "metadata_ready",
-      "extraction_status": "extracted",
-      "current_stage": "metadata_ready",
-      "metadata_status": "ready",
+      "content_type": "pdf",
+      "created_at": "2026-05-27T00:00:00Z",
+      "updated_at": "2026-05-27T00:05:00Z",
+      "processing_status": "ready_for_review",
+      "extraction_status": "textual_pdf",
       "chunk_count": 12,
       "section_count": 4,
       "review_state": "ready_for_review",
-      "warnings_count": 0
+      "warnings_count": 0,
+      "latest_pipeline_status": "metadata_ready"
     }
-  ]
+  ],
+  "count": 1,
+  "source": "user_scope"
 }
 ```
 
@@ -88,15 +87,15 @@ Allowed fields:
 - `document_id`
 - `display_filename`
 - `content_type`
-- `uploaded_at`
-- `status`
+- `created_at`
+- `updated_at`
+- `processing_status`
 - `extraction_status`
-- `current_stage`
-- `metadata_status`
 - `chunk_count`
 - `section_count`
 - `review_state`
 - `warnings_count`
+- `latest_pipeline_status`
 
 Forbidden fields:
 - `extracted_text`
