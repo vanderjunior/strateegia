@@ -846,6 +846,42 @@ def process_material(document_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Material not found.") from exc
 
 
+def _bounded_material_pipeline_summary(material, repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    document_id = material.metadata.document_id
+    pipeline_state = repository.get_document_pipeline_state(document_id, user_id=user_id)
+    extraction = repository.get_document_extraction_result(document_id, user_id=user_id)
+    has_ocr_warning = _material_requires_ocr(extraction, pipeline_state)
+    status = pipeline_state.current_stage if pipeline_state is not None else material.metadata.status
+    ready_for_review = False
+    if pipeline_state is not None:
+        ready_for_review = (
+            pipeline_state.current_stage == "metadata_ready"
+            or pipeline_state.metadata_status in {"ready", "metadata_ready"}
+        )
+
+    return {
+        "status": status or None,
+        "steps_count": len(pipeline_state.stages_completed) if pipeline_state is not None else 0,
+        "has_ocr_warning": has_ocr_warning,
+        "ready_for_review": ready_for_review,
+    }
+
+
+@router.get("/materials/{document_id}/summary")
+def get_material_summary(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    material = repository.get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    summary = _bounded_material_item(material, repository, user_id)
+    return {
+        **summary,
+        "pipeline": _bounded_material_pipeline_summary(material, repository, user_id),
+        "source": "user_scope",
+    }
+
+
 @router.get("/materials/{document_id}/pipeline")
 def get_material_pipeline(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)

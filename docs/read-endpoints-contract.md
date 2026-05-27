@@ -112,30 +112,31 @@ Forbidden fields:
 
 Purpose:
 - return a bounded safe summary for one owned material without raw content
+- implemented in SummaryRead-A as an authenticated, user-scoped, metadata-only endpoint
 
-Suggested shape:
+Implemented shape:
 
 ```json
 {
   "document_id": "doc-123",
   "display_filename": "roteiro-praticagem.pdf",
-  "content_type": "application/pdf",
-  "uploaded_at": "2026-05-27T00:00:00Z",
-  "status": "metadata_ready",
-  "extraction_status": "extracted",
-  "current_stage": "metadata_ready",
-  "metadata_status": "ready",
+  "content_type": "pdf",
+  "created_at": "2026-05-27T00:00:00Z",
+  "updated_at": "2026-05-27T00:05:00Z",
+  "processing_status": "ready_for_review",
+  "extraction_status": "textual_pdf",
   "chunk_count": 12,
   "section_count": 4,
   "review_state": "ready_for_review",
-  "warnings": [
-    "candidate_only",
-    "review_required"
-  ],
-  "latest_pipeline_status": {
-    "updated_at": "2026-05-27T00:05:00Z",
-    "error_count": 0
-  }
+  "warnings_count": 0,
+  "latest_pipeline_status": "metadata_ready",
+  "pipeline": {
+    "status": "metadata_ready",
+    "steps_count": 5,
+    "has_ocr_warning": false,
+    "ready_for_review": true
+  },
+  "source": "user_scope"
 }
 ```
 
