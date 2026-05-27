@@ -143,15 +143,12 @@ Suggested shape:
 
 Purpose:
 - return a bounded user-scoped list of edital extraction and alignment summaries
+- implemented in ReadEndpoints-C as an authenticated, user-scoped, metadata-only endpoint
 
-Suggested shape:
+Implemented shape:
 
 ```json
 {
-  "total_editais": 1,
-  "total_topics": 12,
-  "total_bibliography_items": 8,
-  "total_gaps": 3,
   "items": [
     {
       "edital_id": "edital:doc-123",
@@ -168,7 +165,9 @@ Suggested shape:
       "warnings_count": 2,
       "alignment_status": "ready_for_review"
     }
-  ]
+  ],
+  "count": 1,
+  "source": "user_scope"
 }
 ```
 

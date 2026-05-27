@@ -903,6 +903,112 @@ def get_material_edital(document_id: str, request: Request):
     return result
 
 
+def _bounded_edital_review_state(edital, ingestion_state, alignment_result) -> str:
+    if ingestion_state is not None and ingestion_state.status in {"pending", "started"}:
+        return "pending"
+    if edital.warnings:
+        return "needs_review"
+    if alignment_result is not None and (alignment_result.gaps or alignment_result.warnings):
+        return "needs_review"
+    if ingestion_state is not None and ingestion_state.status in {"ready_for_review", "available", "ready", "completed"}:
+        return "ready_for_review"
+    return "unknown"
+
+
+def _bounded_edital_coverage_status(alignment_result) -> str:
+    if alignment_result is None:
+        return "unknown"
+    if alignment_result.gaps:
+        gap_types = {gap.gap_type for gap in alignment_result.gaps}
+        if gap_types & {"missing_bibliography_material", "missing_document_text", "uncovered_topic"}:
+            return "needs_material"
+        return "gap_found"
+    uncovered = [item for item in alignment_result.topic_coverage if item.coverage_state == "uncovered"]
+    partial = [
+        item
+        for item in alignment_result.topic_coverage
+        if item.coverage_state in {"partially_covered", "weakly_covered"}
+    ]
+    if uncovered:
+        return "gap_found"
+    if partial:
+        return "partial"
+    if alignment_result.topic_coverage or alignment_result.bibliography_alignments:
+        return "good"
+    return "unknown"
+
+
+def _bounded_edital_alignment_status(alignment_state, alignment_result) -> str:
+    if alignment_state is None and alignment_result is None:
+        return "not_available"
+    if alignment_state is not None and alignment_state.status in {"pending", "started"}:
+        return "unknown"
+    if alignment_result is not None and (alignment_result.gaps or alignment_result.warnings):
+        return "needs_review"
+    if alignment_state is not None and alignment_state.status in {"ready_for_review", "available", "ready", "completed"}:
+        return "aligned"
+    if alignment_result is not None:
+        return "partial"
+    return "unknown"
+
+
+def _bounded_edital_item(edital, repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    ingestion_state = repository.get_edital_ingestion_state(edital.document_id, user_id=user_id)
+    alignment_state = repository.get_bibliography_alignment_state(edital.edital_id, user_id=user_id)
+    alignment_result = repository.get_bibliography_alignment_result(edital.edital_id, user_id=user_id)
+    warnings_count = len(edital.warnings)
+    if ingestion_state is not None:
+        warnings_count += len(ingestion_state.warnings) + len(ingestion_state.errors)
+    if alignment_result is not None:
+        warnings_count += len(alignment_result.warnings)
+    if alignment_state is not None:
+        warnings_count += len(alignment_state.warnings) + len(alignment_state.errors)
+
+    updated_at = None
+    if alignment_state is not None:
+        updated_at = alignment_state.updated_at
+    elif ingestion_state is not None:
+        updated_at = ingestion_state.updated_at
+
+    return {
+        "edital_id": edital.edital_id,
+        "document_id": edital.document_id,
+        "title": "Edital analisado da sessão",
+        "created_at": ingestion_state.created_at if ingestion_state is not None else None,
+        "updated_at": updated_at,
+        "topics_count": len(edital.topics),
+        "bibliography_count": len(edital.bibliography),
+        "gaps_count": len(alignment_result.gaps) if alignment_result is not None else 0,
+        "review_state": _bounded_edital_review_state(edital, ingestion_state, alignment_result),
+        "coverage_status": _bounded_edital_coverage_status(alignment_result),
+        "alignment_status": _bounded_edital_alignment_status(alignment_state, alignment_result),
+        "warnings_count": warnings_count,
+    }
+
+
+@router.get("/editais")
+def list_editais(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    items = [
+        _bounded_edital_item(edital, repository, user_id)
+        for edital in repository.list_user_edital_extractions(user_id=user_id)
+    ]
+    items.sort(
+        key=lambda item: (
+            item["updated_at"] or item["created_at"],
+            item["title"],
+            item["edital_id"],
+        ),
+        reverse=True,
+    )
+    return {
+        "items": items,
+        "count": len(items),
+        "source": "user_scope",
+    }
+
+
 @router.get("/edital/{edital_id}")
 def get_edital_by_id(edital_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
