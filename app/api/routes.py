@@ -1045,6 +1045,31 @@ def list_editais(request: Request):
     }
 
 
+def _bounded_edital_summary_flags(summary: dict[str, object]) -> dict[str, object]:
+    needs_review = summary["review_state"] != "ready_for_review"
+    return {
+        "has_topics": summary["topics_count"] > 0,
+        "has_bibliography": summary["bibliography_count"] > 0,
+        "has_gaps": summary["gaps_count"] > 0,
+        "needs_review": needs_review,
+    }
+
+
+@router.get("/editais/{edital_id}/summary")
+def get_edital_summary(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    edital = repository.get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    summary = _bounded_edital_item(edital, repository, user_id)
+    return {
+        **summary,
+        "summary": _bounded_edital_summary_flags(summary),
+        "source": "user_scope",
+    }
+
+
 @router.get("/edital/{edital_id}")
 def get_edital_by_id(edital_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)

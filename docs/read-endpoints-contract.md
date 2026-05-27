@@ -199,26 +199,31 @@ Forbidden fields:
 
 Purpose:
 - return one bounded owned edital summary without exposing ingestion body or alignment evidence excerpts
+- implemented in SummaryRead-B as an authenticated, user-scoped, metadata-only endpoint
 
-Suggested shape:
+Implemented shape:
 
 ```json
 {
   "edital_id": "edital:doc-123",
   "document_id": "doc-123",
   "title": "Edital analisado da sessão",
-  "status": "ready_for_review",
+  "created_at": "2026-05-27T00:00:00Z",
+  "updated_at": "2026-05-27T00:05:00Z",
   "review_state": "review_required",
   "topics_count": 12,
-  "subtopics_count": 20,
   "bibliography_count": 8,
   "gaps_count": 3,
   "coverage_status": "partial",
-  "warnings": [
-    "candidate_only",
-    "review_required"
-  ],
-  "alignment_status": "ready_for_review"
+  "warnings_count": 2,
+  "alignment_status": "ready_for_review",
+  "summary": {
+    "has_topics": true,
+    "has_bibliography": true,
+    "has_gaps": true,
+    "needs_review": true
+  },
+  "source": "user_scope"
 }
 ```
 
