@@ -9,6 +9,7 @@ vi.mock("@/lib/api/documents", async () => {
 
   return {
     ...actual,
+    fetchMaterialSummary: vi.fn(),
     fetchUserMaterialsList: vi.fn()
   };
 });
@@ -16,10 +17,11 @@ vi.mock("@/lib/api/documents", async () => {
 import {
   buildMockMaterialDetail,
   buildMockMaterialsWorkspaceViewModel,
+  loadMaterialDetail,
   loadMaterialsWorkspaceViewModel
 } from "@/lib/adapters/materials";
 import { getApiConfig } from "@/lib/api/config";
-import { fetchUserMaterialsList } from "@/lib/api/documents";
+import { fetchMaterialSummary, fetchUserMaterialsList } from "@/lib/api/documents";
 
 describe("materials adapter", () => {
   beforeEach(() => {
@@ -28,6 +30,7 @@ describe("materials adapter", () => {
       forceMock: false
     });
     vi.mocked(fetchUserMaterialsList).mockReset();
+    vi.mocked(fetchMaterialSummary).mockReset();
   });
 
   it("returns a mock-first materials workspace with expected demo items", () => {
@@ -168,5 +171,92 @@ describe("materials adapter", () => {
 
     expect(viewModel.connection.title).toContain("demonstração");
     expect(fetchUserMaterialsList).not.toHaveBeenCalled();
+  });
+
+  it("uses real bounded material summary for authenticated detail", async () => {
+    vi.mocked(fetchMaterialSummary).mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        document_id: "doc-1",
+        display_filename: "roteiro-porto.pdf",
+        content_type: "application/pdf",
+        created_at: "2026-05-27T00:00:00Z",
+        updated_at: "2026-05-27T00:05:00Z",
+        processing_status: "ready_for_review",
+        extraction_status: "textual_pdf",
+        review_state: "ready_for_review",
+        chunk_count: 12,
+        section_count: 4,
+        warnings_count: 1,
+        latest_pipeline_status: "metadata_ready",
+        pipeline: {
+          status: "metadata_ready",
+          steps_count: 4,
+          has_ocr_warning: false,
+          ready_for_review: true
+        },
+        source: "user_scope",
+        extracted_text: "não deve aparecer",
+        raw_chunks: [{ body: "não deve aparecer" }],
+        storage_path: "/Users/private/upload.pdf"
+      } as never
+    });
+
+    const viewModel = await loadMaterialDetail("doc-1");
+    const payload = JSON.stringify(viewModel);
+
+    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.endpoint).toBe("/api/materials/doc-1/summary");
+    expect(viewModel.detail).toMatchObject({
+      id: "doc-1",
+      title: "roteiro-porto",
+      typeLabel: "PDF textual",
+      processingStatus: "Material processado",
+      extractionStatus: "Texto extraído",
+      reviewState: "Pronto para revisão",
+      sectionsCount: 4,
+      chunksCount: 12,
+      source: "backend"
+    });
+    expect(payload).not.toContain("extracted_text");
+    expect(payload).not.toContain("raw_chunks");
+    expect(payload).not.toContain("storage_path");
+    expect(payload).not.toContain("/Users/");
+  });
+
+  it("keeps safe fallback when material summary requires session", async () => {
+    vi.mocked(fetchMaterialSummary).mockResolvedValue({
+      ok: false,
+      status: 401,
+      source: "backend",
+      error: {
+        code: "unauthorized",
+        message: "Sessão necessária."
+      }
+    });
+
+    const viewModel = await loadMaterialDetail("material-arte-naval");
+
+    expect(viewModel.connection.title).toBe("Requer sessão");
+    expect(viewModel.detail?.source).toBe("mock");
+  });
+
+  it("returns friendly not-found state when material summary is outside the session", async () => {
+    vi.mocked(fetchMaterialSummary).mockResolvedValue({
+      ok: false,
+      status: 404,
+      source: "backend",
+      error: {
+        code: "not_found",
+        message: "Este conteúdo não está disponível nesta sessão."
+      }
+    });
+
+    const viewModel = await loadMaterialDetail("doc-fora-da-sessao");
+
+    expect(viewModel.connection.title).toBe("Item não encontrado");
+    expect(viewModel.detail).toBeNull();
   });
 });

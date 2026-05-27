@@ -282,6 +282,28 @@ export interface BackendProtectedMaterialsList {
   items: BackendProtectedMaterialsListItem[];
 }
 
+export interface BackendMaterialSummary {
+  document_id: string;
+  display_filename: string;
+  content_type: string;
+  created_at: string | null;
+  updated_at: string | null;
+  processing_status: string;
+  extraction_status: string;
+  review_state: string;
+  chunk_count: number;
+  section_count: number;
+  warnings_count: number;
+  latest_pipeline_status: string | null;
+  pipeline: {
+    status: string | null;
+    steps_count: number;
+    has_ocr_warning: boolean;
+    ready_for_review: boolean;
+  };
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;

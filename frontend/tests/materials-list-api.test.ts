@@ -4,7 +4,7 @@ vi.mock("@/lib/api/config", () => ({
   getApiConfig: vi.fn()
 }));
 
-import { fetchUserMaterialsList } from "@/lib/api/documents";
+import { fetchMaterialSummary, fetchUserMaterialsList } from "@/lib/api/documents";
 import { getApiConfig } from "@/lib/api/config";
 
 describe("materials list API wrapper", () => {
@@ -92,6 +92,71 @@ describe("materials list API wrapper", () => {
       throw new Error("expected success");
     }
     expect(result.data.items[0].document_id).toBe("doc-1");
+    expect(JSON.stringify(result.data)).not.toContain("token");
+    expect(JSON.stringify(result.data)).not.toContain("cookie");
+  });
+
+  it.each([
+    [401, "unauthorized", "Sessão necessária."],
+    [403, "unauthorized", "Sessão necessária."],
+    [404, "not_found", "Este conteúdo não está disponível nesta sessão."],
+    [502, "backend_offline", "Não foi possível conectar ao backend."],
+    [503, "missing_base_url", "O resumo real do material não está configurado neste ambiente."]
+  ])("maps material summary HTTP %i to %s", async (status, code, message) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("{}", { status, headers: { "content-type": "application/json" } }))
+    );
+
+    const result = await fetchMaterialSummary("doc-1");
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected failure");
+    }
+    expect(result.error.code).toBe(code);
+    expect(result.error.message).toBe(message);
+  });
+
+  it("returns the bounded material summary payload on success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            document_id: "doc-1",
+            display_filename: "roteiro.pdf",
+            content_type: "pdf",
+            created_at: "2026-05-27T00:00:00Z",
+            updated_at: "2026-05-27T00:05:00Z",
+            processing_status: "ready_for_review",
+            extraction_status: "textual_pdf",
+            review_state: "ready_for_review",
+            chunk_count: 12,
+            section_count: 4,
+            warnings_count: 1,
+            latest_pipeline_status: "metadata_ready",
+            pipeline: {
+              status: "metadata_ready",
+              steps_count: 4,
+              has_ocr_warning: false,
+              ready_for_review: true
+            },
+            source: "user_scope"
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const result = await fetchMaterialSummary("doc-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected success");
+    }
+    expect(result.data.document_id).toBe("doc-1");
+    expect(result.data.pipeline.ready_for_review).toBe(true);
     expect(JSON.stringify(result.data)).not.toContain("token");
     expect(JSON.stringify(result.data)).not.toContain("cookie");
   });

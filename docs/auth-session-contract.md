@@ -197,8 +197,11 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - Edital detail now uses a same-origin proxy at `GET /api/editais/{editalId}/summary` in Next.
 - The proxy reads backend `GET /api/editais/{edital_id}/summary`, forwards the browser cookie server-side, and returns only bounded summary metadata.
 - The detail adapter maps that summary into product-facing copy without raw edital text, evidence snippets, or bibliography bodies.
-- Current limitation:
-  - material detail is not migrated yet and remains a separate follow-up phase
+## SummaryProxy-C Strategy
+
+- Material detail now uses a same-origin proxy at `GET /api/materials/{materialId}/summary` in Next.
+- The proxy reads backend `GET /api/materials/{document_id}/summary`, forwards the browser cookie server-side, and returns only bounded material and pipeline metadata.
+- The detail adapter maps that summary into product-facing copy without raw document text, OCR dumps, chunks, sections, or storage paths.
 
 ## Critical Gaps Before Real Auth UX
 

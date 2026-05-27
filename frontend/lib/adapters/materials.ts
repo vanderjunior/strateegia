@@ -1,12 +1,10 @@
 import { getApiConfig } from "@/lib/api/config";
-import { fetchDocumentById, fetchUserMaterialsList } from "@/lib/api/documents";
-import { fetchMaterialChunks, fetchMaterialPipelineState, fetchMaterialSections } from "@/lib/api/pipeline";
+import { fetchMaterialSummary, fetchUserMaterialsList } from "@/lib/api/documents";
 import type {
   ApiSource,
   BackendConnectionInfo,
-  BackendDocumentPipelineState,
+  BackendMaterialSummary,
   BackendProtectedMaterialsListItem,
-  BackendDocumentSection,
   MaterialDetail,
   MaterialsWorkspaceViewModel,
   MaterialListItem,
@@ -169,53 +167,102 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
   });
 }
 
-function normalizeProcessingStatus(state: BackendDocumentPipelineState): string {
-  if (state.extraction_status.includes("ocr")) {
+function normalizeMaterialProcessingStatus(summary: BackendMaterialSummary): string {
+  const processing = summary.processing_status.toLowerCase();
+  const extraction = summary.extraction_status.toLowerCase();
+  const pipelineStatus = (summary.latest_pipeline_status ?? summary.pipeline.status ?? "").toLowerCase();
+
+  if (extraction.includes("ocr") || processing.includes("ocr") || summary.pipeline.has_ocr_warning) {
     return "OCR necessário";
   }
-  if (state.metadata_status === "ready" || state.metadata_status === "metadata_ready") {
+  if (
+    summary.review_state === "ready_for_review" ||
+    summary.pipeline.ready_for_review ||
+    pipelineStatus.includes("metadata_ready") ||
+    pipelineStatus.includes("ready")
+  ) {
     return "Material processado";
   }
-  if (state.current_stage.includes("pending")) {
-    return "Processando";
+  if (processing.includes("uploaded") || processing.includes("pending")) {
+    return "Recebido para validação";
   }
-  return "Precisa de revisão";
+  return "Precisa de conferência";
 }
 
-function normalizeExtractionStatus(state: BackendDocumentPipelineState): string {
-  if (state.extraction_status.includes("ocr")) {
+function normalizeMaterialExtractionStatus(summary: BackendMaterialSummary): string {
+  const extraction = summary.extraction_status.toLowerCase();
+
+  if (extraction.includes("ocr") || summary.pipeline.has_ocr_warning) {
     return "OCR em validação";
   }
-  if (state.extraction_status === "extracted" || state.extraction_status === "sectioned") {
+  if (["textual_pdf", "extracted", "sectioned", "chunked"].includes(extraction)) {
     return "Texto extraído";
   }
   return "Leitura em validação";
 }
 
-function normalizeReviewState(state: BackendDocumentPipelineState): string {
-  if (state.extraction_status.includes("ocr")) {
+function normalizeMaterialReviewState(summary: BackendMaterialSummary): string {
+  const extraction = summary.extraction_status.toLowerCase();
+
+  if (extraction.includes("ocr") || summary.pipeline.has_ocr_warning) {
     return "OCR em validação";
   }
-  if (state.metadata_status === "ready" || state.metadata_status === "metadata_ready") {
+  if (summary.review_state === "ready_for_review" || summary.pipeline.ready_for_review) {
     return "Pronto para revisão";
   }
-  return "Precisa de revisão";
+  return "Precisa de conferência";
 }
 
-function normalizeWarnings(state: BackendDocumentPipelineState): string[] {
-  if (state.extraction_status.includes("ocr")) {
-    return ["Este arquivo pode precisar de OCR antes da revisão.", "OCR em validação."];
+function normalizeMaterialWarnings(summary: BackendMaterialSummary): string[] {
+  const warnings = ["Este resumo mostra apenas metadados seguros do material."];
+  if (summary.extraction_status.toLowerCase().includes("ocr") || summary.pipeline.has_ocr_warning) {
+    warnings.push("PDFs escaneados podem exigir OCR e revisão adicional.");
+    warnings.push("OCR em validação.");
+  } else {
+    warnings.push("Texto extraído sujeito a revisão.");
   }
-  return ["Texto extraído sujeito a revisão."];
+  warnings.push(`${summary.warnings_count} avisos registrados para revisão.`);
+  return warnings;
 }
 
-function mapSectionPreview(sections: BackendDocumentSection[]) {
-  return sections.slice(0, 8).map((section) => ({
-    id: section.section_id,
-    title: section.title,
-    level: section.level,
-    chunkRangeLabel: `Trechos ${section.start_chunk_index + 1} a ${section.end_chunk_index + 1}`
-  }));
+function buildMaterialDetailFromSummary(materialId: string, summary: BackendMaterialSummary): MaterialDetail {
+  const listItem = mapProtectedMaterialItem({
+    document_id: summary.document_id || materialId,
+    display_filename: summary.display_filename,
+    content_type: summary.content_type,
+    processing_status: summary.processing_status,
+    status: summary.processing_status,
+    extraction_status: summary.extraction_status,
+    current_stage: summary.latest_pipeline_status ?? summary.pipeline.status ?? undefined,
+    metadata_status: summary.review_state,
+    review_state: summary.review_state,
+    warnings_count: summary.warnings_count,
+    latest_pipeline_status: summary.latest_pipeline_status,
+    chunk_count: summary.chunk_count,
+    section_count: summary.section_count
+  });
+
+  return {
+    ...listItem,
+    id: materialId,
+    processingStatus: normalizeMaterialProcessingStatus(summary),
+    extractionStatus: normalizeMaterialExtractionStatus(summary),
+    reviewState: normalizeMaterialReviewState(summary),
+    warnings: normalizeMaterialWarnings(summary),
+    sectionPreviews:
+      summary.section_count > 0 || summary.chunk_count > 0
+        ? [
+            {
+              id: `${materialId}:summary`,
+              title: "Estrutura segura identificada",
+              level: 1,
+              chunkRangeLabel: `${summary.section_count} seções · ${summary.chunk_count} trechos`
+            }
+          ]
+        : [],
+    sourceNote:
+      "Resumo lido do backend por consulta protegida e apresentado sem texto bruto, OCR completo ou trechos do documento."
+  };
 }
 
 export function buildMockMaterialsWorkspaceViewModel(): MaterialsWorkspaceViewModel {
@@ -324,22 +371,29 @@ export async function loadMaterialDetail(materialId: string): Promise<{
     };
   }
 
-  const [pipelineResult, sectionsResult, chunksResult, documentResult] = await Promise.all([
-    fetchMaterialPipelineState(materialId),
-    fetchMaterialSections(materialId),
-    fetchMaterialChunks(materialId),
-    fetchDocumentById(materialId)
-  ]);
+  const summaryResult = await fetchMaterialSummary(materialId);
 
-  if (!pipelineResult.ok) {
-    if (pipelineResult.status === 401) {
+  if (!summaryResult.ok) {
+    if (summaryResult.status === 404) {
+      return {
+        connection: {
+          state: "error",
+          source: "backend",
+          title: "Item não encontrado",
+          detail: "Este conteúdo não está disponível nesta sessão.",
+          endpoint: `/api/materials/${materialId}/summary`
+        },
+        detail: null
+      };
+    }
+    if (summaryResult.status === 401 || summaryResult.status === 403) {
       return {
         connection: {
           state: "auth_required",
           source: "backend",
           title: "Requer sessão",
           detail: "Os detalhes reais do material exigem uma sessão válida para consulta protegida.",
-          endpoint: `/api/materials/${materialId}/pipeline`
+          endpoint: `/api/materials/${materialId}/summary`
         },
         detail: fallback
       };
@@ -347,39 +401,23 @@ export async function loadMaterialDetail(materialId: string): Promise<{
 
     return {
       connection: connectionFromFailure(
-        pipelineResult.source,
-        pipelineResult.error.message,
-        `/api/materials/${materialId}/pipeline`
+        summaryResult.source,
+        summaryResult.error.message,
+        `/api/materials/${materialId}/summary`
       ),
       detail: fallback
     };
   }
 
-  const pipeline = pipelineResult.data;
-  const title = documentResult.ok ? documentResult.data.title : fallback?.title ?? "Material em validação";
-  const detail: MaterialDetail = {
-    id: materialId,
-    title,
-    typeLabel: pipeline.extraction_status.includes("ocr") ? "PDF digitalizado" : "PDF textual",
-    processingStatus: normalizeProcessingStatus(pipeline),
-    extractionStatus: normalizeExtractionStatus(pipeline),
-    sectionsCount: sectionsResult.ok ? sectionsResult.data.length : pipeline.section_count,
-    chunksCount: chunksResult.ok ? chunksResult.data.length : pipeline.chunk_count,
-    reviewState: normalizeReviewState(pipeline),
-    source: "backend",
-    relatedGaps: fallback?.relatedGaps ?? 0,
-    warnings: normalizeWarnings(pipeline),
-    sectionPreviews: sectionsResult.ok ? mapSectionPreview(sectionsResult.data) : fallback?.sectionPreviews ?? [],
-    sourceNote: "Dados lidos do backend em consulta segura e apresentados sem conteúdo bruto."
-  };
+  const detail = buildMaterialDetailFromSummary(materialId, summaryResult.data);
 
   return {
     connection: {
       state: "connected",
       source: "backend",
-      title: "Backend disponível",
-      detail: "Este material foi consultado no backend, preservando a revisão controlada.",
-      endpoint: `/api/materials/${materialId}/pipeline`
+      title: "Dados reais da sessão",
+      detail: "Este resumo do material usa metadados seguros da sua sessão e preserva a revisão controlada.",
+      endpoint: `/api/materials/${materialId}/summary`
     },
     detail
   };
