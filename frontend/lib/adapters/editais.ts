@@ -1,11 +1,11 @@
 import { getApiConfig } from "@/lib/api/config";
-import { fetchEditalAlignment, fetchEditalById } from "@/lib/api/editais";
-import { fetchDashboardOverview } from "@/lib/api/runtime";
+import { fetchEditalAlignment, fetchEditalById, fetchUserEditaisList } from "@/lib/api/editais";
 import type {
   ApiSource,
   BackendBibliographyAlignment,
   BackendConnectionInfo,
   BackendEditalExtraction,
+  BackendProtectedEditaisListItem,
   CoverageItem,
   EditalDetail,
   EditaisWorkspaceViewModel,
@@ -104,6 +104,19 @@ function mockSummary(items: EditalListItem[]): WorkspaceSummaryMetric[] {
     items.reduce((total, item) => total + item.gapsCount, 0),
     items.filter((item) => item.reviewState !== "Pronto para revisão").length
   );
+}
+
+function mapProtectedEditalItem(item: BackendProtectedEditaisListItem): EditalListItem {
+  return {
+    id: item.edital_id,
+    title: item.title,
+    statusLabel: item.status,
+    topicsCount: item.topics_count,
+    bibliographyItemsCount: item.bibliography_count,
+    gapsCount: item.gaps_count,
+    reviewState: item.review_state,
+    source: "backend"
+  };
 }
 
 function connectionFromFailure(source: ApiSource, message: string, endpoint: string): BackendConnectionInfo {
@@ -246,9 +259,9 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     };
   }
 
-  const overviewResult = await fetchDashboardOverview();
-  if (!overviewResult.ok) {
-    if (overviewResult.status === 401) {
+  const editaisResult = await fetchUserEditaisList();
+  if (!editaisResult.ok) {
+    if (editaisResult.status === 401 || editaisResult.status === 403) {
       return {
         ...fallback,
         connection: {
@@ -256,36 +269,37 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
           source: "backend",
           title: "Requer sessão",
           detail:
-            "O backend está disponível, mas a visão de editais exige uma sessão válida no navegador.",
-          endpoint: "/api/dashboard/overview"
+            "Entre para usar a listagem real de editais. Enquanto isso, os dados de demonstração seguem disponíveis.",
+          endpoint: "/api/editais"
         }
       };
     }
     return {
       ...fallback,
-      connection: connectionFromFailure(overviewResult.source, overviewResult.error.message, "/api/dashboard/overview")
+      connection: connectionFromFailure(editaisResult.source, editaisResult.error.message, "/api/editais")
     };
   }
 
-  const topicsFromMock = fallback.items.reduce((total, item) => total + item.topicsCount, 0);
-  const bibliographyFromMock = fallback.items.reduce((total, item) => total + item.bibliographyItemsCount, 0);
+  const items = editaisResult.data.items.map(mapProtectedEditalItem);
 
   return {
     ...fallback,
     connection: {
       state: "connected",
       source: "backend",
-      title: "Backend disponível",
-      detail: "Os sinais de edital e gaps vieram do backend. A listagem detalhada continua em dados auditados de demonstração.",
-      endpoint: "/api/dashboard/overview"
+      title: "Dados reais da sessão",
+      detail:
+        "A listagem abaixo mostra os editais recentes da sua sessão. O fallback auditado continua disponível para detalhes ainda não entregues por um endpoint dedicado.",
+      endpoint: "/api/editais"
     },
     summary: buildSummary(
-      overviewResult.data.edital.edital_available ? 1 : fallback.items.length,
-      topicsFromMock,
-      bibliographyFromMock,
-      overviewResult.data.alignment.gaps_detected,
-      overviewResult.data.alignment.gaps_detected > 0 ? 1 : fallback.items.length
-    )
+      editaisResult.data.total_editais,
+      editaisResult.data.total_topics,
+      editaisResult.data.total_bibliography_items,
+      editaisResult.data.total_gaps,
+      items.filter((item) => item.reviewState !== "Pronto para revisão").length
+    ),
+    items
   };
 }
 

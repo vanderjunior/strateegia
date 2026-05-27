@@ -202,12 +202,21 @@ export interface BackendDashboardOverview {
   };
   edital: {
     edital_available: boolean;
+    latest_edital_id?: string | null;
+    latest_document_id?: string | null;
     status: string;
+    topics_detected?: number;
+    bibliography_items_detected?: number;
+    warnings_count?: number;
+    needs_review?: boolean;
   };
   alignment: {
     alignment_available: boolean;
     status: string;
     gaps_detected: number;
+    bibliography_items_total?: number;
+    topics_total?: number;
+    needs_review?: boolean;
   };
   study_cycle: {
     cycle_available: boolean;
@@ -265,6 +274,26 @@ export interface BackendProtectedMaterialsList {
   pending_count: number;
   ocr_required_count: number;
   items: BackendProtectedMaterialsListItem[];
+}
+
+export interface BackendProtectedEditaisListItem {
+  edital_id: string;
+  title: string;
+  status: string;
+  review_state: string;
+  topics_count: number;
+  bibliography_count: number;
+  gaps_count: number;
+  coverage_status: string;
+  latest_document_id?: string | null;
+}
+
+export interface BackendProtectedEditaisList {
+  total_editais: number;
+  total_topics: number;
+  total_bibliography_items: number;
+  total_gaps: number;
+  items: BackendProtectedEditaisListItem[];
 }
 
 export interface BackendDocumentSummary {

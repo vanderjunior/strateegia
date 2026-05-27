@@ -172,6 +172,17 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - Current limitation:
   - the real frontend list is based on recent session materials exposed by the dashboard overview contract, not yet on a dedicated full materials listing endpoint
 
+## Editais-A Strategy
+
+- The second real protected read surface uses a same-origin proxy at `GET /api/editais` in Next.
+- The proxy reads backend `GET /api/dashboard/overview`, forwards the browser cookie server-side, and returns only a bounded edital overview payload.
+- Rationale:
+  - `GET /api/dashboard/overview` is already auth-required and user-scoped
+  - it exposes safe edital and alignment summary fields such as latest ids, detected topics, bibliography counts, gaps, and review state
+  - it avoids exposing raw edital text, raw document text, OCR dumps, or storage paths to the browser
+- Current limitation:
+  - the real frontend list is based on the latest edital summary exposed by dashboard overview, not yet on a dedicated full editais listing endpoint
+
 ## Critical Gaps Before Real Auth UX
 
 1. No frontend login/logout/session-status UX.
