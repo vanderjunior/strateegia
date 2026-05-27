@@ -49,8 +49,8 @@ function baseConnection(overrides: Partial<BackendConnectionInfo> = {}): Backend
   return {
     state: "mock",
     source: "mock",
-    title: "Usando dados de demonstração",
-    detail: "A listagem permanece em modo de demonstração até existir leitura segura de editais para esta área.",
+    title: "Dados de demonstração",
+    detail: "Consulta local exibida até existir leitura segura de editais para esta área.",
     ...overrides
   };
 }
@@ -111,8 +111,8 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Painel em modo de validação",
-      detail: message,
+      title: "Painel em validação",
+      detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
@@ -120,16 +120,16 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend indisponível",
-      detail: message,
+      title: "Backend offline",
+      detail: "Não foi possível consultar o backend neste momento. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
   return baseConnection({
     state: "mock",
     source,
-    title: "Fallback local ativo",
-    detail: message,
+    title: "Consulta local",
+    detail: "Consulta local exibida até existir uma leitura segura para esta área.",
     endpoint
   });
 }
@@ -231,8 +231,8 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     return {
       ...fallback,
       connection: baseConnection({
-        title: "Mock forçado por configuração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta área em modo local."
+        title: "Dados de demonstração",
+        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta área em demonstração local."
       })
     };
   }
@@ -241,7 +241,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar leituras read-only autenticadas quando existirem."
+        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar consulta protegida quando disponível."
       })
     };
   }
@@ -254,9 +254,9 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
         connection: {
           state: "auth_required",
           source: "backend",
-          title: "Sessão necessária",
+          title: "Requer sessão",
           detail:
-            "O backend está disponível, mas a visão de editais continua protegida até existir uma sessão válida no navegador.",
+            "O backend está disponível, mas a visão de editais exige uma sessão válida no navegador.",
           endpoint: "/api/dashboard/overview"
         }
       };
@@ -275,9 +275,8 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     connection: {
       state: "connected",
       source: "backend",
-      title: "Backend conectado com fallback auditado",
-      detail:
-        "Os sinais de edital e gaps vieram do backend em modo somente leitura. A listagem detalhada ainda usa dados de demonstração seguros.",
+      title: "Backend disponível",
+      detail: "Os sinais de edital e gaps vieram do backend. A listagem detalhada continua em dados auditados de demonstração.",
       endpoint: "/api/dashboard/overview"
     },
     summary: buildSummary(
@@ -321,8 +320,8 @@ export async function loadEditalDetail(editalId: string): Promise<{
   if (config.forceMock) {
     return {
       connection: baseConnection({
-        title: "Mock forçado por configuração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este edital em modo local."
+        title: "Dados de demonstração",
+        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este edital em demonstração local."
       }),
       detail: fallback
     };
@@ -331,7 +330,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar ler este edital em modo somente leitura."
+        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar consultar este edital com segurança."
       }),
       detail: fallback
     };
@@ -344,8 +343,8 @@ export async function loadEditalDetail(editalId: string): Promise<{
         connection: {
           state: "auth_required",
           source: "backend",
-          title: "Sessão necessária",
-          detail: "Os detalhes reais do edital exigem uma sessão válida para leitura em modo somente leitura.",
+          title: "Requer sessão",
+          detail: "Os detalhes reais do edital exigem uma sessão válida para consulta protegida.",
           endpoint: `/api/edital/${editalId}`
         },
         detail: fallback
@@ -368,8 +367,8 @@ export async function loadEditalDetail(editalId: string): Promise<{
     connection: {
       state: "connected",
       source: "backend",
-      title: "Detalhes carregados do backend",
-      detail: "Este edital foi lido em modo somente leitura e continua marcado como análise preliminar.",
+      title: "Backend disponível",
+      detail: "Este edital foi consultado no backend e continua marcado como análise preliminar.",
       endpoint: `/api/edital/${editalId}`
     },
     detail

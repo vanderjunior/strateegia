@@ -26,8 +26,8 @@ function baseConnection(overrides: Partial<BackendConnectionInfo> = {}): Backend
   return {
     state: "mock",
     source: "mock",
-    title: "Usando dados de demonstração",
-    detail: "A linha do tempo permanece em modo de demonstração até existir leitura segura do backend para este material.",
+    title: "Dados de demonstração",
+    detail: "Consulta local exibida até existir leitura segura do backend para este material.",
     ...overrides
   };
 }
@@ -37,8 +37,8 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Painel em modo de validação",
-      detail: message,
+      title: "Painel em validação",
+      detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
@@ -46,16 +46,16 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend indisponível",
-      detail: message,
+      title: "Backend offline",
+      detail: "Não foi possível consultar o backend neste momento. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
   return baseConnection({
     state: "mock",
     source,
-    title: "Fallback local ativo",
-    detail: message,
+    title: "Consulta local",
+    detail: "Consulta local exibida até existir uma leitura segura para esta área.",
     endpoint
   });
 }
@@ -86,14 +86,14 @@ function buildSteps(state: BackendDocumentPipelineState): PipelineStep[] {
     {
       id: "segmented",
       label: "Segmentado",
-      statusLabel: sectioned ? "Concluído" : "Pendente",
+      statusLabel: sectioned ? "Concluído" : "Validação pendente",
       tone: sectioned ? "complete" : "pending",
-      detail: sectioned ? "Trechos e seções já podem ser revisados." : "A segmentação ainda não está pronta."
+      detail: sectioned ? "Trechos e seções já podem ser revisados." : "A segmentação ainda depende de validação."
     },
     {
       id: "review",
       label: "Pronto para revisão",
-      statusLabel: ready ? "Concluído" : ocrRequired ? "Em validação" : "Pendente",
+      statusLabel: ready ? "Concluído" : ocrRequired ? "OCR em validação" : "Validação pendente",
       tone: ready ? "current" : ocrRequired ? "warning" : "pending",
       detail: ready
         ? "O material já está em etapa de revisão."
@@ -115,9 +115,9 @@ export function buildMockPipelineDetail(documentId: string): PipelineDetailViewM
     notes: ["Nenhum detalhe adicional disponível ainda."],
     steps: [
       { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material registrado." },
-      { id: "extracted", label: "Texto extraído", statusLabel: "Pendente", tone: "pending", detail: "Leitura textual ainda não confirmada." },
-      { id: "segmented", label: "Segmentado", statusLabel: "Pendente", tone: "pending", detail: "Segmentação ainda não disponível." },
-      { id: "review", label: "Pronto para revisão", statusLabel: "Pendente", tone: "pending", detail: "Etapa de revisão ainda não liberada." }
+      { id: "extracted", label: "Texto extraído", statusLabel: "Validação pendente", tone: "pending", detail: "Leitura textual ainda não confirmada." },
+      { id: "segmented", label: "Segmentado", statusLabel: "Validação pendente", tone: "pending", detail: "Segmentação ainda não disponível." },
+      { id: "review", label: "Pronto para revisão", statusLabel: "Validação pendente", tone: "pending", detail: "Etapa de revisão ainda não liberada." }
     ]
   };
 
@@ -132,8 +132,8 @@ export async function loadPipelineDetail(documentId: string): Promise<PipelineDe
     return {
       ...fallback,
       connection: baseConnection({
-        title: "Mock forçado por configuração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta linha do tempo em modo local."
+        title: "Dados de demonstração",
+        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este painel em demonstração local."
       })
     };
   }
@@ -142,7 +142,7 @@ export async function loadPipelineDetail(documentId: string): Promise<PipelineDe
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar ler esta linha do tempo em modo somente leitura."
+        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar consultar este pipeline com segurança."
       })
     };
   }
@@ -161,8 +161,8 @@ export async function loadPipelineDetail(documentId: string): Promise<PipelineDe
         connection: {
           state: "auth_required",
           source: "backend",
-          title: "Sessão necessária",
-          detail: "A linha do tempo real do material exige uma sessão válida para leitura em modo somente leitura.",
+          title: "Requer sessão",
+          detail: "O pipeline real do material exige uma sessão válida para consulta protegida.",
           endpoint: `/api/materials/${documentId}/pipeline`
         }
       };
@@ -183,8 +183,8 @@ export async function loadPipelineDetail(documentId: string): Promise<PipelineDe
     connection: {
       state: "connected",
       source: "backend",
-      title: "Linha do tempo carregada do backend",
-      detail: "O pipeline foi lido em modo somente leitura e resumido em linguagem de produto.",
+      title: "Backend disponível",
+      detail: "O pipeline foi consultado no backend e resumido em linguagem de produto.",
       endpoint: `/api/materials/${documentId}/pipeline`
     },
     documentId,

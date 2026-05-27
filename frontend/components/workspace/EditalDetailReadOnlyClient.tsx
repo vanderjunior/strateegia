@@ -19,8 +19,8 @@ function buildFallback(editalId: string): { connection: BackendConnectionInfo; d
     connection: {
       state: "mock",
       source: "mock",
-      title: "Usando dados de demonstração",
-      detail: "Detalhes locais exibidos até existir leitura segura do backend para este edital."
+      title: "Dados de demonstração",
+      detail: "Consulta local exibida até existir leitura segura do backend para este edital."
     },
     detail: buildMockEditalDetail(editalId)
   };
@@ -52,12 +52,12 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
       <WorkspaceSourcePanel
         eyebrow="edital"
         title={detail.title}
-        subtitle="Tópicos, bibliografia e alinhamento preliminar mostrados em linguagem de produto e sujeitos a revisão."
+        subtitle="Tópicos candidatos, bibliografia identificada e alinhamento preliminar em revisão."
         connection={connection}
       />
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
+        <Card className="min-w-0">
           <div className="flex flex-wrap gap-2">
             <Badge className={sourceBadgeClass(detail.source)}>{sourceLabel(detail.source)}</Badge>
             <Badge className={productStatusClass(detail.statusLabel)}>{detail.statusLabel}</Badge>
@@ -88,9 +88,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
           </p>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">avisos</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Conferência humana</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão necessária</CardTitle>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             {detail.warnings.map((warning) => (
               <li key={warning}>• {warning}</li>
@@ -100,9 +100,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">tópicos candidatos</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Tópicos identificados</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Tópicos candidatos</CardTitle>
           {detail.topicCandidates.length ? (
             <div className="mt-5 flex flex-wrap gap-2">
               {detail.topicCandidates.map((topic) => (
@@ -119,9 +119,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
           )}
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">bibliografia candidata</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Referências identificadas</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Bibliografia identificada</CardTitle>
           {detail.bibliographyCandidates.length ? (
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {detail.bibliographyCandidates.map((item) => (
@@ -137,9 +137,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">cobertura</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Alinhamento preliminar</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Alinhamento preliminar</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.coverageItems.map((item) => (
               <div
@@ -156,9 +156,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
           </div>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">gaps</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Lacunas identificadas</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Gaps encontrados</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.gapItems.map((item) => (
               <div
@@ -176,9 +176,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
         </Card>
       </section>
 
-      <Card>
+      <Card className="min-w-0">
         <div className="section-kicker">notas</div>
-        <CardTitle className="mt-5 text-[1.8rem]">Leitura sujeita a revisão</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Leitura sujeita a revisão</CardTitle>
         <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
           {detail.notes.map((note) => (
             <li key={note}>• {note}</li>

@@ -16,6 +16,7 @@ import {
 } from "@/components/workspace/upload-validation";
 import { uploadMaterialFile } from "@/lib/api/documents";
 import { getApiConfig } from "@/lib/api/config";
+import { sourceLabel } from "@/lib/adapters/capabilities";
 import type {
   BackendConnectionInfo,
   UploadEntryState,
@@ -37,7 +38,7 @@ function buildConnection(): BackendConnectionInfo {
     return {
       state: "mock",
       source: "mock",
-      title: "Modo de demonstração",
+      title: "Dados de demonstração",
       detail: "NEXT_PUBLIC_USE_MOCK_API=true mantém este fluxo em demonstração. Nenhum arquivo será enviado."
     };
   }
@@ -45,15 +46,15 @@ function buildConnection(): BackendConnectionInfo {
     return {
       state: "unsupported",
       source: "unsupported",
-      title: "URL do backend não configurada",
+      title: "Painel em validação",
       detail: "URL do backend não configurada para envio real."
     };
   }
   return {
     state: "connected",
     source: "backend",
-    title: "Upload controlado disponível",
-    detail: "O envio usa o endpoint existente de materiais e não aciona processamento amplo."
+    title: "Backend disponível",
+    detail: "O envio usa o endpoint existente de materiais, com validação local e confirmação obrigatória."
   };
 }
 
@@ -169,10 +170,10 @@ export function MaterialUploadEntryClient() {
 
   const modeLabel =
     connection.source === "backend"
-      ? "Envio real"
+      ? "Upload controlado"
       : connection.source === "mock"
-        ? "Modo de demonstração"
-        : "Configuração necessária";
+        ? "Dados de demonstração"
+        : "Painel em validação";
   const submitLabel =
     connection.source === "backend"
       ? "Enviar para validação"
@@ -200,7 +201,7 @@ export function MaterialUploadEntryClient() {
       <WorkspaceSourcePanel
         eyebrow="enviar material"
         title="Enviar material"
-        subtitle="Adicione um PDF, TXT ou Markdown (.md) para validação inicial. O processamento será controlado e revisável."
+        subtitle="Adicione um PDF, TXT ou Markdown (.md) para validação inicial. Esta etapa segue controlada e sujeita a revisão."
         connection={connection}
       />
 
@@ -221,9 +222,9 @@ export function MaterialUploadEntryClient() {
           onChange={handleFileChange}
         />
 
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">confirmação</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Revisão antes do envio</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão antes do envio</CardTitle>
           <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
             <label className="flex items-start gap-3 text-sm leading-7 text-silver">
               <input
@@ -249,7 +250,7 @@ export function MaterialUploadEntryClient() {
             <Badge className={productStatusClass(validationMessage)}>{validationMessage}</Badge>
           </div>
           <p className="mt-5 text-sm leading-7 text-silver">
-            Nenhum processamento amplo, OCR, geração de questões ou atualização de progresso será iniciado nesta etapa.
+            Esta etapa não gera questões, não gera simulados e não altera seu progresso.
           </p>
           {showAuthGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
@@ -286,7 +287,7 @@ export function MaterialUploadEntryClient() {
               href="/materials"
               className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
             >
-              Cancelar
+              Voltar para materiais
             </Link>
           </div>
         </Card>
@@ -301,7 +302,7 @@ export function MaterialUploadEntryClient() {
                 {result.demoOnly ? "Modo de demonstração: nenhum arquivo foi enviado." : "Material recebido para validação"}
               </CardTitle>
             </div>
-            <Badge className={sourceBadgeClass(result.source)}>{result.source === "backend" ? "backend" : "mock"}</Badge>
+            <Badge className={sourceBadgeClass(result.source)}>{sourceLabel(result.source)}</Badge>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge className={productStatusClass(result.processingStatus)}>{result.processingStatus}</Badge>

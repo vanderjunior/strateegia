@@ -47,13 +47,15 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
       <WorkspaceBackLink href={`/materials/${documentId}`}>Voltar para o material</WorkspaceBackLink>
 
       <WorkspaceSourcePanel
-        eyebrow="pipeline documental"
+        eyebrow="pipeline"
         title={viewModel.title}
-        subtitle="Linha do tempo somente leitura para acompanhar extração, segmentação e etapa de revisão."
+        subtitle="Acompanhe a linha do processamento com foco em extração, segmentação e revisão."
         connection={viewModel.connection}
       />
 
-      <Card>
+      <Card className="min-w-0">
+        <div className="section-kicker">processamento</div>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Linha do processamento</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Badge className={sourceBadgeClass(viewModel.source)}>{sourceLabel(viewModel.source)}</Badge>
           <Badge className={productStatusClass(viewModel.extractionStatus)}>{viewModel.extractionStatus}</Badge>
@@ -72,13 +74,13 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
       </Card>
 
       <section className="space-y-4">
-        {viewModel.steps.map((step) => (
-          <Card key={step.id} className={`border ${toneClass(step.tone)}`}>
+        {viewModel.steps.map((step, index) => (
+          <Card key={step.id} className={`min-w-0 border ${toneClass(step.tone)}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="section-kicker">{step.label}</div>
+                <div className="section-kicker">etapa {index + 1}</div>
                 <CardTitle className="mt-4 break-words text-[1.6rem] leading-[1.02] sm:text-[1.8rem]">
-                  {step.statusLabel}
+                  {step.label}
                 </CardTitle>
               </div>
               <Badge className={productStatusClass(step.statusLabel)}>{step.statusLabel}</Badge>
@@ -88,14 +90,14 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
         ))}
       </section>
 
-      <Card>
+      <Card className="min-w-0">
         <div className="section-kicker">notas</div>
-        <CardTitle className="mt-5 text-[1.8rem]">Limites de exibição</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Limites desta tela</CardTitle>
         <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
           {viewModel.notes.map((note) => (
             <li key={note}>• {note}</li>
           ))}
-          <li>• Nenhum texto bruto do documento é exibido nesta linha do tempo.</li>
+          <li>• Nenhum texto bruto do documento é exibido nesta tela.</li>
         </ul>
       </Card>
     </div>

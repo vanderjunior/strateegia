@@ -20,8 +20,8 @@ function buildFallback(materialId: string): { connection: BackendConnectionInfo;
     connection: {
       state: "mock",
       source: "mock",
-      title: "Usando dados de demonstração",
-      detail: "Detalhes locais exibidos até existir leitura segura do backend para este material."
+      title: "Dados de demonstração",
+      detail: "Consulta local exibida até existir leitura segura do backend para este material."
     },
     detail: buildMockMaterialDetail(materialId)
   };
@@ -53,12 +53,12 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
       <WorkspaceSourcePanel
         eyebrow="material"
         title={detail.title}
-        subtitle="Leitura detalhada em modo somente leitura, com foco em status, revisão e estrutura segura."
+        subtitle="Consulte status do material, estrutura segura e avisos de revisão sem expor conteúdo bruto."
         connection={connection}
       />
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card>
+        <Card className="min-w-0">
           <div className="flex flex-wrap gap-2">
             <Badge className={sourceBadgeClass(detail.source)}>{sourceLabel(detail.source)}</Badge>
             <Badge className={productStatusClass(detail.processingStatus)}>{detail.processingStatus}</Badge>
@@ -90,9 +90,9 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
           <p className="mt-6 text-sm leading-7 text-silver">{detail.sourceNote}</p>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">avisos</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Revisão controlada</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão necessária</CardTitle>
           {detail.warnings.length ? (
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {detail.warnings.map((warning) => (
@@ -105,15 +105,15 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
             <p className="mt-5 text-sm leading-7 text-silver">Nenhum aviso adicional por enquanto.</p>
           )}
           <div className="mt-6">
-            <WorkspaceLink href={`/pipeline/${materialId}`}>Ver linha do tempo</WorkspaceLink>
+            <WorkspaceLink href={`/pipeline/${materialId}`}>Ver pipeline</WorkspaceLink>
           </div>
         </Card>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <div className="section-kicker">seções</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Prévia segura de seções</CardTitle>
+        <Card className="min-w-0">
+          <div className="section-kicker">prévia segura</div>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Seções identificadas</CardTitle>
           {detail.sectionPreviews.length ? (
             <div className="mt-5 space-y-3">
               {detail.sectionPreviews.map((section) => (
@@ -135,14 +135,14 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
           )}
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <div className="section-kicker">limites</div>
-          <CardTitle className="mt-5 text-[1.8rem]">O que aparece aqui</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">O que esta tela mostra</CardTitle>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             <li>• Títulos de seções e contagens seguras.</li>
             <li>• Status de leitura, OCR e revisão.</li>
             <li>• Nenhum texto bruto do documento é exibido.</li>
-            <li>• Nenhum conteúdo de OCR completo ou payload de imagem é exposto.</li>
+            <li>• Nenhum conteúdo completo de OCR ou imagem bruta é exibido.</li>
           </ul>
         </Card>
       </section>

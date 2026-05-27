@@ -8,17 +8,17 @@ import { productStatusClass } from "@/components/workspace/WorkspaceShared";
 function entryStateLabel(state: UploadEntryState): string {
   switch (state) {
     case "sending":
-      return "Enviando";
+      return "Enviando material";
     case "received":
-      return "Material recebido para validação";
+      return "Material recebido";
     case "failed":
-      return "Falha controlada";
+      return "Revisão necessária";
     case "mock_only":
       return "Modo de demonstração";
     case "endpoint_unavailable":
       return "Configuração necessária";
     case "ready_to_send":
-      return "Pronto para envio";
+      return "Pronto para validação";
     default:
       return "Aguardando validação";
   }
@@ -41,9 +41,9 @@ export function UploadValidationSummary({
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-      <Card>
+      <Card className="min-w-0">
         <div className="section-kicker">tipos aceitos</div>
-        <CardTitle className="mt-5 text-[1.8rem]">Validação inicial</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Validação inicial</CardTitle>
         <div className="mt-5 space-y-3">
           {acceptedTypes.map((item) => (
             <div
@@ -64,9 +64,9 @@ export function UploadValidationSummary({
         </div>
       </Card>
 
-      <Card>
+      <Card className="min-w-0">
         <div className="section-kicker">estado</div>
-        <CardTitle className="mt-5 text-[1.8rem]">Revisão antes do envio</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão antes do envio</CardTitle>
         <div className="mt-5 flex flex-wrap gap-2">
           <Badge className={productStatusClass(entryStateLabel(entryState))}>{entryStateLabel(entryState)}</Badge>
           <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
@@ -75,9 +75,9 @@ export function UploadValidationSummary({
           <Badge className={productStatusClass(validationMessage)}>{validationMessage}</Badge>
         </div>
         <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-          <li>• PDFs escaneados podem exigir OCR e revisão manual.</li>
-          <li>• OCR está em validação e pode não estar disponível para todos os arquivos.</li>
-          <li>• Não prometa suporte completo a PDF escaneado.</li>
+          <li>• PDFs escaneados podem exigir OCR em validação.</li>
+          <li>• A leitura de OCR pode exigir conferência antes da revisão.</li>
+          <li>• Esta etapa não gera questões, simulados nem altera seu progresso.</li>
           <li>• Para envio real, use PDF, TXT ou Markdown (.md).</li>
           {validationState === "missing_confirmation" && !confirmationChecked ? (
             <li>• Confirme o envio antes de liberar a ação.</li>

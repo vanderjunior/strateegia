@@ -243,7 +243,7 @@ export const materialsWorkspaceItems: MaterialListItem[] = [
     id: "material-arte-naval",
     title: "PSCPP bibliografia - Arte Naval.pdf",
     typeLabel: "PDF textual",
-    processingStatus: "Processado",
+    processingStatus: "Material processado",
     extractionStatus: "Texto extraído",
     sectionsCount: 18,
     chunksCount: 124,
@@ -255,7 +255,7 @@ export const materialsWorkspaceItems: MaterialListItem[] = [
     id: "material-shiphandling-manobra",
     title: "Shiphandling for the Mariner - capítulo manobra.pdf",
     typeLabel: "PDF textual",
-    processingStatus: "Processado",
+    processingStatus: "Material processado",
     extractionStatus: "Texto extraído",
     sectionsCount: 9,
     chunksCount: 76,
@@ -286,7 +286,7 @@ export const materialDetailsById: Record<string, MaterialDetail> = {
       { id: "arte-2", title: "Estabilidade inicial", level: 1, chunkRangeLabel: "Trechos 9 a 18" },
       { id: "arte-3", title: "Cabos, fundeio e governo", level: 1, chunkRangeLabel: "Trechos 19 a 31" }
     ],
-    sourceNote: "Material processado em modo de demonstração, pronto para revisão assistida."
+    sourceNote: "Material processado em dados de demonstração, pronto para revisão assistida."
   },
   "material-shiphandling-manobra": {
     ...materialsWorkspaceItems[1],
@@ -414,7 +414,7 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Linha do tempo local usada até existir leitura segura do backend para este material."
+      detail: "Consulta local exibida até existir leitura segura do backend para este material."
     },
     documentId: "material-arte-naval",
     title: "PSCPP bibliografia - Arte Naval.pdf",
@@ -426,7 +426,7 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
     notes: ["Texto extraído sujeito a revisão antes de uso em fluxos posteriores."],
     steps: [
       { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material já está registrado." },
-      { id: "extracted", label: "Texto extraído", statusLabel: "Concluído", tone: "complete", detail: "Leitura textual disponível." },
+      { id: "extracted", label: "Texto extraído", statusLabel: "Concluído", tone: "complete", detail: "Leitura textual disponível para revisão." },
       { id: "chunked", label: "Segmentado", statusLabel: "Concluído", tone: "complete", detail: "Trechos preparados para revisão." },
       { id: "review", label: "Pronto para revisão", statusLabel: "Concluído", tone: "current", detail: "Material pronto para etapa de revisão." }
     ]
@@ -436,7 +436,7 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Linha do tempo local usada até existir leitura segura do backend para este material."
+      detail: "Consulta local exibida até existir leitura segura do backend para este material."
     },
     documentId: "material-roteiro-porto",
     title: "Roteiro escaneado - trecho porto.pdf",
@@ -449,8 +449,8 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
     steps: [
       { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material já está registrado." },
       { id: "extracted", label: "Texto extraído", statusLabel: "OCR necessário", tone: "warning", detail: "A leitura textual ainda não está pronta." },
-      { id: "chunked", label: "Segmentado", statusLabel: "Pendente", tone: "pending", detail: "A segmentação depende de validação do OCR." },
-      { id: "review", label: "Pronto para revisão", statusLabel: "Em validação", tone: "warning", detail: "Arquivo mantido em revisão controlada." }
+      { id: "chunked", label: "Segmentado", statusLabel: "Validação pendente", tone: "pending", detail: "A segmentação depende de validação do OCR." },
+      { id: "review", label: "Pronto para revisão", statusLabel: "OCR em validação", tone: "warning", detail: "Arquivo mantido em revisão controlada." }
     ]
   }
 };

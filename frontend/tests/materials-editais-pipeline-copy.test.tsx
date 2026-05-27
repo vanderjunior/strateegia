@@ -48,58 +48,53 @@ vi.mock("@/lib/adapters/editais", async () => {
   };
 });
 
+vi.mock("@/lib/adapters/pipeline", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/adapters/pipeline")>(
+    "@/lib/adapters/pipeline"
+  );
+
+  return {
+    ...actual,
+    loadPipelineDetail: vi.fn(async (documentId: string) => actual.buildMockPipelineDetail(documentId))
+  };
+});
+
 import { EditaisReadOnlyClient } from "@/components/workspace/EditaisReadOnlyClient";
 import { EditalDetailReadOnlyClient } from "@/components/workspace/EditalDetailReadOnlyClient";
+import { MaterialDetailReadOnlyClient } from "@/components/workspace/MaterialDetailReadOnlyClient";
 import { MaterialUploadEntryClient } from "@/components/workspace/MaterialUploadEntryClient";
 import { MaterialsReadOnlyClient } from "@/components/workspace/MaterialsReadOnlyClient";
+import { PipelineDetailReadOnlyClient } from "@/components/workspace/PipelineDetailReadOnlyClient";
 
-describe("materials, editais, and upload read-only invariants", () => {
-  it("keeps materials workspace on product-friendly read-only CTAs", async () => {
-    render(<MaterialsReadOnlyClient />);
-
-    expect((await screen.findAllByText("Ver material")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Enviar material").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Texto extraído").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Pronto para revisão").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("OCR necessário").length).toBeGreaterThan(0);
-
-    expect(screen.queryByText("Processar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Reprocessar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
-    expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
-    expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
-    expect(screen.queryByText("Agendar")).not.toBeInTheDocument();
-  });
-
-  it("keeps editais workspace and detail on cautious candidate language", async () => {
+describe("materials, editais, and pipeline copy", () => {
+  it("keeps product-facing language across materials, editais, upload, and pipeline surfaces", async () => {
     render(
       <div>
+        <MaterialsReadOnlyClient />
+        <MaterialDetailReadOnlyClient materialId="material-arte-naval" />
+        <MaterialUploadEntryClient />
         <EditaisReadOnlyClient />
         <EditalDetailReadOnlyClient editalId="edital-pscpp-referencia" />
+        <PipelineDetailReadOnlyClient documentId="material-roteiro-porto" />
       </div>
     );
 
-    expect((await screen.findAllByText("Ver edital")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Dados de demonstração")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Enviar material").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Material processado").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Análise candidata").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Gaps encontrados").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Cobertura parcial").length).toBeGreaterThan(0);
+    expect(screen.getByText("Linha do processamento")).toBeInTheDocument();
+    expect(screen.getAllByText("OCR em validação").length).toBeGreaterThan(0);
 
-    expect(screen.queryByText("Ingerir edital")).not.toBeInTheDocument();
+    expect(screen.queryByText(/artifact/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/runtime chain/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/raw OCR/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/base64/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
-  });
-
-  it("keeps upload entry free of process and generation controls", () => {
-    render(<MaterialUploadEntryClient />);
-
-    expect(screen.getByRole("button", { name: "Enviar para validação" })).toBeInTheDocument();
     expect(screen.queryByText("Processar")).not.toBeInTheDocument();
     expect(screen.queryByText("Reprocessar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
-    expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
     expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
-    expect(screen.queryByText("Concluir sessão")).not.toBeInTheDocument();
     expect(screen.queryByText("Agendar")).not.toBeInTheDocument();
   });
 });

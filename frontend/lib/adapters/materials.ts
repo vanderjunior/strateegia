@@ -31,8 +31,8 @@ function baseConnection(overrides: Partial<BackendConnectionInfo> = {}): Backend
   return {
     state: "mock",
     source: "mock",
-    title: "Usando dados de demonstração",
-    detail: "A listagem permanece em modo de demonstração até existir leitura segura da listagem real.",
+    title: "Dados de demonstração",
+    detail: "Consulta local exibida até existir leitura segura da listagem real.",
     ...overrides
   };
 }
@@ -72,7 +72,7 @@ function workspaceSummary(
 }
 
 function mockSummary(items: MaterialListItem[]): WorkspaceSummaryMetric[] {
-  const processed = items.filter((item) => item.processingStatus === "Processado").length;
+  const processed = items.filter((item) => item.processingStatus === "Material processado").length;
   const ocrRequired = items.filter((item) => item.processingStatus === "OCR necessário").length;
   const readyForReview = items.filter((item) => item.reviewState === "Pronto para revisão").length;
   const relatedGaps = items.reduce((total, item) => total + item.relatedGaps, 0);
@@ -84,8 +84,8 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Painel em modo de validação",
-      detail: message,
+      title: "Painel em validação",
+      detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
@@ -93,16 +93,16 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend indisponível",
-      detail: message,
+      title: "Backend offline",
+      detail: "Não foi possível consultar o backend neste momento. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
   return baseConnection({
     state: "mock",
     source,
-    title: "Fallback local ativo",
-    detail: message,
+    title: "Consulta local",
+    detail: "Consulta local exibida até existir uma leitura segura para esta área.",
     endpoint
   });
 }
@@ -112,7 +112,7 @@ function normalizeProcessingStatus(state: BackendDocumentPipelineState): string 
     return "OCR necessário";
   }
   if (state.metadata_status === "ready" || state.metadata_status === "metadata_ready") {
-    return "Processado";
+    return "Material processado";
   }
   if (state.current_stage.includes("pending")) {
     return "Processando";
@@ -173,8 +173,8 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     return {
       ...fallback,
       connection: baseConnection({
-        title: "Mock forçado por configuração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta área em modo local."
+        title: "Dados de demonstração",
+        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve esta área em demonstração local."
       })
     };
   }
@@ -183,7 +183,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar leituras read-only autenticadas quando disponíveis."
+        detail: "Defina NEXT_PUBLIC_API_BASE_URL para habilitar consulta protegida quando disponível."
       })
     };
   }
@@ -196,9 +196,9 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
         connection: {
           state: "auth_required",
           source: "backend",
-          title: "Sessão necessária",
+          title: "Requer sessão",
           detail:
-            "O backend está disponível, mas a visão de materiais continua protegida até existir uma sessão válida no navegador.",
+            "O backend está disponível, mas a visão de materiais exige uma sessão válida no navegador.",
           endpoint: "/api/dashboard/overview"
         }
       };
@@ -214,9 +214,8 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     connection: {
       state: "connected",
       source: "backend",
-      title: "Backend conectado com fallback auditado",
-      detail:
-        "Os contadores foram lidos do backend em modo somente leitura. A lista detalhada ainda usa dados de demonstração seguros.",
+      title: "Backend disponível",
+      detail: "Os contadores vieram do backend. A lista detalhada continua em dados auditados de demonstração.",
       endpoint: "/api/dashboard/overview"
     },
     summary: workspaceSummary(
@@ -258,8 +257,8 @@ export async function loadMaterialDetail(materialId: string): Promise<{
   if (config.forceMock) {
     return {
       connection: baseConnection({
-        title: "Mock forçado por configuração",
-        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este material em modo local."
+        title: "Dados de demonstração",
+        detail: "NEXT_PUBLIC_USE_MOCK_API=true manteve este material em demonstração local."
       }),
       detail: fallback
     };
@@ -268,7 +267,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar ler este material em modo somente leitura."
+        detail: "Defina NEXT_PUBLIC_API_BASE_URL para tentar consultar este material com segurança."
       }),
       detail: fallback
     };
@@ -287,8 +286,8 @@ export async function loadMaterialDetail(materialId: string): Promise<{
         connection: {
           state: "auth_required",
           source: "backend",
-          title: "Sessão necessária",
-          detail: "Os detalhes reais do material exigem uma sessão válida para leitura em modo somente leitura.",
+          title: "Requer sessão",
+          detail: "Os detalhes reais do material exigem uma sessão válida para consulta protegida.",
           endpoint: `/api/materials/${materialId}/pipeline`
         },
         detail: fallback
@@ -320,15 +319,15 @@ export async function loadMaterialDetail(materialId: string): Promise<{
     relatedGaps: fallback.relatedGaps,
     warnings: normalizeWarnings(pipeline),
     sectionPreviews: sectionsResult.ok ? mapSectionPreview(sectionsResult.data) : fallback.sectionPreviews,
-    sourceNote: "Dados lidos do backend em modo somente leitura e apresentados sem conteúdo bruto."
+    sourceNote: "Dados lidos do backend em consulta segura e apresentados sem conteúdo bruto."
   };
 
   return {
     connection: {
       state: "connected",
       source: "backend",
-      title: "Detalhes carregados do backend",
-      detail: "Este material foi lido em modo somente leitura, preservando a revisão controlada.",
+      title: "Backend disponível",
+      detail: "Este material foi consultado no backend, preservando a revisão controlada.",
       endpoint: `/api/materials/${materialId}/pipeline`
     },
     detail

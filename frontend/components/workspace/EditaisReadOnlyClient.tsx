@@ -7,7 +7,6 @@ import { Card, CardTitle } from "@/components/ui/card";
 import type { EditaisWorkspaceViewModel } from "@/lib/api/types";
 import { buildMockEditaisWorkspaceViewModel, loadEditaisWorkspaceViewModel } from "@/lib/adapters/editais";
 import { sourceLabel } from "@/lib/adapters/capabilities";
-import { getUserFacingCapability } from "@/lib/product/product-language";
 import {
   productStatusClass,
   sourceBadgeClass,
@@ -31,15 +30,12 @@ export function EditaisReadOnlyClient() {
     };
   }, []);
 
-  const editalCopy = getUserFacingCapability("edital_ingestion", "student");
-  const alignmentCopy = getUserFacingCapability("bibliography_alignment", "student");
-
   return (
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="editais"
         title="Editais"
-        subtitle="Revise tópicos, bibliografia e lacunas identificadas."
+        subtitle="Revise tópicos candidatos, bibliografia identificada e gaps encontrados."
         connection={viewModel.connection}
       />
 
@@ -48,7 +44,7 @@ export function EditaisReadOnlyClient() {
       {viewModel.items.length ? (
         <section className="grid gap-4 lg:grid-cols-2">
           {viewModel.items.map((item) => (
-          <Card key={item.id} className="flex h-full flex-col">
+          <Card key={item.id} className="flex h-full min-w-0 flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 max-w-[19rem]">
                 <div className="section-kicker">edital</div>
@@ -83,15 +79,14 @@ export function EditaisReadOnlyClient() {
               </div>
             </div>
             <p className="mt-5 text-sm leading-7 text-silver">
-              {editalCopy?.description ?? "O edital é analisado para identificar tópicos, bibliografia, pesos e lacunas."}
+              O edital é lido para destacar tópicos candidatos, bibliografia identificada e lacunas.
             </p>
             <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              {alignmentCopy?.description ??
-                "O sistema compara materiais, bibliografia e tópicos para apontar cobertura e gaps."}
+              O cruzamento com materiais ajuda a apontar cobertura parcial e gaps encontrados.
             </p>
             <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <span className="max-w-[18rem] text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
-                A leitura de edital seguirá em etapa controlada.
+                Análise preliminar, sujeita a revisão.
               </span>
               <WorkspaceLink href={`/editais/${item.id}`}>Ver edital</WorkspaceLink>
             </div>
@@ -103,7 +98,7 @@ export function EditaisReadOnlyClient() {
           <div className="section-kicker">editais</div>
           <CardTitle className="mt-5 text-[1.8rem]">Nenhum edital para exibir ainda</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            O painel continua em modo somente leitura e exibirá análises candidatas quando houver dados disponíveis.
+            O painel continua disponível para consulta e exibirá análises candidatas quando houver dados disponíveis.
           </p>
         </Card>
       )}
