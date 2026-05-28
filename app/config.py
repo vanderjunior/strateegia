@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 
 TRUE_VALUES = {"true", "1", "yes", "on"}
 FALSE_VALUES = {"false", "0", "no", "off"}
 VALID_APP_ENVS = {"development", "test", "production"}
+DEFAULT_STUDYFLOW_DATA_FILE = Path("data") / "study_data.json"
+DEFAULT_STUDYFLOW_UPLOAD_ROOT = Path("data") / "uploads"
 
 
 def get_app_env() -> str:
@@ -29,6 +32,21 @@ def parse_bool_env(name: str, default: bool) -> bool:
     if value in FALSE_VALUES:
         return False
     return default
+
+
+def get_path_env(name: str, default: Path) -> Path:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    return Path(str(raw).strip()).expanduser()
+
+
+def get_studyflow_data_file() -> Path:
+    return get_path_env("STUDYFLOW_DATA_FILE", DEFAULT_STUDYFLOW_DATA_FILE)
+
+
+def get_studyflow_upload_root(default: Path | None = None) -> Path:
+    return get_path_env("STUDYFLOW_UPLOAD_ROOT", default or DEFAULT_STUDYFLOW_UPLOAD_ROOT)
 
 
 def inspection_allowed_in_production() -> bool:

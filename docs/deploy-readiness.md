@@ -43,11 +43,11 @@ Backend currently reads:
 - `ENABLE_INSPECTION`: enables inspection surfaces outside production by default.
 - `REQUIRE_AUTH_FOR_INSPECTION`: defaults to `false` outside production and `true` in production.
 - `INSPECTION_ALLOWED_IN_PRODUCTION`: must be enabled before inspection can be available in production.
+- `STUDYFLOW_DATA_FILE`: JSON store path; default is `data/study_data.json`.
+- `STUDYFLOW_UPLOAD_ROOT`: upload file root; default is `data/uploads`.
 
 Backend gaps before staging:
 
-- There is no documented env var for JSON store path.
-- There is no documented env var for upload storage root.
 - There is no durable session secret or session store setting.
 - There is no explicit CORS configuration in the backend app.
 
@@ -78,6 +78,7 @@ NEXT_PUBLIC_USE_MOCK_API=false
 ## JSON Storage Notes
 
 - Default path is `data/study_data.json`.
+- Override with `STUDYFLOW_DATA_FILE`.
 - The JSON store is created on app startup if missing.
 - User-scoped materials, editais, pipeline state, and many artifacts live inside the JSON payload.
 - Local data survives process restart when the `data/` directory remains intact.
@@ -89,6 +90,7 @@ NEXT_PUBLIC_USE_MOCK_API=false
 - Allowed upload extensions: `.pdf`, `.txt`, `.md`.
 - Upload size limit: `5 MB`.
 - Uploaded files are stored under `data/uploads/{user_id}/`.
+- Override the upload root with `STUDYFLOW_UPLOAD_ROOT`.
 - Metadata is stored in the JSON repository.
 - TXT and Markdown can be text-extracted at upload time.
 - PDFs are treated cautiously; scanned PDFs may require OCR validation.
@@ -154,6 +156,10 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 - Run backend and frontend together with a mounted persistent volume for `data/`.
 - Keeps JSON/uploads explicit and reversible.
 - Avoids premature PostgreSQL or cloud provider coupling.
+- Do not add a Compose file until the frontend/backend URL split is explicit:
+  - Next server-side proxies need an internal backend URL such as `http://backend:8000`.
+  - Browser-facing direct API helpers need a browser-reachable URL such as `http://localhost:8000`, or those reads must also be proxied.
+  - Today `NEXT_PUBLIC_API_BASE_URL` is a single value, so a naive Compose file could work for proxies while breaking direct browser reads.
 
 ### Single VM
 
@@ -173,7 +179,9 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
    - backend service
    - frontend service
    - mounted `data/` volume shared only with backend
-   - explicit `NEXT_PUBLIC_API_BASE_URL`
+   - explicit `STUDYFLOW_DATA_FILE=/app/data/study_data.json`
+   - explicit `STUDYFLOW_UPLOAD_ROOT=/app/data/uploads`
+   - an explicit frontend/backend URL strategy before creating the Compose file
    - no public auth provider yet
 3. Validate one internal user flow:
    - login with local auth
@@ -209,6 +217,7 @@ Do not migrate persistence before staging proves the product flow and storage re
 
 - Confirm target staging topology and ports.
 - Make JSON path and upload storage root explicit before any cloud run.
+- Use `STUDYFLOW_DATA_FILE` and `STUDYFLOW_UPLOAD_ROOT` instead of relying on implicit paths.
 - Mount or back up `data/`.
 - Confirm backend restart behavior for sessions and storage.
 - Confirm frontend proxies reach the backend through `NEXT_PUBLIC_API_BASE_URL`.

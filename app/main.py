@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import SESSION_COOKIE_NAME, inspection_ui_path, require_inspection_access, router
+from app.config import get_studyflow_data_file, get_studyflow_upload_root
 from app.repositories.json_store import JsonStudyRepository
 from app.services.pipeline import StudyPipeline
 from app.services.session_flow import SessionManager
@@ -19,13 +20,16 @@ def create_app(
     pipeline: StudyPipeline | None = None,
 ) -> FastAPI:
     app = FastAPI(title="StudyFlow AI", version="0.1.0")
-    app.state.repository = repository or JsonStudyRepository(
-        Path("data") / "study_data.json"
-    )
+    app.state.repository = repository or JsonStudyRepository(get_studyflow_data_file())
     app.state.pipeline = pipeline or StudyPipeline()
     app.state.session_manager = SessionManager()
     app.state.auth_sessions = {}
-    app.state.storage_root = app.state.repository.path.parent / "uploads"
+    default_upload_root = (
+        app.state.repository.path.parent / "uploads"
+        if repository is not None
+        else Path("data") / "uploads"
+    )
+    app.state.storage_root = get_studyflow_upload_root(default_upload_root)
     app.include_router(router)
     app.mount(
         "/static",
