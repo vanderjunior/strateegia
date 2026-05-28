@@ -218,12 +218,86 @@ Expected unauthenticated proxy behavior:
 
 Manual authenticated smoke checklist, still pending:
 
-- Establish a valid login/session using the existing local auth path.
-- Upload a small `.txt` material through the controlled upload page.
+- Establish a valid login/session using the existing local auth endpoints.
+- Upload a small `.txt` material through the frontend controlled upload proxy.
 - Confirm `/materials` shows real session data.
 - Restart with `docker compose restart`, not `docker compose down -v`.
 - Confirm JSON metadata and uploaded file data persist after restart.
 - Open the uploaded material pipeline detail and confirm the bounded pipeline summary route works.
+
+Authenticated smoke path:
+
+The backend already exposes local auth endpoints:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+Use a local-only cookie jar. Do not commit credentials, cookies, or generated smoke files.
+
+```bash
+COOKIE_JAR=/tmp/studyflow.compose.cookies
+SMOKE_USER="compose-smoke-$(date +%s)"
+SMOKE_PASSWORD="<local-only-password-with-8-or-more-chars>"
+SMOKE_FILE=/tmp/studyflow-compose-smoke.txt
+
+printf 'Resumo de smoke autenticado\nLinha 2\n' > "$SMOKE_FILE"
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  -H 'content-type: application/json' \
+  -d "{\"username\":\"$SMOKE_USER\",\"password\":\"$SMOKE_PASSWORD\",\"display_name\":\"Compose Smoke\",\"email\":\"$SMOKE_USER@example.com\"}" \
+  http://localhost:8000/api/auth/register
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  -H 'content-type: application/json' \
+  -d "{\"username\":\"$SMOKE_USER\",\"password\":\"$SMOKE_PASSWORD\"}" \
+  http://localhost:8000/api/auth/login
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  http://localhost:3000/api/auth/me
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  -F "file=@$SMOKE_FILE;type=text/plain" \
+  http://localhost:3000/api/materials/upload
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  http://localhost:3000/api/materials
+```
+
+Expected authenticated smoke behavior:
+
+- Register returns `201`.
+- Login returns `200` and sets `studyflow_session`.
+- Frontend `/api/auth/me` returns `200` with `authenticated: true`.
+- Frontend `/api/materials/upload` returns a created/uploaded material response.
+- Frontend `/api/materials` returns `200` with the uploaded material in the real session-backed list.
+
+After upload, capture the uploaded `document_id` from the upload or materials response and verify bounded detail reads:
+
+```bash
+DOCUMENT_ID="<uploaded-document-id>"
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  "http://localhost:3000/api/materials/$DOCUMENT_ID/summary"
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  "http://localhost:3000/api/materials/$DOCUMENT_ID/pipeline/summary"
+```
+
+Persistence smoke:
+
+```bash
+docker compose restart
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  http://localhost:3000/api/auth/me
+
+curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+  http://localhost:3000/api/materials
+```
+
+Because sessions are in-memory, `docker compose restart` may clear the login session. If `/api/auth/me` returns `authenticated: false` after restart, log in again with the same `SMOKE_USER` and `SMOKE_PASSWORD`, then re-check `/api/materials`. The persisted material should remain as long as the `studyflow_data` volume was not removed.
 
 ### Single VM
 
