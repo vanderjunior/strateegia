@@ -2,18 +2,20 @@
 
 ## Purpose
 
-Define the next dedicated read endpoints needed after the interim `/api/dashboard/overview` strategy now used by the frontend `/materials` and `/editais` proxies.
+Define the dedicated bounded read endpoints needed after the initial `/api/dashboard/overview` interim strategy.
 
 This document is a contract and test-planning artifact only. It does not introduce new backend behavior yet.
 
 ## Current Interim State
 
-- `GET /api/dashboard/overview` is already authenticated and user-scoped.
-- The frontend currently uses same-origin Next proxies:
+- `GET /api/dashboard/overview` remains an authenticated, user-scoped summary surface.
+- The frontend same-origin Next proxies now target dedicated bounded endpoints for:
   - `GET /api/materials`
   - `GET /api/editais`
-- Those proxies sanitize dashboard overview data into bounded list payloads.
-- This is safe enough for the first authenticated reads, but it is not a full listing contract.
+  - `GET /api/materials/{document_id}/summary`
+  - `GET /api/editais/{edital_id}/summary`
+- The dashboard overview is no longer the source for materials/editais list proxies.
+- Pipeline detail still uses older pipeline/chunks/sections reads and needs the next bounded contract.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -35,6 +37,7 @@ This document is a contract and test-planning artifact only. It does not introdu
 
 ### Phase 3: recent operational surfaces
 
+- `GET /api/materials/{document_id}/pipeline/summary`
 - `GET /api/pipeline/recent`
 
 ### Later
@@ -47,8 +50,9 @@ This document is a contract and test-planning artifact only. It does not introdu
 2. `GET /api/editais`
 3. `GET /api/materials/{document_id}/summary`
 4. `GET /api/editais/{edital_id}/summary`
-5. `GET /api/pipeline/recent`
-6. `GET /api/study/today`
+5. `GET /api/materials/{document_id}/pipeline/summary`
+6. `GET /api/pipeline/recent`
+7. `GET /api/study/today`
 
 ## Proposed Response Shapes
 
@@ -227,10 +231,119 @@ Implemented shape:
 }
 ```
 
-### `GET /api/pipeline/recent`
+## Pipeline Status Reads
+
+### Current state
+
+Existing backend reads:
+
+- `GET /api/materials/{document_id}/pipeline`
+- `GET /api/materials/{document_id}/sections`
+- `GET /api/materials/{document_id}/chunks`
+
+Findings:
+
+- These routes are authenticated and user-scoped.
+- Unauthenticated requests return `401`.
+- Missing or non-owned materials resolve to `404` inside the current user's scope.
+- `GET /api/materials/{document_id}/pipeline` returns bounded operational state, but includes implementation-oriented fields such as pipeline version, stages, errors, and stage details.
+- `GET /api/materials/{document_id}/sections` is bounded enough for section metadata, but still exposes structural detail not needed for a compact pipeline status card.
+- `GET /api/materials/{document_id}/chunks` returns chunk identifiers only today, but it remains semantically close to raw content surfaces and should not be the primary browser-facing detail contract.
+
+### Recommended next endpoint
+
+Implement first:
+
+- `GET /api/materials/{document_id}/pipeline/summary`
+
+Purpose:
+
+- return bounded pipeline status for one owned material
+- support the pipeline detail page without calling chunks/sections directly
+- avoid raw pipeline events, worker/job traces, raw chunks, raw sections, OCR dumps, and storage paths
+
+Suggested shape:
+
+```json
+{
+  "document_id": "doc-123",
+  "status": "ready_for_review",
+  "steps": [
+    {
+      "key": "uploaded",
+      "label": "Enviado",
+      "state": "done",
+      "warnings_count": 0
+    },
+    {
+      "key": "text_extracted",
+      "label": "Texto extraído",
+      "state": "done",
+      "warnings_count": 0
+    },
+    {
+      "key": "segmented",
+      "label": "Segmentado",
+      "state": "done",
+      "warnings_count": 0
+    },
+    {
+      "key": "ready_for_review",
+      "label": "Pronto para revisão",
+      "state": "done",
+      "warnings_count": 0
+    }
+  ],
+  "steps_count": 4,
+  "has_ocr_warning": false,
+  "ready_for_review": true,
+  "section_count": 4,
+  "chunk_count": 12,
+  "warnings_count": 0,
+  "source": "user_scope"
+}
+```
+
+Allowed fields:
+
+- `document_id`
+- `status`
+- `steps`
+- `steps_count`
+- `has_ocr_warning`
+- `ready_for_review`
+- `section_count`
+- `chunk_count`
+- `warnings_count`
+- `source`
+
+Allowed step fields:
+
+- `key`
+- `label`
+- `state`
+- `warnings_count`
+
+Forbidden fields:
+
+- raw document text
+- raw OCR output
+- raw chunk bodies
+- raw section bodies
+- extraction payloads
+- event metadata with implementation traces
+- worker/job/runtime traces
+- base64 payloads
+- storage paths
+- private paths
+- answer key or correction payloads
+
+### Later endpoint: `GET /api/pipeline/recent`
 
 Purpose:
 - expose recent bounded pipeline state items without chunks, extraction text, or raw events
+- useful later for dashboard or materials overview status cards
+- not needed before the per-material pipeline summary is implemented
 
 Suggested shape:
 
