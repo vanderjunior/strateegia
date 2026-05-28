@@ -1,0 +1,11 @@
+.git
+.pytest_cache
+.python_packages
+__pycache__
+*.pyc
+.DS_Store
+data
+frontend/.next
+frontend/node_modules
+frontend/tsconfig.tsbuildinfo
+tmp_final_event_probe

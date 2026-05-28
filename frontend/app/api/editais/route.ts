@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { getServerBackendBaseUrl } from "@/lib/api/config";
 import type { BackendProtectedEditaisList } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-function getBackendBaseUrl(): string | null {
-  const value = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  return value ? value.replace(/\/+$/, "") : null;
-}
 
 function toSafeNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -82,7 +78,7 @@ function sanitizeEditaisList(payload: unknown): BackendProtectedEditaisList {
 }
 
 export async function GET(request: Request) {
-  const baseUrl = getBackendBaseUrl();
+  const baseUrl = getServerBackendBaseUrl();
 
   if (!baseUrl) {
     return NextResponse.json(

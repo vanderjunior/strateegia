@@ -4,14 +4,17 @@ import { GET } from "@/app/api/materials/route";
 
 describe("materials same-origin proxy route", () => {
   const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const originalInternalUrl = process.env.BACKEND_INTERNAL_URL;
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = "http://127.0.0.1:8000";
+    process.env.BACKEND_INTERNAL_URL = "http://backend:8000";
     vi.unstubAllGlobals();
   });
 
   afterEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = originalBaseUrl;
+    process.env.BACKEND_INTERNAL_URL = originalInternalUrl;
     vi.unstubAllGlobals();
   });
 
@@ -36,7 +39,7 @@ describe("materials same-origin proxy route", () => {
 
     expect(response.status).toBe(200);
     expect(fetchSpy).toHaveBeenCalledWith(
-      "http://127.0.0.1:8000/api/materials",
+      "http://backend:8000/api/materials",
       expect.objectContaining({
         method: "GET",
         headers: { cookie: "studyflow_session=server-only" },
@@ -127,6 +130,7 @@ describe("materials same-origin proxy route", () => {
 
   it("returns 503 when backend base URL is missing", async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    delete process.env.BACKEND_INTERNAL_URL;
 
     const response = await GET(new Request("http://localhost/api/materials"));
 

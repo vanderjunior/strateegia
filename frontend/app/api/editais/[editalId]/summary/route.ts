@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { getServerBackendBaseUrl } from "@/lib/api/config";
 import type { BackendEditalSummary } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-function getBackendBaseUrl(): string | null {
-  const value = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  return value ? value.replace(/\/+$/, "") : null;
-}
 
 function toSafeBoolean(value: unknown): boolean {
   return typeof value === "boolean" ? value : false;
@@ -60,7 +56,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ editalId: string }> }
 ) {
-  const baseUrl = getBackendBaseUrl();
+  const baseUrl = getServerBackendBaseUrl();
 
   if (!baseUrl) {
     return NextResponse.json(

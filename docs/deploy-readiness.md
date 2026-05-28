@@ -53,13 +53,23 @@ Backend gaps before staging:
 
 Frontend currently reads:
 
-- `NEXT_PUBLIC_API_BASE_URL`: backend base URL used by Next proxies and remaining API helpers.
+- `NEXT_PUBLIC_API_BASE_URL`: browser/public backend base URL used by public API helpers and bundled client configuration.
+- `BACKEND_INTERNAL_URL`: server-side backend base URL used by Next same-origin proxies; falls back to `NEXT_PUBLIC_API_BASE_URL` for local compatibility.
 - `NEXT_PUBLIC_USE_MOCK_API`: `true` forces demo/mock mode.
 
 Local frontend example:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+BACKEND_INTERNAL_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_USE_MOCK_API=false
+```
+
+Docker Compose frontend example:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+BACKEND_INTERNAL_URL=http://backend:8000
 NEXT_PUBLIC_USE_MOCK_API=false
 ```
 
@@ -110,6 +120,8 @@ Protected browser reads currently use same-origin Next proxies for:
 
 This is the safest staging pattern because cookies are forwarded server-side and cookie values are not exposed in UI state.
 
+Next proxy routes use `BACKEND_INTERNAL_URL` when it is set. This lets Docker Compose route server-side calls to `http://backend:8000` while preserving `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` for browser-reachable/public configuration.
+
 Public backend GETs may remain direct only when they do not depend on protected session cookies. If a browser route needs authenticated user data, prefer a same-origin proxy first.
 
 ## Validation Commands
@@ -156,10 +168,17 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 - Run backend and frontend together with a mounted persistent volume for `data/`.
 - Keeps JSON/uploads explicit and reversible.
 - Avoids premature PostgreSQL or cloud provider coupling.
-- Do not add a Compose file until the frontend/backend URL split is explicit:
-  - Next server-side proxies need an internal backend URL such as `http://backend:8000`.
-  - Browser-facing direct API helpers need a browser-reachable URL such as `http://localhost:8000`, or those reads must also be proxied.
-  - Today `NEXT_PUBLIC_API_BASE_URL` is a single value, so a naive Compose file could work for proxies while breaking direct browser reads.
+- A conservative `docker-compose.yml` is available for internal staging readiness:
+  - backend runs `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+  - backend mounts `studyflow_data` at `/app/data`
+  - frontend uses `BACKEND_INTERNAL_URL=http://backend:8000`
+  - frontend builds with `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+
+Compose command:
+
+```bash
+docker compose up --build
+```
 
 ### Single VM
 
@@ -181,7 +200,8 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
    - mounted `data/` volume shared only with backend
    - explicit `STUDYFLOW_DATA_FILE=/app/data/study_data.json`
    - explicit `STUDYFLOW_UPLOAD_ROOT=/app/data/uploads`
-   - an explicit frontend/backend URL strategy before creating the Compose file
+   - `BACKEND_INTERNAL_URL=http://backend:8000` for Next server-side proxies
+   - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` for browser/public configuration
    - no public auth provider yet
 3. Validate one internal user flow:
    - login with local auth
@@ -220,7 +240,8 @@ Do not migrate persistence before staging proves the product flow and storage re
 - Use `STUDYFLOW_DATA_FILE` and `STUDYFLOW_UPLOAD_ROOT` instead of relying on implicit paths.
 - Mount or back up `data/`.
 - Confirm backend restart behavior for sessions and storage.
-- Confirm frontend proxies reach the backend through `NEXT_PUBLIC_API_BASE_URL`.
+- Confirm frontend proxies reach the backend through `BACKEND_INTERNAL_URL`.
+- Confirm browser/public API helpers use `NEXT_PUBLIC_API_BASE_URL`.
 - Confirm no protected browser read depends on direct cross-origin cookies.
 - Run backend targeted tests and frontend test/typecheck/build.
 - Run no-leakage and pricing/marketing greps.
