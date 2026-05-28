@@ -15,7 +15,8 @@ This document is a contract and test-planning artifact only. It does not introdu
   - `GET /api/materials/{document_id}/summary`
   - `GET /api/editais/{edital_id}/summary`
 - The dashboard overview is no longer the source for materials/editais list proxies.
-- Pipeline detail still uses older pipeline/chunks/sections reads and needs the next bounded contract.
+- Backend `GET /api/materials/{document_id}/pipeline/summary` now provides the bounded pipeline detail contract.
+- Frontend pipeline detail still has not been migrated to that bounded endpoint.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -250,9 +251,9 @@ Findings:
 - `GET /api/materials/{document_id}/sections` is bounded enough for section metadata, but still exposes structural detail not needed for a compact pipeline status card.
 - `GET /api/materials/{document_id}/chunks` returns chunk identifiers only today, but it remains semantically close to raw content surfaces and should not be the primary browser-facing detail contract.
 
-### Recommended next endpoint
+### Implemented endpoint
 
-Implement first:
+Implemented in PipelineRead-B:
 
 - `GET /api/materials/{document_id}/pipeline/summary`
 

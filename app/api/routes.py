@@ -867,6 +867,85 @@ def _bounded_material_pipeline_summary(material, repository: JsonStudyRepository
     }
 
 
+def _bounded_material_pipeline_status(
+    material_summary: dict[str, object],
+    pipeline_summary: dict[str, object],
+) -> str:
+    if pipeline_summary["has_ocr_warning"] or material_summary["extraction_status"] == "ocr_required":
+        return "ocr_required"
+    if pipeline_summary["ready_for_review"] or material_summary["review_state"] == "ready_for_review":
+        return "ready_for_review"
+    if material_summary["section_count"] > 0 or material_summary["chunk_count"] > 0:
+        return "segmented"
+    if material_summary["processing_status"] == "text_extracted" or material_summary["extraction_status"] in {
+        "textual_pdf",
+        "extracted",
+    }:
+        return "text_extracted"
+    if material_summary["processing_status"] in {"uploaded", "extraction_pending"}:
+        return "pending"
+    return "unknown"
+
+
+def _bounded_material_pipeline_step(
+    *,
+    key: str,
+    label: str,
+    state: str,
+    warnings_count: int = 0,
+) -> dict[str, object]:
+    return {
+        "key": key,
+        "label": label,
+        "state": state,
+        "warnings_count": warnings_count,
+    }
+
+
+def _bounded_material_pipeline_steps(
+    material_summary: dict[str, object],
+    pipeline_summary: dict[str, object],
+) -> list[dict[str, object]]:
+    has_ocr_warning = bool(pipeline_summary["has_ocr_warning"])
+    ready_for_review = bool(pipeline_summary["ready_for_review"])
+    chunk_count = int(material_summary["chunk_count"])
+    section_count = int(material_summary["section_count"])
+    warnings_count = int(material_summary["warnings_count"])
+    extraction_status = str(material_summary["extraction_status"])
+    processing_status = str(material_summary["processing_status"])
+
+    has_extracted_text = extraction_status in {"textual_pdf", "extracted"} or processing_status in {
+        "text_extracted",
+        "ready_for_review",
+    }
+    has_segments = chunk_count > 0 or section_count > 0
+
+    return [
+        _bounded_material_pipeline_step(
+            key="uploaded",
+            label="Enviado",
+            state="done",
+        ),
+        _bounded_material_pipeline_step(
+            key="text_extracted",
+            label="Texto extraído",
+            state="needs_review" if has_ocr_warning else "done" if has_extracted_text else "pending",
+            warnings_count=warnings_count if has_ocr_warning else 0,
+        ),
+        _bounded_material_pipeline_step(
+            key="segmented",
+            label="Segmentado",
+            state="done" if has_segments else "pending",
+        ),
+        _bounded_material_pipeline_step(
+            key="ready_for_review",
+            label="Pronto para revisão",
+            state="done" if ready_for_review else "needs_review" if has_ocr_warning else "pending",
+            warnings_count=warnings_count if not ready_for_review else 0,
+        ),
+    ]
+
+
 @router.get("/materials/{document_id}/summary")
 def get_material_summary(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -878,6 +957,30 @@ def get_material_summary(document_id: str, request: Request):
     return {
         **summary,
         "pipeline": _bounded_material_pipeline_summary(material, repository, user_id),
+        "source": "user_scope",
+    }
+
+
+@router.get("/materials/{document_id}/pipeline/summary")
+def get_material_pipeline_summary(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    material = repository.get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    material_summary = _bounded_material_item(material, repository, user_id)
+    pipeline_summary = _bounded_material_pipeline_summary(material, repository, user_id)
+    steps = _bounded_material_pipeline_steps(material_summary, pipeline_summary)
+    return {
+        "document_id": document_id,
+        "status": _bounded_material_pipeline_status(material_summary, pipeline_summary),
+        "steps": steps,
+        "steps_count": len(steps),
+        "has_ocr_warning": pipeline_summary["has_ocr_warning"],
+        "ready_for_review": pipeline_summary["ready_for_review"],
+        "section_count": material_summary["section_count"],
+        "chunk_count": material_summary["chunk_count"],
+        "warnings_count": material_summary["warnings_count"],
         "source": "user_scope",
     }
 
