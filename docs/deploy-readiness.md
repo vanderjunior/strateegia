@@ -180,14 +180,50 @@ Compose command:
 docker compose up --build
 ```
 
-Current smoke-test note:
+Smoke result summary:
 
-- `docker compose config` could not be executed in the current workspace because the `docker` CLI is not installed.
-- Run the Compose smoke on a host with Docker Desktop or Docker Engine available.
-- Expected unauthenticated proxy checks after startup:
-  - `curl -i http://localhost:3000/api/auth/me` should return a session-needed/unauthenticated response, not `502`.
-  - `curl -i http://localhost:3000/api/materials` should return `401`/session required, not `502`.
-  - `curl -i http://localhost:3000/api/editais` should return `401`/session required, not `502`.
+- Backend container started, exposed port `8000`, and Uvicorn started successfully.
+- Frontend container started, exposed port `3000`, and Next.js started successfully.
+- `GET http://localhost:8000/api/exam-profiles` returned `200`.
+- `GET http://localhost:3000` returned `200`.
+- `GET http://localhost:3000/api/auth/me` returned `200` with `{"authenticated":false,"user":null}`.
+- `GET http://localhost:3000/api/materials` returned `401 Authentication required`.
+- `GET http://localhost:3000/api/editais` returned `401 Authentication required`.
+- Backend logs confirmed proxied requests arriving from the frontend container IP, which validates `BACKEND_INTERNAL_URL=http://backend:8000`.
+- `docker compose restart` succeeded, and frontend/backend returned `200` after restart.
+- `docker volume ls` showed `newproject_studyflow_data`.
+- `docker compose down -v` removed the volume. Do not use `-v` when preserving staging data.
+
+Commands that passed:
+
+```bash
+docker compose config
+docker compose up --build
+docker compose restart
+curl -i http://localhost:8000/api/exam-profiles
+curl -i http://localhost:3000
+curl -i http://localhost:3000/api/auth/me
+curl -i http://localhost:3000/api/materials
+curl -i http://localhost:3000/api/editais
+docker volume ls
+docker compose down -v
+```
+
+Expected unauthenticated proxy behavior:
+
+- `/api/auth/me` returns `200` with `authenticated: false`.
+- `/api/materials` returns `401`.
+- `/api/editais` returns `401`.
+- These responses confirm proxy connectivity. A `502` here would indicate backend connectivity failure from the frontend container.
+
+Manual authenticated smoke checklist, still pending:
+
+- Establish a valid login/session using the existing local auth path.
+- Upload a small `.txt` material through the controlled upload page.
+- Confirm `/materials` shows real session data.
+- Restart with `docker compose restart`, not `docker compose down -v`.
+- Confirm JSON metadata and uploaded file data persist after restart.
+- Open the uploaded material pipeline detail and confirm the bounded pipeline summary route works.
 
 ### Single VM
 
