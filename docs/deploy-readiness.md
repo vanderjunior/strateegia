@@ -180,6 +180,15 @@ Compose command:
 docker compose up --build
 ```
 
+Current smoke-test note:
+
+- `docker compose config` could not be executed in the current workspace because the `docker` CLI is not installed.
+- Run the Compose smoke on a host with Docker Desktop or Docker Engine available.
+- Expected unauthenticated proxy checks after startup:
+  - `curl -i http://localhost:3000/api/auth/me` should return a session-needed/unauthenticated response, not `502`.
+  - `curl -i http://localhost:3000/api/materials` should return `401`/session required, not `502`.
+  - `curl -i http://localhost:3000/api/editais` should return `401`/session required, not `502`.
+
 ### Single VM
 
 - Good second option if the team wants a persistent internal URL.
