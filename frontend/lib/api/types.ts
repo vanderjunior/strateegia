@@ -367,6 +367,26 @@ export interface BackendDocumentPipelineState {
   section_count: number;
 }
 
+export interface BackendPipelineSummaryStep {
+  key: string;
+  label: string;
+  state: string;
+  warnings_count: number;
+}
+
+export interface BackendPipelineSummary {
+  document_id: string;
+  status: string;
+  steps: BackendPipelineSummaryStep[];
+  steps_count: number;
+  has_ocr_warning: boolean;
+  ready_for_review: boolean;
+  section_count: number;
+  chunk_count: number;
+  warnings_count: number;
+  source: "user_scope";
+}
+
 export interface BackendDocumentSection {
   section_id: string;
   document_id: string;

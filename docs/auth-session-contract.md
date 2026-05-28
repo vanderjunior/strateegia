@@ -203,6 +203,12 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - The proxy reads backend `GET /api/materials/{document_id}/summary`, forwards the browser cookie server-side, and returns only bounded material and pipeline metadata.
 - The detail adapter maps that summary into product-facing copy without raw document text, OCR dumps, chunks, sections, or storage paths.
 
+## PipelineProxy-C Strategy
+
+- Pipeline detail now uses a same-origin proxy at `GET /api/materials/{materialId}/pipeline/summary` in Next.
+- The proxy reads backend `GET /api/materials/{document_id}/pipeline/summary`, forwards the browser cookie server-side, and returns only bounded pipeline status metadata.
+- The pipeline detail adapter no longer needs browser-facing chunk, section, or operational pipeline reads for the product timeline.
+
 ## Critical Gaps Before Real Auth UX
 
 1. No frontend login/logout/session-status UX.
