@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { loginWithPassword } from "@/lib/api/auth";
-import { loadSessionState } from "@/lib/adapters/session";
+import { loadSessionState, notifySessionStateChanged } from "@/lib/adapters/session";
 
 function messageForError(code: string): string {
   if (code === "invalid_credentials") {
@@ -46,8 +46,10 @@ export default function LoginPage() {
     }
 
     await loadSessionState({ refresh: true });
+    notifySessionStateChanged();
     setStatus("success");
     setMessage("Sessão ativa. Redirecionando para o painel.");
+    router.refresh();
     router.push("/dashboard");
   }
 

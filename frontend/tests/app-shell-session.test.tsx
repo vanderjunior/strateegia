@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/adapters/session", () => ({
+  SESSION_STATE_CHANGED_EVENT: "mentorium:session-state-changed",
   buildDefaultSessionState: vi.fn(),
-  loadSessionState: vi.fn()
+  loadSessionState: vi.fn(),
+  notifySessionStateChanged: vi.fn()
 }));
 
 vi.mock("@/lib/api/auth", () => ({
@@ -12,6 +14,7 @@ vi.mock("@/lib/api/auth", () => ({
 
 import { SessionStatusNotice } from "@/components/layout/SessionStatusNotice";
 import { buildDefaultSessionState, loadSessionState } from "@/lib/adapters/session";
+import { logoutCurrentSession } from "@/lib/api/auth";
 
 describe("session status notice", () => {
   beforeEach(() => {
@@ -71,5 +74,72 @@ describe("session status notice", () => {
 
     expect(await screen.findByText("Sessão necessária")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
+    expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument();
+  });
+
+  it("refreshes notice when the session changed event fires", async () => {
+    vi.mocked(loadSessionState)
+      .mockResolvedValueOnce({
+        status: "unauthenticated",
+        label: "Sessão necessária",
+        description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+        source: "backend"
+      })
+      .mockResolvedValueOnce({
+        status: "authenticated",
+        label: "Sessão ativa",
+        description: "Dados reais podem ser consultados nas áreas protegidas sem alterar seu progresso automaticamente.",
+        source: "backend",
+        userId: "user-1",
+        userLabel: "Mentorium Demo"
+      });
+
+    render(<SessionStatusNotice />);
+
+    expect(await screen.findByRole("link", { name: "Entrar" })).toBeInTheDocument();
+
+    window.dispatchEvent(new Event("mentorium:session-state-changed"));
+
+    expect(await screen.findByRole("button", { name: "Sair" })).toBeInTheDocument();
+    expect(screen.getByText(/Mentorium Demo/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Entrar" })).not.toBeInTheDocument();
+  });
+
+  it("returns to Entrar after logout", async () => {
+    vi.mocked(logoutCurrentSession).mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        authenticated: false,
+        user: null
+      }
+    });
+    vi.mocked(loadSessionState)
+      .mockResolvedValueOnce({
+        status: "authenticated",
+        label: "Sessão ativa",
+        description: "Dados reais podem ser consultados nas áreas protegidas sem alterar seu progresso automaticamente.",
+        source: "backend",
+        userId: "user-1",
+        userLabel: "Mentorium Demo"
+      })
+      .mockResolvedValue({
+        status: "unauthenticated",
+        label: "Sessão necessária",
+        description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+        source: "backend"
+      });
+
+    render(<SessionStatusNotice />);
+
+    const logoutButton = await screen.findByRole("button", { name: "Sair" });
+    fireEvent.click(logoutButton);
+
+    await waitFor(() => {
+      expect(logoutCurrentSession).toHaveBeenCalled();
+    });
+    expect(await screen.findByRole("link", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument();
   });
 });

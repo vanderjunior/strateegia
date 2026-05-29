@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/adapters/session", () => ({
+  SESSION_STATE_CHANGED_EVENT: "mentorium:session-state-changed",
   buildDefaultSessionState: vi.fn(() => ({
     status: "unauthenticated",
     label: "Sessão necessária",
@@ -13,7 +14,8 @@ vi.mock("@/lib/adapters/session", () => ({
     label: "Sessão necessária",
     description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
     source: "backend"
-  }))
+  })),
+  notifySessionStateChanged: vi.fn()
 }));
 
 vi.mock("@/lib/api/config", () => ({

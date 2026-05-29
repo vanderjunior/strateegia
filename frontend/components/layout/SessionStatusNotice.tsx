@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { loadSessionState, buildDefaultSessionState } from "@/lib/adapters/session";
+import {
+  SESSION_STATE_CHANGED_EVENT,
+  buildDefaultSessionState,
+  loadSessionState,
+  notifySessionStateChanged
+} from "@/lib/adapters/session";
 import { logoutCurrentSession } from "@/lib/api/auth";
 import type { SessionState } from "@/lib/api/types";
 
@@ -50,16 +55,28 @@ export function SessionStatusNotice({
   useEffect(() => {
     let active = true;
 
-    void loadSessionState().then((nextState) => {
-      if (active) {
-        setSessionState(nextState);
-      }
-    });
+    function refreshSessionNotice() {
+      void loadSessionState({ refresh: true }).then((nextState) => {
+        if (active) {
+          setSessionState(nextState);
+        }
+      });
+    }
+
+    refreshSessionNotice();
+    window.addEventListener(SESSION_STATE_CHANGED_EVENT, refreshSessionNotice);
 
     return () => {
       active = false;
+      window.removeEventListener(SESSION_STATE_CHANGED_EVENT, refreshSessionNotice);
     };
   }, []);
+
+  async function refreshSessionAfterAction() {
+    const nextState = await loadSessionState({ refresh: true });
+    setSessionState(nextState);
+    notifySessionStateChanged();
+  }
 
   async function handleLogout() {
     setLogoutPending(true);
@@ -76,8 +93,7 @@ export function SessionStatusNotice({
       return;
     }
 
-    const nextState = await loadSessionState({ refresh: true });
-    setSessionState(nextState);
+    await refreshSessionAfterAction();
     setLogoutPending(false);
     setActionMessage("Sessão encerrada neste ambiente.");
   }

@@ -2,6 +2,8 @@ import { fetchCurrentSession } from "@/lib/api/auth";
 import { getApiConfig } from "@/lib/api/config";
 import type { SessionState } from "@/lib/api/types";
 
+export const SESSION_STATE_CHANGED_EVENT = "mentorium:session-state-changed";
+
 let sessionStatePromise: Promise<SessionState> | null = null;
 
 function userLabelForSession(user: {
@@ -124,4 +126,10 @@ async function loadSessionStateUncached(): Promise<SessionState> {
 
 export function __resetSessionStateCacheForTests() {
   sessionStatePromise = null;
+}
+
+export function notifySessionStateChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(SESSION_STATE_CHANGED_EVENT));
+  }
 }
