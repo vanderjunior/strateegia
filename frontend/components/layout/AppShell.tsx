@@ -22,6 +22,12 @@ const navigationItems = [
 ] as const;
 
 function headerCopy(pathname: string) {
+  if (pathname.startsWith("/login")) {
+    return {
+      eyebrow: "mentorium / acesso",
+      title: "Entrada interna"
+    };
+  }
   if (pathname.startsWith("/onboarding")) {
     return {
       eyebrow: "mentorium / onboarding",

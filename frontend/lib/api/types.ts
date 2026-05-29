@@ -31,6 +31,8 @@ export interface ApiErrorDetails {
     | "file_too_large"
     | "unsupported_file_type"
     | "validation_failed"
+    | "invalid_credentials"
+    | "logged_out"
     | "missing_base_url"
     | "mock_mode"
     | "network_error"

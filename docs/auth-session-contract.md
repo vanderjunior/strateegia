@@ -4,7 +4,7 @@
 
 - The backend already has a local auth mechanism.
 - It is not connected to a real auth provider yet.
-- The current frontend does not implement login/logout or route protection UX.
+- The current frontend implements minimal login/logout UX for internal staging only.
 - The frontend already classifies auth-required upload failures and shows session-aware copy.
 
 ## Current Backend Auth Mechanism
@@ -19,7 +19,7 @@
 - Cookie flags today:
   - `httponly=True`
   - `samesite="lax"`
-- There is no real provider, no signed session framework, no durable session store, no expiry policy, and no frontend auth UX yet.
+- There is no real provider, no signed session framework, no durable session store, and no expiry policy yet.
 
 ## Protected Route Inventory
 
@@ -94,8 +94,12 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 
 ## Frontend Behavior Today
 
-- No real login/logout UX exists yet.
-- No route guards or session banner exist yet.
+- Minimal login/logout UX exists for internal staging:
+  - `/login` renders a username/password form.
+  - `POST /api/auth/login` in Next proxies to backend `POST /api/auth/login`.
+  - `POST /api/auth/logout` in Next proxies to backend `POST /api/auth/logout`.
+  - AppShell session notice shows `Entrar` when unauthenticated and `Sair` when authenticated.
+- No route guards exist yet; guidance/demo pages remain non-blocking.
 - Frontend API config:
   - `NEXT_PUBLIC_API_BASE_URL`
   - `NEXT_PUBLIC_USE_MOCK_API`
@@ -131,12 +135,13 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
   - `Sessão não configurada`
 - Current UX scope:
   - AppShell shows a non-blocking session indicator
+  - AppShell offers minimal `Entrar`/`Sair` controls for internal staging
   - dashboard shows a small session-aware explanation
   - upload keeps its existing auth-required messaging
 - Current non-goals:
-  - no login/logout UX yet
+  - no public signup/register UX yet
   - no route guards yet
-  - no real user-scoped list integration yet
+  - no additional protected-read migrations in this auth UI phase
   - no provider integration yet
 
 ## Protected Read UX Policy

@@ -265,6 +265,14 @@ The backend already exposes local auth endpoints:
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 
+The frontend now exposes a minimal internal-staging login/logout UX:
+
+- `/login` provides username/password login.
+- AppShell shows `Entrar` while unauthenticated.
+- AppShell shows `Sair` while authenticated.
+- No signup/register UI is exposed in this phase.
+- Sessions remain in-memory; after backend restart/recreate, enter again.
+
 Use a local-only cookie jar. Do not commit credentials, cookies, or generated smoke files.
 
 ```bash

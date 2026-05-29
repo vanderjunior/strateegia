@@ -6,6 +6,10 @@ vi.mock("@/lib/adapters/session", () => ({
   loadSessionState: vi.fn()
 }));
 
+vi.mock("@/lib/api/auth", () => ({
+  logoutCurrentSession: vi.fn()
+}));
+
 import { SessionStatusNotice } from "@/components/layout/SessionStatusNotice";
 import { buildDefaultSessionState, loadSessionState } from "@/lib/adapters/session";
 
@@ -32,6 +36,7 @@ describe("session status notice", () => {
 
     expect(await screen.findByText("Sessão ativa")).toBeInTheDocument();
     expect(screen.getByText("Dados auditados")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
     expect(screen.getByText(/Mentorium Demo/i)).toBeInTheDocument();
     expect(screen.queryByText(/token/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cookie/i)).not.toBeInTheDocument();
@@ -52,5 +57,19 @@ describe("session status notice", () => {
     expect(screen.getByText(/não consulta a sessão real/i)).toBeInTheDocument();
     expect(screen.queryByText(/session id/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cookie/i)).not.toBeInTheDocument();
+  });
+
+  it("renders an Entrar link when unauthenticated", async () => {
+    vi.mocked(loadSessionState).mockResolvedValue({
+      status: "unauthenticated",
+      label: "Sessão necessária",
+      description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+      source: "backend"
+    });
+
+    render(<SessionStatusNotice />);
+
+    expect(await screen.findByText("Sessão necessária")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
   });
 });
