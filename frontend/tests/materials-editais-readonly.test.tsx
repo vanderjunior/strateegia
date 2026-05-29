@@ -79,6 +79,11 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.getAllByText("Texto extraído").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pronto para revisão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("OCR necessário").length).toBeGreaterThan(0);
+    expect(screen.getByText("Materiais por classificação")).toBeInTheDocument();
+    expect(screen.getByText("Editais enviados")).toBeInTheDocument();
+    expect(screen.getByText("Materiais de estudo enviados")).toBeInTheDocument();
+    expect(screen.getByText("Não classificados enviados")).toBeInTheDocument();
+    expect(screen.getByText("Envie um edital para orientar o caminho de estudo.")).toBeInTheDocument();
     expect(screen.getByText("Requer sessão")).toBeInTheDocument();
 
     expect(screen.queryByText("Processar")).not.toBeInTheDocument();

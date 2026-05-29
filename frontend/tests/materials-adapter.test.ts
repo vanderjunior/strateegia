@@ -45,11 +45,17 @@ describe("materials adapter", () => {
     viewModel.items.forEach((item) => {
       expect(item.title).toBeTruthy();
       expect(item.typeLabel).toBeTruthy();
+      expect(item.materialType).toBeTruthy();
+      expect(item.materialTypeLabel).toBeTruthy();
       expect(item.processingStatus).toBeTruthy();
       expect(item.extractionStatus).toBeTruthy();
       expect(item.reviewState).toBeTruthy();
       expect(item.source).toBeTruthy();
     });
+    expect(viewModel.materialTypeGroups.find((group) => group.type === "bibliography")?.count).toBe(1);
+    expect(viewModel.materialTypeGroups.find((group) => group.type === "study_material")?.count).toBe(2);
+    expect(viewModel.hasStudyMaterial).toBe(true);
+    expect(viewModel.hasEdital).toBe(false);
   });
 
   it("returns safe detail previews and OCR warnings without raw content", () => {
@@ -74,15 +80,15 @@ describe("materials adapter", () => {
     expect(buildMockMaterialDetail("material-desconhecido")).toBeNull();
   });
 
-  it("uses real authenticated materials metadata when available", async () => {
+  it("uses real authenticated materials metadata and groups by material type when available", async () => {
     vi.mocked(fetchUserMaterialsList).mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
       data: {
-        total_materials: 1,
+        total_materials: 3,
         processed_count: 1,
-        pending_count: 0,
+        pending_count: 2,
         ocr_required_count: 0,
         items: [
           {
@@ -100,6 +106,32 @@ describe("materials adapter", () => {
             source_excerpt: "não deve aparecer",
             extracted_text: "não deve aparecer",
             storage_path: "uploads/user-x/doc-1.pdf"
+          },
+          {
+            document_id: "doc-2",
+            display_filename: "edital-pscpp.pdf",
+            content_type: "application/pdf",
+            material_type: "edital",
+            status: "uploaded",
+            uploaded_at: "2026-05-27T00:00:00Z",
+            extraction_status: "pending",
+            current_stage: "uploaded",
+            metadata_status: "not_ready",
+            chunk_count: 0,
+            section_count: 0
+          },
+          {
+            document_id: "doc-3",
+            display_filename: "sem-tipo.txt",
+            content_type: "text/plain",
+            material_type: "unexpected",
+            status: "uploaded",
+            uploaded_at: "2026-05-27T00:00:00Z",
+            extraction_status: "pending",
+            current_stage: "uploaded",
+            metadata_status: "not_ready",
+            chunk_count: 0,
+            section_count: 0
           }
         ]
       } as never
@@ -109,7 +141,7 @@ describe("materials adapter", () => {
     const payload = JSON.stringify(viewModel);
 
     expect(viewModel.connection.title).toBe("Dados reais da sessão");
-    expect(viewModel.items).toHaveLength(1);
+    expect(viewModel.items).toHaveLength(3);
     expect(viewModel.items[0]).toMatchObject({
       id: "doc-1",
       title: "roteiro-porto",
@@ -122,6 +154,14 @@ describe("materials adapter", () => {
       sectionsCount: 4,
       chunksCount: 12
     });
+    expect(viewModel.hasEdital).toBe(true);
+    expect(viewModel.hasStudyMaterial).toBe(false);
+    expect(viewModel.unclassifiedCount).toBe(1);
+    expect(viewModel.materialTypeGroups.find((group) => group.type === "previous_exam")?.count).toBe(1);
+    expect(viewModel.materialTypeGroups.find((group) => group.type === "edital")?.count).toBe(1);
+    expect(viewModel.materialTypeGroups.find((group) => group.type === "unknown")?.items[0].materialTypeLabel).toBe(
+      "Não classificado"
+    );
     expect(payload).not.toContain("source_excerpt");
     expect(payload).not.toContain("extracted_text");
     expect(payload).not.toContain("storage_path");

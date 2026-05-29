@@ -1,11 +1,13 @@
 import { getApiConfig } from "@/lib/api/config";
-import { fetchMaterialSummary, fetchUserMaterialsList, materialTypeLabel } from "@/lib/api/documents";
+import { fetchMaterialSummary, fetchUserMaterialsList, materialTypeLabel, normalizeMaterialType } from "@/lib/api/documents";
 import type {
   ApiSource,
   BackendConnectionInfo,
   BackendMaterialSummary,
   BackendProtectedMaterialsListItem,
   MaterialDetail,
+  MaterialType,
+  MaterialTypeGroup,
   MaterialsWorkspaceViewModel,
   MaterialListItem,
   WorkspaceSummaryMetric
@@ -76,6 +78,40 @@ function mockSummary(items: MaterialListItem[]): WorkspaceSummaryMetric[] {
   return workspaceSummary(processed, ocrRequired, readyForReview, relatedGaps);
 }
 
+const MATERIAL_TYPE_GROUPS: { type: MaterialType; label: string }[] = [
+  { type: "edital", label: "Editais" },
+  { type: "study_material", label: "Materiais de estudo" },
+  { type: "previous_exam", label: "Provas anteriores" },
+  { type: "bibliography", label: "Bibliografia / referência" },
+  { type: "note", label: "Anotações / resumos" },
+  { type: "other", label: "Outros" },
+  { type: "unknown", label: "Não classificados" }
+];
+
+function buildMaterialTypeGroups(items: MaterialListItem[]): MaterialTypeGroup[] {
+  return MATERIAL_TYPE_GROUPS.map((group) => {
+    const groupItems = items.filter((item) => item.materialType === group.type);
+    return {
+      ...group,
+      count: groupItems.length,
+      items: groupItems
+    };
+  });
+}
+
+function withMaterialTypeGrouping(
+  viewModel: Omit<MaterialsWorkspaceViewModel, "materialTypeGroups" | "hasEdital" | "hasStudyMaterial" | "unclassifiedCount">
+): MaterialsWorkspaceViewModel {
+  const materialTypeGroups = buildMaterialTypeGroups(viewModel.items);
+  return {
+    ...viewModel,
+    materialTypeGroups,
+    hasEdital: materialTypeGroups.some((group) => group.type === "edital" && group.count > 0),
+    hasStudyMaterial: materialTypeGroups.some((group) => group.type === "study_material" && group.count > 0),
+    unclassifiedCount: materialTypeGroups.find((group) => group.type === "unknown")?.count ?? 0
+  };
+}
+
 function trimFileExtension(filename: string): string {
   return filename.replace(/\.[a-z0-9]+$/i, "");
 }
@@ -129,6 +165,7 @@ function mapProtectedMaterialItem(item: BackendProtectedMaterialsListItem): Mate
     id: item.document_id,
     title: trimFileExtension(item.display_filename),
     typeLabel: fileTypeLabel(item),
+    materialType: normalizeMaterialType(item.material_type),
     materialTypeLabel: materialTypeLabel(item.material_type),
     processingStatus,
     extractionStatus,
@@ -269,11 +306,11 @@ function buildMaterialDetailFromSummary(materialId: string, summary: BackendMate
 
 export function buildMockMaterialsWorkspaceViewModel(): MaterialsWorkspaceViewModel {
   const items = cloneItems(materialsWorkspaceItems);
-  return {
+  return withMaterialTypeGrouping({
     connection: baseConnection(),
     summary: mockSummary(items),
     items
-  };
+  });
 }
 
 export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorkspaceViewModel> {
@@ -322,7 +359,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
 
   const items = materialsResult.data.items.map(mapProtectedMaterialItem);
 
-  return {
+  return withMaterialTypeGrouping({
     ...fallback,
     connection: {
       state: "connected",
@@ -339,7 +376,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
       items.reduce((total, item) => total + item.relatedGaps, 0)
     ),
     items
-  };
+  });
 }
 
 export function buildMockMaterialDetail(materialId: string): MaterialDetail | null {

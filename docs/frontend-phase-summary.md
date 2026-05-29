@@ -29,6 +29,7 @@
 - Real user-scoped materials/editais lists plus material, edital, and pipeline detail reads use bounded protected endpoints through same-origin proxies.
 - Controlled upload entry using the existing same-origin upload proxy path.
 - Upload UI asks for a user-facing file classification (`Edital`, `Material de estudo`, `Prova anterior`, `Bibliografia / referência`, `Anotação / resumo`, `Outro`) before sending; the normalized `material_type` is persisted as bounded metadata and does not trigger processing.
+- Materials can be grouped and filtered by persisted `material_type` in a read-only way; grouping does not trigger ingestion, OCR, generation, or study planning.
 - PSCPP guidance workspace with profile overview, cycle, map, and question guidance.
 - Study workspace with suggested orientations; demo material references avoid linking to non-existent user material details.
 - Minimal internal-staging login/logout UX and simplified unauthenticated dashboard state.

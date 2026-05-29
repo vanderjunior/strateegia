@@ -27,6 +27,8 @@ function buildFallback(materialId: string): { connection: BackendConnectionInfo;
       id: materialId,
       title: "Item não encontrado",
       typeLabel: "Material",
+      materialType: "unknown",
+      materialTypeLabel: "Não classificado",
       processingStatus: "Revisão necessária",
       extractionStatus: "Consulta local",
       sectionsCount: null,

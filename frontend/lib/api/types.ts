@@ -480,6 +480,7 @@ export interface MaterialListItem {
   id: string;
   title: string;
   typeLabel: string;
+  materialType: MaterialType;
   materialTypeLabel?: string;
   processingStatus: string;
   extractionStatus: string;
@@ -503,10 +504,21 @@ export interface MaterialDetail extends MaterialListItem {
   sourceNote: string;
 }
 
+export interface MaterialTypeGroup {
+  type: MaterialType;
+  label: string;
+  count: number;
+  items: MaterialListItem[];
+}
+
 export interface MaterialsWorkspaceViewModel {
   connection: BackendConnectionInfo;
   summary: WorkspaceSummaryMetric[];
   items: MaterialListItem[];
+  materialTypeGroups: MaterialTypeGroup[];
+  hasEdital: boolean;
+  hasStudyMaterial: boolean;
+  unclassifiedCount: number;
 }
 
 export interface CoverageItem {
