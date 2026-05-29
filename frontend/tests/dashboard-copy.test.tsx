@@ -8,7 +8,38 @@ const mocks = vi.hoisted(() => ({
     description: "Entre para usar dados reais. Enquanto isso, o painel evita dados personalizados.",
     source: "backend"
   } as Record<string, unknown>,
-  dashboardOverrides: {} as Record<string, unknown>
+  dashboardOverrides: {} as Record<string, unknown>,
+  readiness: {
+    connection: {
+      state: "auth_required",
+      source: "backend",
+      title: "Entre para carregar seus dados",
+      detail: "A orientação real depende de uma sessão ativa."
+    },
+    isAuthenticated: false,
+    hasRealMaterials: false,
+    hasRealEditalMaterial: false,
+    hasRealStudyMaterial: false,
+    hasAnalyzedEdital: false,
+    editalAnalysisState: "analysis_unavailable",
+    editalAnalysisLabel: "Análise indisponível",
+    editalAnalysisDescription: "Não foi possível confirmar o estado da análise agora.",
+    canShowConcreteStudyPlan: false,
+    shouldShowEditalUploadCTA: true,
+    shouldShowStudyMaterialCTA: false,
+    materialsCount: 0,
+    editalMaterialsCount: 0,
+    studyMaterialsCount: 0,
+    materialTypeCounts: {
+      edital: 0,
+      study_material: 0,
+      previous_exam: 0,
+      bibliography: 0,
+      note: 0,
+      other: 0,
+      unknown: 0
+    }
+  } as Record<string, unknown>
 }));
 
 vi.mock("@/lib/adapters/session", () => ({
@@ -26,6 +57,18 @@ vi.mock("@/lib/adapters/dashboard", async () => {
   return {
     ...actual,
     loadDashboardViewModel: vi.fn(async () => actual.buildMockDashboardViewModel(mocks.dashboardOverrides))
+  };
+});
+
+vi.mock("@/lib/adapters/real-user-state", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/adapters/real-user-state")>(
+    "@/lib/adapters/real-user-state"
+  );
+
+  return {
+    ...actual,
+    buildDefaultRealUserStudyReadiness: vi.fn(() => mocks.readiness),
+    loadRealUserStudyReadiness: vi.fn(async () => mocks.readiness)
   };
 });
 
@@ -51,6 +94,37 @@ describe("dashboard product language", () => {
       source: "backend"
     };
     mocks.dashboardOverrides = {};
+    mocks.readiness = {
+      connection: {
+        state: "auth_required",
+        source: "backend",
+        title: "Entre para carregar seus dados",
+        detail: "A orientação real depende de uma sessão ativa."
+      },
+      isAuthenticated: false,
+      hasRealMaterials: false,
+      hasRealEditalMaterial: false,
+      hasRealStudyMaterial: false,
+      hasAnalyzedEdital: false,
+      editalAnalysisState: "analysis_unavailable",
+      editalAnalysisLabel: "Análise indisponível",
+      editalAnalysisDescription: "Não foi possível confirmar o estado da análise agora.",
+      canShowConcreteStudyPlan: false,
+      shouldShowEditalUploadCTA: true,
+      shouldShowStudyMaterialCTA: false,
+      materialsCount: 0,
+      editalMaterialsCount: 0,
+      studyMaterialsCount: 0,
+      materialTypeCounts: {
+        edital: 0,
+        study_material: 0,
+        previous_exam: 0,
+        bibliography: 0,
+        note: 0,
+        other: 0,
+        unknown: 0
+      }
+    };
   });
 
   it("keeps unauthenticated dashboard simple and avoids personalized study content", async () => {
@@ -85,13 +159,96 @@ describe("dashboard product language", () => {
         detail: "Materiais reais carregados para esta sessão."
       }
     };
+    mocks.readiness = {
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Dados reais da sessão",
+        detail: "Estado real calculado."
+      },
+      isAuthenticated: true,
+      hasRealMaterials: false,
+      hasRealEditalMaterial: false,
+      hasRealStudyMaterial: false,
+      hasAnalyzedEdital: false,
+      editalAnalysisState: "no_edital_uploaded",
+      editalAnalysisLabel: "Nenhum edital enviado",
+      editalAnalysisDescription: "Envie um edital para orientar seu caminho de estudo.",
+      canShowConcreteStudyPlan: false,
+      shouldShowEditalUploadCTA: true,
+      shouldShowStudyMaterialCTA: false,
+      materialsCount: 0,
+      editalMaterialsCount: 0,
+      studyMaterialsCount: 0,
+      materialTypeCounts: {
+        edital: 0,
+        study_material: 0,
+        previous_exam: 0,
+        bibliography: 0,
+        note: 0,
+        other: 0,
+        unknown: 0
+      }
+    };
 
     render(<DashboardReadOnlyClient />);
 
-    expect(await screen.findByText("Envie ou identifique um edital para montar o caminho de estudo.")).toBeInTheDocument();
+    expect((await screen.findAllByText("Envie um edital para orientar seu caminho de estudo.")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Estudo de hoje")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Enviar material" })).toHaveAttribute("href", "/materials/upload");
-    expect(screen.getByRole("link", { name: "Ver editais" })).toHaveAttribute("href", "/editais");
+    expect(screen.getAllByRole("link", { name: "Enviar edital" })[0]).toHaveAttribute("href", "/materials/upload");
+    expect(screen.getAllByRole("link", { name: "Ver materiais" })[0]).toHaveAttribute("href", "/materials");
+    expect(screen.getByText("Materiais enviados por tipo")).toBeInTheDocument();
+    expect(screen.queryByText(/capabilities/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("O que já está preparado")).not.toBeInTheDocument();
+  });
+
+  it("shows uploaded edital state without concrete study session before analysis", async () => {
+    mocks.session = {
+      status: "authenticated",
+      label: "Sessão ativa",
+      description: "Sessão ativa.",
+      source: "backend",
+      userLabel: "Usuário interno"
+    };
+    mocks.readiness = {
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Dados reais da sessão",
+        detail: "Estado real calculado."
+      },
+      isAuthenticated: true,
+      hasRealMaterials: true,
+      hasRealEditalMaterial: true,
+      hasRealStudyMaterial: true,
+      hasAnalyzedEdital: false,
+      editalAnalysisState: "edital_uploaded_not_analyzed",
+      editalAnalysisLabel: "Edital enviado",
+      editalAnalysisDescription: "Edital recebido. A análise ainda não foi executada nesta versão.",
+      canShowConcreteStudyPlan: false,
+      shouldShowEditalUploadCTA: false,
+      shouldShowStudyMaterialCTA: true,
+      materialsCount: 4,
+      editalMaterialsCount: 1,
+      studyMaterialsCount: 2,
+      materialTypeCounts: {
+        edital: 1,
+        study_material: 2,
+        previous_exam: 0,
+        bibliography: 0,
+        note: 0,
+        other: 1,
+        unknown: 0
+      }
+    };
+
+    render(<DashboardReadOnlyClient />);
+
+    expect(
+      (await screen.findAllByText("Edital recebido. A análise ainda não foi executada nesta versão.")).length
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("Estudo de hoje")).not.toBeInTheDocument();
+    expect(screen.getByText(/Materiais de estudo enviados: 2/i)).toBeInTheDocument();
   });
 
   it("keeps dashboard free of mutation and pricing CTAs", async () => {

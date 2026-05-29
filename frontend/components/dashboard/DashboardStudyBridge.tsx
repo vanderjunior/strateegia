@@ -45,9 +45,9 @@ export function DashboardStudyBridge() {
     <section className="overflow-hidden rounded-[32px] border border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)] p-6 lg:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-3xl">
-          <div className="section-kicker">estudo de hoje</div>
+          <div className="section-kicker">orientação de estudo</div>
           <CardTitle className="mt-5 break-words text-[2rem] leading-[0.98] sm:text-[2.2rem]">
-            Estudo de hoje
+            Orientação de estudo
           </CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
             Abra uma orientação de estudo quando o edital e os materiais reais estiverem conectados.

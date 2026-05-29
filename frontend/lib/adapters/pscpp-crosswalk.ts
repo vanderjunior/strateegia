@@ -52,8 +52,8 @@ export async function loadPscppCrosswalkViewModel(): Promise<PscppCrosswalkViewM
       ...fallback,
       connection: sourceConnection(
         "offline",
-        "Backend offline",
-        "Mapa de preparação em fallback auditado enquanto a leitura do perfil PSCPP no backend está indisponível.",
+        "Dados reais não carregados agora",
+        "Mostrando referência local enquanto os dados reais não estão disponíveis.",
         "offline"
       )
     };

@@ -11,6 +11,11 @@ import {
   loadPscppWorkspaceViewModel
 } from "@/lib/adapters/pscpp";
 import {
+  buildDefaultRealUserStudyReadiness,
+  loadRealUserStudyReadiness,
+  type RealUserStudyReadiness
+} from "@/lib/adapters/real-user-state";
+import {
   productStatusClass,
   WorkspaceLink,
   WorkspaceSourcePanel,
@@ -22,18 +27,56 @@ export function PscppWorkspaceClient() {
   const [viewModel, setViewModel] = useState<PscppWorkspaceViewModel>(
     buildMockPscppWorkspaceViewModel()
   );
+  const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
 
   useEffect(() => {
     let active = true;
-    void loadPscppWorkspaceViewModel().then((next) => {
-      if (active) {
-        setViewModel(next);
+    void Promise.all([loadPscppWorkspaceViewModel(), loadRealUserStudyReadiness()]).then(
+      ([nextViewModel, nextReadiness]) => {
+        if (active) {
+          setViewModel(nextViewModel);
+          setReadiness(nextReadiness);
+        }
       }
-    });
+    );
     return () => {
       active = false;
     };
   }, []);
+
+  if (!readiness.canShowConcreteStudyPlan) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceSourcePanel
+          eyebrow="pscpp / referência"
+          title="Área PSCPP disponível como referência."
+          subtitle="Para montar seu mapa real, envie e analise um edital."
+          connection={readiness.connection}
+        />
+
+        <PscppSectionNav />
+
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+          <div className="section-kicker">referência, não plano personalizado</div>
+          <CardTitle className="mt-5 max-w-3xl break-words text-[1.95rem] leading-[1.02]">
+            O PSCPP aqui ainda não está baseado no seu edital.
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            {readiness.editalAnalysisState === "analysis_needs_review"
+              ? "Há edital analisado, mas ele precisa de conferência antes de virar mapa personalizado."
+              : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
+                ? "Você já enviou um edital, mas a análise ainda não foi executada nesta versão."
+                : "A referência ajuda a conhecer o formato do mapa, ciclo e questões candidatas. O caminho real depende de um edital analisado e de materiais da sua sessão."}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/pscpp/mapa">Ver referência PSCPP</WorkspaceLink>
+            <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
+            <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -54,7 +97,7 @@ export function PscppWorkspaceClient() {
             <div className="min-w-0 max-w-3xl">
               <div className="section-kicker">perfil da prova</div>
               <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">
-                Perfil PSCPP configurado
+                Referência PSCPP conectada
               </CardTitle>
               <p className="mt-4 text-sm leading-7 text-silver">{viewModel.profileDescription}</p>
             </div>

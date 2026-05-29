@@ -65,6 +65,31 @@ vi.mock("@/lib/adapters/editais", async () => {
   };
 });
 
+vi.mock("@/lib/adapters/real-user-state", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/adapters/real-user-state")>(
+    "@/lib/adapters/real-user-state"
+  );
+  const readiness = actual.buildDefaultRealUserStudyReadiness({
+    connection: {
+      state: "auth_required",
+      source: "backend",
+      title: "Entre para carregar seus dados",
+      detail: "A orientação real depende de uma sessão ativa."
+    },
+    isAuthenticated: false,
+    hasRealEditalMaterial: false,
+    hasAnalyzedEdital: false,
+    editalAnalysisState: "no_edital_uploaded",
+    canShowConcreteStudyPlan: false
+  });
+
+  return {
+    ...actual,
+    buildDefaultRealUserStudyReadiness: vi.fn(() => readiness),
+    loadRealUserStudyReadiness: vi.fn(async () => readiness)
+  };
+});
+
 import { EditaisReadOnlyClient } from "@/components/workspace/EditaisReadOnlyClient";
 import { EditalDetailReadOnlyClient } from "@/components/workspace/EditalDetailReadOnlyClient";
 import { MaterialUploadEntryClient } from "@/components/workspace/MaterialUploadEntryClient";
@@ -102,7 +127,9 @@ describe("materials, editais, and upload read-only invariants", () => {
       </div>
     );
 
-    expect((await screen.findAllByText("Ver edital")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Nenhum edital analisado ainda.")).toBeInTheDocument();
+    expect(screen.getByText(/Entre para ver seus editais analisados/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Enviar edital" })).toHaveAttribute("href", "/materials/upload");
     expect(screen.getAllByText("Análise candidata").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Gaps encontrados").length).toBeGreaterThan(0);

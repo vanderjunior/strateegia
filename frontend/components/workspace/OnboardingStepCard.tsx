@@ -31,7 +31,7 @@ export function OnboardingStepCard({ step }: { step: OnboardingStepItem }) {
       </div>
 
       <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">revisão necessária</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">observação</div>
         <p className="mt-2 break-words text-sm leading-7 text-[rgba(232,238,242,0.72)]">{step.cautionLabel}</p>
       </div>
 

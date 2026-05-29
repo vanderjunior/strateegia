@@ -66,12 +66,22 @@ export function PscppQuestionsClient() {
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="pscpp / questões"
-        title="Questões candidatas PSCPP"
-        subtitle="Guia de fonte, bibliografia e revisão para questões candidatas e sua relação com simulados em preparação."
+        title="Questões candidatas como referência"
+        subtitle="Referência de formato e cautelas. Questões reais dependem de edital analisado e revisão."
         connection={viewModel.connection}
       />
 
       <PscppSectionNav />
+
+      <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)]">
+        <div className="section-kicker">referência PSCPP</div>
+        <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+          Exemplos de orientação. Ainda não baseados no seu edital.
+        </CardTitle>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+          Esta tela não gera questões nem simulado. Ela apenas mostra regras de ancoragem para uma etapa futura.
+        </p>
+      </Card>
 
       <WorkspaceSummaryGrid items={viewModel.summary} />
 

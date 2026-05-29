@@ -8,21 +8,23 @@ describe("OnboardingReadOnlyClient", () => {
     render(<OnboardingReadOnlyClient />);
 
     expect(screen.getByText("Comece sua preparação")).toBeInTheDocument();
-    expect(screen.getByText("Envie material")).toBeInTheDocument();
-    expect(screen.getByText("Revise edital")).toBeInTheDocument();
-    expect(screen.getByText("Veja o mapa PSCPP")).toBeInTheDocument();
-    expect(screen.getByText("Siga o estudo de hoje")).toBeInTheDocument();
+    expect(screen.getByText("Entre na sua conta")).toBeInTheDocument();
+    expect(screen.getByText("Envie seu edital")).toBeInTheDocument();
+    expect(screen.getByText("Envie materiais de estudo")).toBeInTheDocument();
+    expect(screen.getByText("Veja cobertura quando disponível")).toBeInTheDocument();
+    expect(screen.getByText("Abra orientação de estudo quando houver edital analisado")).toBeInTheDocument();
 
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Enviar edital" })).toHaveAttribute("href", "/materials/upload");
     expect(screen.getByRole("link", { name: "Enviar material" })).toHaveAttribute("href", "/materials/upload");
     expect(screen.getAllByRole("link", { name: "Ver materiais" })[0]).toHaveAttribute("href", "/materials");
     expect(screen.getByRole("link", { name: "Ver editais" })).toHaveAttribute("href", "/editais");
-    expect(screen.getAllByRole("link", { name: "Ver mapa PSCPP" })[0]).toHaveAttribute("href", "/pscpp/mapa");
-    expect(screen.getAllByRole("link", { name: "Ver ciclo PSCPP" })[0]).toHaveAttribute("href", "/pscpp/ciclo");
-    expect(screen.getAllByRole("link", { name: "Ver estudo de hoje" })[0]).toHaveAttribute("href", "/study");
+    expect(screen.getAllByRole("link", { name: "Ver referência PSCPP" })[0]).toHaveAttribute("href", "/pscpp");
+    expect(screen.getAllByRole("link", { name: "Ver estudo guiado" })[0]).toHaveAttribute("href", "/study");
 
-    expect(screen.getAllByText(/OCR em validação/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Análise candidata").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Não altera seu progresso/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Algumas funções ainda estão em validação/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Pontos de cautela/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/limites de revisão/i)).not.toBeInTheDocument();
 
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();

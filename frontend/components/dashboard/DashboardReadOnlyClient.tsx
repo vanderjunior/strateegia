@@ -2,20 +2,17 @@
 
 import { useEffect, useState } from "react";
 
-import { BackendConnectionBanner } from "@/components/dashboard/BackendConnectionBanner";
-import { CapabilityStatusPanel } from "@/components/dashboard/CapabilityStatusPanel";
 import { DashboardStudyBridge } from "@/components/dashboard/DashboardStudyBridge";
-import { DocumentStatusCards } from "@/components/dashboard/DocumentStatusCards";
-import { PSCPPProfileCards } from "@/components/dashboard/PSCPPProfileCards";
-import { RuntimeStatusCards } from "@/components/dashboard/RuntimeStatusCards";
-import { StudyOverviewCards } from "@/components/dashboard/StudyOverviewCards";
-import { ProtectedReadPolicyNotice } from "@/components/layout/ProtectedReadPolicyNotice";
 import { SessionStatusNotice } from "@/components/layout/SessionStatusNotice";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { WorkspaceLink } from "@/components/workspace/WorkspaceShared";
-import type { DashboardViewModel, SessionState } from "@/lib/api/types";
-import { buildMockDashboardViewModel, loadDashboardViewModel } from "@/lib/adapters/dashboard";
+import type { SessionState } from "@/lib/api/types";
+import {
+  buildDefaultRealUserStudyReadiness,
+  loadRealUserStudyReadiness,
+  type RealUserStudyReadiness
+} from "@/lib/adapters/real-user-state";
 import { buildDefaultSessionState, loadSessionState } from "@/lib/adapters/session";
 
 function UnauthenticatedDashboardPanel() {
@@ -40,42 +37,71 @@ function UnauthenticatedDashboardPanel() {
   );
 }
 
-function DashboardNextStepCard() {
+function DashboardNextStepCard({ readiness }: { readiness: RealUserStudyReadiness }) {
+  const title = readiness.editalAnalysisDescription;
+  const detail =
+    readiness.editalAnalysisState === "analysis_needs_review"
+      ? "Há análise real, mas ela ainda precisa de conferência antes de virar caminho de estudo concreto."
+      : readiness.editalAnalysisState === "analysis_unavailable"
+        ? "Dados reais não carregados agora. A orientação local continua disponível sem tratar demonstrações como seu plano."
+        : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
+          ? "A classificação do arquivo foi preservada, mas ela ainda não transforma o edital em análise oficial. Enquanto isso, organize os materiais de estudo sem assumir cobertura."
+          : "O edital oficial define o escopo. Depois dele, envie materiais de estudo para comparar cobertura quando essa análise estiver disponível.";
+  const primaryLabel = readiness.shouldShowEditalUploadCTA ? "Enviar edital" : "Enviar materiais de estudo";
+
   return (
     <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
       <div className="section-kicker">próximo passo</div>
       <CardTitle className="mt-5 max-w-3xl break-words text-[1.9rem] leading-[1.02]">
-        Envie ou identifique um edital para montar o caminho de estudo.
+        {title}
       </CardTitle>
       <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-        O estudo orientado fica mais fiel quando parte do edital oficial. Enquanto isso, o painel mantém materiais reais
-        e orientação geral sem sugerir uma sessão específica.
+        {detail}
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
-        <WorkspaceLink href="/materials/upload">Enviar material</WorkspaceLink>
-        <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+        <WorkspaceLink href="/materials/upload">{primaryLabel}</WorkspaceLink>
+        <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
       </div>
     </Card>
   );
 }
 
+function MaterialsByTypeSummary({ readiness }: { readiness: RealUserStudyReadiness }) {
+  return (
+    <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+      <div className="section-kicker">seus materiais</div>
+      <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Materiais enviados por tipo</CardTitle>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">editais enviados</div>
+          <p className="mt-3 font-serif text-3xl text-ink">{readiness.editalMaterialsCount}</p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">materiais de estudo</div>
+          <p className="mt-3 font-serif text-3xl text-ink">{readiness.studyMaterialsCount}</p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">total enviado</div>
+          <p className="mt-3 font-serif text-3xl text-ink">{readiness.materialsCount}</p>
+        </div>
+      </div>
+      {readiness.hasRealStudyMaterial ? (
+        <p className="mt-5 text-sm leading-7 text-silver">
+          Materiais de estudo enviados: {readiness.studyMaterialsCount}. A comparação com edital ainda depende de uma
+          análise real do edital.
+        </p>
+      ) : (
+        <p className="mt-5 text-sm leading-7 text-silver">
+          Depois do edital, envie materiais de estudo para comparar cobertura quando essa etapa estiver disponível.
+        </p>
+      )}
+    </Card>
+  );
+}
+
 export function DashboardReadOnlyClient() {
-  const [viewModel, setViewModel] = useState<DashboardViewModel>(buildMockDashboardViewModel());
   const [sessionState, setSessionState] = useState<SessionState>(buildDefaultSessionState());
-
-  useEffect(() => {
-    let active = true;
-
-    void loadDashboardViewModel().then((next) => {
-      if (active) {
-        setViewModel(next);
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
 
   useEffect(() => {
     let active = true;
@@ -91,99 +117,47 @@ export function DashboardReadOnlyClient() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    void loadRealUserStudyReadiness().then((next) => {
+      if (active) {
+        setReadiness(next);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   if (sessionState.status !== "authenticated") {
     return <UnauthenticatedDashboardPanel />;
   }
 
-  const shouldShowStudyBridge = sessionState.status === "authenticated" && viewModel.hasRealEditalContext;
-  const shouldShowNextStep =
-    sessionState.status === "authenticated" && viewModel.usesRealUserData && !viewModel.hasRealEditalContext;
-
   return (
     <div className="space-y-8">
-      <BackendConnectionBanner connection={viewModel.connection} />
-
-      {shouldShowStudyBridge ? <DashboardStudyBridge /> : null}
-      {shouldShowNextStep ? <DashboardNextStepCard /> : null}
-
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[32px] border border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)] p-6">
-          <Badge>beta fechado</Badge>
-          <h2 className="mt-5 font-serif text-4xl text-ink">
-            Painel atual da preparação, sem esconder o que ainda exige revisão
-          </h2>
-          <p className="mt-4 max-w-3xl text-sm leading-8 text-silver">
-            Este painel combina dados de demonstração auditados com leitura de consulta do backend quando
-            ela está disponível. O foco continua em materiais, edital, mapa PSCPP e estudo guiado.
-          </p>
-          <div className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
-              orientação inicial
-            </div>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
-              Veja o caminho seguro para usar a plataforma sem pular etapas de revisão, sem agenda automática
-              e sem promessas de geração final.
-            </p>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <WorkspaceLink href="/onboarding">Comece sua preparação</WorkspaceLink>
-          </div>
-        </div>
-        <div className="naval-window">
-          <div className="naval-window-bar">
-            <span className="naval-window-dot bg-[#e17d69]" />
-            <span className="naval-window-dot bg-[#d6c477]" />
-            <span className="naval-window-dot bg-[#8fc9a9]" />
-            <div className="window-url">limites e revisão</div>
-          </div>
-          <div className="p-6">
-            <div className="section-kicker">
-              limites atuais
-            </div>
-            <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-              <li>Somente leitura nesta camada</li>
-              <li>Sem agenda automática nem alteração real de progresso</li>
-              <li>Sem overclaim de OCR para PDF escaneado</li>
-              <li>Sem exposição de respostas finais sensíveis</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
       <div className="space-y-4">
         <SessionStatusNotice variant="dashboard" />
-        <ProtectedReadPolicyNotice surfaceLabel="Painel" />
       </div>
 
-      <StudyOverviewCards cards={viewModel.studyOverviewCards} />
+      {readiness.canShowConcreteStudyPlan ? <DashboardStudyBridge /> : <DashboardNextStepCard readiness={readiness} />}
 
-      <section className="space-y-4">
-        <div className="section-kicker">
-          o que já está preparado
-        </div>
-        <CapabilityStatusPanel items={viewModel.capabilityItems} />
-      </section>
+      <MaterialsByTypeSummary readiness={readiness} />
 
-      <section className="space-y-4">
-        <div className="section-kicker">
-          materiais e edital
+      <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+        <div className="section-kicker">estado do edital</div>
+        <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+          {readiness.editalAnalysisLabel}
+        </CardTitle>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+          {readiness.editalAnalysisDescription}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
+          <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
         </div>
-        <DocumentStatusCards cards={viewModel.documentCards} />
-      </section>
-
-      <section className="space-y-4">
-        <div className="section-kicker">
-          perfis PSCPP
-        </div>
-        <PSCPPProfileCards cards={viewModel.pscppCards} />
-      </section>
-
-      <section className="space-y-4">
-        <div className="section-kicker">
-          uso controlado
-        </div>
-        <RuntimeStatusCards cards={viewModel.runtimeCards} />
-      </section>
+      </Card>
     </div>
   );
 }

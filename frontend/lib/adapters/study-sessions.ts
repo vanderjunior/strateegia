@@ -75,8 +75,8 @@ export async function loadStudySessionWorkspaceViewModel(): Promise<StudySession
       ...fallback,
       connection: sourceConnection(
         "offline",
-        "Backend offline",
-        "Estudo de hoje em fallback auditado enquanto o backend não responde.",
+        "Dados reais não carregados agora",
+        "Orientação de demonstração disponível enquanto os dados reais não estão disponíveis.",
         "offline"
       )
     };

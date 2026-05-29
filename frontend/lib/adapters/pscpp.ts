@@ -67,8 +67,8 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       ...pscppCycleViewModelMock,
       connection: sourceConnection(
         "offline",
-        "Backend offline",
-        "Mostrando o ciclo sugerido por fallback auditado enquanto o backend não responde.",
+        "Dados reais não carregados agora",
+        "Mostrando referência local enquanto os dados reais não estão disponíveis.",
         "offline"
       )
     };
@@ -110,8 +110,8 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       ...pscppQuestionsViewModelMock,
       connection: sourceConnection(
         "offline",
-        "Backend offline",
-        "Mostrando orientação de questões por fallback auditado enquanto o backend não responde.",
+        "Dados reais não carregados agora",
+        "Mostrando referência local enquanto os dados reais não estão disponíveis.",
         "offline"
       )
     };
@@ -169,8 +169,8 @@ export async function loadPscppWorkspaceViewModel(): Promise<PscppWorkspaceViewM
       ...fallback,
       connection: sourceConnection(
         "offline",
-        "Backend offline",
-        "Perfil PSCPP em fallback auditado enquanto a leitura do backend está indisponível.",
+        "Dados reais não carregados agora",
+        "Mostrando referência local enquanto os dados reais não estão disponíveis.",
         "offline"
       )
     };

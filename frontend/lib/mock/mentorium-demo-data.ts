@@ -59,7 +59,7 @@ export const landingFeatures = [
     badge: "mapa de preparação"
   },
   {
-    title: "Estudo de hoje",
+    title: "Orientação de estudo",
     description:
       "Sessão sugerida, materiais relacionados e checklist de estudo sem agenda automática.",
     badge: "guia flexível"
@@ -601,8 +601,8 @@ export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
   summary: [
     {
       id: "pscpp-summary-profile",
-      label: "Perfil PSCPP configurado",
-      value: "Perfil configurado",
+      label: "Referência PSCPP",
+      value: "Referência",
       detail: "Base técnico-operacional marítima com âncora bibliográfica."
     },
     {
@@ -1276,11 +1276,49 @@ export const onboardingSteps: OnboardingStepItem[] = [
   {
     id: "onboarding-step-1",
     stepNumber: 1,
-    title: "Envie material",
-    description: "Adicione PDFs, TXT ou Markdown para validação inicial.",
-    statusLabel: "Upload controlado",
-    note: "Validação inicial disponível com leitura cautelosa do formato enviado.",
-    cautionLabel: "PDFs escaneados podem exigir OCR em validação.",
+    title: "Entre na sua conta",
+    description: "Use a sessão interna para carregar materiais e manter seus dados separados dos exemplos.",
+    statusLabel: "Sessão local",
+    note: "As sessões deste ambiente são locais; depois de reiniciar o backend, entre novamente.",
+    cautionLabel: "Sem sessão ativa, as telas evitam tratar exemplos como dados reais.",
+    primaryLink: {
+      label: "Entrar",
+      href: "/login"
+    },
+    secondaryLinks: [
+      {
+        label: "Ver painel",
+        href: "/dashboard"
+      }
+    ]
+  },
+  {
+    id: "onboarding-step-2",
+    stepNumber: 2,
+    title: "Envie seu edital",
+    description: "Classifique o arquivo como edital para deixar claro qual documento deve orientar o escopo.",
+    statusLabel: "Classificação salva",
+    note: "Enviar um edital ainda não executa análise automática nesta versão.",
+    cautionLabel: "A classificação organiza o material, mas não cria um plano de estudo por si só.",
+    primaryLink: {
+      label: "Enviar edital",
+      href: "/materials/upload"
+    },
+    secondaryLinks: [
+      {
+        label: "Ver materiais",
+        href: "/materials"
+      }
+    ]
+  },
+  {
+    id: "onboarding-step-3",
+    stepNumber: 3,
+    title: "Envie materiais de estudo",
+    description: "Depois do edital, adicione livros, resumos, provas anteriores ou bibliografia.",
+    statusLabel: "Organização por tipo",
+    note: "A lista de materiais mostra grupos por classificação para facilitar a próxima etapa.",
+    cautionLabel: "Materiais enviados ainda não são comparados automaticamente ao edital.",
     primaryLink: {
       label: "Enviar material",
       href: "/materials/upload"
@@ -1293,48 +1331,34 @@ export const onboardingSteps: OnboardingStepItem[] = [
     ]
   },
   {
-    id: "onboarding-step-2",
-    stepNumber: 2,
-    title: "Revise edital",
-    description: "Confira tópicos, bibliografia identificada e lacunas antes de tratar a análise como final.",
-    statusLabel: "Análise candidata",
-    note: "Use a leitura do edital como base de conferência, não como verdade final automática.",
-    cautionLabel: "O alinhamento é preliminar e precisa de conferência.",
+    id: "onboarding-step-4",
+    stepNumber: 4,
+    title: "Veja cobertura quando disponível",
+    description: "A cobertura entre edital e materiais será liberada apenas quando a análise existir.",
+    statusLabel: "Disponível para consulta",
+    note: "Hoje, a área PSCPP fica como referência até o edital real ser analisado.",
+    cautionLabel: "Referências de demonstração não substituem seu edital.",
     primaryLink: {
       label: "Ver editais",
       href: "/editais"
     },
-    secondaryLinks: []
-  },
-  {
-    id: "onboarding-step-3",
-    stepNumber: 3,
-    title: "Veja o mapa PSCPP",
-    description: "Cruze materiais, edital, gaps e blocos prioritários da prova.",
-    statusLabel: "Mapa de preparação",
-    note: "O mapa mostra cobertura e gaps sem criar plano automático.",
-    cautionLabel: "Gaps encontrados ainda pedem leitura guiada e revisão necessária.",
-    primaryLink: {
-      label: "Ver mapa PSCPP",
-      href: "/pscpp/mapa"
-    },
     secondaryLinks: [
       {
-        label: "Ver ciclo PSCPP",
-        href: "/pscpp/ciclo"
+        label: "Ver referência PSCPP",
+        href: "/pscpp"
       }
     ]
   },
   {
-    id: "onboarding-step-4",
-    stepNumber: 4,
-    title: "Siga o estudo de hoje",
-    description: "Abra a sessão sugerida, consulte materiais relacionados e use o checklist de estudo.",
-    statusLabel: "Guia flexível",
-    note: "A sessão sugerida ajuda a decidir o que estudar agora, com foco em materiais e gaps conectados.",
-    cautionLabel: "A tela não altera seu progresso e não cria agenda automaticamente.",
+    id: "onboarding-step-5",
+    stepNumber: 5,
+    title: "Abra orientação de estudo quando houver edital analisado",
+    description: "O estudo guiado deve partir do edital analisado, não de exemplos genéricos.",
+    statusLabel: "Orientação futura",
+    note: "Enquanto isso, você pode consultar exemplos marcados como demonstração.",
+    cautionLabel: "A orientação não altera progresso, não agenda tarefas e não executa simulado.",
     primaryLink: {
-      label: "Ver estudo de hoje",
+      label: "Ver estudo guiado",
       href: "/study"
     },
     secondaryLinks: []
@@ -1344,39 +1368,39 @@ export const onboardingSteps: OnboardingStepItem[] = [
 export const onboardingViewModelMock: OnboardingViewModel = {
   summary: [
     {
-      id: "onboarding-summary-upload",
-      label: "Upload controlado",
+      id: "onboarding-summary-login",
+      label: "Entre na conta",
       value: "1",
-      detail: "Entrada segura já conectada ao fluxo de materiais."
+      detail: "Carregue dados reais apenas com sessão ativa."
     },
     {
       id: "onboarding-summary-edital",
-      label: "Análise candidata",
-      value: "1",
-      detail: "Edital de referência pronto para conferência cuidadosa."
+      label: "Envie edital",
+      value: "2",
+      detail: "O edital define o escopo do caminho de estudo."
     },
     {
-      id: "onboarding-summary-map",
-      label: "Mapa de preparação",
-      value: "5",
-      detail: "Blocos prioritários já conectados a gaps e materiais."
+      id: "onboarding-summary-materials",
+      label: "Envie materiais",
+      value: "3",
+      detail: "Organize materiais por tipo antes da comparação."
     },
     {
-      id: "onboarding-summary-study",
-      label: "Guia flexível",
-      value: "5",
-      detail: "Sessões sugeridas prontas para consulta guiada."
+      id: "onboarding-summary-guidance",
+      label: "Abra orientação",
+      value: "4",
+      detail: "Use estudo guiado só quando houver edital analisado."
     }
   ],
   readyHighlights: [
-    "Upload controlado já aponta para a entrada segura de materiais.",
-    "Edital de referência, mapa PSCPP e estudo de hoje já podem orientar a leitura inicial.",
-    "Os links principais levam apenas para páginas de consulta e revisão."
+    "Login, upload e materiais reais já estão prontos para staging interno.",
+    "A classificação por tipo ajuda a separar edital, materiais de estudo e referências.",
+    "PSCPP e estudo guiado ficam como referência enquanto não houver edital analisado."
   ],
   reviewHighlights: [
-    "OCR em validação ainda exige cautela para PDFs escaneados.",
-    "A análise de edital continua preliminar e precisa de conferência.",
-    "Questões candidatas e simulado curto seguem em revisão, sem execução automática."
+    "Algumas funções ainda estão em validação e serão liberadas aos poucos.",
+    "A análise de edital, cobertura e estudo personalizado permanecem pendentes.",
+    "Não há execução de simulado, geração de questões ou alteração de progresso nesta etapa."
   ],
   steps: onboardingSteps
 };

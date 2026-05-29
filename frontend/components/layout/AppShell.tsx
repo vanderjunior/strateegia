@@ -51,19 +51,19 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/study/session")) {
     return {
       eyebrow: "mentorium / estudo / sessão",
-      title: "Sessão sugerida"
+      title: "Orientação de exemplo"
     };
   }
   if (pathname.startsWith("/study")) {
     return {
       eyebrow: "mentorium / estudo",
-      title: "Estudo de hoje"
+      title: "Estudo guiado"
     };
   }
   if (pathname.startsWith("/pscpp/ciclo")) {
     return {
       eyebrow: "mentorium / pscpp / ciclo",
-      title: "Ciclo PSCPP sugerido"
+      title: "Ciclo PSCPP de referência"
     };
   }
   if (pathname.startsWith("/pscpp/questoes")) {
@@ -75,7 +75,7 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/pscpp/mapa")) {
     return {
       eyebrow: "mentorium / pscpp / mapa",
-      title: "Mapa de preparação PSCPP"
+      title: "Mapa PSCPP de referência"
     };
   }
   if (pathname.startsWith("/pscpp")) {

@@ -10,6 +10,11 @@ import {
   loadStudySessionWorkspaceViewModel
 } from "@/lib/adapters/study-sessions";
 import {
+  buildDefaultRealUserStudyReadiness,
+  loadRealUserStudyReadiness,
+  type RealUserStudyReadiness
+} from "@/lib/adapters/real-user-state";
+import {
   productStatusClass,
   WorkspaceLink,
   WorkspaceSourcePanel,
@@ -22,14 +27,18 @@ export function StudySessionWorkspaceClient() {
   const [viewModel, setViewModel] = useState<StudySessionWorkspaceViewModel>(
     buildMockStudySessionWorkspaceViewModel()
   );
+  const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
 
   useEffect(() => {
     let active = true;
-    void loadStudySessionWorkspaceViewModel().then((next) => {
-      if (active) {
-        setViewModel(next);
+    void Promise.all([loadStudySessionWorkspaceViewModel(), loadRealUserStudyReadiness()]).then(
+      ([nextViewModel, nextReadiness]) => {
+        if (active) {
+          setViewModel(nextViewModel);
+          setReadiness(nextReadiness);
+        }
       }
-    });
+    );
     return () => {
       active = false;
     };
@@ -41,11 +50,65 @@ export function StudySessionWorkspaceClient() {
   );
   const usesDemoMaterials = viewModel.connection.source === "mock";
 
+  if (!readiness.canShowConcreteStudyPlan) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceSourcePanel
+          eyebrow="estudo"
+          title="Estudo guiado"
+          subtitle="O caminho concreto será montado quando houver um edital analisado na sua sessão."
+          connection={readiness.connection}
+        />
+
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+          <div className="section-kicker">próximo passo</div>
+          <CardTitle className="mt-5 max-w-3xl break-words text-[1.95rem] leading-[1.02]">
+            Seu estudo guiado ainda não foi montado.
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            {readiness.editalAnalysisState === "analysis_needs_review"
+              ? "Edital analisado, mas precisa de conferência antes de orientar o estudo."
+              : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
+                ? "Edital recebido. A análise ainda não foi executada nesta versão. Depois, envie materiais de estudo para comparar cobertura quando essa análise estiver disponível."
+                : readiness.editalAnalysisState === "analysis_unavailable"
+                  ? "Análise indisponível agora. Quando os dados reais estiverem disponíveis, o estudo poderá seguir o estado do edital."
+                  : "Envie um edital para orientar o caminho. Depois, envie materiais de estudo para comparar cobertura quando essa análise estiver disponível."}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
+            <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
+          </div>
+        </Card>
+
+        {nextSession ? (
+          <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+            <div className="section-kicker">exemplo de orientação</div>
+            <CardTitle className="mt-5 break-words text-[1.75rem] leading-[1.04]">
+              Ainda não baseado no seu edital
+            </CardTitle>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+              Você pode consultar uma orientação de demonstração para entender o formato, mas ela não representa seu
+              plano personalizado.
+            </p>
+            <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <p className="break-words text-sm text-ink">{nextSession.title}</p>
+              <p className="mt-2 text-sm leading-7 text-silver">{nextSession.objective}</p>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <WorkspaceLink href={`/study/session/${nextSession.id}`}>Ver exemplo</WorkspaceLink>
+              <WorkspaceLink href="/pscpp">Ver referência PSCPP</WorkspaceLink>
+            </div>
+          </Card>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="estudo"
-        title="Estudo de hoje"
+        title="Orientação de estudo"
         subtitle="Sessões sugeridas a partir do perfil PSCPP, materiais e gaps identificados."
         connection={viewModel.connection}
       />
@@ -85,8 +148,8 @@ export function StudySessionWorkspaceClient() {
 
       <section className="space-y-4">
         <div>
-          <div className="section-kicker">sessões sugeridas</div>
-          <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">Todas as sessões sugeridas</h2>
+          <div className="section-kicker">orientações sugeridas</div>
+          <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">Orientações disponíveis</h2>
         </div>
         {viewModel.sessions.length ? (
           <div className="grid gap-4 2xl:grid-cols-2">

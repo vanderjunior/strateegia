@@ -67,6 +67,30 @@ vi.mock("@/lib/adapters/pipeline", async () => {
   };
 });
 
+vi.mock("@/lib/adapters/real-user-state", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/adapters/real-user-state")>(
+    "@/lib/adapters/real-user-state"
+  );
+  const readiness = actual.buildDefaultRealUserStudyReadiness({
+    connection: {
+      state: "auth_required",
+      source: "backend",
+      title: "Entre para carregar seus dados",
+      detail: "A orientação real depende de uma sessão ativa."
+    },
+    isAuthenticated: false,
+    hasRealEditalMaterial: false,
+    hasAnalyzedEdital: false,
+    canShowConcreteStudyPlan: false
+  });
+
+  return {
+    ...actual,
+    buildDefaultRealUserStudyReadiness: vi.fn(() => readiness),
+    loadRealUserStudyReadiness: vi.fn(async () => readiness)
+  };
+});
+
 import { EditaisReadOnlyClient } from "@/components/workspace/EditaisReadOnlyClient";
 import { EditalDetailReadOnlyClient } from "@/components/workspace/EditalDetailReadOnlyClient";
 import { MaterialDetailReadOnlyClient } from "@/components/workspace/MaterialDetailReadOnlyClient";

@@ -23,22 +23,21 @@ export function OnboardingReadOnlyClient() {
               Comece sua preparação
             </CardTitle>
             <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
-              Siga um caminho seguro: envie materiais, revise o edital, entenda os gaps e avance pelo
-              estudo sugerido.
+              Comece pelo básico: entre, envie o edital, depois organize materiais. O estudo guiado concreto só aparece
+              quando houver edital analisado.
             </p>
           </div>
           <div className="flex max-w-full flex-wrap gap-2 lg:justify-end">
             <Badge className={productStatusClass("Orientação inicial")}>Orientação inicial</Badge>
-            <Badge className={productStatusClass("Upload controlado")}>Upload controlado</Badge>
-            <Badge className={productStatusClass("Análise candidata")}>Análise candidata</Badge>
-            <Badge className={productStatusClass("Guia flexível")}>Guia flexível</Badge>
+            <Badge className={productStatusClass("Classificação salva")}>Classificação salva</Badge>
+            <Badge className={productStatusClass("Disponível para consulta")}>Disponível para consulta</Badge>
           </div>
         </div>
         <div className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">caminho seguro</div>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
-            Esta orientação inicial conecta materiais, edital, mapa PSCPP e estudo sugerido sem criar
-            agenda automaticamente e sem alterar seu progresso.
+            Algumas funções ainda estão em validação e serão liberadas aos poucos. Esta tela não cria agenda, não gera
+            questões e não altera progresso.
           </p>
         </div>
       </Card>
@@ -55,8 +54,8 @@ export function OnboardingReadOnlyClient() {
 
         <div className="space-y-5">
           <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
-            <div className="section-kicker">o que já está pronto</div>
-            <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Fluxo de orientação disponível</CardTitle>
+            <div className="section-kicker">disponível agora</div>
+            <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Fluxo inicial para staging interno</CardTitle>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {viewModel.readyHighlights.map((item) => (
                 <li key={item} className="break-words">
@@ -66,13 +65,13 @@ export function OnboardingReadOnlyClient() {
             </ul>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
-              <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
+              <WorkspaceLink href="/study">Ver estudo guiado</WorkspaceLink>
             </div>
           </Card>
 
           <Card className="min-w-0 border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.03)]">
-            <div className="section-kicker">o que ainda exige revisão</div>
-            <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Pontos de cautela antes de ampliar o uso</CardTitle>
+            <div className="section-kicker">em validação</div>
+            <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Funções liberadas aos poucos</CardTitle>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {viewModel.reviewHighlights.map((item) => (
                 <li key={item} className="break-words">
@@ -81,7 +80,7 @@ export function OnboardingReadOnlyClient() {
               ))}
             </ul>
             <div className="mt-6 flex flex-wrap gap-3">
-              <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
+              <WorkspaceLink href="/pscpp">Ver referência PSCPP</WorkspaceLink>
               <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
             </div>
           </Card>

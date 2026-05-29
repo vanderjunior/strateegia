@@ -39,10 +39,20 @@ export function PscppCrosswalkClient() {
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="pscpp / mapa"
-        title="Mapa de preparação PSCPP"
-        subtitle="Cruze materiais, edital, bibliografia e ciclo sugerido para entender onde estudar primeiro."
+        title="Mapa de referência PSCPP"
+        subtitle="Referência de cobertura. O mapa real depende de um edital analisado na sua sessão."
         connection={viewModel.connection}
       />
+
+      <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)]">
+        <div className="section-kicker">referência PSCPP</div>
+        <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+          Referência de demonstração. Ainda não baseada no seu edital.
+        </CardTitle>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+          Use este mapa para conhecer o formato. Para montar a versão real, envie e analise um edital.
+        </p>
+      </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PscppSectionNav />
@@ -143,7 +153,7 @@ export function PscppCrosswalkClient() {
                 <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
                 <WorkspaceLink href="/editais/edital-pscpp-referencia">Ver edital de referência</WorkspaceLink>
                 <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
-                <WorkspaceLink href="/pscpp/questoes">Ver questões PSCPP</WorkspaceLink>
+                <WorkspaceLink href="/pscpp/questoes">Ver questões candidatas</WorkspaceLink>
               </div>
             </Card>
           ))}
@@ -245,7 +255,7 @@ export function PscppCrosswalkClient() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
-            <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
+            <WorkspaceLink href="/study">Ver estudo guiado</WorkspaceLink>
           </div>
         </Card>
 

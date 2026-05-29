@@ -43,6 +43,10 @@ function statusSourceLabel(sessionState: SessionState): string {
   }
 }
 
+function displaySessionLabel(sessionState: SessionState): string {
+  return sessionState.status === "backend_offline" ? "Dados indisponíveis" : sessionState.label;
+}
+
 export function SessionStatusNotice({
   variant = "sidebar"
 }: {
@@ -87,7 +91,7 @@ export function SessionStatusNotice({
       setLogoutPending(false);
       setActionMessage(
         result.error.code === "backend_offline"
-          ? "Não foi possível conectar ao backend."
+          ? "Não foi possível encerrar a sessão agora."
           : "Não foi possível encerrar a sessão agora."
       );
       return;
@@ -133,14 +137,14 @@ export function SessionStatusNotice({
                 : sessionState.status === "unauthenticated"
                   ? "Para usar dados reais, será necessário entrar na aplicação. Enquanto isso, o painel usa dados de demonstração."
                   : sessionState.status === "backend_offline"
-                    ? "Não foi possível confirmar a sessão agora. Enquanto isso, o painel usa dados de demonstração."
+                    ? "Dados reais não carregados agora. Enquanto isso, o painel usa orientação de demonstração."
                     : sessionState.status === "mock_mode"
                       ? "Este ambiente usa dados de demonstração e não consulta a sessão real."
                       : "A sessão real ainda não está configurada neste ambiente. O painel segue em modo de demonstração."}
             </p>
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-2">
-            <Badge className={statusBadgeClass(sessionState.status)}>{sessionState.label}</Badge>
+            <Badge className={statusBadgeClass(sessionState.status)}>{displaySessionLabel(sessionState)}</Badge>
             <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
               {statusSourceLabel(sessionState)}
             </Badge>
@@ -155,7 +159,7 @@ export function SessionStatusNotice({
   return (
     <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
       <div className="flex flex-wrap gap-2">
-        <Badge className={statusBadgeClass(sessionState.status)}>{sessionState.label}</Badge>
+        <Badge className={statusBadgeClass(sessionState.status)}>{displaySessionLabel(sessionState)}</Badge>
         <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
           {statusSourceLabel(sessionState)}
         </Badge>

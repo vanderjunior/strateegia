@@ -32,6 +32,20 @@ function buildFallback(sessionId: string): { connection: BackendConnectionInfo; 
   };
 }
 
+function safeOutputLabel(label: string): string {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("quest")) {
+    return "Questões candidatas ainda não geradas";
+  }
+  if (normalized.includes("flashcard")) {
+    return "Ideias de revisão para anotar";
+  }
+  if (normalized.includes("simulado")) {
+    return "Pontos para revisar antes de simulado futuro";
+  }
+  return label;
+}
+
 export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
   const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: StudySessionDetail | null }>(
     buildFallback(sessionId)
@@ -57,6 +71,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
 
   const { connection, detail } = viewModel;
   const usesDemoMaterials = connection.source === "mock";
+  const isDemoGuidance = connection.source !== "backend";
 
   if (!detail) {
     return (
@@ -93,16 +108,29 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
       <WorkspaceSourcePanel
         eyebrow="estudo / sessão"
         title={detail.title}
-        subtitle="Guia prático de estudo com materiais, gaps, checklist e saídas esperadas, sem alterar seu progresso."
+        subtitle="Orientação de consulta com materiais, gaps e pontos de revisão, sem alterar seu progresso."
         connection={connection}
       />
+
+      {isDemoGuidance ? (
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)]">
+          <div className="section-kicker">exemplo de orientação</div>
+          <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+            Exemplo de orientação. Ainda não baseado no seu edital.
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            Use esta tela para entender o formato do guia. Um caminho real depende de edital analisado e materiais da
+            sua sessão.
+          </p>
+        </Card>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="h-full min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 max-w-3xl flex-1">
               <div className="section-kicker">objetivo</div>
-              <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Sessão sugerida</CardTitle>
+              <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Orientação sugerida</CardTitle>
               <p className="mt-4 text-sm leading-7 text-silver">{detail.objective}</p>
             </div>
             <Badge className={productStatusClass(detail.statusLabel)}>{detail.statusLabel}</Badge>
@@ -127,7 +155,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
 
         <Card className="h-full min-w-0">
           <div className="section-kicker">estrutura</div>
-          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Estrutura da sessão</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Estrutura da orientação</CardTitle>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             {detail.structure.map((item) => (
               <li key={item}>• {item}</li>
@@ -205,8 +233,8 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="h-full min-w-0">
-          <div className="section-kicker">saídas esperadas</div>
-          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Saídas esperadas</CardTitle>
+          <div className="section-kicker">ideias de revisão</div>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Pontos para anotar</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.outputs.map((output) => (
               <div
@@ -214,7 +242,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
                 className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <p className="min-w-0 flex-1 break-words text-sm text-ink">{output.label}</p>
+                  <p className="min-w-0 flex-1 break-words text-sm text-ink">{safeOutputLabel(output.label)}</p>
                   <Badge className={productStatusClass(output.statusLabel)}>{output.statusLabel}</Badge>
                 </div>
               </div>

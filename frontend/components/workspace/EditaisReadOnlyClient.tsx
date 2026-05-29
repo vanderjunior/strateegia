@@ -7,6 +7,11 @@ import { ProtectedReadPolicyNotice } from "@/components/layout/ProtectedReadPoli
 import { Card, CardTitle } from "@/components/ui/card";
 import type { EditaisWorkspaceViewModel } from "@/lib/api/types";
 import { buildMockEditaisWorkspaceViewModel, loadEditaisWorkspaceViewModel } from "@/lib/adapters/editais";
+import {
+  buildDefaultRealUserStudyReadiness,
+  loadRealUserStudyReadiness,
+  type RealUserStudyReadiness
+} from "@/lib/adapters/real-user-state";
 import { sourceLabel } from "@/lib/adapters/capabilities";
 import {
   productStatusClass,
@@ -18,18 +23,32 @@ import {
 
 export function EditaisReadOnlyClient() {
   const [viewModel, setViewModel] = useState<EditaisWorkspaceViewModel>(buildMockEditaisWorkspaceViewModel());
+  const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
 
   useEffect(() => {
     let active = true;
-    void loadEditaisWorkspaceViewModel().then((next) => {
-      if (active) {
-        setViewModel(next);
+    void Promise.all([loadEditaisWorkspaceViewModel(), loadRealUserStudyReadiness()]).then(
+      ([nextViewModel, nextReadiness]) => {
+        if (active) {
+          setViewModel(nextViewModel);
+          setReadiness(nextReadiness);
+        }
       }
-    });
+    );
     return () => {
       active = false;
     };
   }, []);
+
+  const hasRealAnalyzedEdital =
+    viewModel.connection.state === "connected" && viewModel.connection.source === "backend" && viewModel.items.length > 0;
+  const showEmptyState = !hasRealAnalyzedEdital;
+  const emptyStateTitle =
+    readiness.editalAnalysisState === "analysis_unavailable"
+      ? "Análise indisponível"
+      : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
+        ? "Edital enviado"
+        : "Nenhum edital analisado ainda.";
 
   return (
     <div className="space-y-8">
@@ -42,9 +61,9 @@ export function EditaisReadOnlyClient() {
 
       <ProtectedReadPolicyNotice surfaceLabel="Editais" />
 
-      <WorkspaceSummaryGrid items={viewModel.summary} />
+      {showEmptyState ? null : <WorkspaceSummaryGrid items={viewModel.summary} />}
 
-      {viewModel.items.length ? (
+      {hasRealAnalyzedEdital ? (
         <section className="grid gap-4 lg:grid-cols-2">
           {viewModel.items.map((item) => (
           <Card key={item.id} className="flex h-full min-w-0 flex-col">
@@ -97,14 +116,22 @@ export function EditaisReadOnlyClient() {
           ))}
         </section>
       ) : (
-        <Card>
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
           <div className="section-kicker">editais</div>
-          <CardTitle className="mt-5 text-[1.8rem]">Nenhum edital para exibir ainda</CardTitle>
+          <CardTitle className="mt-5 text-[1.8rem]">{emptyStateTitle}</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            {viewModel.connection.state === "connected" && viewModel.connection.source === "backend"
-              ? "Nenhum edital foi encontrado na sua sessão até agora. A leitura real desta área depende de um edital já associado ao seu fluxo autenticado."
-              : "Consulte os dados de demonstração enquanto a listagem real depende de sessão autenticada ou de leitura disponível para esta área."}
+            {readiness.editalAnalysisState === "analysis_unavailable"
+              ? "Não foi possível confirmar o estado da análise agora. Tente novamente quando os dados reais estiverem disponíveis."
+              : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
+                ? "Você já enviou um edital. A análise ainda não foi executada nesta versão."
+              : readiness.isAuthenticated
+                ? "Envie um edital para orientar o caminho de estudo antes de esperar tópicos, bibliografia ou gaps reais."
+                : "Entre para ver seus editais analisados. Sem sessão ativa, esta tela evita mostrar demonstrações como se fossem seus dados."}
           </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
+            <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
+          </div>
         </Card>
       )}
     </div>

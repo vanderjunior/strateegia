@@ -26,6 +26,29 @@ vi.mock("@/lib/adapters/study-sessions", async () => {
   };
 });
 
+vi.mock("@/lib/adapters/real-user-state", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/adapters/real-user-state")>(
+    "@/lib/adapters/real-user-state"
+  );
+  const readiness = actual.buildDefaultRealUserStudyReadiness({
+    isAuthenticated: true,
+    hasRealMaterials: true,
+    hasRealEditalMaterial: true,
+    hasRealStudyMaterial: true,
+    hasAnalyzedEdital: false,
+    canShowConcreteStudyPlan: false,
+    materialsCount: 3,
+    editalMaterialsCount: 1,
+    studyMaterialsCount: 2
+  });
+
+  return {
+    ...actual,
+    buildDefaultRealUserStudyReadiness: vi.fn(() => readiness),
+    loadRealUserStudyReadiness: vi.fn(async () => readiness)
+  };
+});
+
 import { PscppWorkspaceClient } from "@/components/workspace/PscppWorkspaceClient";
 import { PscppCycleClient } from "@/components/workspace/PscppCycleClient";
 import { PscppQuestionsClient } from "@/components/workspace/PscppQuestionsClient";
@@ -43,14 +66,14 @@ describe("PSCPP and study workspace copy", () => {
       </div>
     );
 
-    expect((await screen.findAllByText("Perfil PSCPP configurado")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Ciclo sugerido").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Questões candidatas").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Área PSCPP disponível como referência.")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ciclo de referência PSCPP/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Questões candidatas como referência/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Guia flexível").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Estudo de hoje").length).toBeGreaterThan(0);
-    expect(screen.getByText("Não altera seu progresso")).toBeInTheDocument();
-    expect(screen.getAllByText("Abrir orientação").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Exemplo de material").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Seu estudo guiado ainda não foi montado.").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Pronto para estudo")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Ver exemplo").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ainda não baseado no seu edital/i).length).toBeGreaterThan(0);
 
     expect(screen.queryByText(/question-style profile/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/study-cycle profile/i)).not.toBeInTheDocument();
@@ -68,9 +91,11 @@ describe("PSCPP and study workspace copy", () => {
   it("keeps session 12 explicit about non-executable simulado limits", async () => {
     render(<StudySessionDetailClient sessionId="session-12-simulado-curto-revisao" />);
 
+    expect(await screen.findByText("Exemplo de orientação. Ainda não baseado no seu edital.")).toBeInTheDocument();
     expect(await screen.findByText(/Simulado curto ainda não executável/i)).toBeInTheDocument();
     expect(screen.getByText(/Questões candidatas ainda exigem revisão/i)).toBeInTheDocument();
     expect(screen.getByText(/Esta tela não gera prova nem corrige respostas/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Questões candidatas ainda não geradas").length).toBeGreaterThan(0);
     expect(screen.queryByText("Começar sessão")).not.toBeInTheDocument();
     expect(screen.queryByText("Concluir sessão")).not.toBeInTheDocument();
   });

@@ -96,7 +96,7 @@ export function WorkspaceSummaryGrid({ items }: { items: WorkspaceSummaryMetric[
       {items.map((item) => (
         <Card key={item.id} className="h-full">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
-            resumo
+            indicador
           </div>
           <div className="mt-5 font-serif text-4xl text-ink">{item.value}</div>
           <p className="mt-3 text-sm text-silver">{item.label}</p>

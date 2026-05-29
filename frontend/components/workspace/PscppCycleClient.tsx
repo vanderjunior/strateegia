@@ -38,12 +38,22 @@ export function PscppCycleClient() {
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="pscpp / ciclo"
-        title="Ciclo sugerido PSCPP"
-        subtitle="Sugestão flexível, ajustável pelo candidato, sem agenda automática e sem alterar seu progresso."
+        title="Ciclo de referência PSCPP"
+        subtitle="Referência flexível, sem agenda automática e ainda não baseada no seu edital."
         connection={viewModel.connection}
       />
 
       <PscppSectionNav />
+
+      <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)]">
+        <div className="section-kicker">referência PSCPP</div>
+        <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+          Ciclo de demonstração. Ainda não baseado no seu edital.
+        </CardTitle>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+          O ciclo real deve partir de edital analisado e materiais enviados na sua sessão.
+        </p>
+      </Card>
 
       <WorkspaceSummaryGrid items={viewModel.summary} />
 
@@ -65,7 +75,7 @@ export function PscppCycleClient() {
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
             <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
-            <WorkspaceLink href="/study">Ver estudo de hoje</WorkspaceLink>
+            <WorkspaceLink href="/study">Ver estudo guiado</WorkspaceLink>
           </div>
         </Card>
 

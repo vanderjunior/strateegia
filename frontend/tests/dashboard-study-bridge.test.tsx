@@ -18,7 +18,7 @@ describe("DashboardStudyBridge", () => {
   it("renders read-only study guidance and avoids mutation CTAs", async () => {
     render(<DashboardStudyBridge />);
 
-    expect(screen.getAllByText(/estudo de hoje/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/orientação de estudo/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Sessão sugerida")).toBeInTheDocument();
     expect(screen.getByText("Não altera seu progresso")).toBeInTheDocument();
     expect(await screen.findAllByText("Abrir orientação")).not.toHaveLength(0);
