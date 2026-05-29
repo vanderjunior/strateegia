@@ -39,6 +39,7 @@ export function StudySessionWorkspaceClient() {
     () => viewModel.sessions.find((item) => item.id === viewModel.nextSuggestedSessionId) ?? viewModel.sessions[0],
     [viewModel]
   );
+  const usesDemoMaterials = viewModel.connection.source === "mock";
 
   return (
     <div className="space-y-8">
@@ -66,7 +67,7 @@ export function StudySessionWorkspaceClient() {
               </CardTitle>
               <p className="mt-4 text-sm leading-7 text-silver">{nextSession.objective}</p>
             </div>
-            <WorkspaceLink href={`/study/session/${nextSession.id}`}>Ver sessão</WorkspaceLink>
+            <WorkspaceLink href={`/study/session/${nextSession.id}`}>Abrir orientação</WorkspaceLink>
           </div>
           <div className="mt-5">
             <StudySessionMetaRow
@@ -111,7 +112,7 @@ export function StudySessionWorkspaceClient() {
                 </div>
                 <p className="mt-5 text-sm leading-7 text-silver">{session.note}</p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <WorkspaceLink href={`/study/session/${session.id}`}>Ver sessão</WorkspaceLink>
+                  <WorkspaceLink href={`/study/session/${session.id}`}>Abrir orientação</WorkspaceLink>
                   <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
                 </div>
               </Card>
@@ -167,10 +168,10 @@ export function StudySessionWorkspaceClient() {
                 </div>
                 <div className="mt-4">
                   <Link
-                    href={material.linkHref}
+                    href={usesDemoMaterials ? "/materials" : material.linkHref}
                     className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-4 py-2 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
                   >
-                    Ver material
+                    {usesDemoMaterials ? "Exemplo de material" : "Ver material"}
                   </Link>
                 </div>
               </div>

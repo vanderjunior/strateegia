@@ -49,6 +49,8 @@ describe("PSCPP and study workspace copy", () => {
     expect(screen.getAllByText("Guia flexível").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Estudo de hoje").length).toBeGreaterThan(0);
     expect(screen.getByText("Não altera seu progresso")).toBeInTheDocument();
+    expect(screen.getAllByText("Abrir orientação").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Exemplo de material").length).toBeGreaterThan(0);
 
     expect(screen.queryByText(/question-style profile/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/study-cycle profile/i)).not.toBeInTheDocument();

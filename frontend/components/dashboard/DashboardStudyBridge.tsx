@@ -50,7 +50,7 @@ export function DashboardStudyBridge() {
             Estudo de hoje
           </CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
-            Comece pela sessão sugerida a partir do perfil PSCPP, materiais e gaps identificados.
+            Abra uma orientação de estudo quando o edital e os materiais reais estiverem conectados.
           </p>
         </div>
         <div className="flex max-w-full flex-wrap gap-2 lg:justify-end">
@@ -91,7 +91,7 @@ export function DashboardStudyBridge() {
               executa simulado.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <WorkspaceLink href={`/study/session/${nextSession.id}`}>Ver sessão</WorkspaceLink>
+              <WorkspaceLink href={`/study/session/${nextSession.id}`}>Abrir orientação</WorkspaceLink>
               <WorkspaceLink href="/study">Ver estudo</WorkspaceLink>
             </div>
           </Card>

@@ -41,6 +41,8 @@ export function buildMockDashboardViewModel(
 ): DashboardViewModel {
   return {
     connection: baseConnection(),
+    usesRealUserData: false,
+    hasRealEditalContext: false,
     studyOverviewCards: cloneCards(studyOverviewCards),
     documentCards: cloneCards(documentStatusCards),
     pscppCards: cloneCards(pscppProfileCards),
@@ -155,8 +157,8 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Endpoint ainda não validado",
-      detail: "Este painel depende de um endpoint ainda não validado neste ambiente.",
+      title: "Dados reais indisponíveis agora",
+      detail: "A orientação local continua disponível enquanto esta leitura é validada.",
       endpoint
     });
   }
@@ -164,8 +166,8 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend offline ou indisponível",
-      detail: "Não foi possível conectar ao backend.",
+      title: "Dados reais indisponíveis agora",
+      detail: "Usando orientação local de demonstração até a conexão voltar.",
       endpoint
     });
   }
@@ -270,6 +272,8 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
 
   return buildMockDashboardViewModel({
     connection,
+    usesRealUserData: overviewResult.ok,
+    hasRealEditalContext: overviewResult.ok ? overviewResult.data.edital.edital_available : false,
     studyOverviewCards: overviewCards,
     documentCards: documents,
     pscppCards: enhancePscppCards(cloneCards(pscppProfileCards), pscppProfileResult.data),

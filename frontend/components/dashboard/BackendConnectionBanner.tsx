@@ -25,11 +25,11 @@ function bannerTone(state: BackendConnectionInfo["state"]): string {
 function stateLabel(state: BackendConnectionInfo["state"]): string {
   switch (state) {
     case "connected":
-      return "Backend disponível";
+      return "Dados reais disponíveis";
     case "auth_required":
       return "Sessão necessária";
     case "offline":
-      return "Backend offline";
+      return "Dados reais indisponíveis";
     case "unsupported":
       return "Painel em validação";
     case "error":
@@ -46,13 +46,13 @@ export function BackendConnectionBanner({ connection }: { connection: BackendCon
         <span className="naval-window-dot bg-[#e17d69]" />
         <span className="naval-window-dot bg-[#d6c477]" />
         <span className="naval-window-dot bg-[#8fc9a9]" />
-        <div className="window-url">{connection.endpoint ?? "frontend / ponte de consulta"}</div>
+        <div className="window-url">painel de consulta</div>
       </div>
       <div className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="section-kicker">
-              status da conexão
+              estado dos dados
             </div>
             <h3 className="mt-3 font-serif text-2xl text-ink">{connection.title}</h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-silver">{connection.detail}</p>

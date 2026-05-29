@@ -56,6 +56,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
   }, [sessionId]);
 
   const { connection, detail } = viewModel;
+  const usesDemoMaterials = connection.source === "mock";
 
   if (!detail) {
     return (
@@ -159,10 +160,10 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
                   </div>
                   <div className="mt-4">
                     <Link
-                      href={material.linkHref}
+                      href={usesDemoMaterials ? "/materials" : material.linkHref}
                       className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-4 py-2 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
                     >
-                      Ver material
+                      {usesDemoMaterials ? "Exemplo de material" : "Ver material"}
                     </Link>
                   </div>
                 </div>

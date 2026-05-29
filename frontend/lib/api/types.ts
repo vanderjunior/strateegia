@@ -100,6 +100,8 @@ export interface BackendConnectionInfo {
 
 export interface DashboardViewModel {
   connection: BackendConnectionInfo;
+  usesRealUserData: boolean;
+  hasRealEditalContext: boolean;
   studyOverviewCards: StudyOverviewCard[];
   documentCards: CapabilityCard[];
   pscppCards: CapabilityCard[];

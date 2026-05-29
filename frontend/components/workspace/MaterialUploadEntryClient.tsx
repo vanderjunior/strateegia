@@ -32,6 +32,14 @@ import {
 import { UploadDropzone } from "@/components/workspace/UploadDropzone";
 import { UploadValidationSummary } from "@/components/workspace/UploadValidationSummary";
 
+const uploadIntentOptions = [
+  { id: "edital", label: "Edital" },
+  { id: "study_material", label: "Material de estudo" },
+  { id: "previous_exam", label: "Prova anterior" },
+  { id: "bibliography", label: "Bibliografia / referência" },
+  { id: "other", label: "Outro" }
+] as const;
+
 function buildConnection(): BackendConnectionInfo {
   const config = getApiConfig();
   if (config.forceMock) {
@@ -77,6 +85,7 @@ function buildMockResult(file: File): UploadMaterialResult {
 export function MaterialUploadEntryClient() {
   const connection = buildConnection();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedIntentId, setSelectedIntentId] = useState<string>("");
   const [confirmationChecked, setConfirmationChecked] = useState(false);
   const [validationState, setValidationState] = useState<UploadValidationState>("idle");
   const [entryState, setEntryState] = useState<UploadEntryState>(
@@ -88,6 +97,7 @@ export function MaterialUploadEntryClient() {
   function handleFileChange(file: File | null) {
     setSelectedFile(file);
     setResult(null);
+    setSelectedIntentId("");
     setConfirmationChecked(false);
 
     if (!file) {
@@ -118,6 +128,11 @@ export function MaterialUploadEntryClient() {
     if (!confirmationChecked) {
       setValidationState("missing_confirmation");
       setValidationMessage("Confirmação necessária.");
+      return;
+    }
+    if (!selectedIntentId) {
+      setValidationState("missing_confirmation");
+      setValidationMessage("Classificação necessária.");
       return;
     }
 
@@ -187,12 +202,15 @@ export function MaterialUploadEntryClient() {
     validationState === "invalid_type" ||
     entryState === "sending" ||
     connection.source === "unsupported" ||
-    !confirmationChecked;
+    !confirmationChecked ||
+    !selectedIntentId;
   const showAuthGuidance = validationMessage === "Sessão necessária para enviar material.";
   const showOfflineGuidance = validationMessage === "Não foi possível conectar ao backend.";
   const showMissingBaseGuidance = validationMessage === "Envio real indisponível neste ambiente.";
   const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
   const returnedExtension = result ? extensionForFileName(result.filename) || "sem extensão" : "";
+  const selectedIntentLabel =
+    uploadIntentOptions.find((option) => option.id === selectedIntentId)?.label ?? "";
 
   return (
     <div className="space-y-8">
@@ -225,6 +243,37 @@ export function MaterialUploadEntryClient() {
         <Card className="min-w-0">
           <div className="section-kicker">confirmação</div>
           <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão antes do envio</CardTitle>
+          <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.14)] bg-[rgba(201,169,110,0.06)] p-4">
+            <fieldset>
+              <legend className="break-words text-sm font-medium text-ink">O que você está enviando?</legend>
+              <p className="mt-2 text-sm leading-7 text-silver">
+                Isso ajuda a organizar o caminho de estudo. A classificação pode ser ajustada depois.
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {uploadIntentOptions.map((option) => (
+                  <label
+                    key={option.id}
+                    className="flex items-center gap-3 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-silver"
+                  >
+                    <input
+                      type="radio"
+                      name="upload-intent"
+                      value={option.id}
+                      checked={selectedIntentId === option.id}
+                      onChange={() => {
+                        setSelectedIntentId(option.id);
+                        if (selectedFile && confirmationChecked) {
+                          setValidationState("valid");
+                          setValidationMessage("Arquivo pronto para validação.");
+                        }
+                      }}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
           <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
             <label className="flex items-start gap-3 text-sm leading-7 text-silver">
               <input
@@ -236,9 +285,12 @@ export function MaterialUploadEntryClient() {
                   if (!event.target.checked && selectedFile) {
                     setValidationState("missing_confirmation");
                     setValidationMessage("Confirmação necessária.");
-                  } else if (selectedFile) {
+                  } else if (selectedFile && selectedIntentId) {
                     setValidationState("valid");
                     setValidationMessage("Arquivo pronto para validação.");
+                  } else if (selectedFile) {
+                    setValidationState("missing_confirmation");
+                    setValidationMessage("Classificação necessária.");
                   }
                 }}
               />
@@ -248,6 +300,7 @@ export function MaterialUploadEntryClient() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge className={sourceBadgeClass(connection.source)}>{modeLabel}</Badge>
             <Badge className={productStatusClass(validationMessage)}>{validationMessage}</Badge>
+            {selectedIntentLabel ? <Badge>{selectedIntentLabel}</Badge> : null}
           </div>
           <p className="mt-5 text-sm leading-7 text-silver">
             Esta etapa não gera questões, não gera simulados e não altera seu progresso.
@@ -326,11 +379,18 @@ export function MaterialUploadEntryClient() {
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">referência</div>
               <p className="mt-3 break-words text-sm text-ink">{result.documentId}</p>
             </div>
+            {selectedIntentLabel ? (
+              <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">classificação escolhida</div>
+                <p className="mt-3 text-sm text-ink">{selectedIntentLabel}</p>
+              </div>
+            ) : null}
           </div>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
             <li>• Próximo estado esperado: Texto extraído ou aguardando validação.</li>
             <li>• Se for PDF digitalizado, o arquivo pode seguir como OCR necessário.</li>
             <li>• Após validação, o material pode ficar pronto para revisão.</li>
+            <li>• A classificação foi registrada nesta interface; o processamento automático ainda não usa essa informação.</li>
             {result.demoOnly ? (
               <li>• Modo de demonstração: nenhum arquivo foi persistido.</li>
             ) : (

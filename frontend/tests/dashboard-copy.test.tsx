@@ -1,20 +1,20 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  session: {
+    status: "unauthenticated",
+    label: "Sessão necessária",
+    description: "Entre para usar dados reais. Enquanto isso, o painel evita dados personalizados.",
+    source: "backend"
+  } as Record<string, unknown>,
+  dashboardOverrides: {} as Record<string, unknown>
+}));
 
 vi.mock("@/lib/adapters/session", () => ({
   SESSION_STATE_CHANGED_EVENT: "mentorium:session-state-changed",
-  buildDefaultSessionState: vi.fn(() => ({
-    status: "unauthenticated",
-    label: "Sessão necessária",
-    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
-    source: "backend"
-  })),
-  loadSessionState: vi.fn(async () => ({
-    status: "unauthenticated",
-    label: "Sessão necessária",
-    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
-    source: "backend"
-  })),
+  buildDefaultSessionState: vi.fn(() => mocks.session),
+  loadSessionState: vi.fn(async () => mocks.session),
   notifySessionStateChanged: vi.fn()
 }));
 
@@ -25,7 +25,7 @@ vi.mock("@/lib/adapters/dashboard", async () => {
 
   return {
     ...actual,
-    loadDashboardViewModel: vi.fn(async () => actual.buildMockDashboardViewModel())
+    loadDashboardViewModel: vi.fn(async () => actual.buildMockDashboardViewModel(mocks.dashboardOverrides))
   };
 });
 
@@ -43,24 +43,61 @@ vi.mock("@/lib/adapters/study-sessions", async () => {
 import { DashboardReadOnlyClient } from "@/components/dashboard/DashboardReadOnlyClient";
 
 describe("dashboard product language", () => {
-  it("keeps dashboard sections in product language and avoids forbidden CTAs", async () => {
+  beforeEach(() => {
+    mocks.session = {
+      status: "unauthenticated",
+      label: "Sessão necessária",
+      description: "Entre para usar dados reais. Enquanto isso, o painel evita dados personalizados.",
+      source: "backend"
+    };
+    mocks.dashboardOverrides = {};
+  });
+
+  it("keeps unauthenticated dashboard simple and avoids personalized study content", async () => {
     render(<DashboardReadOnlyClient />);
 
-    expect(await screen.findByText("Estudo de hoje")).toBeInTheDocument();
-    expect(screen.getByText(/o que já está preparado/i)).toBeInTheDocument();
-    expect(screen.getByText(/uso controlado/i)).toBeInTheDocument();
-    expect(screen.getAllByText("Questões candidatas").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Simulado em preparação").length).toBeGreaterThan(0);
-    expect(screen.getByText("Consulta local")).toBeInTheDocument();
-    expect(screen.getAllByText("Requer sessão").length).toBeGreaterThan(0);
-    expect(screen.queryByText(/dados reais da sessão/i)).not.toBeInTheDocument();
+    expect(await screen.findByText("Entre para ver seus materiais, edital e caminho de estudo.")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Entrar" })[0]).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Conhecer o fluxo" })).toHaveAttribute("href", "/onboarding");
+    expect(screen.queryByText("Estudo de hoje")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Questões candidatas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Simulado em preparação/i)).not.toBeInTheDocument();
 
-    expect(screen.queryByText(/ledger/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/guardrail/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/propagation/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/artifact/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/runtime chain/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Backend offline/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Não foi possível conectar ao backend/i)).not.toBeInTheDocument();
+  });
 
+  it("shows next-step guidance instead of a concrete study session when no real edital exists", async () => {
+    mocks.session = {
+      status: "authenticated",
+      label: "Sessão ativa",
+      description: "Sessão ativa.",
+      source: "backend",
+      userLabel: "Usuário interno"
+    };
+    mocks.dashboardOverrides = {
+      usesRealUserData: true,
+      hasRealEditalContext: false,
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Dados reais disponíveis",
+        detail: "Materiais reais carregados para esta sessão."
+      }
+    };
+
+    render(<DashboardReadOnlyClient />);
+
+    expect(await screen.findByText("Envie ou identifique um edital para montar o caminho de estudo.")).toBeInTheDocument();
+    expect(screen.queryByText("Estudo de hoje")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Enviar material" })).toHaveAttribute("href", "/materials/upload");
+    expect(screen.getByRole("link", { name: "Ver editais" })).toHaveAttribute("href", "/editais");
+  });
+
+  it("keeps dashboard free of mutation and pricing CTAs", async () => {
+    render(<DashboardReadOnlyClient />);
+
+    expect(await screen.findByText("Entre para ver seus materiais, edital e caminho de estudo.")).toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
     expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
