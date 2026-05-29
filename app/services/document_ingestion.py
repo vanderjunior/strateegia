@@ -15,6 +15,24 @@ from app.domain.models import (
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md"}
 MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024
+ALLOWED_MATERIAL_TYPES = {
+    "edital",
+    "study_material",
+    "previous_exam",
+    "bibliography",
+    "note",
+    "other",
+    "unknown",
+}
+
+
+def normalize_material_type(value: str | None) -> str:
+    normalized = (value or "").strip().lower()
+    if not normalized:
+        return "unknown"
+    if normalized not in ALLOWED_MATERIAL_TYPES:
+        raise ValueError("Unsupported material_type.")
+    return normalized
 
 
 def sanitize_filename(filename: str) -> str:
@@ -34,6 +52,7 @@ def ingest_uploaded_material(
     content_type: str,
     payload: bytes,
     storage_root: Path,
+    material_type: str | None = None,
 ) -> UploadedMaterial:
     document_id = str(uuid4())
     safe_name = sanitize_filename(original_filename)
@@ -46,6 +65,7 @@ def ingest_uploaded_material(
     file_path.write_bytes(payload)
     relative_storage = Path("uploads") / user_id / storage_name
 
+    normalized_material_type = normalize_material_type(material_type)
     metadata = DocumentMetadata(
         document_id=document_id,
         user_id=user_id,
@@ -59,7 +79,7 @@ def ingest_uploaded_material(
         created_at=created_at,
         updated_at=created_at,
         extraction_status=DocumentIngestionStatus.UPLOADED.value,
-        metadata={"extension": suffix},
+        metadata={"extension": suffix, "material_type": normalized_material_type},
     )
 
     if suffix == ".pdf":

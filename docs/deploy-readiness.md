@@ -223,6 +223,7 @@ Authenticated smoke result summary:
 - Frontend `GET /` returned `200`.
 - Backend login through existing `POST /api/auth/login` returned `200`.
 - Upload through frontend `POST /api/materials/upload` returned `201`.
+- Upload intent/material type is persisted as bounded `material_type` metadata when supplied by the frontend.
 - Upload response sanitization passed:
   - no `extracted_text`
   - no `storage_path`

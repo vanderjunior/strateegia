@@ -84,6 +84,11 @@ export function MaterialsReadOnlyClient() {
               <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
                 {item.typeLabel}
               </Badge>
+              {item.materialTypeLabel ? (
+                <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
+                  {item.materialTypeLabel}
+                </Badge>
+              ) : null}
               <Badge className={productStatusClass(item.reviewState)}>{item.reviewState}</Badge>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">

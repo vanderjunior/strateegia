@@ -14,12 +14,13 @@ import {
   isScannedPdfFile,
   validateUploadFile
 } from "@/components/workspace/upload-validation";
-import { uploadMaterialFile } from "@/lib/api/documents";
+import { MATERIAL_TYPE_OPTIONS, materialTypeLabel, uploadMaterialFile } from "@/lib/api/documents";
 import { getApiConfig } from "@/lib/api/config";
 import { sourceLabel } from "@/lib/adapters/capabilities";
 import type {
   BackendConnectionInfo,
   UploadEntryState,
+  MaterialType,
   UploadMaterialResult,
   UploadValidationState
 } from "@/lib/api/types";
@@ -31,14 +32,6 @@ import {
 } from "@/components/workspace/WorkspaceShared";
 import { UploadDropzone } from "@/components/workspace/UploadDropzone";
 import { UploadValidationSummary } from "@/components/workspace/UploadValidationSummary";
-
-const uploadIntentOptions = [
-  { id: "edital", label: "Edital" },
-  { id: "study_material", label: "Material de estudo" },
-  { id: "previous_exam", label: "Prova anterior" },
-  { id: "bibliography", label: "Bibliografia / referência" },
-  { id: "other", label: "Outro" }
-] as const;
 
 function buildConnection(): BackendConnectionInfo {
   const config = getApiConfig();
@@ -66,13 +59,15 @@ function buildConnection(): BackendConnectionInfo {
   };
 }
 
-function buildMockResult(file: File): UploadMaterialResult {
+function buildMockResult(file: File, materialType: MaterialType): UploadMaterialResult {
   const scanned = isScannedPdfFile(file);
   return {
     documentId: `demo-${file.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
     filename: file.name,
     originalFilename: file.name,
     contentType: file.type || "",
+    materialType,
+    materialTypeLabel: materialTypeLabel(materialType),
     sizeBytes: file.size,
     processingStatus: "Material recebido para validação",
     extractionStatus: scanned ? "OCR necessário" : "Texto extraído",
@@ -85,7 +80,7 @@ function buildMockResult(file: File): UploadMaterialResult {
 export function MaterialUploadEntryClient() {
   const connection = buildConnection();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedIntentId, setSelectedIntentId] = useState<string>("");
+  const [selectedIntentId, setSelectedIntentId] = useState<MaterialType | "">("");
   const [confirmationChecked, setConfirmationChecked] = useState(false);
   const [validationState, setValidationState] = useState<UploadValidationState>("idle");
   const [entryState, setEntryState] = useState<UploadEntryState>(
@@ -138,7 +133,7 @@ export function MaterialUploadEntryClient() {
 
     if (connection.source !== "backend") {
       setEntryState(connection.source === "mock" ? "mock_only" : "endpoint_unavailable");
-      setResult(buildMockResult(selectedFile));
+      setResult(buildMockResult(selectedFile, selectedIntentId));
       setValidationMessage(
         connection.source === "mock"
           ? "Modo de demonstração: nenhum arquivo foi enviado."
@@ -149,7 +144,7 @@ export function MaterialUploadEntryClient() {
 
     setEntryState("sending");
     setValidationMessage("Enviando arquivo para validação.");
-    const uploadResult = await uploadMaterialFile(selectedFile);
+    const uploadResult = await uploadMaterialFile(selectedFile, selectedIntentId);
 
     if (!uploadResult.ok) {
       if (uploadResult.error.code === "endpoint_unavailable") {
@@ -170,7 +165,7 @@ export function MaterialUploadEntryClient() {
       if (uploadResult.error.code === "mock_mode") {
         setEntryState("mock_only");
         setValidationMessage("Modo de demonstração: nenhum arquivo foi enviado.");
-        setResult(buildMockResult(selectedFile));
+        setResult(buildMockResult(selectedFile, selectedIntentId));
         return;
       }
       setEntryState("failed");
@@ -210,7 +205,7 @@ export function MaterialUploadEntryClient() {
   const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
   const returnedExtension = result ? extensionForFileName(result.filename) || "sem extensão" : "";
   const selectedIntentLabel =
-    uploadIntentOptions.find((option) => option.id === selectedIntentId)?.label ?? "";
+    selectedIntentId ? materialTypeLabel(selectedIntentId) : "";
 
   return (
     <div className="space-y-8">
@@ -250,7 +245,7 @@ export function MaterialUploadEntryClient() {
                 Isso ajuda a organizar o caminho de estudo. A classificação pode ser ajustada depois.
               </p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {uploadIntentOptions.map((option) => (
+                {MATERIAL_TYPE_OPTIONS.map((option) => (
                   <label
                     key={option.id}
                     className="flex items-center gap-3 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-silver"
@@ -361,6 +356,7 @@ export function MaterialUploadEntryClient() {
             <Badge className={productStatusClass(result.processingStatus)}>{result.processingStatus}</Badge>
             <Badge className={productStatusClass(result.extractionStatus)}>{result.extractionStatus}</Badge>
             <Badge className={productStatusClass(result.reviewState)}>{result.reviewState}</Badge>
+            <Badge>{result.materialTypeLabel}</Badge>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
@@ -379,10 +375,10 @@ export function MaterialUploadEntryClient() {
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">referência</div>
               <p className="mt-3 break-words text-sm text-ink">{result.documentId}</p>
             </div>
-            {selectedIntentLabel ? (
+            {result.materialTypeLabel ? (
               <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">classificação escolhida</div>
-                <p className="mt-3 text-sm text-ink">{selectedIntentLabel}</p>
+                <p className="mt-3 text-sm text-ink">{result.materialTypeLabel}</p>
               </div>
             ) : null}
           </div>
@@ -390,7 +386,7 @@ export function MaterialUploadEntryClient() {
             <li>• Próximo estado esperado: Texto extraído ou aguardando validação.</li>
             <li>• Se for PDF digitalizado, o arquivo pode seguir como OCR necessário.</li>
             <li>• Após validação, o material pode ficar pronto para revisão.</li>
-            <li>• A classificação foi registrada nesta interface; o processamento automático ainda não usa essa informação.</li>
+            <li>• A classificação foi enviada como metadado do material; ela não aciona processamento automático.</li>
             {result.demoOnly ? (
               <li>• Modo de demonstração: nenhum arquivo foi persistido.</li>
             ) : (

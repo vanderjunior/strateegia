@@ -11,6 +11,7 @@ ALLOWED_SUMMARY_KEYS = {
     "document_id",
     "display_filename",
     "content_type",
+    "material_type",
     "created_at",
     "updated_at",
     "processing_status",
@@ -86,11 +87,14 @@ def upload_material(
     filename: str,
     content: bytes,
     content_type: str = "text/markdown",
+    material_type: str | None = None,
     process: bool = False,
 ) -> dict[str, object]:
+    data = {"material_type": material_type} if material_type is not None else None
     uploaded = client.post(
         "/api/materials/upload",
         files={"file": (filename, BytesIO(content), content_type)},
+        data=data,
     )
     assert uploaded.status_code == 201
     payload = uploaded.json()
@@ -130,6 +134,7 @@ def test_material_summary_returns_own_bounded_material_summary(tmp_path):
         owner,
         filename="../../roteiro-summary.md",
         content=b"# Roteiro\n\nRAW-MATERIAL-SUMMARY-SHOULD-NOT-LEAK",
+        material_type="bibliography",
         process=True,
     )
     document_id = uploaded["metadata"]["document_id"]
@@ -143,6 +148,7 @@ def test_material_summary_returns_own_bounded_material_summary(tmp_path):
     assert payload["document_id"] == document_id
     assert payload["display_filename"] == "roteiro-summary.md"
     assert payload["content_type"] == "md"
+    assert payload["material_type"] == "bibliography"
     assert payload["source"] == "user_scope"
     assert payload["chunk_count"] >= 1
     assert payload["section_count"] >= 0
@@ -204,6 +210,7 @@ def test_material_summary_shape_is_deterministic_and_bounded(tmp_path):
     assert set(first.keys()) == ALLOWED_SUMMARY_KEYS
     assert set(first["pipeline"].keys()) == ALLOWED_PIPELINE_KEYS
     assert first["content_type"] in {"pdf", "txt", "md", "unknown"}
+    assert first["material_type"] in {"edital", "study_material", "previous_exam", "bibliography", "note", "other", "unknown"}
     assert isinstance(first["chunk_count"], int)
     assert isinstance(first["section_count"], int)
     assert_no_forbidden_terms(first)

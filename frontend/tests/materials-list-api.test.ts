@@ -70,6 +70,7 @@ describe("materials list API wrapper", () => {
                 document_id: "doc-1",
                 display_filename: "roteiro-porto.pdf",
                 content_type: "pdf",
+                material_type: "edital",
                 status: "ready_for_review",
                 uploaded_at: "2026-05-27T00:00:00Z",
                 extraction_status: "textual_pdf",
@@ -92,6 +93,7 @@ describe("materials list API wrapper", () => {
       throw new Error("expected success");
     }
     expect(result.data.items[0].document_id).toBe("doc-1");
+    expect(result.data.items[0].material_type).toBe("edital");
     expect(JSON.stringify(result.data)).not.toContain("token");
     expect(JSON.stringify(result.data)).not.toContain("cookie");
   });
@@ -127,6 +129,7 @@ describe("materials list API wrapper", () => {
             document_id: "doc-1",
             display_filename: "roteiro.pdf",
             content_type: "pdf",
+            material_type: "bibliography",
             created_at: "2026-05-27T00:00:00Z",
             updated_at: "2026-05-27T00:05:00Z",
             processing_status: "ready_for_review",
@@ -156,6 +159,7 @@ describe("materials list API wrapper", () => {
       throw new Error("expected success");
     }
     expect(result.data.document_id).toBe("doc-1");
+    expect(result.data.material_type).toBe("bibliography");
     expect(result.data.pipeline.ready_for_review).toBe(true);
     expect(JSON.stringify(result.data)).not.toContain("token");
     expect(JSON.stringify(result.data)).not.toContain("cookie");

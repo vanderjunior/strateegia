@@ -53,6 +53,51 @@ def test_upload_txt_material_creates_metadata_and_user_scoped_storage(tmp_path):
     assert len(stored) == 1
 
 
+def test_upload_persists_normalized_material_type(tmp_path):
+    client, repository = create_client(tmp_path)
+    user = register_and_login(client, "intent-user")
+
+    response = client.post(
+        "/api/materials/upload",
+        files={"file": ("edital.txt", BytesIO(b"conteudo"), "text/plain")},
+        data={"material_type": "edital"},
+    )
+
+    payload = response.json()
+    stored = repository.list_uploaded_materials(user_id=user["user_id"])
+
+    assert response.status_code == 201
+    assert payload["metadata"]["metadata"]["material_type"] == "edital"
+    assert stored[0].metadata.metadata["material_type"] == "edital"
+
+
+def test_upload_defaults_missing_material_type_to_unknown(tmp_path):
+    client, _ = create_client(tmp_path)
+    register_and_login(client, "unknown-intent-user")
+
+    response = client.post(
+        "/api/materials/upload",
+        files={"file": ("material.txt", BytesIO(b"conteudo"), "text/plain")},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["metadata"]["metadata"]["material_type"] == "unknown"
+
+
+def test_upload_rejects_invalid_material_type(tmp_path):
+    client, _ = create_client(tmp_path)
+    register_and_login(client, "bad-intent-user")
+
+    response = client.post(
+        "/api/materials/upload",
+        files={"file": ("material.txt", BytesIO(b"conteudo"), "text/plain")},
+        data={"material_type": "auto_ingest_now"},
+    )
+
+    assert response.status_code == 422
+    assert "material_type" in response.json()["detail"]
+
+
 def test_upload_pdf_material_is_pending_extraction(tmp_path):
     client, _ = create_client(tmp_path)
     register_and_login(client, "pdf-user")

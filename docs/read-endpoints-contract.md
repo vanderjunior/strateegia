@@ -72,6 +72,7 @@ Implemented shape:
       "document_id": "doc-123",
       "display_filename": "roteiro-praticagem.pdf",
       "content_type": "pdf",
+      "material_type": "study_material",
       "created_at": "2026-05-27T00:00:00Z",
       "updated_at": "2026-05-27T00:05:00Z",
       "processing_status": "ready_for_review",
@@ -92,6 +93,7 @@ Allowed fields:
 - `document_id`
 - `display_filename`
 - `content_type`
+- `material_type`
 - `created_at`
 - `updated_at`
 - `processing_status`
@@ -126,6 +128,7 @@ Implemented shape:
   "document_id": "doc-123",
   "display_filename": "roteiro-praticagem.pdf",
   "content_type": "pdf",
+  "material_type": "study_material",
   "created_at": "2026-05-27T00:00:00Z",
   "updated_at": "2026-05-27T00:05:00Z",
   "processing_status": "ready_for_review",
@@ -338,6 +341,11 @@ Forbidden fields:
 - storage paths
 - private paths
 - answer key or correction payloads
+
+Material type metadata:
+- accepted upload values are `edital`, `study_material`, `previous_exam`, `bibliography`, `note`, `other`, and `unknown`
+- missing upload intent is stored as `unknown`
+- this field is bounded metadata only and must not trigger edital ingestion, OCR, processing, generation, or study/progress mutations
 
 ### Later endpoint: `GET /api/pipeline/recent`
 

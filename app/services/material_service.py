@@ -19,6 +19,7 @@ class MaterialService:
         original_filename: str,
         content_type: str,
         payload: bytes,
+        material_type: str | None = None,
     ) -> UploadedMaterial:
         material = ingest_uploaded_material(
             user_id=user_id,
@@ -26,6 +27,7 @@ class MaterialService:
             content_type=content_type,
             payload=payload,
             storage_root=self.storage_root,
+            material_type=material_type,
         )
         self.repository.save_uploaded_material(material, user_id=user_id)
         return material

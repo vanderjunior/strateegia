@@ -29,6 +29,7 @@ describe("materials upload same-origin proxy route", () => {
 
     const formData = new FormData();
     formData.append("file", new File(["conteudo"], "material.txt", { type: "text/plain" }));
+    formData.append("material_type", "study_material");
 
     const response = await POST({
       headers: new Headers({ cookie: "studyflow_session=server-only" }),
@@ -44,6 +45,9 @@ describe("materials upload same-origin proxy route", () => {
         cache: "no-store"
       })
     );
+    const fetchCalls = (fetchSpy as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
+    const forwardedBody = fetchCalls[0][1].body as FormData;
+    expect(forwardedBody.get("material_type")).toBe("study_material");
   });
 
   it("returns a bounded upload response and strips raw content and storage fields", async () => {
@@ -62,6 +66,7 @@ describe("materials upload same-origin proxy route", () => {
               storage_path: "/Users/private/data/uploads/user-1/material.txt",
               status: "extracted",
               extraction_status: "extracted",
+              material_type: "bibliography",
               created_at: "2026-05-28T00:00:00Z",
               updated_at: "2026-05-28T00:01:00Z",
               metadata: {
@@ -100,6 +105,7 @@ describe("materials upload same-origin proxy route", () => {
         filename: "material.txt",
         original_filename: "../../material.txt",
         content_type: "text/plain",
+        material_type: "bibliography",
         size_bytes: 18,
         status: "extracted",
         extraction_status: "extracted",
@@ -120,6 +126,23 @@ describe("materials upload same-origin proxy route", () => {
     expect(dumped).not.toContain("ANSWER-SHOULD-NOT-LEAK");
     expect(dumped).not.toContain("GABARITO-SHOULD-NOT-LEAK");
     expect(dumped).not.toContain("TOKEN-SHOULD-NOT-LEAK");
+  });
+
+  it("rejects unsafe material_type values before forwarding", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const formData = new FormData();
+    formData.append("file", new File(["conteudo"], "material.txt", { type: "text/plain" }));
+    formData.append("material_type", "auto_ingest_now");
+
+    const response = await POST({
+      headers: new Headers({ cookie: "studyflow_session=server-only" }),
+      formData: async () => formData
+    } as unknown as Request);
+
+    expect(response.status).toBe(422);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it.each([401, 403, 404, 413, 415, 422])("preserves backend error status %i", async (status) => {

@@ -15,7 +15,7 @@ from app.api.schemas import (
 from app.config import inspection_enabled, inspection_requires_auth
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import JsonStudyRepository
-from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES
+from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES, normalize_material_type
 from app.services.bibliography_alignment import BibliographyAlignmentService
 from app.services.curriculum_graph_builder import CurriculumGraphBuilderService
 from app.services.document_pipeline import DocumentPipelineService
@@ -733,6 +733,10 @@ def _bounded_material_item(material, repository: JsonStudyRepository, user_id: s
     metadata_status = pipeline_state.metadata_status if pipeline_state is not None else "not_ready"
     chunk_count = pipeline_state.chunk_count if pipeline_state is not None else 0
     section_count = pipeline_state.section_count if pipeline_state is not None else 0
+    try:
+        material_type = normalize_material_type(str(metadata.metadata.get("material_type") or "unknown"))
+    except ValueError:
+        material_type = "unknown"
 
     if requires_ocr:
         processing_status = "ocr_required"
@@ -780,6 +784,7 @@ def _bounded_material_item(material, repository: JsonStudyRepository, user_id: s
         "document_id": document_id,
         "display_filename": _material_display_filename(metadata.original_filename, metadata.filename),
         "content_type": _material_content_type_label(metadata.content_type, metadata.filename),
+        "material_type": material_type,
         "created_at": metadata.created_at,
         "updated_at": metadata.updated_at,
         "processing_status": processing_status,
@@ -816,7 +821,11 @@ def list_materials(request: Request):
 
 
 @router.post("/materials/upload", status_code=201)
-async def upload_material(request: Request, file: UploadFile = File(...)):
+async def upload_material(
+    request: Request,
+    file: UploadFile = File(...),
+    material_type: str | None = Form(default=None),
+):
     user_id = _require_authenticated_user_id(request)
     original_name = file.filename or "material"
     suffix = Path(original_name).suffix.lower()
@@ -825,11 +834,16 @@ async def upload_material(request: Request, file: UploadFile = File(...)):
     payload = await file.read()
     if len(payload) > MAX_UPLOAD_SIZE_BYTES:
         raise HTTPException(status_code=413, detail="Upload size exceeds the supported limit.")
+    try:
+        normalized_material_type = normalize_material_type(material_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     material = get_material_service(request).register_upload(
         user_id=user_id,
         original_filename=original_name,
         content_type=file.content_type or "",
         payload=payload,
+        material_type=normalized_material_type,
     )
     return material
 

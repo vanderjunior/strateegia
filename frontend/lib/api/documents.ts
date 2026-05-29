@@ -6,8 +6,48 @@ import type {
   BackendDocumentSummary,
   BackendMaterialSummary,
   BackendProtectedMaterialsList,
+  MaterialType,
   UploadMaterialResult
 } from "@/lib/api/types";
+
+export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
+  edital: "Edital",
+  study_material: "Material de estudo",
+  previous_exam: "Prova anterior",
+  bibliography: "Bibliografia / referência",
+  note: "Anotação / resumo",
+  other: "Outro",
+  unknown: "Não classificado"
+};
+
+export const MATERIAL_TYPE_OPTIONS: { id: MaterialType; label: string }[] = [
+  { id: "edital", label: MATERIAL_TYPE_LABELS.edital },
+  { id: "study_material", label: MATERIAL_TYPE_LABELS.study_material },
+  { id: "previous_exam", label: MATERIAL_TYPE_LABELS.previous_exam },
+  { id: "bibliography", label: MATERIAL_TYPE_LABELS.bibliography },
+  { id: "note", label: MATERIAL_TYPE_LABELS.note },
+  { id: "other", label: MATERIAL_TYPE_LABELS.other }
+];
+
+const MATERIAL_TYPE_VALUES = new Set<MaterialType>([
+  "edital",
+  "study_material",
+  "previous_exam",
+  "bibliography",
+  "note",
+  "other",
+  "unknown"
+]);
+
+export function normalizeMaterialType(value: unknown): MaterialType {
+  return typeof value === "string" && MATERIAL_TYPE_VALUES.has(value as MaterialType)
+    ? (value as MaterialType)
+    : "unknown";
+}
+
+export function materialTypeLabel(value: unknown): string {
+  return MATERIAL_TYPE_LABELS[normalizeMaterialType(value)];
+}
 
 export function fetchDocuments(): Promise<ApiResult<BackendDocumentSummary[]>> {
   return getJson<BackendDocumentSummary[]>("/api/documents");
@@ -162,6 +202,7 @@ interface BackendUploadedMaterialResponse {
     size_bytes: number;
     status: string;
     extraction_status: string;
+    material_type?: MaterialType;
   };
 }
 
@@ -194,6 +235,8 @@ function normalizeUploadResult(response: BackendUploadedMaterialResponse): Uploa
     filename: response.metadata.filename,
     originalFilename: response.metadata.original_filename,
     contentType: response.metadata.content_type,
+    materialType: normalizeMaterialType(response.metadata.material_type),
+    materialTypeLabel: materialTypeLabel(response.metadata.material_type),
     sizeBytes: response.metadata.size_bytes,
     processingStatus,
     extractionStatus,
@@ -203,7 +246,10 @@ function normalizeUploadResult(response: BackendUploadedMaterialResponse): Uploa
   };
 }
 
-export async function uploadMaterialFile(file: File): Promise<ApiResult<UploadMaterialResult>> {
+export async function uploadMaterialFile(
+  file: File,
+  materialType: MaterialType = "unknown"
+): Promise<ApiResult<UploadMaterialResult>> {
   const { baseUrl, forceMock } = getApiConfig();
 
   if (forceMock) {
@@ -216,6 +262,7 @@ export async function uploadMaterialFile(file: File): Promise<ApiResult<UploadMa
 
   const formData = new FormData();
   formData.append("file", file, file.name);
+  formData.append("material_type", materialType);
 
   try {
     const response = await fetch("/api/materials/upload", {

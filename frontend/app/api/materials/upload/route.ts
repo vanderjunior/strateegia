@@ -17,12 +17,30 @@ function toSafeString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+const ALLOWED_MATERIAL_TYPES = new Set([
+  "edital",
+  "study_material",
+  "previous_exam",
+  "bibliography",
+  "note",
+  "other",
+  "unknown"
+]);
+
+function toSafeMaterialType(value: unknown): string {
+  return typeof value === "string" && ALLOWED_MATERIAL_TYPES.has(value) ? value : "unknown";
+}
+
 function sanitizeUploadResponse(payload: unknown) {
   const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
   const rawMetadata =
     raw.metadata && typeof raw.metadata === "object"
       ? (raw.metadata as Record<string, unknown>)
       : raw;
+  const nestedMetadata =
+    rawMetadata.metadata && typeof rawMetadata.metadata === "object"
+      ? (rawMetadata.metadata as Record<string, unknown>)
+      : {};
 
   return {
     metadata: {
@@ -30,6 +48,7 @@ function sanitizeUploadResponse(payload: unknown) {
       filename: toSafeString(rawMetadata.filename),
       original_filename: toSafeString(rawMetadata.original_filename),
       content_type: toSafeString(rawMetadata.content_type),
+      material_type: toSafeMaterialType(rawMetadata.material_type ?? nestedMetadata.material_type),
       size_bytes: toSafeNumber(rawMetadata.size_bytes),
       status: toSafeString(rawMetadata.status) || "uploaded",
       extraction_status: toSafeString(rawMetadata.extraction_status) || "uploaded",
@@ -52,6 +71,7 @@ export async function POST(request: Request) {
 
   const formData = await request.formData();
   const file = formData.get("file");
+  const materialType = formData.get("material_type");
 
   if (!(file instanceof File)) {
     return NextResponse.json({ detail: "Arquivo não encontrado." }, { status: 422 });
@@ -59,6 +79,12 @@ export async function POST(request: Request) {
 
   const backendFormData = new FormData();
   backendFormData.append("file", file, file.name);
+  if (typeof materialType === "string") {
+    if (!ALLOWED_MATERIAL_TYPES.has(materialType)) {
+      return NextResponse.json({ detail: "material_type inválido." }, { status: 422 });
+    }
+    backendFormData.append("material_type", materialType);
+  }
 
   try {
     const backendResponse = await fetch(`${baseUrl}/api/materials/upload`, {

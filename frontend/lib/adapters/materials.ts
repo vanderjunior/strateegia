@@ -1,5 +1,5 @@
 import { getApiConfig } from "@/lib/api/config";
-import { fetchMaterialSummary, fetchUserMaterialsList } from "@/lib/api/documents";
+import { fetchMaterialSummary, fetchUserMaterialsList, materialTypeLabel } from "@/lib/api/documents";
 import type {
   ApiSource,
   BackendConnectionInfo,
@@ -129,6 +129,7 @@ function mapProtectedMaterialItem(item: BackendProtectedMaterialsListItem): Mate
     id: item.document_id,
     title: trimFileExtension(item.display_filename),
     typeLabel: fileTypeLabel(item),
+    materialTypeLabel: materialTypeLabel(item.material_type),
     processingStatus,
     extractionStatus,
     sectionsCount: item.section_count,
@@ -230,6 +231,7 @@ function buildMaterialDetailFromSummary(materialId: string, summary: BackendMate
     document_id: summary.document_id || materialId,
     display_filename: summary.display_filename,
     content_type: summary.content_type,
+    material_type: summary.material_type,
     processing_status: summary.processing_status,
     status: summary.processing_status,
     extraction_status: summary.extraction_status,

@@ -11,6 +11,7 @@ ALLOWED_ITEM_KEYS = {
     "document_id",
     "display_filename",
     "content_type",
+    "material_type",
     "created_at",
     "updated_at",
     "processing_status",
@@ -76,11 +77,14 @@ def upload_material(
     filename: str,
     content: bytes,
     content_type: str = "text/markdown",
+    material_type: str | None = None,
     process: bool = False,
 ) -> dict[str, object]:
+    data = {"material_type": material_type} if material_type is not None else None
     uploaded = client.post(
         "/api/materials/upload",
         files={"file": (filename, BytesIO(content), content_type)},
+        data=data,
     )
     assert uploaded.status_code == 201
     payload = uploaded.json()
@@ -121,6 +125,7 @@ def test_materials_list_returns_own_bounded_uploaded_materials(tmp_path):
         owner,
         filename="../../roteiro-praticagem.md",
         content=b"# Roteiro\n\nRAW-MATERIAL-BODY-SHOULD-NOT-LEAK",
+        material_type="study_material",
         process=True,
     )
     document_id = uploaded["metadata"]["document_id"]
@@ -137,6 +142,7 @@ def test_materials_list_returns_own_bounded_uploaded_materials(tmp_path):
     assert item["document_id"] == document_id
     assert item["display_filename"] == "roteiro-praticagem.md"
     assert item["content_type"] == "md"
+    assert item["material_type"] == "study_material"
     assert item["chunk_count"] >= 1
     assert item["section_count"] >= 0
     assert item["latest_pipeline_status"]
@@ -187,6 +193,7 @@ def test_materials_list_shape_is_deterministic_and_bounded(tmp_path):
     for item in first["items"]:
         assert set(item.keys()) == ALLOWED_ITEM_KEYS
         assert item["content_type"] in {"pdf", "txt", "md", "unknown"}
+        assert item["material_type"] in {"edital", "study_material", "previous_exam", "bibliography", "note", "other", "unknown"}
         assert isinstance(item["chunk_count"], int)
         assert isinstance(item["section_count"], int)
         assert isinstance(item["warnings_count"], int)

@@ -28,7 +28,7 @@
 - Read-only materials, editais, and pipeline workspaces with backend/mock/offline fallback states.
 - Real user-scoped materials/editais lists plus material, edital, and pipeline detail reads use bounded protected endpoints through same-origin proxies.
 - Controlled upload entry using the existing same-origin upload proxy path.
-- Upload UI asks for a user-facing file classification (`Edital`, `Material de estudo`, `Prova anterior`, `Bibliografia / referência`, `Outro`) before sending; this classification is currently interface-level guidance and is not yet a backend processing contract.
+- Upload UI asks for a user-facing file classification (`Edital`, `Material de estudo`, `Prova anterior`, `Bibliografia / referência`, `Anotação / resumo`, `Outro`) before sending; the normalized `material_type` is persisted as bounded metadata and does not trigger processing.
 - PSCPP guidance workspace with profile overview, cycle, map, and question guidance.
 - Study workspace with suggested orientations; demo material references avoid linking to non-existent user material details.
 - Minimal internal-staging login/logout UX and simplified unauthenticated dashboard state.
@@ -65,7 +65,7 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 - Do not expose answer keys, gabarito, raw OCR dumps, raw document bodies, or local/private paths.
 - Do not add progress apply, scheduler/calendar mutation, question generation actions, or simulado generation/execution without a separate approved phase.
 - Keep product copy on `guia flexível`, `revisão necessária`, `OCR em validação`, and `simulado em preparação`.
-- Keep upload classification copy truthful until a backend material-intent contract exists.
+- Keep upload classification copy truthful: `material_type` is metadata only and must not imply automatic ingestion, OCR, generation, or study planning.
 
 ## Recommended Next Phases
 

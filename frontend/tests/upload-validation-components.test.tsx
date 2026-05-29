@@ -5,9 +5,13 @@ vi.mock("@/lib/api/config", () => ({
   getApiConfig: vi.fn()
 }));
 
-vi.mock("@/lib/api/documents", () => ({
-  uploadMaterialFile: vi.fn()
-}));
+vi.mock("@/lib/api/documents", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/documents")>("@/lib/api/documents");
+  return {
+    ...actual,
+    uploadMaterialFile: vi.fn()
+  };
+});
 
 import { MaterialUploadEntryClient } from "@/components/workspace/MaterialUploadEntryClient";
 import {
@@ -112,6 +116,8 @@ describe("upload validation helpers and component states", () => {
         filename: "edital.pdf",
         originalFilename: "edital.pdf",
         contentType: "application/pdf",
+        materialType: "edital",
+        materialTypeLabel: "Edital",
         sizeBytes: 2048,
         processingStatus: "Material recebido para validação",
         extractionStatus: "Texto extraído",
@@ -138,6 +144,6 @@ describe("upload validation helpers and component states", () => {
     expect((await screen.findAllByText("Material recebido para validação")).length).toBeGreaterThan(0);
     expect(screen.getByText("classificação escolhida")).toBeInTheDocument();
     expect(screen.getAllByText("Edital").length).toBeGreaterThan(0);
-    expect(screen.getByText(/o processamento automático ainda não usa essa informação/i)).toBeInTheDocument();
+    expect(screen.getByText(/não aciona processamento automático/i)).toBeInTheDocument();
   });
 });

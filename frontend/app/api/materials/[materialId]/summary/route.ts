@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerBackendBaseUrl } from "@/lib/api/config";
-import type { BackendMaterialSummary } from "@/lib/api/types";
+import type { BackendMaterialSummary, MaterialType } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,6 +22,22 @@ function toSafeString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+const ALLOWED_MATERIAL_TYPES = new Set<MaterialType>([
+  "edital",
+  "study_material",
+  "previous_exam",
+  "bibliography",
+  "note",
+  "other",
+  "unknown"
+]);
+
+function toSafeMaterialType(value: unknown): MaterialType {
+  return typeof value === "string" && ALLOWED_MATERIAL_TYPES.has(value as MaterialType)
+    ? (value as MaterialType)
+    : "unknown";
+}
+
 function sanitizePipeline(value: unknown): BackendMaterialSummary["pipeline"] {
   const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
@@ -38,6 +54,7 @@ function sanitizeMaterialSummary(payload: unknown): BackendMaterialSummary {
     document_id: toSafeString(raw.document_id),
     display_filename: toSafeString(raw.display_filename) || "Material da sessão",
     content_type: toSafeString(raw.content_type) || "unknown",
+    material_type: toSafeMaterialType(raw.material_type),
     created_at: toSafeNullableString(raw.created_at),
     updated_at: toSafeNullableString(raw.updated_at),
     processing_status: toSafeString(raw.processing_status) || "unknown",

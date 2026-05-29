@@ -106,6 +106,11 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
             <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
               {detail.typeLabel}
             </Badge>
+            {detail.materialTypeLabel ? (
+              <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
+                {detail.materialTypeLabel}
+              </Badge>
+            ) : null}
             <Badge className={productStatusClass(detail.reviewState)}>{detail.reviewState}</Badge>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">

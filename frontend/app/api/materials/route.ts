@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerBackendBaseUrl } from "@/lib/api/config";
-import type { BackendProtectedMaterialsList } from "@/lib/api/types";
+import type { BackendProtectedMaterialsList, MaterialType } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,6 +12,22 @@ function toSafeNumber(value: unknown): number | null {
 
 function toSafeString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+const ALLOWED_MATERIAL_TYPES = new Set<MaterialType>([
+  "edital",
+  "study_material",
+  "previous_exam",
+  "bibliography",
+  "note",
+  "other",
+  "unknown"
+]);
+
+function toSafeMaterialType(value: unknown): MaterialType {
+  return typeof value === "string" && ALLOWED_MATERIAL_TYPES.has(value as MaterialType)
+    ? (value as MaterialType)
+    : "unknown";
 }
 
 function toSafeDateString(value: unknown): string | null {
@@ -31,6 +47,7 @@ function sanitizeMaterialsList(payload: unknown): BackendProtectedMaterialsList 
       document_id: toSafeString(rawItem.document_id),
       display_filename: toSafeString(rawItem.display_filename),
       content_type: toSafeString(rawItem.content_type),
+      material_type: toSafeMaterialType(rawItem.material_type),
       status: processingStatus,
       uploaded_at: toSafeDateString(rawItem.created_at),
       extraction_status: extractionStatus,

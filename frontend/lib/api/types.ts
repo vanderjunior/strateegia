@@ -263,6 +263,7 @@ export interface BackendProtectedMaterialsListItem {
   document_id: string;
   display_filename: string;
   content_type: string;
+  material_type?: MaterialType;
   status?: string;
   processing_status?: string;
   uploaded_at?: string | null;
@@ -290,6 +291,7 @@ export interface BackendMaterialSummary {
   document_id: string;
   display_filename: string;
   content_type: string;
+  material_type?: MaterialType;
   created_at: string | null;
   updated_at: string | null;
   processing_status: string;
@@ -478,6 +480,7 @@ export interface MaterialListItem {
   id: string;
   title: string;
   typeLabel: string;
+  materialTypeLabel?: string;
   processingStatus: string;
   extractionStatus: string;
   sectionsCount: number | null;
@@ -783,6 +786,15 @@ export type UploadValidationState =
   | "invalid_size"
   | "missing_confirmation";
 
+export type MaterialType =
+  | "edital"
+  | "study_material"
+  | "previous_exam"
+  | "bibliography"
+  | "note"
+  | "other"
+  | "unknown";
+
 export type UploadEntryState =
   | "idle"
   | "validating"
@@ -806,6 +818,8 @@ export interface UploadMaterialResult {
   filename: string;
   originalFilename: string;
   contentType: string;
+  materialType: MaterialType;
+  materialTypeLabel: string;
   sizeBytes: number;
   processingStatus: string;
   extractionStatus: string;
