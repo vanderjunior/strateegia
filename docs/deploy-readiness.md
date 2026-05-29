@@ -216,7 +216,38 @@ Expected unauthenticated proxy behavior:
 - `/api/editais` returns `401`.
 - These responses confirm proxy connectivity. A `502` here would indicate backend connectivity failure from the frontend container.
 
-Manual authenticated smoke checklist, still pending:
+Authenticated smoke result summary:
+
+- `docker compose up -d` started backend and frontend successfully.
+- Backend `GET /api/exam-profiles` returned `200`.
+- Frontend `GET /` returned `200`.
+- Backend login through existing `POST /api/auth/login` returned `200`.
+- Upload through frontend `POST /api/materials/upload` returned `201`.
+- Upload response sanitization passed:
+  - no `extracted_text`
+  - no `storage_path`
+  - no base64 payload
+  - no chunks or sections
+- Frontend `GET /api/materials` returned real persisted materials.
+- Smoke document id: `9b6cf52e-1e74-4e2d-b1f7-7093500c22c0`.
+- Frontend `GET /api/materials/{document_id}/summary` returned `200`.
+- Frontend `GET /api/materials/{document_id}/pipeline/summary` returned `200`.
+- `docker compose down` without `-v` removed containers/network but preserved the Docker volume.
+- `docker compose up -d` recreated containers.
+- Login again returned `200`.
+- Frontend `GET /api/materials` still returned `6` persisted materials.
+- The same document summary and pipeline summary still returned `200` after recreate.
+
+This confirms:
+
+- authenticated Compose smoke passed
+- upload response sanitization passed
+- bounded material list/detail/pipeline reads passed
+- persistence after `down`/`up` without `-v` passed
+
+Do not use `docker compose down -v` when preserving staging data. The `-v` flag deletes the persistent volume. Sessions remain in-memory, so login is required again after backend restart/recreate even when JSON/upload data persists.
+
+Manual authenticated smoke checklist:
 
 - Establish a valid login/session using the existing local auth endpoints.
 - Upload a small `.txt` material through the frontend controlled upload proxy.
