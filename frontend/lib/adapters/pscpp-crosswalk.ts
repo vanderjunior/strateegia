@@ -65,7 +65,7 @@ export async function loadPscppCrosswalkViewModel(): Promise<PscppCrosswalkViewM
       connection: sourceConnection(
         "unsupported",
         "Demonstração",
-        "O perfil PSCPP não pôde ser confirmado neste ambiente; o mapa segue em fallback auditado.",
+        "O perfil PSCPP não pôde ser confirmado neste ambiente; o mapa segue em orientação de demonstração.",
         "unsupported"
       )
     };

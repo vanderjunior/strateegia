@@ -308,7 +308,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
       source: "backend",
       title: "Dados reais da sessão",
       detail:
-        "A listagem abaixo mostra os editais recentes da sua sessão. O fallback auditado continua disponível para detalhes ainda não entregues por um endpoint dedicado.",
+        "A listagem abaixo mostra os editais recentes da sua sessão. O orientação de demonstração continua disponível para detalhes ainda não entregues por um leitura dedicada.",
       endpoint: "/api/editais"
     },
     summary: buildSummary(

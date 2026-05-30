@@ -339,6 +339,29 @@ curl -i -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
 
 Because sessions are in-memory, `docker compose restart` may clear the login session. If `/api/auth/me` returns `authenticated: false` after restart, log in again with the same `SMOKE_USER` and `SMOKE_PASSWORD`, then re-check `/api/materials`. The persisted material should remain as long as the `studyflow_data` volume was not removed.
 
+### UX-RealUser-D Compose Browser QA
+
+Authenticated Compose browser QA passed after the user-facing copy cleanup:
+
+- `docker compose up -d` started existing backend and frontend containers.
+- Backend `GET http://localhost:8000/api/exam-profiles` returned `200`.
+- Frontend `GET http://localhost:3000` returned `200`.
+- Logged-out `/dashboard` showed the simplified sign-in panel instead of a personalized study plan.
+- Logged-out `/materials/upload` blocked active upload controls and showed the login path.
+- Login through `/login` worked with a local smoke user.
+- After login, the session notice showed `Sessão ativa`, the user label, and `Sair`.
+- Logged-in `/dashboard` focused on the next step, not developer/staging diagnostics.
+- `/materials` used the simplified card surface without section/gap zero-noise.
+- The current QA volume had no legacy unknown-file materials, so `Tipo não informado` was not observable in-browser during this run; automated frontend coverage verifies the unknown-type label.
+- `/materials/upload` exposed upload controls only while logged in.
+- `/editais` showed the edital state without confusing zero metric cards.
+- `/study` remained gated until a real analyzed edital exists.
+- `/pscpp` remained reference/demo framed rather than a personalized plan.
+- Logout returned the UI to `Entrar`, and `/materials/upload` became unavailable again.
+- Browser checks found no raw text, storage path, token, password hash, answer key, or gabarito copy in the inspected surfaces.
+
+No backend behavior, edital analysis execution, OCR, processing, generation, progress, scheduler, PostgreSQL, provider, or signup behavior was added during this QA closeout.
+
 ### Single VM
 
 - Good second option if the team wants a persistent internal URL.

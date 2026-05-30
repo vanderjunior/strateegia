@@ -300,7 +300,7 @@ function buildMaterialDetailFromSummary(materialId: string, summary: BackendMate
           ]
         : [],
     sourceNote:
-      "Resumo lido do backend por consulta protegida e apresentado sem texto bruto, OCR completo ou trechos do documento."
+      "Resumo carregado por consulta protegida e apresentado sem texto bruto, OCR completo ou trechos do documento."
   };
 }
 

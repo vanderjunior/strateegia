@@ -596,7 +596,7 @@ export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Perfil PSCPP, ciclo sugerido e orientação de questões exibidos por fallback auditado enquanto a leitura do perfil no backend não é confirmada."
+    detail: "Perfil PSCPP, ciclo sugerido e orientação de questões exibidos por orientação de demonstração enquanto a leitura do perfil não é confirmada."
   },
   summary: [
     {
@@ -685,7 +685,7 @@ export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Regras de estilo e revisão exibidas por fallback auditado; não há geração automática final nesta tela."
+    detail: "Regras de estilo e revisão exibidas por orientação de demonstração; não há geração automática final nesta tela."
   },
   summary: [
     {
@@ -971,7 +971,7 @@ export const pscppCrosswalkViewModelMock: PscppCrosswalkViewModel = {
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Mapa PSCPP montado por fallback auditado a partir de materiais, edital, gaps e ciclo sugerido."
+    detail: "Mapa PSCPP montado por orientação de demonstração a partir de materiais, edital, gaps e ciclo sugerido."
   },
   summary: [
     {
@@ -1218,7 +1218,7 @@ export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel 
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Sessões sugeridas montadas por fallback auditado a partir do ciclo PSCPP, materiais relacionados e gaps conectados."
+    detail: "Sessões sugeridas montadas por orientação de demonstração a partir do ciclo PSCPP, materiais relacionados e gaps conectados."
   },
   summary: [
     {

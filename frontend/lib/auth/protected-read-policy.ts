@@ -35,7 +35,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         mode: "demo",
         label: "Modo demonstração",
         description:
-          "Este ambiente usa apenas dados de demonstração auditados e não tenta consultar leituras protegidas do backend.",
+          "Este ambiente usa apenas dados de demonstração e não tenta consultar leituras protegidas.",
         badgeTone: "neutral",
         canUseRealData: false,
         shouldShowDemoFallback: true,

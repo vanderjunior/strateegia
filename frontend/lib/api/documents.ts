@@ -257,7 +257,7 @@ export async function uploadMaterialFile(
   }
 
   if (!baseUrl) {
-    return makeApiFailure("unsupported", "api_base_missing", "URL do backend não configurada para envio real.");
+    return makeApiFailure("unsupported", "api_base_missing", "Envio real não configurado.");
   }
 
   const formData = new FormData();

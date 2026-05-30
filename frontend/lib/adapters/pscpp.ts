@@ -37,7 +37,7 @@ function buildWorkspaceFromProfile(profile: BackendExamProfile): PscppWorkspaceV
     connection: sourceConnection(
       "backend",
       "Dados reais disponíveis",
-      "Perfil PSCPP confirmado via backend. O ciclo sugerido e a orientação de questões seguem como guia auditado de consulta.",
+      "Perfil PSCPP confirmado. O ciclo sugerido e a orientação de questões seguem como guia de consulta.",
       "connected"
     ),
     profileTitle: profile.profile_name || pscppWorkspaceViewModelMock.profileTitle,
@@ -56,7 +56,7 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       connection: sourceConnection(
         "backend",
         "Dados reais disponíveis",
-        "A leitura do perfil veio do backend, mas o ciclo continua como guia flexível, sem agenda automática ou alteração de progresso.",
+        "A leitura do perfil foi confirmada, mas o ciclo continua como guia flexível, sem agenda automática ou alteração de progresso.",
         "connected"
       )
     };
@@ -80,7 +80,7 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       connection: sourceConnection(
         "unsupported",
         "Demonstração",
-        "Não há endpoint dedicado para o ciclo PSCPP nesta etapa; o guia continua em fallback auditado.",
+        "Não há leitura dedicada para o ciclo PSCPP nesta etapa; o guia continua em orientação de demonstração.",
         "unsupported"
       )
     };
@@ -99,7 +99,7 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       connection: sourceConnection(
         "backend",
         "Dados reais disponíveis",
-        "O perfil PSCPP foi confirmado no backend. Esta tela continua como guia de questões candidatas e revisão.",
+        "O perfil PSCPP foi confirmado. Esta tela continua como guia de questões candidatas e revisão.",
         "connected"
       )
     };
@@ -123,7 +123,7 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       connection: sourceConnection(
         "unsupported",
         "Demonstração",
-        "Não há endpoint dedicado para orientação de questões PSCPP nesta etapa; a tela permanece em fallback auditado.",
+        "Não há leitura dedicada para orientação de questões PSCPP nesta etapa; a tela permanece em orientação de demonstração.",
         "unsupported"
       )
     };
@@ -182,7 +182,7 @@ export async function loadPscppWorkspaceViewModel(): Promise<PscppWorkspaceViewM
       connection: sourceConnection(
         "unsupported",
         "Demonstração",
-        "O endpoint do perfil PSCPP não está disponível neste ambiente; usando fallback auditado.",
+        "O endpoint do perfil PSCPP não está disponível neste ambiente; usando orientação de demonstração.",
         "unsupported"
       )
     };

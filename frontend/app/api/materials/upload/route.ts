@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   const baseUrl = getServerBackendBaseUrl();
   if (!baseUrl) {
     return NextResponse.json(
-      { detail: "URL do backend não configurada para envio real." },
+      { detail: "Envio real não configurado." },
       { status: 503 }
     );
   }

@@ -52,7 +52,7 @@ describe("upload error classification", () => {
       throw new Error("expected failure");
     }
     expect(result.error.code).toBe("api_base_missing");
-    expect(result.error.message).toBe("URL do backend não configurada para envio real.");
+    expect(result.error.message).toBe("Envio real não configurado.");
   });
 
   it.each([

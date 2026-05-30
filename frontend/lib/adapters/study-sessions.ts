@@ -64,7 +64,7 @@ export async function loadStudySessionWorkspaceViewModel(): Promise<StudySession
       connection: sourceConnection(
         "backend",
         "Dados reais disponíveis",
-        "Sessões sugeridas confirmadas pelo perfil PSCPP do backend, mantendo o fluxo como guia de consulta.",
+        "Sessões sugeridas confirmadas pelo perfil PSCPP, mantendo o fluxo como guia de consulta.",
         "connected"
       )
     };
@@ -88,7 +88,7 @@ export async function loadStudySessionWorkspaceViewModel(): Promise<StudySession
       connection: sourceConnection(
         "unsupported",
         "Demonstração",
-        "O perfil PSCPP não pôde ser confirmado neste ambiente; as sessões seguem em fallback auditado.",
+        "O perfil PSCPP não pôde ser confirmado neste ambiente; as sessões seguem em orientação de demonstração.",
         "unsupported"
       )
     };

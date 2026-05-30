@@ -132,7 +132,7 @@ function enhancePscppCards(cards: CapabilityCard[], profile: BackendExamProfile)
     if (card.internalKey === "pscpp_question_style_profile") {
       return {
         ...card,
-        detail: `Perfil público lido do backend: ${profile.profile_name} (${profile.profile_id}).`
+        detail: `Perfil público confirmado: ${profile.profile_name} (${profile.profile_id}).`
       };
     }
     if (card.internalKey === "question_generation_blueprint") {
@@ -144,7 +144,7 @@ function enhancePscppCards(cards: CapabilityCard[], profile: BackendExamProfile)
     if (card.internalKey === "pscpp_study_cycle_profile") {
       return {
         ...card,
-        detail: "Ainda sem endpoint dedicado; o frontend preserva fallback local auditado para o ciclo PSCPP."
+        detail: "Ainda sem leitura dedicada nesta tela; a interface preserva orientação local para o ciclo PSCPP."
       };
     }
     return card;
@@ -192,7 +192,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
   if (!config.baseUrl) {
     return buildMockDashboardViewModel({
       connection: baseConnection({
-        detail: "A URL do backend ainda não foi configurada para leitura real."
+        detail: "A leitura real ainda não foi configurada para este painel."
       })
     });
   }
@@ -213,7 +213,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     state: "connected",
     source: "backend",
     title: "Dados reais disponíveis",
-    detail: "Perfis públicos do backend foram carregados em modo de consulta.",
+    detail: "Perfis públicos foram carregados em modo de consulta.",
     endpoint: "/api/exam-profiles/exam-profile:marinha-pscpp"
   });
 
@@ -222,7 +222,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
       ? {
           ...item,
           source: "backend",
-          detail: `Perfil ${pscppProfileResult.data.profile_name} lido do backend.`
+          detail: `Perfil ${pscppProfileResult.data.profile_name} confirmado.`
         }
       : item
   );
@@ -236,7 +236,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
       state: "connected",
       source: "backend",
       title: "Dados reais com sessão ativa",
-      detail: "O dashboard recebeu dados reais da visão do usuário sem abandonar o fallback local.",
+      detail: "O dashboard recebeu dados reais da visão do usuário.",
       endpoint: "/api/dashboard/overview"
     };
     overviewCards = buildOverviewCardsFromBackend(overviewResult.data);
@@ -256,7 +256,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
       source: "backend",
       title: "Dados reais exigem sessão",
       detail:
-        "Os perfis públicos foram lidos do backend, mas a visão pessoal continua protegida até existir sessão válida.",
+        "Os perfis públicos foram carregados, mas a visão pessoal continua protegida até existir sessão válida.",
       endpoint: "/api/dashboard/overview"
     };
   } else if (overviewResult.source === "unsupported") {
