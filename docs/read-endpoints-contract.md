@@ -16,7 +16,7 @@ This document is a contract and test-planning artifact only. It does not introdu
   - `GET /api/editais/{edital_id}/summary`
 - The dashboard overview is no longer the source for materials/editais list proxies.
 - Backend `GET /api/materials/{document_id}/pipeline/summary` now provides the bounded pipeline detail contract.
-- Frontend pipeline detail still has not been migrated to that bounded endpoint.
+- Frontend pipeline detail uses the same-origin bounded pipeline summary proxy.
 
 ## Why Dedicated Endpoints Are Needed
 

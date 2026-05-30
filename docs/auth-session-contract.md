@@ -251,11 +251,11 @@ Remaining Auth-B scope:
 ## Explicit Non-goals
 
 - No auth provider integration yet.
-- No login/signup screens yet.
+- No public signup/register UI yet.
 - No cookie/session redesign yet.
 - No backend auth rewrite yet.
 - No PostgreSQL or durable session store yet.
-- No deploy/staging work yet.
+- No external deployment yet; Docker Compose is used only for internal staging.
 
 ## Security Notes
 

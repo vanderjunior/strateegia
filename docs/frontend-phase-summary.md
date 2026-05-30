@@ -80,7 +80,6 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 
 ## Recommended Next Phases
 
-1. Auth/session UX and backend contract audit.
-2. Real user-scoped materials/editais list integration.
-3. Local/staging deploy with controlled JSON/storage boundaries.
-4. PostgreSQL migration planning after repository boundaries and product flows stabilize.
+1. Authenticated browser QA closeout for the current Compose staging build.
+2. Decide whether to keep improving internal staging UX or begin a narrow edital-analysis planning phase.
+3. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
