@@ -1,10 +1,34 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SessionState } from "@/lib/api/types";
+
+const sessionMock = vi.hoisted(() => ({
+  state: {
+    status: "unauthenticated",
+    label: "Entrar para continuar",
+    description: "Entre para acessar seus materiais.",
+    source: "backend"
+  } as SessionState
+}));
+
+vi.mock("@/lib/adapters/session", () => ({
+  buildDefaultSessionState: vi.fn(() => sessionMock.state),
+  loadSessionState: vi.fn(async () => sessionMock.state)
+}));
 
 import { OnboardingReadOnlyClient } from "@/components/workspace/OnboardingReadOnlyClient";
 
 describe("OnboardingReadOnlyClient", () => {
-  it("renders the first-use path with safe links and no mutation CTAs", () => {
+  beforeEach(() => {
+    sessionMock.state = {
+      status: "unauthenticated",
+      label: "Entrar para continuar",
+      description: "Entre para acessar seus materiais.",
+      source: "backend"
+    };
+  });
+
+  it("renders the first-use path with safe links and no mutation CTAs", async () => {
     render(<OnboardingReadOnlyClient />);
 
     expect(screen.getByText("Comece sua preparação")).toBeInTheDocument();
@@ -33,5 +57,25 @@ describe("OnboardingReadOnlyClient", () => {
     expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
     expect(screen.queryByText("Agendar")).not.toBeInTheDocument();
     expect(screen.queryByText("Corrigir prova")).not.toBeInTheDocument();
+  });
+
+  it("shows an active account step when the user is authenticated", async () => {
+    sessionMock.state = {
+      status: "authenticated",
+      label: "Sessão ativa",
+      description: "Você está conectado.",
+      source: "backend",
+      userLabel: "Smoke Test",
+      userId: "user-1"
+    };
+
+    render(<OnboardingReadOnlyClient />);
+
+    expect(await screen.findByText("Conta ativa")).toBeInTheDocument();
+    expect(screen.getByText("Sua sessão está ativa.")).toBeInTheDocument();
+    expect(screen.getByText("Você entrou como Smoke Test.")).toBeInTheDocument();
+    expect(screen.queryByText("Sem sessão ativa, as telas evitam tratar exemplos como dados reais.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Entrar" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Ver painel" })[0]).toHaveAttribute("href", "/dashboard");
   });
 });

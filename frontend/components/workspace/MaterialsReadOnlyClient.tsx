@@ -30,6 +30,10 @@ export function MaterialsReadOnlyClient() {
     };
   }, []);
 
+  const visibleTypeGroups = viewModel.materialTypeGroups.filter((group) => group.count > 0);
+  const hasMostlyUntypedMaterials =
+    viewModel.items.length > 0 && viewModel.unclassifiedCount / viewModel.items.length >= 0.5;
+
   return (
     <div className="space-y-8">
       <WorkspaceSourcePanel
@@ -68,7 +72,7 @@ export function MaterialsReadOnlyClient() {
             <div className="section-kicker">organização por tipo</div>
             <CardTitle className="mt-5 break-words text-[1.8rem]">Materiais por classificação</CardTitle>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {viewModel.materialTypeGroups.map((group) => (
+              {visibleTypeGroups.map((group) => (
                 <button
                   key={group.type}
                   type="button"
@@ -80,6 +84,17 @@ export function MaterialsReadOnlyClient() {
                 </button>
               ))}
             </div>
+            {hasMostlyUntypedMaterials ? (
+              <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.08)] p-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                  tipo não informado
+                </div>
+                <p className="mt-2 text-sm leading-7 text-silver">
+                  Alguns arquivos foram enviados antes da classificação por tipo. Novos envios podem ser
+                  classificados como edital, material de estudo, prova anterior ou bibliografia.
+                </p>
+              </div>
+            ) : null}
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -92,7 +107,7 @@ export function MaterialsReadOnlyClient() {
               >
                 Todos
               </button>
-              {viewModel.materialTypeGroups.map((group) => (
+              {visibleTypeGroups.map((group) => (
                 <button
                   key={group.type}
                   type="button"
@@ -121,6 +136,7 @@ export function MaterialsReadOnlyClient() {
 
           <section className="space-y-6">
             {viewModel.materialTypeGroups
+              .filter((group) => group.count > 0)
               .filter((group) => activeType === "all" || group.type === activeType)
               .map((group) => (
                 <div key={group.type} className="space-y-4">

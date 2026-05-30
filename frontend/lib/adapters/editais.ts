@@ -121,7 +121,7 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
       state: "unsupported",
       source,
       title: "Demonstração",
-      detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
+      detail: "Esta área segue em demonstração enquanto seus editais não estão disponíveis.",
       endpoint
     });
   }
@@ -130,7 +130,7 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
       state: "offline",
       source,
       title: "Dados indisponíveis",
-      detail: "Não foi possível carregar dados reais agora. Os dados de demonstração continuam disponíveis.",
+      detail: "Não foi possível carregar seus editais agora. Você pode tentar novamente em instantes.",
       endpoint
     });
   }
@@ -273,7 +273,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "A demonstração continua acessível enquanto a leitura protegida não está disponível."
+        detail: "A demonstração continua acessível enquanto seus editais não estão disponíveis."
       })
     };
   }
@@ -288,7 +288,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
           source: "backend",
           title: "Requer sessão",
           detail:
-            "Entre para usar a listagem real de editais. Enquanto isso, os dados de demonstração seguem disponíveis.",
+            "Entre para ver seus editais analisados.",
           endpoint: "/api/editais"
         }
       };
@@ -306,9 +306,8 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     connection: {
       state: "connected",
       source: "backend",
-      title: "Dados reais da sessão",
-      detail:
-        "A listagem abaixo mostra os editais recentes da sua sessão. O orientação de demonstração continua disponível para detalhes ainda não entregues por um leitura dedicada.",
+      title: "Editais analisados",
+      detail: "A listagem abaixo mostra editais analisados disponíveis para consulta.",
       endpoint: "/api/editais"
     },
     summary: buildSummary(
@@ -347,7 +346,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "A demonstração continua acessível enquanto este edital ainda não pode ser lido pela leitura protegida."
+        detail: "Os exemplos continuam acessíveis enquanto este edital não carrega dados reais."
       }),
       detail: fallback
     };

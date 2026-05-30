@@ -26,7 +26,7 @@ describe("protected read UX policy", () => {
     );
 
     expect(policy.mode).toBe("real_authenticated");
-    expect(policy.label).toBe("Dados reais da sessão");
+    expect(policy.label).toBe("Dados reais");
     expect(policy.canUseRealData).toBe(true);
     expect(policy.shouldAttemptProtectedRead).toBe(true);
   });

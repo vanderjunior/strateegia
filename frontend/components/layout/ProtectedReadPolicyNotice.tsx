@@ -37,7 +37,7 @@ export function ProtectedReadPolicyNotice({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
-            leitura protegida
+            acesso aos dados
           </div>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
             {surfaceLabel}: {policy.recommendedUserCopy}
@@ -61,7 +61,7 @@ export function ProtectedReadPolicyNotice({
       <p className="mt-4 text-sm leading-7 text-silver">{policy.description}</p>
       {sessionState.userLabel && policy.canUseRealData ? (
         <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.62)]">
-          sessão reconhecida: {sessionState.userLabel}
+          conta ativa: {sessionState.userLabel}
         </p>
       ) : null}
     </div>

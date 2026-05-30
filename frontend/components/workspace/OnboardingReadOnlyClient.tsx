@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { OnboardingStepCard } from "@/components/workspace/OnboardingStepCard";
@@ -9,9 +11,58 @@ import {
   WorkspaceSummaryGrid
 } from "@/components/workspace/WorkspaceShared";
 import { buildOnboardingViewModel } from "@/lib/adapters/onboarding";
+import {
+  buildDefaultSessionState,
+  loadSessionState
+} from "@/lib/adapters/session";
+import type { OnboardingStepItem, SessionState } from "@/lib/api/types";
+
+function sessionAwareSteps(steps: OnboardingStepItem[], session: SessionState): OnboardingStepItem[] {
+  if (session.status !== "authenticated") {
+    return steps;
+  }
+
+  return steps.map((step) =>
+    step.id === "onboarding-step-1"
+      ? {
+          ...step,
+          title: "Conta ativa",
+          description: "Sua sessão está ativa.",
+          statusLabel: "Sessão ativa",
+          note: session.userLabel ? `Você entrou como ${session.userLabel}.` : "Você já pode acessar seus materiais.",
+          cautionLabel: "Acesse seus materiais ou siga para o próximo passo.",
+          primaryLink: {
+            label: "Ver painel",
+            href: "/dashboard"
+          },
+          secondaryLinks: [
+            {
+              label: "Ver materiais",
+              href: "/materials"
+            }
+          ]
+        }
+      : step
+  );
+}
 
 export function OnboardingReadOnlyClient() {
   const viewModel = buildOnboardingViewModel();
+  const [session, setSession] = useState<SessionState>(buildDefaultSessionState());
+
+  useEffect(() => {
+    let active = true;
+    void loadSessionState().then((next) => {
+      if (active) {
+        setSession(next);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const steps = sessionAwareSteps(viewModel.steps, session);
 
   return (
     <div className="space-y-8">
@@ -47,7 +98,7 @@ export function OnboardingReadOnlyClient() {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-5">
           <div className="section-kicker">etapas principais</div>
-          {viewModel.steps.map((step) => (
+          {steps.map((step) => (
             <OnboardingStepCard key={step.id} step={step} />
           ))}
         </div>

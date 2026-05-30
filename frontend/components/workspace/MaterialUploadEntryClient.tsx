@@ -349,7 +349,7 @@ export function MaterialUploadEntryClient() {
           </p>
           {showAuthGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              Entre na aplicação para enviar materiais reais. O modo demonstração continua disponível sem envio.
+              Entre na aplicação para enviar materiais reais. Exemplos podem aparecer sem liberar envio.
             </p>
           ) : null}
           {showOfflineGuidance ? (

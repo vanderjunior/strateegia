@@ -5,16 +5,16 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
     case "authenticated":
       return {
         mode: "real_authenticated",
-        label: "Dados reais da sessão",
+        label: "Dados reais",
         description:
-          "Esta área pode consultar dados reais da sua sessão quando a leitura protegida estiver disponível, sem alterar seu progresso automaticamente.",
+          "Esta área pode consultar seus dados quando estiver disponível, sem alterar seu progresso automaticamente.",
         badgeTone: "positive",
         canUseRealData: true,
         shouldShowDemoFallback: true,
         shouldShowSessionRequired: false,
         shouldAttemptProtectedRead: true,
         recommendedUserCopy:
-          "Dados reais da sessão podem aparecer aqui quando esta área estiver ligada à leitura protegida. A demonstração continua disponível como apoio."
+          "Seus dados podem aparecer aqui quando esta área estiver disponível. Exemplos podem continuar como apoio."
       };
     case "unauthenticated":
       return {
@@ -35,7 +35,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         mode: "demo",
         label: "Modo demonstração",
         description:
-          "Este ambiente usa apenas dados de demonstração e não tenta consultar leituras protegidas.",
+          "Esta área usa apenas dados de demonstração.",
         badgeTone: "neutral",
         canUseRealData: false,
         shouldShowDemoFallback: true,
@@ -49,7 +49,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         mode: "backend_offline",
         label: "Dados indisponíveis",
         description:
-          "Não foi possível carregar dados reais agora. A demonstração continua disponível e isso não indica perda de dados.",
+          "Não foi possível carregar dados reais agora. Os exemplos seguem disponíveis e isso não indica perda de dados.",
         badgeTone: "warning",
         canUseRealData: false,
         shouldShowDemoFallback: true,
@@ -70,7 +70,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         shouldShowSessionRequired: false,
         shouldAttemptProtectedRead: false,
         recommendedUserCopy:
-          "A demonstração continua disponível enquanto a leitura protegida desta área ainda não está configurada."
+          "Os exemplos continuam disponíveis enquanto esta área não carrega dados reais."
       };
   }
 }

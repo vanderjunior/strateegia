@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { ProtectedReadPolicyNotice } from "@/components/layout/ProtectedReadPolicyNotice";
 import { Card, CardTitle } from "@/components/ui/card";
 import type { EditaisWorkspaceViewModel } from "@/lib/api/types";
 import { buildMockEditaisWorkspaceViewModel, loadEditaisWorkspaceViewModel } from "@/lib/adapters/editais";
@@ -12,14 +10,12 @@ import {
   loadRealUserStudyReadiness,
   type RealUserStudyReadiness
 } from "@/lib/adapters/real-user-state";
-import { sourceLabel } from "@/lib/adapters/capabilities";
 import {
   productStatusClass,
-  sourceBadgeClass,
   WorkspaceLink,
-  WorkspaceSourcePanel,
   WorkspaceSummaryGrid
 } from "@/components/workspace/WorkspaceShared";
+import { Badge } from "@/components/ui/badge";
 
 export function EditaisReadOnlyClient() {
   const [viewModel, setViewModel] = useState<EditaisWorkspaceViewModel>(buildMockEditaisWorkspaceViewModel());
@@ -52,14 +48,16 @@ export function EditaisReadOnlyClient() {
 
   return (
     <div className="space-y-8">
-      <WorkspaceSourcePanel
-        eyebrow="editais"
-        title="Editais"
-        subtitle="Revise tópicos candidatos, bibliografia identificada e gaps encontrados."
-        connection={viewModel.connection}
-      />
-
-      <ProtectedReadPolicyNotice surfaceLabel="Editais" />
+      <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+        <div className="section-kicker">editais</div>
+        <CardTitle className="mt-5 break-words text-[2rem] leading-[0.95] sm:text-[2.2rem]">
+          Editais
+        </CardTitle>
+        <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
+          Acompanhe quando houver edital analisado. Um arquivo classificado como edital aparece primeiro como enviado;
+          a análise vem depois.
+        </p>
+      </Card>
 
       {showEmptyState ? null : <WorkspaceSummaryGrid items={viewModel.summary} />}
 
@@ -74,7 +72,6 @@ export function EditaisReadOnlyClient() {
                   {item.title}
                 </CardTitle>
               </div>
-              <Badge className={sourceBadgeClass(item.source)}>{sourceLabel(item.source)}</Badge>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <Badge className={productStatusClass(item.statusLabel)}>{item.statusLabel}</Badge>
@@ -121,12 +118,12 @@ export function EditaisReadOnlyClient() {
           <CardTitle className="mt-5 text-[1.8rem]">{emptyStateTitle}</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
             {readiness.editalAnalysisState === "analysis_unavailable"
-              ? "Não foi possível confirmar o estado da análise agora. Tente novamente quando os dados reais estiverem disponíveis."
+              ? "Não foi possível carregar o estado do edital agora. Você pode tentar novamente ou voltar para materiais."
               : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
-                ? "Você já enviou um edital. A análise ainda não foi executada nesta versão."
+                ? "A análise do edital ainda não foi executada nesta versão."
               : readiness.isAuthenticated
-                ? "Envie um edital para orientar o caminho de estudo antes de esperar tópicos, bibliografia ou gaps reais."
-                : "Entre para ver seus editais analisados. Sem sessão ativa, esta tela evita mostrar demonstrações como se fossem seus dados."}
+                ? "Envie um arquivo classificado como edital para iniciar esse fluxo."
+                : "Entre para ver seus editais analisados."}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>

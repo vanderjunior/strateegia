@@ -163,7 +163,7 @@ export async function loadPipelineDetail(documentId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "A demonstração continua acessível enquanto este acompanhamento ainda não pode ser lido pela leitura protegida."
+        detail: "Os exemplos continuam acessíveis enquanto este acompanhamento não carrega dados reais."
       }),
       detail: fallback
     };

@@ -183,7 +183,7 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
       state: "unsupported",
       source,
       title: "Demonstração",
-      detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
+      detail: "Esta área segue em demonstração enquanto os dados reais não estão disponíveis.",
       endpoint
     });
   }
@@ -192,7 +192,7 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
       state: "offline",
       source,
       title: "Dados indisponíveis",
-      detail: "Não foi possível carregar dados reais agora. Os dados de demonstração continuam disponíveis.",
+      detail: "Não foi possível carregar seus dados agora. Você pode tentar novamente em instantes.",
       endpoint
     });
   }
@@ -331,7 +331,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "A demonstração continua acessível enquanto a leitura protegida não está disponível."
+        detail: "A demonstração continua acessível enquanto seus dados não estão disponíveis."
       })
     };
   }
@@ -346,7 +346,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
           source: "backend",
           title: "Requer sessão",
           detail:
-            "Entre para usar a listagem real de materiais. Enquanto isso, os dados de demonstração seguem disponíveis.",
+            "Entre para ver seus materiais.",
           endpoint: "/api/materials"
         }
       };
@@ -404,7 +404,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "A demonstração continua acessível enquanto este material ainda não pode ser lido pela leitura protegida."
+        detail: "Os exemplos continuam acessíveis enquanto este material não carrega dados reais."
       }),
       detail: fallback
     };

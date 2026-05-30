@@ -73,7 +73,7 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
         <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
           <CardTitle className="text-[1.8rem] leading-[1.04]">Consulte os materiais disponíveis</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            Entre para consultar o acompanhamento real deste material. Enquanto isso, a demonstração continua disponível.
+            Entre para consultar o acompanhamento real deste material. Enquanto isso, exemplos podem aparecer como apoio.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>

@@ -36,6 +36,9 @@
 - PSCPP guidance is framed as reference/demo when it is not driven by the user's analyzed edital.
 - Study workspace shows a next-step empty state until a real analyzed edital exists; demo orientations are clearly labeled as examples.
 - Editais workspace shows a clear empty state when no real edital analysis exists, including the case where an edital file was uploaded but not analyzed.
+- Editais normal-user copy avoids protected-read/developer phrasing and presents edital state as a product empty state.
+- Onboarding is session-aware: the first step becomes `Conta ativa` when the user is already authenticated.
+- Legacy or pre-classification materials receive explanatory `Tipo não informado` guidance instead of looking like a broken zero-count dashboard.
 - Minimal internal-staging login/logout UX and simplified unauthenticated dashboard state.
 - Normal user surfaces avoid staging/backend diagnostic copy; those limitations remain documented instead of foregrounded in the UI.
 - Upload is visually gated by session: users must enter before the file picker and send controls are shown.

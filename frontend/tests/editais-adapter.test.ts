@@ -105,7 +105,7 @@ describe("editais adapter", () => {
     const viewModel = await loadEditaisWorkspaceViewModel();
     const payload = JSON.stringify(viewModel);
 
-    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.title).toBe("Editais analisados");
     expect(viewModel.items).toHaveLength(1);
     expect(viewModel.items[0]).toMatchObject({
       id: "edital-user-1",
