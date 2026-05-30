@@ -38,7 +38,7 @@ describe("session status notice", () => {
     render(<SessionStatusNotice />);
 
     expect(await screen.findByText("Sessão ativa")).toBeInTheDocument();
-    expect(screen.getByText("Dados auditados")).toBeInTheDocument();
+    expect(screen.getByText("Dados reais")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
     expect(screen.getByText(/Mentorium Demo/i)).toBeInTheDocument();
     expect(screen.queryByText(/token/i)).not.toBeInTheDocument();

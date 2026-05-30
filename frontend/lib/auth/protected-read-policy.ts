@@ -14,7 +14,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         shouldShowSessionRequired: false,
         shouldAttemptProtectedRead: true,
         recommendedUserCopy:
-          "Dados reais da sessão podem aparecer aqui quando esta área estiver ligada ao endpoint protegido. O fallback auditado continua disponível como apoio."
+          "Dados reais da sessão podem aparecer aqui quando esta área estiver ligada à leitura protegida. A demonstração continua disponível como apoio."
       };
     case "unauthenticated":
       return {
@@ -28,7 +28,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         shouldShowSessionRequired: true,
         shouldAttemptProtectedRead: false,
         recommendedUserCopy:
-          "Entre para usar dados reais. Enquanto isso, os dados de demonstração seguem visíveis como apoio auditado."
+          "Entre para usar dados reais. Enquanto isso, os dados de demonstração seguem visíveis como apoio."
       };
     case "mock_mode":
       return {
@@ -47,16 +47,16 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
     case "backend_offline":
       return {
         mode: "backend_offline",
-        label: "Backend offline",
+        label: "Dados indisponíveis",
         description:
-          "Não foi possível consultar o backend agora. O fallback local continua disponível e isso não indica perda de dados.",
+          "Não foi possível carregar dados reais agora. A consulta local continua disponível e isso não indica perda de dados.",
         badgeTone: "warning",
         canUseRealData: false,
         shouldShowDemoFallback: true,
         shouldShowSessionRequired: false,
         shouldAttemptProtectedRead: false,
         recommendedUserCopy:
-          "O backend está offline neste momento. Use os dados de demonstração como apoio até a conexão voltar."
+          "Dados reais não carregados agora. Use os dados de demonstração como apoio até a conexão voltar."
       };
     default:
       return {

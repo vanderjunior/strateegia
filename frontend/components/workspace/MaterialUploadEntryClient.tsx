@@ -54,8 +54,8 @@ function buildConnection(): BackendConnectionInfo {
   return {
     state: "connected",
     source: "backend",
-    title: "Backend disponível",
-    detail: "O envio usa o endpoint existente de materiais, com validação local e confirmação obrigatória."
+    title: "Envio real disponível",
+    detail: "O envio usa a entrada segura de materiais, com validação local e confirmação obrigatória."
   };
 }
 
@@ -307,14 +307,14 @@ export function MaterialUploadEntryClient() {
           ) : null}
           {showOfflineGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              O envio real depende do backend disponível. Enquanto isso, a validação local continua acessível.
+              O envio real depende do serviço de materiais disponível. Enquanto isso, a validação local continua acessível.
             </p>
           ) : null}
           {showLocalSetup ? (
             <div className="mt-4 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">consulta local</div>
               <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
-                <li>• O envio real depende do backend disponível.</li>
+                <li>• O envio real depende do serviço de materiais disponível.</li>
                 <li>• O modo de demonstração continua acessível sem persistir arquivos.</li>
                 <li>• A confirmação continua obrigatória antes de qualquer envio.</li>
               </ul>

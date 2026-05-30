@@ -31,7 +31,7 @@ function statusBadgeClass(status: SessionState["status"]): string {
 function statusSourceLabel(sessionState: SessionState): string {
   switch (sessionState.status) {
     case "authenticated":
-      return "Dados auditados";
+      return "Dados reais";
     case "unauthenticated":
       return "Requer sessão";
     case "backend_offline":

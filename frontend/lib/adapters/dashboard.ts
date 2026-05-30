@@ -213,7 +213,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
   let connection = baseConnection({
     state: "connected",
     source: "backend",
-    title: "Backend disponível",
+    title: "Dados reais disponíveis",
     detail: "Perfis públicos do backend foram carregados em modo de consulta.",
     endpoint: "/api/exam-profiles/exam-profile:marinha-pscpp"
   });
@@ -236,7 +236,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     connection = {
       state: "connected",
       source: "backend",
-      title: "Backend disponível com visão autenticada",
+      title: "Dados reais com sessão ativa",
       detail: "O dashboard recebeu dados reais da visão do usuário sem abandonar o fallback local.",
       endpoint: "/api/dashboard/overview"
     };
@@ -255,7 +255,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     connection = {
       state: "auth_required",
       source: "backend",
-      title: "Backend disponível, sessão necessária",
+      title: "Dados reais exigem sessão",
       detail:
         "Os perfis públicos foram lidos do backend, mas a visão pessoal continua protegida até existir sessão válida.",
       endpoint: "/api/dashboard/overview"
@@ -264,7 +264,7 @@ export async function loadDashboardViewModel(): Promise<DashboardViewModel> {
     connection = {
       state: "connected",
       source: "backend",
-      title: "Backend disponível com leitura parcial",
+      title: "Dados reais parcialmente carregados",
       detail: "Os perfis principais responderam, mas esta visão ainda não está disponível neste ambiente.",
       endpoint: "/api/dashboard/overview"
     };

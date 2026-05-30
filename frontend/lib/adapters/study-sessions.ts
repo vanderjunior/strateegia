@@ -63,7 +63,7 @@ export async function loadStudySessionWorkspaceViewModel(): Promise<StudySession
       ...fallback,
       connection: sourceConnection(
         "backend",
-        "Backend disponível",
+        "Dados reais disponíveis",
         "Sessões sugeridas confirmadas pelo perfil PSCPP do backend, mantendo o fluxo como guia de consulta.",
         "connected"
       )

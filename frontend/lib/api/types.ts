@@ -146,7 +146,7 @@ export type ProtectedReadMode =
 
 export interface ProtectedReadPolicy {
   mode: ProtectedReadMode;
-  label: "Dados reais da sessão" | "Requer sessão" | "Modo demonstração" | "Backend offline" | "Consulta local";
+  label: "Dados reais da sessão" | "Requer sessão" | "Modo demonstração" | "Dados indisponíveis" | "Consulta local";
   description: string;
   badgeTone: "positive" | "warning" | "neutral" | "muted";
   canUseRealData: boolean;

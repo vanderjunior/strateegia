@@ -56,7 +56,7 @@ describe("protected read UX policy", () => {
     expect(policy.shouldAttemptProtectedRead).toBe(false);
   });
 
-  it("maps backend_offline to backend_offline", () => {
+  it("maps backend_offline to product-safe unavailable copy", () => {
     const policy = resolveProtectedReadPolicy(
       makeSessionState({
         status: "backend_offline",
@@ -67,7 +67,7 @@ describe("protected read UX policy", () => {
     );
 
     expect(policy.mode).toBe("backend_offline");
-    expect(policy.label).toBe("Backend offline");
+    expect(policy.label).toBe("Dados indisponíveis");
     expect(policy.shouldShowDemoFallback).toBe(true);
   });
 

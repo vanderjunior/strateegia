@@ -47,7 +47,7 @@ export function ProtectedReadPolicyNotice({
           <Badge className={protectedReadBadgeClass(policy.badgeTone)}>{policy.label}</Badge>
           <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
             {policy.mode === "real_authenticated"
-              ? "Dados auditados"
+              ? "Dados reais"
               : policy.mode === "requires_session"
                 ? "Dados de demonstração"
                 : policy.mode === "backend_offline"
