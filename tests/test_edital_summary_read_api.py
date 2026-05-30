@@ -13,6 +13,7 @@ ALLOWED_SUMMARY_KEYS = {
     "title",
     "created_at",
     "updated_at",
+    "analysis_status",
     "topics_count",
     "bibliography_count",
     "gaps_count",
@@ -152,6 +153,7 @@ def test_edital_summary_returns_own_bounded_summary(tmp_path):
     assert payload["document_id"] == edital["document_id"]
     assert payload["title"] == "Edital analisado da sessão"
     assert payload["source"] == "user_scope"
+    assert payload["analysis_status"] in {"analyzed", "needs_review", "failed", "not_ready"}
     assert payload["topics_count"] >= 1
     assert payload["bibliography_count"] >= 0
     assert payload["gaps_count"] == 0

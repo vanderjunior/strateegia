@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Plan a future controlled edital analysis execution contract without implementing it yet.
+Track the controlled edital analysis execution contract.
 
-This document is planning-only. It does not add endpoints, buttons, automatic ingestion, OCR, generation, simulado execution, progress mutation, scheduler behavior, PostgreSQL, or auth-provider behavior.
+The backend controlled endpoint is implemented. Frontend proxy/UI/action phases are still pending. This contract does not add buttons, automatic analysis on upload, OCR, generation, simulado execution, progress mutation, scheduler behavior, PostgreSQL, or auth-provider behavior.
 
 ## Current State
 
@@ -25,9 +25,9 @@ This document is planning-only. It does not add endpoints, buttons, automatic in
 - Concrete study, PSCPP personalization, ciclo, questões, simulados, and execução remain gated until a real analyzed edital exists and later capability-specific contracts are added.
 - Existing backend edital ingestion services can derive candidate topics, bibliography, exclusions, weights, and warnings from existing pipeline artifacts, but current broad ingestion reads are not the intended browser-facing product contract.
 
-## Proposed Future Endpoint
+## Implemented Backend Endpoint
 
-Preferred endpoint:
+Implemented endpoint:
 
 ```http
 POST /api/materials/{document_id}/edital/analyze
@@ -51,7 +51,7 @@ This is less precise because `document_id` is a material identifier, not an edit
 
 ## Preconditions
 
-The future endpoint should require:
+The implemented endpoint requires:
 
 - Authenticated user; unauthenticated requests return `401`.
 - `document_id` must exist inside the current user's `JsonStudyRepository.for_user(user_id)` scope.
@@ -65,13 +65,13 @@ The future endpoint should require:
 
 ## Request Shape
 
-Prefer no body if the action has exactly one controlled behavior:
+The implemented backend endpoint requires no request body:
 
 ```http
 POST /api/materials/{document_id}/edital/analyze
 ```
 
-If a body is useful for explicitness, keep it minimal:
+If a later client contract needs explicitness, it may add a minimal optional body:
 
 ```json
 {
@@ -88,7 +88,7 @@ Do not accept:
 - answer keys or correction artifacts
 - options that trigger generation, simulado, scheduler, or progress mutation
 
-## Bounded Response Shape
+## Implemented Bounded Response Shape
 
 Return only bounded lifecycle metadata:
 
@@ -108,7 +108,6 @@ Return only bounded lifecycle metadata:
 
 Allowed `analysis_status` values:
 
-- `analysis_pending`
 - `analyzed`
 - `needs_review`
 - `failed`
@@ -142,7 +141,7 @@ Forbidden response fields:
 
 Recommended lifecycle mapping:
 
-- `uploaded_not_analyzed` -> `analysis_pending` while controlled analysis starts.
+- `uploaded_not_analyzed` -> internal `analysis_pending` while controlled analysis starts.
 - `analysis_pending` -> `not_ready` when text is missing, too short, OCR-required, or otherwise unsafe to analyze.
 - `analysis_pending` -> `analyzed` when bounded candidate metadata is created and ready enough for review.
 - `analysis_pending` -> `needs_review` when candidate metadata exists but warnings, partial extraction, or alignment uncertainty should keep the product conservative.
@@ -181,15 +180,15 @@ The frontend must not:
 - show answer keys or gabarito
 - imply question generation, simulado generation, progress mutation, or scheduling
 
-## Backend Test Plan
+## Backend Test Coverage
 
-Add focused backend tests when the endpoint is implemented:
+Implemented focused backend tests cover:
 
 - `401` unauthenticated request.
 - `404` missing material.
 - `404` non-owner material.
 - `422` or `400` for material whose `material_type` is not `edital`.
-- `not_ready` response for OCR-required, missing extraction, or insufficient text.
+- `not_ready` response for missing extraction or insufficient text.
 - `analyzed` or `needs_review` response for an owned edital material with safe extracted text.
 - Idempotent repeated call for an already final controlled analysis state.
 - Response shape contains only allowed keys.
@@ -208,10 +207,10 @@ Add focused backend tests when the endpoint is implemented:
   - answer key/gabarito/correctness fields
   - worker/job/runtime traces
 
-Recommended targeted pytest command for implementation phase:
+Targeted pytest command:
 
 ```bash
-./.python_packages/bin/pytest tests/test_edital_analysis_api.py tests/test_editais_read_api.py tests/test_edital_summary_read_api.py tests/test_material_upload.py
+./.python_packages/bin/pytest tests/test_edital_analysis_controlled_api.py tests/test_edital_ingestion_api.py tests/test_editais_read_api.py tests/test_edital_summary_read_api.py tests/test_material_upload.py tests/test_materials_read_api.py
 ```
 
 ## Frontend Test Plan
@@ -249,4 +248,3 @@ Add focused frontend tests when a UI/proxy phase is approved:
 3. `EditalAnalysis-D`: UI action gated to authenticated uploaded edital materials.
 4. `Coverage-A`: read-only edital x materials coverage contract.
 5. `StudyPlan-A`: concrete study guidance only after analyzed edital and coverage contracts are stable.
-

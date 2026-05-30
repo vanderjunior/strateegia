@@ -1029,6 +1029,62 @@ def get_material_sections(document_id: str, request: Request):
     return get_repository(request).list_document_sections(document_id, user_id=user_id)
 
 
+def _uploaded_material_type(material) -> str:
+    try:
+        return normalize_material_type(str(material.metadata.metadata.get("material_type") or "unknown"))
+    except ValueError:
+        return "unknown"
+
+
+def _bounded_edital_analysis_status(edital, ingestion_state, review_state: str) -> str:
+    if ingestion_state is not None:
+        if ingestion_state.status == "insufficient_text":
+            return "not_ready"
+        if ingestion_state.status == "failed":
+            return "failed"
+        if ingestion_state.status in {"pending", "started"}:
+            return "not_ready"
+    if review_state == "ready_for_review":
+        return "analyzed"
+    if review_state == "needs_review":
+        return "needs_review"
+    return "not_ready"
+
+
+def _bounded_edital_analysis_response(edital, repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    summary = _bounded_edital_item(edital, repository, user_id)
+    return {
+        "edital_id": summary["edital_id"],
+        "document_id": summary["document_id"],
+        "analysis_status": summary["analysis_status"],
+        "review_state": summary["review_state"],
+        "topics_count": summary["topics_count"],
+        "bibliography_count": summary["bibliography_count"],
+        "gaps_count": summary["gaps_count"],
+        "warnings_count": summary["warnings_count"],
+        "source": "user_scope",
+    }
+
+
+@router.post("/materials/{document_id}/edital/analyze")
+def analyze_edital(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    material = repository.get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    if _uploaded_material_type(material) != "edital":
+        raise HTTPException(status_code=422, detail="Material is not classified as edital.")
+
+    state = get_edital_ingestion_service(request).ingest_document(document_id, user_id=user_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    result = repository.get_edital_extraction_result(document_id, user_id=user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    return _bounded_edital_analysis_response(result, repository, user_id)
+
+
 @router.post("/materials/{document_id}/edital/ingest")
 def ingest_edital(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -1123,16 +1179,19 @@ def _bounded_edital_item(edital, repository: JsonStudyRepository, user_id: str) 
     elif ingestion_state is not None:
         updated_at = ingestion_state.updated_at
 
+    review_state = _bounded_edital_review_state(edital, ingestion_state, alignment_result)
+
     return {
         "edital_id": edital.edital_id,
         "document_id": edital.document_id,
         "title": "Edital analisado da sessão",
         "created_at": ingestion_state.created_at if ingestion_state is not None else None,
         "updated_at": updated_at,
+        "analysis_status": _bounded_edital_analysis_status(edital, ingestion_state, review_state),
         "topics_count": len(edital.topics),
         "bibliography_count": len(edital.bibliography),
         "gaps_count": len(alignment_result.gaps) if alignment_result is not None else 0,
-        "review_state": _bounded_edital_review_state(edital, ingestion_state, alignment_result),
+        "review_state": review_state,
         "coverage_status": _bounded_edital_coverage_status(alignment_result),
         "alignment_status": _bounded_edital_alignment_status(alignment_state, alignment_result),
         "warnings_count": warnings_count,

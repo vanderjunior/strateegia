@@ -13,6 +13,7 @@ ALLOWED_ITEM_KEYS = {
     "title",
     "created_at",
     "updated_at",
+    "analysis_status",
     "topics_count",
     "bibliography_count",
     "gaps_count",
@@ -148,6 +149,7 @@ def test_editais_list_returns_own_bounded_edital(tmp_path):
     assert item["topics_count"] >= 1
     assert item["bibliography_count"] >= 0
     assert item["gaps_count"] == 0
+    assert item["analysis_status"] in {"analyzed", "needs_review", "failed", "not_ready"}
     assert item["review_state"] in {"ready_for_review", "needs_review", "pending", "unknown"}
     assert item["coverage_status"] in {"good", "partial", "gap_found", "needs_material", "unknown"}
     assert item["alignment_status"] in {"aligned", "partial", "needs_review", "not_available", "unknown"}

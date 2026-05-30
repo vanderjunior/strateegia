@@ -165,6 +165,7 @@ Implemented shape:
       "title": "Edital analisado da sessão",
       "created_at": "2026-05-27T00:00:00Z",
       "updated_at": "2026-05-27T00:05:00Z",
+      "analysis_status": "analyzed",
       "review_state": "review_required",
       "topics_count": 12,
       "bibliography_count": 8,
@@ -183,7 +184,7 @@ Allowed fields:
 - `edital_id`
 - `document_id`
 - `title`
-- optional future `analysis_status`
+- `analysis_status`
 - `created_at`
 - `updated_at`
 - `review_state`
@@ -205,12 +206,12 @@ Forbidden fields:
 - `storage_path`
 
 Lifecycle semantics:
-- the current implemented backend list shape does not require `analysis_status`; frontend lifecycle derives analyzed state from bounded `review_state`, `coverage_status`, and `alignment_status`
+- the implemented backend list shape includes bounded `analysis_status`
 - an uploaded material with `material_type: "edital"` and no bounded edital item means `uploaded_not_analyzed` in the frontend state model
 - a bounded edital item with ready review/coverage/alignment metadata means `analyzed`
 - bounded edital metadata that is pending, partial, gap-bearing, not available, or needs review means `needs_review`
 - offline, unsupported, failed, or unknown reads mean analysis is unavailable
-- if a future bounded `analysis_status` is added, allowed values are `uploaded_not_analyzed`, `analyzed`, `needs_review`, `failed`, and `unknown`
+- allowed backend `analysis_status` values are `analyzed`, `needs_review`, `failed`, and `not_ready`
 - concrete study guidance may unlock only for analyzed edital metadata that is ready for review; uploaded-only, needs-review, failed, unknown, and unavailable states remain conservative
 - these lifecycle fields are read-only metadata and do not imply edital ingestion, OCR, generation, or progress mutation
 
@@ -229,6 +230,7 @@ Implemented shape:
   "title": "Edital analisado da sessão",
   "created_at": "2026-05-27T00:00:00Z",
   "updated_at": "2026-05-27T00:05:00Z",
+  "analysis_status": "needs_review",
   "review_state": "review_required",
   "topics_count": 12,
   "bibliography_count": 8,
@@ -247,9 +249,71 @@ Implemented shape:
 ```
 
 Summary lifecycle semantics:
-- `analysis_status` is optional future bounded metadata; current consumers must remain compatible with responses that expose only `review_state`, `coverage_status`, `alignment_status`, and `summary.needs_review`
+- `analysis_status` is bounded metadata included in the summary response
 - `summary.needs_review: true` or non-ready status metadata keeps study guidance conservative
 - summary responses must never expose raw edital text, raw bibliography bodies, source evidence snippets, OCR content, storage paths, or generated answer/correction fields
+
+### `POST /api/materials/{document_id}/edital/analyze`
+
+Purpose:
+- run controlled backend edital analysis for one authenticated, user-owned uploaded material
+- implemented in EditalAnalysis-B as a bounded lifecycle endpoint
+- does not add OCR, question generation, simulado generation/execution, progress mutation, scheduler behavior, or automatic analysis on upload
+
+Preconditions:
+- unauthenticated requests return `401`
+- missing or non-owner materials return `404`
+- the uploaded material must have `material_type: "edital"`
+- non-edital materials return `422`
+- missing/insufficient extracted text returns a bounded `not_ready` response
+
+Implemented shape:
+
+```json
+{
+  "edital_id": "edital:doc-123",
+  "document_id": "doc-123",
+  "analysis_status": "analyzed",
+  "review_state": "ready_for_review",
+  "topics_count": 12,
+  "bibliography_count": 8,
+  "gaps_count": 0,
+  "warnings_count": 1,
+  "source": "user_scope"
+}
+```
+
+Allowed fields:
+- `edital_id`
+- `document_id`
+- `analysis_status`
+- `review_state`
+- `topics_count`
+- `bibliography_count`
+- `gaps_count`
+- `warnings_count`
+- `source`
+
+Allowed `analysis_status` values:
+- `analyzed`
+- `needs_review`
+- `failed`
+- `not_ready`
+
+Forbidden fields:
+- raw edital text
+- raw document text
+- `extracted_text`
+- OCR dumps
+- chunks or section bodies
+- bibliography evidence excerpts
+- base64 payloads
+- `storage_path`
+- private paths
+- owner internals
+- password/session fields
+- answer key, gabarito, or correction payloads
+- worker/job/internal traces
 
 ## Pipeline Status Reads
 
