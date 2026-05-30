@@ -183,6 +183,7 @@ Allowed fields:
 - `edital_id`
 - `document_id`
 - `title`
+- optional future `analysis_status`
 - `created_at`
 - `updated_at`
 - `review_state`
@@ -202,6 +203,16 @@ Forbidden fields:
 - chunk text
 - base64 payload
 - `storage_path`
+
+Lifecycle semantics:
+- the current implemented backend list shape does not require `analysis_status`; frontend lifecycle derives analyzed state from bounded `review_state`, `coverage_status`, and `alignment_status`
+- an uploaded material with `material_type: "edital"` and no bounded edital item means `uploaded_not_analyzed` in the frontend state model
+- a bounded edital item with ready review/coverage/alignment metadata means `analyzed`
+- bounded edital metadata that is pending, partial, gap-bearing, not available, or needs review means `needs_review`
+- offline, unsupported, failed, or unknown reads mean analysis is unavailable
+- if a future bounded `analysis_status` is added, allowed values are `uploaded_not_analyzed`, `analyzed`, `needs_review`, `failed`, and `unknown`
+- concrete study guidance may unlock only for analyzed edital metadata that is ready for review; uploaded-only, needs-review, failed, unknown, and unavailable states remain conservative
+- these lifecycle fields are read-only metadata and do not imply edital ingestion, OCR, generation, or progress mutation
 
 ### `GET /api/editais/{edital_id}/summary`
 
@@ -234,6 +245,11 @@ Implemented shape:
   "source": "user_scope"
 }
 ```
+
+Summary lifecycle semantics:
+- `analysis_status` is optional future bounded metadata; current consumers must remain compatible with responses that expose only `review_state`, `coverage_status`, `alignment_status`, and `summary.needs_review`
+- `summary.needs_review: true` or non-ready status metadata keeps study guidance conservative
+- summary responses must never expose raw edital text, raw bibliography bodies, source evidence snippets, OCR content, storage paths, or generated answer/correction fields
 
 ## Pipeline Status Reads
 

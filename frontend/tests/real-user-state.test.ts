@@ -102,6 +102,7 @@ describe("real user edital analysis state", () => {
       {
         edital_id: "edital-1",
         title: "Edital analisado",
+        analysis_status: "analyzed",
         status: "ready",
         review_state: "ready_for_review",
         topics_count: 8,
@@ -125,6 +126,7 @@ describe("real user edital analysis state", () => {
       {
         edital_id: "edital-1",
         title: "Edital preliminar",
+        analysis_status: "needs_review",
         status: "Análise candidata",
         review_state: "needs_review",
         topics_count: 8,
@@ -146,6 +148,29 @@ describe("real user edital analysis state", () => {
     expect(payload).not.toContain("raw_text");
     expect(payload).not.toContain("storage_path");
     expect(payload).not.toContain("/Users/");
+  });
+
+  it("keeps explicit failed lifecycle unavailable and locked", async () => {
+    mockMaterials([{ document_id: "doc-edital", display_filename: "edital.pdf", material_type: "edital" }]);
+    mockEditais([
+      {
+        edital_id: "edital-1",
+        title: "Edital indisponível",
+        analysis_status: "failed",
+        status: "unknown",
+        review_state: "unknown",
+        topics_count: 0,
+        bibliography_count: 0,
+        gaps_count: 0,
+        coverage_status: "unknown"
+      }
+    ]);
+
+    const readiness = await loadRealUserStudyReadiness();
+
+    expect(readiness.editalAnalysisState).toBe("analysis_unavailable");
+    expect(readiness.editalAnalysisLabel).toBe("Análise indisponível");
+    expect(readiness.canShowConcreteStudyPlan).toBe(false);
   });
 
   it("marks analysis unavailable when protected reads cannot determine state", async () => {

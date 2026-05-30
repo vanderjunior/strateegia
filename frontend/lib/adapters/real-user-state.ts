@@ -111,6 +111,22 @@ function editalItemNeedsReview(item: BackendProtectedEditaisListItem): boolean {
   );
 }
 
+function editalAnalysisStateFromItem(item: BackendProtectedEditaisListItem): EditalAnalysisState {
+  switch (item.analysis_status) {
+    case "uploaded_not_analyzed":
+      return "edital_uploaded_not_analyzed";
+    case "needs_review":
+      return "analysis_needs_review";
+    case "failed":
+    case "unknown":
+      return "analysis_unavailable";
+    case "analyzed":
+      return editalItemNeedsReview(item) ? "analysis_needs_review" : "edital_analyzed";
+    default:
+      return editalItemNeedsReview(item) ? "analysis_needs_review" : "edital_analyzed";
+  }
+}
+
 export function buildDefaultRealUserStudyReadiness(
   overrides: Partial<RealUserStudyReadiness> = {}
 ): RealUserStudyReadiness {
@@ -208,9 +224,16 @@ export async function loadRealUserStudyReadiness(): Promise<RealUserStudyReadine
         ? "analysis_unavailable"
         : editalAnalysisState;
   } else if (editaisResult.data.items.length > 0) {
-    editalAnalysisState = editaisResult.data.items.some(editalItemNeedsReview)
-      ? "analysis_needs_review"
-      : "edital_analyzed";
+    const itemStates = editaisResult.data.items.map(editalAnalysisStateFromItem);
+    if (itemStates.includes("analysis_needs_review")) {
+      editalAnalysisState = "analysis_needs_review";
+    } else if (itemStates.includes("edital_analyzed")) {
+      editalAnalysisState = "edital_analyzed";
+    } else if (itemStates.includes("edital_uploaded_not_analyzed")) {
+      editalAnalysisState = "edital_uploaded_not_analyzed";
+    } else {
+      editalAnalysisState = "analysis_unavailable";
+    }
   }
 
   const hasAnalyzedEdital =

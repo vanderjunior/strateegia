@@ -313,6 +313,7 @@ export interface BackendMaterialSummary {
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;
+  analysis_status?: "uploaded_not_analyzed" | "analyzed" | "needs_review" | "failed" | "unknown";
   status: string;
   review_state: string;
   topics_count: number;
@@ -334,6 +335,7 @@ export interface BackendEditalSummary {
   edital_id: string;
   document_id: string | null;
   title: string;
+  analysis_status?: "uploaded_not_analyzed" | "analyzed" | "needs_review" | "failed" | "unknown";
   created_at: string | null;
   updated_at: string | null;
   topics_count: number;
