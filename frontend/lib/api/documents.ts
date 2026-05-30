@@ -206,7 +206,10 @@ interface BackendUploadedMaterialResponse {
   };
 }
 
-function normalizeUploadResult(response: BackendUploadedMaterialResponse): UploadMaterialResult {
+function normalizeUploadResult(
+  response: BackendUploadedMaterialResponse,
+  requestedMaterialType: MaterialType
+): UploadMaterialResult {
   const extractionStatus =
     response.metadata.extraction_status === "extracted"
       ? "Texto extraído"
@@ -235,8 +238,8 @@ function normalizeUploadResult(response: BackendUploadedMaterialResponse): Uploa
     filename: response.metadata.filename,
     originalFilename: response.metadata.original_filename,
     contentType: response.metadata.content_type,
-    materialType: normalizeMaterialType(response.metadata.material_type),
-    materialTypeLabel: materialTypeLabel(response.metadata.material_type),
+    materialType: normalizeMaterialType(response.metadata.material_type ?? requestedMaterialType),
+    materialTypeLabel: materialTypeLabel(response.metadata.material_type ?? requestedMaterialType),
     sizeBytes: response.metadata.size_bytes,
     processingStatus,
     extractionStatus,
@@ -305,7 +308,7 @@ export async function uploadMaterialFile(
       const data = (await response.json()) as BackendUploadedMaterialResponse;
       return {
         ok: true,
-        data: normalizeUploadResult(data),
+        data: normalizeUploadResult(data, materialType),
         status: response.status,
         source: "backend"
       };

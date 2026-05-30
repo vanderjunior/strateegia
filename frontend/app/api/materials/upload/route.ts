@@ -31,7 +31,7 @@ function toSafeMaterialType(value: unknown): string {
   return typeof value === "string" && ALLOWED_MATERIAL_TYPES.has(value) ? value : "unknown";
 }
 
-function sanitizeUploadResponse(payload: unknown) {
+function sanitizeUploadResponse(payload: unknown, fallbackMaterialType: unknown) {
   const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
   const rawMetadata =
     raw.metadata && typeof raw.metadata === "object"
@@ -48,7 +48,7 @@ function sanitizeUploadResponse(payload: unknown) {
       filename: toSafeString(rawMetadata.filename),
       original_filename: toSafeString(rawMetadata.original_filename),
       content_type: toSafeString(rawMetadata.content_type),
-      material_type: toSafeMaterialType(rawMetadata.material_type ?? nestedMetadata.material_type),
+      material_type: toSafeMaterialType(rawMetadata.material_type ?? nestedMetadata.material_type ?? fallbackMaterialType),
       size_bytes: toSafeNumber(rawMetadata.size_bytes),
       status: toSafeString(rawMetadata.status) || "uploaded",
       extraction_status: toSafeString(rawMetadata.extraction_status) || "uploaded",
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     }
 
     const payload = await backendResponse.json();
-    return NextResponse.json(sanitizeUploadResponse(payload), {
+    return NextResponse.json(sanitizeUploadResponse(payload, materialType), {
       status: backendResponse.status
     });
   } catch {

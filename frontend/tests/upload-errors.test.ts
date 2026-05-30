@@ -98,4 +98,36 @@ describe("upload error classification", () => {
     expect(result.error.code).toBe("backend_offline");
     expect(result.error.message).toBe("Não foi possível carregar os dados agora.");
   });
+
+  it("sends material_type and preserves requested type when upload response is sparse", async () => {
+    const fetchSpy = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          metadata: {
+            document_id: "doc-edital",
+            filename: "edital.md",
+            original_filename: "edital.md",
+            content_type: "text/markdown",
+            size_bytes: 12,
+            status: "extracted",
+            extraction_status: "extracted"
+          }
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const result = await uploadMaterialFile(new File(["conteudo"], "edital.md", { type: "text/markdown" }), "edital");
+    const fetchCalls = (fetchSpy as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
+    const formData = fetchCalls[0][1].body as FormData;
+
+    expect(formData.get("material_type")).toBe("edital");
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected success");
+    }
+    expect(result.data.materialType).toBe("edital");
+    expect(result.data.materialTypeLabel).toBe("Edital");
+  });
 });

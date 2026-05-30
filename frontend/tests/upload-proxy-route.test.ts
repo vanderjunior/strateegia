@@ -50,6 +50,45 @@ describe("materials upload same-origin proxy route", () => {
     expect(forwardedBody.get("material_type")).toBe("study_material");
   });
 
+  it("forwards material_type=edital and uses it as safe response fallback", async () => {
+    const fetchSpy = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          metadata: {
+            document_id: "doc-edital",
+            filename: "edital.md",
+            original_filename: "edital.md",
+            content_type: "text/markdown",
+            size_bytes: 18,
+            status: "extracted",
+            extraction_status: "extracted"
+          }
+        }),
+        {
+          status: 201,
+          headers: { "content-type": "application/json" }
+        }
+      )
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const formData = new FormData();
+    formData.append("file", new File(["conteudo"], "edital.md", { type: "text/markdown" }));
+    formData.append("material_type", "edital");
+
+    const response = await POST({
+      headers: new Headers({ cookie: "studyflow_session=server-only" }),
+      formData: async () => formData
+    } as unknown as Request);
+    const payload = await response.json();
+    const fetchCalls = (fetchSpy as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
+    const forwardedBody = fetchCalls[0][1].body as FormData;
+
+    expect(response.status).toBe(201);
+    expect(forwardedBody.get("material_type")).toBe("edital");
+    expect(payload.metadata.material_type).toBe("edital");
+  });
+
   it("returns a bounded upload response and strips raw content and storage fields", async () => {
     vi.stubGlobal(
       "fetch",

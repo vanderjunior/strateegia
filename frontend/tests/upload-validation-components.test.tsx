@@ -165,6 +165,83 @@ describe("upload validation helpers and component states", () => {
     expect(screen.getByText(/não aciona processamento automático/i)).toBeInTheDocument();
   });
 
+  it("preserves intent selected before file choice and sends material_type=edital", async () => {
+    vi.mocked(uploadMaterialFile).mockResolvedValueOnce({
+      ok: true,
+      data: {
+        documentId: "doc-edital",
+        filename: "edital.md",
+        originalFilename: "edital.md",
+        contentType: "text/markdown",
+        materialType: "edital",
+        materialTypeLabel: "Edital",
+        sizeBytes: 2048,
+        processingStatus: "Material recebido para validação",
+        extractionStatus: "Texto extraído",
+        reviewState: "Pronto para revisão",
+        source: "backend",
+        demoOnly: false
+      },
+      status: 201,
+      source: "backend"
+    });
+
+    const { container } = render(<MaterialUploadEntryClient />);
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.click(screen.getByRole("radio", { name: "Edital" }));
+    fireEvent.change(fileInput, {
+      target: {
+        files: [makeFile("edital.md", "text/markdown", 2048)]
+      }
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar arquivo" }));
+
+    await waitFor(() => {
+      expect(uploadMaterialFile).toHaveBeenCalledWith(expect.any(File), "edital");
+    });
+    expect((await screen.findAllByText("Edital")).length).toBeGreaterThan(0);
+  });
+
+  it("sends material_type=study_material when selected", async () => {
+    vi.mocked(uploadMaterialFile).mockResolvedValueOnce({
+      ok: true,
+      data: {
+        documentId: "doc-study",
+        filename: "material.txt",
+        originalFilename: "material.txt",
+        contentType: "text/plain",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo",
+        sizeBytes: 1024,
+        processingStatus: "Material recebido para validação",
+        extractionStatus: "Texto extraído",
+        reviewState: "Pronto para revisão",
+        source: "backend",
+        demoOnly: false
+      },
+      status: 201,
+      source: "backend"
+    });
+
+    const { container } = render(<MaterialUploadEntryClient />);
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.change(fileInput, {
+      target: {
+        files: [makeFile("material.txt", "text/plain")]
+      }
+    });
+    fireEvent.click(screen.getByRole("radio", { name: "Material de estudo" }));
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar arquivo" }));
+
+    await waitFor(() => {
+      expect(uploadMaterialFile).toHaveBeenCalledWith(expect.any(File), "study_material");
+    });
+  });
+
   it("blocks the upload form and shows login CTA when there is no active session", async () => {
     vi.mocked(loadSessionState).mockResolvedValueOnce({
       status: "unauthenticated",

@@ -108,7 +108,6 @@ export function MaterialUploadEntryClient() {
   function handleFileChange(file: File | null) {
     setSelectedFile(file);
     setResult(null);
-    setSelectedIntentId("");
     setConfirmationChecked(false);
 
     if (!file) {
