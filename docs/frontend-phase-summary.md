@@ -37,6 +37,8 @@
 - Study workspace shows a next-step empty state until a real analyzed edital exists; demo orientations are clearly labeled as examples.
 - Editais workspace shows a clear empty state when no real edital analysis exists, including the case where an edital file was uploaded but not analyzed.
 - Minimal internal-staging login/logout UX and simplified unauthenticated dashboard state.
+- Normal user surfaces avoid staging/backend diagnostic copy; those limitations remain documented instead of foregrounded in the UI.
+- Upload is visually gated by session: users must enter before the file picker and send controls are shown.
 - Product-language layer and focused Vitest/RTL safety coverage.
 
 ## Current Limitations
@@ -45,7 +47,7 @@
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
-- Auth/session UX remains internal-staging oriented; there is no external provider, signup UI, or durable session store.
+- Auth/session remains intentionally minimal; there is no external provider, signup UI, or durable session store.
 - Dashboard study guidance waits for real analyzed edital context before presenting a concrete study orientation.
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
 

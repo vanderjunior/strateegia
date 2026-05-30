@@ -21,16 +21,16 @@ function buildFallback(materialId: string): { connection: BackendConnectionInfo;
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este material."
+      detail: "Demonstração exibida até existir leitura segura para este material."
     },
     detail: buildMockMaterialDetail(materialId) ?? {
       id: materialId,
       title: "Item não encontrado",
       typeLabel: "Material",
       materialType: "unknown",
-      materialTypeLabel: "Não classificado",
+      materialTypeLabel: "Tipo não informado",
       processingStatus: "Revisão necessária",
-      extractionStatus: "Consulta local",
+      extractionStatus: "Demonstração",
       sectionsCount: null,
       chunksCount: null,
       reviewState: "Revisão necessária",
@@ -77,8 +77,7 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
         <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
           <CardTitle className="text-[1.8rem] leading-[1.04]">Consulte os materiais disponíveis</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            A listagem real depende de sessão autenticada quando o backend estiver disponível. Enquanto isso,
-            a consulta local continua acessível nesta área.
+            Entre para consultar detalhes reais deste material. Enquanto isso, a demonstração continua disponível.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>

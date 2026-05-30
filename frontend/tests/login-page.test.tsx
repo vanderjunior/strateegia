@@ -40,7 +40,7 @@ describe("login page", () => {
     });
   });
 
-  it("renders minimal internal staging login without signup UI or auth internals", () => {
+  it("renders minimal login without signup UI or auth internals", () => {
     render(<LoginPage />);
 
     expect(screen.getByRole("heading", { name: "Entrar" })).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe("login page", () => {
     expect(screen.getByLabelText("Senha")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
     expect(screen.getAllByText("Voltar ao painel").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Sessões são locais neste ambiente/i)).toBeInTheDocument();
+    expect(screen.getByText(/acessar seus materiais, edital e orientações/i)).toBeInTheDocument();
     expect(screen.queryByText(/criar conta/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cadastro/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/token/i)).not.toBeInTheDocument();

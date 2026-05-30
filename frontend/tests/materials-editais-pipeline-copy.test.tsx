@@ -21,7 +21,7 @@ vi.mock("@/lib/adapters/materials", async () => {
         state: "mock",
         source: "mock",
         title: "Dados de demonstração",
-        detail: "Consulta local exibida até existir leitura segura do backend para este material."
+        detail: "Demonstração exibida até existir leitura segura para este material."
       },
       detail: actual.buildMockMaterialDetail(materialId)
     }))
@@ -41,7 +41,7 @@ vi.mock("@/lib/adapters/editais", async () => {
         state: "mock",
         source: "mock",
         title: "Dados de demonstração",
-        detail: "Consulta local exibida até existir leitura segura do backend para este edital."
+        detail: "Demonstração exibida até existir leitura segura para este edital."
       },
       detail: actual.buildMockEditalDetail(editalId)
     }))
@@ -60,7 +60,7 @@ vi.mock("@/lib/adapters/pipeline", async () => {
         state: "mock",
         source: "mock",
         title: "Dados de demonstração",
-        detail: "Consulta local exibida até existir leitura segura do backend para este material."
+        detail: "Demonstração exibida até existir leitura segura para este material."
       },
       detail: actual.buildMockPipelineDetail(documentId)
     }))

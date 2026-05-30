@@ -13,6 +13,23 @@ vi.mock("@/lib/api/documents", async () => {
   };
 });
 
+vi.mock("@/lib/adapters/session", () => ({
+  buildDefaultSessionState: vi.fn(() => ({
+    status: "authenticated",
+    label: "Sessão ativa",
+    description: "Você está conectado.",
+    source: "backend",
+    userLabel: "Usuário interno"
+  })),
+  loadSessionState: vi.fn(async () => ({
+    status: "authenticated",
+    label: "Sessão ativa",
+    description: "Você está conectado.",
+    source: "backend",
+    userLabel: "Usuário interno"
+  }))
+}));
+
 import { MaterialUploadEntryClient } from "@/components/workspace/MaterialUploadEntryClient";
 import {
   acceptedUploadTypes,
@@ -22,6 +39,7 @@ import {
 } from "@/components/workspace/upload-validation";
 import { getApiConfig } from "@/lib/api/config";
 import { uploadMaterialFile } from "@/lib/api/documents";
+import { loadSessionState } from "@/lib/adapters/session";
 
 function makeFile(name: string, type: string, size = 1024): File {
   const file = new File(["demo"], name, { type });
@@ -64,7 +82,7 @@ describe("upload validation helpers and component states", () => {
     const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
     const checkbox = screen.getByRole("checkbox");
     const editalIntent = screen.getByRole("radio", { name: "Edital" });
-    const button = screen.getByRole("button", { name: "Enviar para validação" });
+    const button = screen.getByRole("button", { name: "Enviar arquivo" });
 
     expect(button).toBeDisabled();
     expect(screen.getAllByText(/OCR em validação/i).length).toBeGreaterThan(0);
@@ -105,7 +123,7 @@ describe("upload validation helpers and component states", () => {
     });
 
     expect(screen.getAllByText("Tipo de arquivo não suportado.").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Enviar para validação" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Enviar arquivo" })).toBeDisabled();
   });
 
   it("shows the selected classification after a successful upload without claiming backend processing uses it", async () => {
@@ -139,11 +157,27 @@ describe("upload validation helpers and component states", () => {
     });
     fireEvent.click(screen.getByRole("radio", { name: "Edital" }));
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: "Enviar para validação" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar arquivo" }));
 
     expect((await screen.findAllByText("Material recebido para validação")).length).toBeGreaterThan(0);
     expect(screen.getByText("classificação escolhida")).toBeInTheDocument();
     expect(screen.getAllByText("Edital").length).toBeGreaterThan(0);
     expect(screen.getByText(/não aciona processamento automático/i)).toBeInTheDocument();
+  });
+
+  it("blocks the upload form and shows login CTA when there is no active session", async () => {
+    vi.mocked(loadSessionState).mockResolvedValueOnce({
+      status: "unauthenticated",
+      label: "Entrar para continuar",
+      description: "Entre para acessar seus materiais.",
+      source: "backend"
+    });
+
+    render(<MaterialUploadEntryClient />);
+
+    expect(await screen.findByText("Entre para enviar materiais.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
+    expect(screen.queryByLabelText(/Escolha um arquivo/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar arquivo" })).not.toBeInTheDocument();
   });
 });

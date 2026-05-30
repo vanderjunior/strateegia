@@ -34,7 +34,7 @@ export function buildStaticSessionState(): SessionState | null {
     return {
       status: "unsupported",
       label: "Sessão não configurada",
-      description: "Entre para usar dados reais quando a sessão estiver disponível neste ambiente.",
+      description: "Entre para usar dados reais quando a sessão estiver disponível.",
       source: "unsupported"
     };
   }
@@ -46,8 +46,8 @@ export function buildDefaultSessionState(): SessionState {
   return (
     buildStaticSessionState() ?? {
       status: "unauthenticated",
-      label: "Sessão necessária",
-      description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+      label: "Entrar para continuar",
+      description: "Entre para acessar seus materiais.",
       source: "backend"
     }
   );
@@ -74,7 +74,7 @@ async function loadSessionStateUncached(): Promise<SessionState> {
       return {
         status: "mock_mode",
         label: "Modo demonstração",
-        description: "Este ambiente usa dados de demonstração e não consulta a sessão real.",
+        description: "Demonstração disponível para conhecer o fluxo.",
         source: "mock"
       };
     }
@@ -83,7 +83,7 @@ async function loadSessionStateUncached(): Promise<SessionState> {
       return {
         status: "unsupported",
         label: "Sessão não configurada",
-        description: "Entre para usar dados reais quando a sessão estiver disponível neste ambiente.",
+        description: "Entre para usar dados reais quando a sessão estiver disponível.",
         source: "unsupported"
       };
     }
@@ -91,25 +91,25 @@ async function loadSessionStateUncached(): Promise<SessionState> {
     if (result.error.code === "backend_offline" || result.error.code === "network_error" || result.error.code === "timeout") {
       return {
         status: "backend_offline",
-        label: "Backend offline",
-        description: "Não foi possível confirmar a sessão agora. Enquanto isso, o painel usa dados de demonstração.",
+        label: "Dados indisponíveis",
+        description: "Não foi possível confirmar a sessão agora.",
         source: "offline"
       };
     }
 
     return {
       status: "unauthenticated",
-      label: "Sessão necessária",
-      description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+      label: "Entrar para continuar",
+      description: "Entre para acessar seus materiais.",
       source: "backend"
     };
   }
 
   if (!result.data.authenticated || !result.data.user) {
     return {
-      status: "unauthenticated",
-      label: "Sessão necessária",
-      description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+    status: "unauthenticated",
+    label: "Entrar para continuar",
+    description: "Entre para acessar seus materiais.",
       source: "backend"
     };
   }
@@ -117,7 +117,7 @@ async function loadSessionStateUncached(): Promise<SessionState> {
   return {
     status: "authenticated",
     label: "Sessão ativa",
-    description: "Dados reais podem ser consultados nas áreas protegidas sem alterar seu progresso automaticamente.",
+    description: "Você está conectado.",
     source: "backend",
     userId: result.data.user.user_id ?? undefined,
     userLabel: userLabelForSession(result.data.user)

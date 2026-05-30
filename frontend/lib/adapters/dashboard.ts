@@ -30,8 +30,7 @@ function baseConnection(
     state: "mock",
     source: "mock",
     title: "Dados de demonstração ativos",
-    detail:
-      "O painel permanece utilizável sem backend e exibe apenas o recorte auditado das capacidades.",
+    detail: "O painel permanece utilizável como orientação de demonstração.",
     ...overrides
   };
 }

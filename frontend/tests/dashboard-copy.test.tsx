@@ -137,8 +137,8 @@ describe("dashboard product language", () => {
     expect(screen.queryByText(/Questões candidatas/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Simulado em preparação/i)).not.toBeInTheDocument();
 
-    expect(screen.queryByText(/Backend offline/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Não foi possível conectar ao backend/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Dados indisponíveis/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Não foi possível carregar os dados agora/i)).not.toBeInTheDocument();
   });
 
   it("shows next-step guidance instead of a concrete study session when no real edital exists", async () => {

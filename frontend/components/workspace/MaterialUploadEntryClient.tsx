@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { MATERIAL_TYPE_OPTIONS, materialTypeLabel, uploadMaterialFile } from "@/lib/api/documents";
 import { getApiConfig } from "@/lib/api/config";
 import { sourceLabel } from "@/lib/adapters/capabilities";
+import { buildDefaultSessionState, loadSessionState } from "@/lib/adapters/session";
 import type {
   BackendConnectionInfo,
   UploadEntryState,
@@ -40,22 +41,22 @@ function buildConnection(): BackendConnectionInfo {
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Este fluxo segue em demonstração local neste ambiente. Nenhum arquivo será enviado."
+      detail: "Você pode conhecer o fluxo sem enviar arquivos reais."
     };
   }
   if (!config.baseUrl) {
     return {
       state: "unsupported",
       source: "unsupported",
-      title: "Painel em validação",
-      detail: "O envio real não está disponível neste ambiente. A validação local continua acessível."
+      title: "Envio indisponível",
+      detail: "O envio real não está disponível agora."
     };
   }
   return {
     state: "connected",
     source: "backend",
-    title: "Envio real disponível",
-    detail: "O envio usa a entrada segura de materiais, com validação local e confirmação obrigatória."
+    title: "Envio disponível",
+    detail: "Envie um PDF, TXT ou Markdown para guardar na sua biblioteca."
   };
 }
 
@@ -79,6 +80,8 @@ function buildMockResult(file: File, materialType: MaterialType): UploadMaterial
 
 export function MaterialUploadEntryClient() {
   const connection = buildConnection();
+  const [sessionState, setSessionState] = useState(() => buildDefaultSessionState());
+  const [sessionReady, setSessionReady] = useState(() => buildDefaultSessionState().status === "authenticated");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedIntentId, setSelectedIntentId] = useState<MaterialType | "">("");
   const [confirmationChecked, setConfirmationChecked] = useState(false);
@@ -86,8 +89,21 @@ export function MaterialUploadEntryClient() {
   const [entryState, setEntryState] = useState<UploadEntryState>(
     connection.source === "backend" ? "idle" : connection.source === "mock" ? "mock_only" : "endpoint_unavailable"
   );
-  const [validationMessage, setValidationMessage] = useState("Aguardando validação");
+  const [validationMessage, setValidationMessage] = useState("Aguardando envio");
   const [result, setResult] = useState<UploadMaterialResult | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void loadSessionState({ refresh: true }).then((nextState) => {
+      if (active) {
+        setSessionState(nextState);
+        setSessionReady(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function handleFileChange(file: File | null) {
     setSelectedFile(file);
@@ -98,7 +114,7 @@ export function MaterialUploadEntryClient() {
     if (!file) {
       setValidationState("idle");
       setEntryState(connection.source === "backend" ? "idle" : connection.source === "mock" ? "mock_only" : "endpoint_unavailable");
-      setValidationMessage("Aguardando validação");
+      setValidationMessage("Aguardando envio");
       return;
     }
 
@@ -143,7 +159,7 @@ export function MaterialUploadEntryClient() {
     }
 
     setEntryState("sending");
-    setValidationMessage("Enviando arquivo para validação.");
+    setValidationMessage("Enviando arquivo.");
     const uploadResult = await uploadMaterialFile(selectedFile, selectedIntentId);
 
     if (!uploadResult.ok) {
@@ -175,23 +191,25 @@ export function MaterialUploadEntryClient() {
 
     setEntryState("received");
     setResult(uploadResult.data);
-    setValidationMessage("Material recebido para validação.");
+    setValidationMessage("Arquivo recebido.");
   }
 
+  const uploadBlocked = connection.source === "backend" && (!sessionReady || sessionState.status !== "authenticated");
   const modeLabel =
     connection.source === "backend"
-      ? "Upload controlado"
+      ? "Envio seguro"
       : connection.source === "mock"
         ? "Dados de demonstração"
-        : "Painel em validação";
+        : "Envio indisponível";
   const submitLabel =
     connection.source === "backend"
-      ? "Enviar para validação"
+      ? "Enviar arquivo"
       : connection.source === "mock"
         ? "Simular envio em demonstração"
         : "Configuração necessária";
 
   const buttonDisabled =
+    uploadBlocked ||
     !selectedFile ||
     validationState === "invalid_size" ||
     validationState === "invalid_type" ||
@@ -200,7 +218,7 @@ export function MaterialUploadEntryClient() {
     !confirmationChecked ||
     !selectedIntentId;
   const showAuthGuidance = validationMessage === "Sessão necessária para enviar material.";
-  const showOfflineGuidance = validationMessage === "Não foi possível conectar ao backend.";
+  const showOfflineGuidance = validationMessage === "Não foi possível carregar os dados agora.";
   const showMissingBaseGuidance = validationMessage === "Envio real indisponível neste ambiente.";
   const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
   const returnedExtension = result ? extensionForFileName(result.filename) || "sem extensão" : "";
@@ -211,10 +229,40 @@ export function MaterialUploadEntryClient() {
     <div className="space-y-8">
       <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>
 
+      {uploadBlocked ? (
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+          <div className="section-kicker">entrar</div>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.04]">
+            {sessionReady ? "Entre para enviar materiais." : "Preparando envio."}
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            {sessionReady
+              ? "O envio fica disponível depois que você entra na sua conta."
+              : "Estamos verificando se você já entrou na aplicação."}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {sessionReady ? (
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-xl border border-[rgba(201,169,110,0.24)] bg-[rgba(201,169,110,0.10)] px-5 py-3 text-sm text-ink transition hover:bg-[rgba(201,169,110,0.16)]"
+              >
+                Entrar
+              </Link>
+            ) : null}
+            <Link
+              href="/materials"
+              className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
+            >
+              Voltar para materiais
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <>
       <WorkspaceSourcePanel
         eyebrow="enviar material"
         title="Enviar material"
-        subtitle="Adicione um PDF, TXT ou Markdown (.md) para validação inicial. Esta etapa segue controlada e sujeita a revisão."
+        subtitle="Adicione um PDF, TXT ou Markdown (.md) para organizar seus materiais de estudo."
         connection={connection}
       />
 
@@ -237,7 +285,7 @@ export function MaterialUploadEntryClient() {
 
         <Card className="min-w-0">
           <div className="section-kicker">confirmação</div>
-          <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão antes do envio</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Antes do envio</CardTitle>
           <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.14)] bg-[rgba(201,169,110,0.06)] p-4">
             <fieldset>
               <legend className="break-words text-sm font-medium text-ink">O que você está enviando?</legend>
@@ -293,7 +341,6 @@ export function MaterialUploadEntryClient() {
             </label>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Badge className={sourceBadgeClass(connection.source)}>{modeLabel}</Badge>
             <Badge className={productStatusClass(validationMessage)}>{validationMessage}</Badge>
             {selectedIntentLabel ? <Badge>{selectedIntentLabel}</Badge> : null}
           </div>
@@ -307,15 +354,15 @@ export function MaterialUploadEntryClient() {
           ) : null}
           {showOfflineGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              O envio real depende do serviço de materiais disponível. Enquanto isso, a validação local continua acessível.
+              O envio real depende do serviço de materiais disponível.
             </p>
           ) : null}
           {showLocalSetup ? (
             <div className="mt-4 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">consulta local</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">envio indisponível</div>
               <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
                 <li>• O envio real depende do serviço de materiais disponível.</li>
-                <li>• O modo de demonstração continua acessível sem persistir arquivos.</li>
+                <li>• A demonstração continua acessível sem persistir arquivos.</li>
                 <li>• A confirmação continua obrigatória antes de qualquer envio.</li>
               </ul>
             </div>
@@ -406,19 +453,21 @@ export function MaterialUploadEntryClient() {
                   href={`/materials/${result.documentId}`}
                   className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
                 >
-                  Ver material
+                  Ver detalhes
                 </Link>
                 <Link
                   href={`/pipeline/${result.documentId}`}
                   className="inline-flex items-center justify-center rounded-xl border border-[rgba(168,184,196,0.12)] bg-transparent px-5 py-3 text-sm text-silver transition hover:border-[rgba(201,169,110,0.24)] hover:text-ink"
                 >
-                  Ver pipeline
+                  Ver acompanhamento
                 </Link>
               </>
             ) : null}
           </div>
         </Card>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

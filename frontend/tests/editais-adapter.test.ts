@@ -140,20 +140,20 @@ describe("editais adapter", () => {
     expect(viewModel.items.some((item) => item.source === "mock")).toBe(true);
   });
 
-  it("shows backend offline and keeps safe fallback when the backend is unreachable", async () => {
+  it("shows unavailable data and keeps safe fallback when the backend is unreachable", async () => {
     vi.mocked(fetchUserEditaisList).mockResolvedValue({
       ok: false,
       status: 502,
       source: "offline",
       error: {
         code: "backend_offline",
-        message: "Não foi possível conectar ao backend."
+        message: "Não foi possível carregar os dados agora."
       }
     });
 
     const viewModel = await loadEditaisWorkspaceViewModel();
 
-    expect(viewModel.connection.title).toBe("Backend offline");
+    expect(viewModel.connection.title).toBe("Dados indisponíveis");
     expect(viewModel.items.length).toBeGreaterThan(0);
     expect(viewModel.items.some((item) => item.source === "mock")).toBe(true);
   });

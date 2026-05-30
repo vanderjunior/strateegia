@@ -46,7 +46,7 @@ function baseConnection(overrides: Partial<BackendConnectionInfo> = {}): Backend
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Consulta local exibida até existir leitura segura de editais para esta área.",
+    detail: "Demonstração exibida até existir leitura segura de editais para esta área.",
     ...overrides
   };
 }
@@ -120,7 +120,7 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Painel em validação",
+      title: "Demonstração",
       detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
@@ -129,16 +129,16 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend offline",
-      detail: "Não foi possível consultar o backend neste momento. Os dados de demonstração continuam disponíveis.",
+      title: "Dados indisponíveis",
+      detail: "Não foi possível carregar dados reais agora. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
   return baseConnection({
     state: "mock",
     source,
-    title: "Consulta local",
-    detail: "Consulta local exibida até existir uma leitura segura para esta área.",
+    title: "Dados de demonstração",
+    detail: "Demonstração exibida até existir uma leitura segura para esta área.",
     endpoint
   });
 }
@@ -273,7 +273,7 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "A consulta local continua acessível enquanto a leitura protegida do backend não está disponível neste ambiente."
+        detail: "A demonstração continua acessível enquanto a leitura protegida não está disponível."
       })
     };
   }
@@ -347,7 +347,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "A consulta local continua acessível enquanto este edital ainda não pode ser lido pelo backend neste ambiente."
+        detail: "A demonstração continua acessível enquanto este edital ainda não pode ser lido pela leitura protegida."
       }),
       detail: fallback
     };

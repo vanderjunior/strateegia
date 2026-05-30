@@ -43,8 +43,8 @@ export const landingFeatures = [
   {
     title: "PDFs textuais e materiais",
     description:
-      "Leitura de PDFs textuais, TXT e Markdown para validação inicial e revisão controlada.",
-    badge: "upload controlado"
+      "Leitura de PDFs textuais, TXT e Markdown para organização inicial.",
+    badge: "envio seguro"
   },
   {
     title: "Editais e bibliografia",
@@ -420,7 +420,7 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este material."
+      detail: "Demonstração exibida até existir leitura segura para este material."
     },
     documentId: "material-arte-naval",
     title: "PSCPP bibliografia - Arte Naval.pdf",
@@ -442,7 +442,7 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este material."
+      detail: "Demonstração exibida até existir leitura segura para este material."
     },
     documentId: "material-roteiro-porto",
     title: "Roteiro escaneado - trecho porto.pdf",
@@ -456,7 +456,7 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
       { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material já está registrado." },
       { id: "extracted", label: "Texto extraído", statusLabel: "OCR necessário", tone: "warning", detail: "A leitura textual ainda não está pronta." },
       { id: "chunked", label: "Segmentado", statusLabel: "Validação pendente", tone: "pending", detail: "A segmentação depende de validação do OCR." },
-      { id: "review", label: "Pronto para revisão", statusLabel: "OCR em validação", tone: "warning", detail: "Arquivo mantido em revisão controlada." }
+      { id: "review", label: "Pronto para revisão", statusLabel: "OCR em validação", tone: "warning", detail: "Arquivo mantido para conferência." }
     ]
   }
 };
@@ -1277,9 +1277,9 @@ export const onboardingSteps: OnboardingStepItem[] = [
     id: "onboarding-step-1",
     stepNumber: 1,
     title: "Entre na sua conta",
-    description: "Use a sessão interna para carregar materiais e manter seus dados separados dos exemplos.",
-    statusLabel: "Sessão local",
-    note: "As sessões deste ambiente são locais; depois de reiniciar o backend, entre novamente.",
+    description: "Entre para carregar seus materiais e manter seus dados separados dos exemplos.",
+    statusLabel: "Conta",
+    note: "Se precisar, entre novamente para continuar.",
     cautionLabel: "Sem sessão ativa, as telas evitam tratar exemplos como dados reais.",
     primaryLink: {
       label: "Entrar",
@@ -1393,7 +1393,7 @@ export const onboardingViewModelMock: OnboardingViewModel = {
     }
   ],
   readyHighlights: [
-    "Login, upload e materiais reais já estão prontos para staging interno.",
+    "Login, envio de arquivos e materiais reais já estão disponíveis.",
     "A classificação por tipo ajuda a separar edital, materiais de estudo e referências.",
     "PSCPP e estudo guiado ficam como referência enquanto não houver edital analisado."
   ],

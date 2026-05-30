@@ -25,7 +25,7 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/login")) {
     return {
       eyebrow: "mentorium / acesso",
-      title: "Entrada interna"
+      title: "Entrar"
     };
   }
   if (pathname.startsWith("/onboarding")) {
@@ -37,9 +37,7 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/materials") || pathname.startsWith("/pipeline")) {
     return {
       eyebrow: pathname.startsWith("/pipeline") ? "mentorium / pipeline" : "mentorium / materiais",
-      title: pathname.startsWith("/pipeline")
-        ? "Fluxo documental em revisão"
-        : "Materiais em leitura controlada"
+      title: pathname.startsWith("/pipeline") ? "Acompanhamento do material" : "Materiais"
     };
   }
   if (pathname.startsWith("/editais")) {

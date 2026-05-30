@@ -42,7 +42,7 @@ export const statusCopy: Record<CapabilityStatus, UserFacingStatusCopy> = {
     tone: "muted"
   },
   unclear_needs_follow_up: {
-    label: "Painel em validação",
+    label: "Demonstração",
     tone: "warning"
   }
 };

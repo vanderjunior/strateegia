@@ -41,7 +41,7 @@ export async function fetchCurrentSession(): Promise<ApiResult<BackendCurrentSes
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar o acesso agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure("unsupported", "missing_base_url", "Sessão real não configurada neste ambiente.", 503);
@@ -101,7 +101,7 @@ export async function loginWithPassword({
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar o acesso agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure("unsupported", "missing_base_url", "Sessão não configurada neste ambiente.", 503);
@@ -128,7 +128,7 @@ export async function loginWithPassword({
       return makeApiFailure("backend", "invalid_json", "Backend returned invalid JSON.", response.status);
     }
   } catch {
-    return makeApiFailure("offline", "network_error", "Não foi possível conectar ao backend.");
+    return makeApiFailure("offline", "network_error", "Não foi possível carregar o acesso agora.");
   }
 }
 
@@ -154,7 +154,7 @@ export async function logoutCurrentSession(): Promise<ApiResult<BackendCurrentSe
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar o acesso agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure("unsupported", "missing_base_url", "Sessão não configurada neste ambiente.", 503);
@@ -175,6 +175,6 @@ export async function logoutCurrentSession(): Promise<ApiResult<BackendCurrentSe
       return makeApiFailure("backend", "invalid_json", "Backend returned invalid JSON.", response.status);
     }
   } catch {
-    return makeApiFailure("offline", "network_error", "Não foi possível conectar ao backend.");
+    return makeApiFailure("offline", "network_error", "Não foi possível carregar o acesso agora.");
   }
 }

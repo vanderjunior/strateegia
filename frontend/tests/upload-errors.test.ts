@@ -64,7 +64,7 @@ describe("upload error classification", () => {
     [415, "unsupported_file_type", "Tipo de arquivo não aceito."],
     [400, "validation_failed", "Arquivo não pôde ser validado."],
     [422, "validation_failed", "Arquivo não pôde ser validado."],
-    [502, "backend_offline", "Não foi possível conectar ao backend."]
+    [502, "backend_offline", "Não foi possível carregar os dados agora."]
   ])("maps HTTP %i to %s", async (status, code, message) => {
     vi.stubGlobal(
       "fetch",
@@ -96,6 +96,6 @@ describe("upload error classification", () => {
       throw new Error("expected failure");
     }
     expect(result.error.code).toBe("backend_offline");
-    expect(result.error.message).toBe("Não foi possível conectar ao backend.");
+    expect(result.error.message).toBe("Não foi possível carregar os dados agora.");
   });
 });

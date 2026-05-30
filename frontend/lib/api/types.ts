@@ -130,7 +130,7 @@ export type SessionStateStatus =
 
 export interface SessionState {
   status: SessionStateStatus;
-  label: "Sessão ativa" | "Sessão necessária" | "Backend offline" | "Modo demonstração" | "Sessão não configurada";
+  label: "Sessão ativa" | "Entrar para continuar" | "Dados indisponíveis" | "Modo demonstração" | "Sessão não configurada";
   description: string;
   source: ApiSource;
   userId?: string;
@@ -146,7 +146,7 @@ export type ProtectedReadMode =
 
 export interface ProtectedReadPolicy {
   mode: ProtectedReadMode;
-  label: "Dados reais da sessão" | "Requer sessão" | "Modo demonstração" | "Dados indisponíveis" | "Consulta local";
+  label: "Dados reais da sessão" | "Requer sessão" | "Modo demonstração" | "Dados indisponíveis" | "Demonstração";
   description: string;
   badgeTone: "positive" | "warning" | "neutral" | "muted";
   canUseRealData: boolean;

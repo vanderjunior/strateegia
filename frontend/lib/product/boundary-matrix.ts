@@ -209,7 +209,7 @@ export const productBoundaryMatrix: ProductBoundaryEntry[] = [
     mentorVisibility: "mentor_visible",
     adminVisibility: "admin_visible",
     developerVisibility: "developer_only",
-    safeStatusLabels: ["Protegido", "Revisão controlada"],
+    safeStatusLabels: ["Protegido", "Conferência pendente"],
     avoidTerms: ["boundary"],
     recommendedUiStatus: "Protegido",
     actionMode: "hidden"

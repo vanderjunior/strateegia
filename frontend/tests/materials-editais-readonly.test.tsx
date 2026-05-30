@@ -38,7 +38,7 @@ vi.mock("@/lib/adapters/materials", async () => {
         state: "mock",
         source: "mock",
         title: "Dados de demonstração",
-        detail: "Consulta local exibida até existir leitura segura do backend para este material."
+        detail: "Demonstração exibida até existir leitura segura para este material."
       },
       detail: actual.buildMockMaterialDetail(materialId)
     }))
@@ -58,7 +58,7 @@ vi.mock("@/lib/adapters/editais", async () => {
         state: "mock",
         source: "mock",
         title: "Dados de demonstração",
-        detail: "Consulta local exibida até existir leitura segura do backend para este edital."
+        detail: "Demonstração exibida até existir leitura segura para este edital."
       },
       detail: actual.buildMockEditalDetail(editalId)
     }))
@@ -99,17 +99,18 @@ describe("materials, editais, and upload read-only invariants", () => {
   it("keeps materials workspace on product-friendly read-only CTAs", async () => {
     render(<MaterialsReadOnlyClient />);
 
-    expect((await screen.findAllByText("Ver material")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Ver detalhes")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Enviar material").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Texto extraído").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Pronto para revisão").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("OCR necessário").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Disponível para consulta").length).toBeGreaterThan(0);
     expect(screen.getByText("Materiais por classificação")).toBeInTheDocument();
-    expect(screen.getByText("Editais enviados")).toBeInTheDocument();
-    expect(screen.getByText("Materiais de estudo enviados")).toBeInTheDocument();
-    expect(screen.getByText("Não classificados enviados")).toBeInTheDocument();
+    expect(screen.getAllByText("Editais").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Materiais de estudo").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Tipo não informado").length).toBeGreaterThan(0);
     expect(screen.getByText("Envie um edital para orientar o caminho de estudo.")).toBeInTheDocument();
     expect(screen.getByText("Requer sessão")).toBeInTheDocument();
+    expect(screen.queryByText(/0 seções/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Gaps relacionados: 0/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Consulta local/i)).not.toBeInTheDocument();
 
     expect(screen.queryByText("Processar")).not.toBeInTheDocument();
     expect(screen.queryByText("Reprocessar")).not.toBeInTheDocument();
@@ -141,10 +142,11 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
   });
 
-  it("keeps upload entry free of process and generation controls", () => {
+  it("keeps upload entry gated and free of process and generation controls without a session", async () => {
     render(<MaterialUploadEntryClient />);
 
-    expect(screen.getByRole("button", { name: "Enviar para validação" })).toBeInTheDocument();
+    expect(await screen.findByText("Entre para enviar materiais.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar arquivo" })).not.toBeInTheDocument();
     expect(screen.queryByText("Processar")).not.toBeInTheDocument();
     expect(screen.queryByText("Reprocessar")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();

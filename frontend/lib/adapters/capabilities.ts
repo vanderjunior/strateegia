@@ -30,9 +30,9 @@ export function sourceLabel(source: ApiSource): string {
     case "backend":
       return "Dados reais";
     case "offline":
-      return "Consulta local";
+      return "Demonstração";
     case "unsupported":
-      return "Painel em validação";
+      return "Demonstração";
     default:
       return "Dados de demonstração";
   }

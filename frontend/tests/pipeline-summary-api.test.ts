@@ -38,7 +38,7 @@ describe("pipeline summary API wrapper", () => {
     [401, "unauthorized", "Sessão necessária."],
     [403, "unauthorized", "Sessão necessária."],
     [404, "not_found", "Este conteúdo não está disponível nesta sessão."],
-    [502, "backend_offline", "Não foi possível conectar ao backend."],
+    [502, "backend_offline", "Não foi possível carregar os dados agora."],
     [503, "missing_base_url", "O resumo real do pipeline não está configurado neste ambiente."]
   ])("maps pipeline summary HTTP %i to %s", async (status, code, message) => {
     vi.stubGlobal(

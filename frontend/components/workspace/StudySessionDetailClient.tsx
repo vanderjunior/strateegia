@@ -26,7 +26,7 @@ function buildFallback(sessionId: string): { connection: BackendConnectionInfo; 
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Sessão exibida por consulta local auditada enquanto a leitura do perfil PSCPP no backend não é necessária para este detalhe."
+      detail: "Orientação de demonstração exibida enquanto não há plano baseado no seu edital."
     },
     detail: buildMockStudySessionDetail(sessionId)
   };

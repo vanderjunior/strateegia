@@ -31,7 +31,7 @@ function baseConnection(overrides: Partial<BackendConnectionInfo> = {}): Backend
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Consulta local exibida até existir leitura segura da listagem real.",
+    detail: "Demonstração exibida até existir leitura segura da listagem real.",
     ...overrides
   };
 }
@@ -85,7 +85,7 @@ const MATERIAL_TYPE_GROUPS: { type: MaterialType; label: string }[] = [
   { type: "bibliography", label: "Bibliografia / referência" },
   { type: "note", label: "Anotações / resumos" },
   { type: "other", label: "Outros" },
-  { type: "unknown", label: "Não classificados" }
+  { type: "unknown", label: "Tipo não informado" }
 ];
 
 function buildMaterialTypeGroups(items: MaterialListItem[]): MaterialTypeGroup[] {
@@ -182,7 +182,7 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "unsupported",
       source,
-      title: "Painel em validação",
+      title: "Demonstração",
       detail: "Esta área segue em validação neste ambiente. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
@@ -191,16 +191,16 @@ function connectionFromFailure(source: ApiSource, message: string, endpoint: str
     return baseConnection({
       state: "offline",
       source,
-      title: "Backend offline",
-      detail: "Não foi possível consultar o backend neste momento. Os dados de demonstração continuam disponíveis.",
+      title: "Dados indisponíveis",
+      detail: "Não foi possível carregar dados reais agora. Os dados de demonstração continuam disponíveis.",
       endpoint
     });
   }
   return baseConnection({
     state: "mock",
     source,
-    title: "Consulta local",
-    detail: "Consulta local exibida até existir uma leitura segura para esta área.",
+    title: "Dados de demonstração",
+    detail: "Demonstração exibida até existir uma leitura segura para esta área.",
     endpoint
   });
 }
@@ -331,7 +331,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     return {
       ...fallback,
       connection: baseConnection({
-        detail: "A consulta local continua acessível enquanto a leitura protegida do backend não está disponível neste ambiente."
+        detail: "A demonstração continua acessível enquanto a leitura protegida não está disponível."
       })
     };
   }
@@ -366,7 +366,7 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
       source: "backend",
       title: "Dados reais da sessão",
       detail:
-        "A listagem abaixo mostra os materiais recentes da sua sessão. O fallback auditado continua disponível para campos ainda não entregues pelo backend.",
+        "A listagem abaixo mostra os materiais recentes da sua sessão.",
       endpoint: "/api/materials"
     },
     summary: workspaceSummary(
@@ -404,7 +404,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
   if (!config.baseUrl) {
     return {
       connection: baseConnection({
-        detail: "A consulta local continua acessível enquanto este material ainda não pode ser lido pelo backend neste ambiente."
+        detail: "A demonstração continua acessível enquanto este material ainda não pode ser lido pela leitura protegida."
       }),
       detail: fallback
     };
@@ -455,7 +455,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
       state: "connected",
       source: "backend",
       title: "Dados reais da sessão",
-      detail: "Este resumo do material usa metadados seguros da sua sessão e preserva a revisão controlada.",
+      detail: "Este resumo do material usa metadados seguros da sua sessão.",
       endpoint: `/api/materials/${materialId}/summary`
     },
     detail

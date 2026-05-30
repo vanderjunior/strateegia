@@ -43,7 +43,7 @@ export async function fetchUserEditaisList(): Promise<ApiResult<BackendProtected
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure(
@@ -107,7 +107,7 @@ export async function fetchEditalSummary(editalId: string): Promise<ApiResult<Ba
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure(

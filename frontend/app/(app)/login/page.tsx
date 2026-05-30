@@ -14,7 +14,7 @@ function messageForError(code: string): string {
     return "Credenciais inválidas.";
   }
   if (code === "backend_offline" || code === "network_error") {
-    return "Não foi possível conectar ao backend.";
+    return "Não foi possível carregar o acesso agora.";
   }
   if (code === "missing_base_url") {
     return "Sessão não configurada.";
@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [message, setMessage] = useState("Use esta entrada apenas para acesso interno de staging.");
+  const [message, setMessage] = useState("Entre para acessar seus materiais e orientações.");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,11 +60,10 @@ export default function LoginPage() {
       </Link>
 
       <Card>
-        <div className="section-kicker">acesso interno</div>
+        <div className="section-kicker">acesso</div>
         <CardTitle className="mt-5 text-[2rem]">Entrar</CardTitle>
         <p className="mt-4 text-sm leading-7 text-silver">
-          Use esta tela para acessar dados reais no ambiente interno de staging. Sessões são locais neste
-          ambiente; após reiniciar o backend, entre novamente.
+          Use esta tela para acessar seus materiais, edital e orientações de estudo.
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>

@@ -87,7 +87,7 @@ export async function loadStudySessionWorkspaceViewModel(): Promise<StudySession
       ...fallback,
       connection: sourceConnection(
         "unsupported",
-        "Painel em validação",
+        "Demonstração",
         "O perfil PSCPP não pôde ser confirmado neste ambiente; as sessões seguem em fallback auditado.",
         "unsupported"
       )

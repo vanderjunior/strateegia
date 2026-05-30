@@ -6,8 +6,8 @@ import type { SessionState } from "@/lib/api/types";
 function makeSessionState(overrides: Partial<SessionState>): SessionState {
   return {
     status: "unauthenticated",
-    label: "Sessão necessária",
-    description: "Entre para usar dados reais. Enquanto isso, o painel usa dados de demonstração.",
+    label: "Entrar para continuar",
+    description: "Entre para acessar seus materiais.",
     source: "backend",
     ...overrides
   };
@@ -60,7 +60,7 @@ describe("protected read UX policy", () => {
     const policy = resolveProtectedReadPolicy(
       makeSessionState({
         status: "backend_offline",
-        label: "Backend offline",
+        label: "Dados indisponíveis",
         description: "Não foi possível confirmar a sessão agora.",
         source: "offline"
       })
@@ -82,7 +82,7 @@ describe("protected read UX policy", () => {
     );
 
     expect(policy.mode).toBe("unsupported");
-    expect(policy.label).toBe("Consulta local");
+    expect(policy.label).toBe("Demonstração");
     expect(policy.shouldAttemptProtectedRead).toBe(false);
   });
 

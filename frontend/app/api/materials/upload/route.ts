@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     });
   } catch {
     return NextResponse.json(
-      { detail: "Não foi possível conectar ao backend." },
+      { detail: "Não foi possível enviar o arquivo agora." },
       { status: 502 }
     );
   }

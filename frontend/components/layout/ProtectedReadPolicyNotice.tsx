@@ -51,9 +51,9 @@ export function ProtectedReadPolicyNotice({
               : policy.mode === "requires_session"
                 ? "Dados de demonstração"
                 : policy.mode === "backend_offline"
-                  ? "Consulta local"
+                  ? "Demonstração"
                   : policy.mode === "unsupported"
-                    ? "Painel em validação"
+                    ? "Demonstração"
                     : "Dados de demonstração"}
           </Badge>
         </div>

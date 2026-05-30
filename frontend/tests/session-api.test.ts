@@ -51,7 +51,7 @@ describe("session API wrapper", () => {
   });
 
   it.each([
-    [502, "backend_offline", "Não foi possível conectar ao backend."],
+    [502, "backend_offline", "Não foi possível carregar o acesso agora."],
     [503, "missing_base_url", "Sessão real não configurada neste ambiente."],
     [401, "unauthorized", "Sessão necessária."],
     [403, "unauthorized", "Sessão necessária."]
@@ -146,7 +146,7 @@ describe("session API wrapper", () => {
   it.each([
     [401, "invalid_credentials", "Credenciais inválidas."],
     [422, "validation_failed", "Preencha usuário e senha para entrar."],
-    [502, "backend_offline", "Não foi possível conectar ao backend."],
+    [502, "backend_offline", "Não foi possível carregar o acesso agora."],
     [503, "missing_base_url", "Sessão não configurada neste ambiente."]
   ])("maps login HTTP %i to %s", async (status, code, message) => {
     vi.stubGlobal(

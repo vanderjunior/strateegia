@@ -79,7 +79,7 @@ function buildCycleView(source: ApiSource): PscppCycleViewModel {
       ...pscppCycleViewModelMock,
       connection: sourceConnection(
         "unsupported",
-        "Painel em validação",
+        "Demonstração",
         "Não há endpoint dedicado para o ciclo PSCPP nesta etapa; o guia continua em fallback auditado.",
         "unsupported"
       )
@@ -122,7 +122,7 @@ function buildQuestionsView(source: ApiSource): PscppQuestionsViewModel {
       ...pscppQuestionsViewModelMock,
       connection: sourceConnection(
         "unsupported",
-        "Painel em validação",
+        "Demonstração",
         "Não há endpoint dedicado para orientação de questões PSCPP nesta etapa; a tela permanece em fallback auditado.",
         "unsupported"
       )
@@ -181,7 +181,7 @@ export async function loadPscppWorkspaceViewModel(): Promise<PscppWorkspaceViewM
       ...fallback,
       connection: sourceConnection(
         "unsupported",
-        "Painel em validação",
+        "Demonstração",
         "O endpoint do perfil PSCPP não está disponível neste ambiente; usando fallback auditado.",
         "unsupported"
       )

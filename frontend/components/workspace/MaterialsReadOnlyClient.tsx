@@ -8,13 +8,10 @@ import type { MaterialListItem, MaterialType, MaterialsWorkspaceViewModel } from
 import { buildMockMaterialsWorkspaceViewModel, loadMaterialsWorkspaceViewModel } from "@/lib/adapters/materials";
 import {
   productStatusClass,
-  sourceBadgeClass,
   WorkspaceLink,
-  WorkspaceSourcePanel,
-  WorkspaceSummaryGrid
+  WorkspaceSourcePanel
 } from "@/components/workspace/WorkspaceShared";
 import { Badge } from "@/components/ui/badge";
-import { sourceLabel } from "@/lib/adapters/capabilities";
 import Link from "next/link";
 
 export function MaterialsReadOnlyClient() {
@@ -64,8 +61,6 @@ export function MaterialsReadOnlyClient() {
           </div>
         </div>
       </Card>
-
-      <WorkspaceSummaryGrid items={viewModel.summary} />
 
       {viewModel.items.length ? (
         <>
@@ -131,9 +126,7 @@ export function MaterialsReadOnlyClient() {
                 <div key={group.type} className="space-y-4">
                   <div>
                     <div className="section-kicker">{group.label}</div>
-                    <h2 className="mt-2 font-serif text-[1.9rem] text-ink">
-                      {group.label} enviados
-                    </h2>
+                    <h2 className="mt-2 font-serif text-[1.9rem] text-ink">{group.label}</h2>
                   </div>
                   {group.items.length ? (
                     <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -169,54 +162,41 @@ export function MaterialsReadOnlyClient() {
 }
 
 function MaterialCard({ item }: { item: MaterialListItem }) {
+  const simpleStatus =
+    item.processingStatus === "Material processado" || item.reviewState === "Pronto para revisão"
+      ? "Disponível para consulta"
+      : item.processingStatus === "Recebido para validação"
+        ? "Arquivo recebido"
+        : "Pendente de organização";
+
   return (
     <Card className="flex h-full min-w-0 flex-col">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 max-w-[18rem]">
+        <div className="min-w-0 max-w-[22rem]">
           <div className="section-kicker">material</div>
           <CardTitle className="mt-4 break-words text-[1.55rem] leading-[1.02] sm:text-[1.8rem]">
             {item.title}
           </CardTitle>
         </div>
-        <Badge className={sourceBadgeClass(item.source)}>{sourceLabel(item.source)}</Badge>
       </div>
       <div className="mt-5 flex flex-wrap gap-2">
-        <Badge className={productStatusClass(item.processingStatus)}>{item.processingStatus}</Badge>
-        <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
-          {item.typeLabel}
-        </Badge>
         {item.materialTypeLabel ? (
           <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
             {item.materialTypeLabel}
           </Badge>
         ) : null}
-        <Badge className={productStatusClass(item.reviewState)}>{item.reviewState}</Badge>
-      </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <div className="min-w-0 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">extração</div>
-          <p className="mt-2 text-sm text-ink">{item.extractionStatus}</p>
-        </div>
-        <div className="min-w-0 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">estrutura</div>
-          <p className="mt-2 break-words text-sm text-ink">
-            {item.sectionsCount ?? 0} seções · {item.chunksCount ?? 0} trechos
-          </p>
-        </div>
+        <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
+          {item.typeLabel}
+        </Badge>
+        <Badge className={productStatusClass(simpleStatus)}>{simpleStatus}</Badge>
       </div>
       <p className="mt-5 text-sm leading-7 text-silver">
-        O material é lido, organizado em seções seguras e preparado para revisão.
-      </p>
-      <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-        {item.processingStatus === "OCR necessário"
-          ? "A leitura de PDFs escaneados está em validação e pode exigir revisão."
-          : `Gaps relacionados: ${item.relatedGaps}.`}
+        {item.materialType === "edital"
+          ? "Edital enviado. A análise ainda não foi executada automaticamente."
+          : "Material salvo na sua biblioteca para consulta."}
       </p>
       <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <span className="max-w-[18rem] text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
-          Consulta local e revisão controlada.
-        </span>
-        <WorkspaceLink href={`/materials/${item.id}`}>Ver material</WorkspaceLink>
+        <WorkspaceLink href={`/materials/${item.id}`}>Ver detalhes</WorkspaceLink>
       </div>
     </Card>
   );

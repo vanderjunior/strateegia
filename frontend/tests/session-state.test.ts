@@ -50,7 +50,7 @@ describe("session state adapter", () => {
     expect(result.userLabel).toBe("Cap. Silva");
   });
 
-  it("maps unauthenticated backend responses to Sessão necessária", async () => {
+  it("maps unauthenticated backend responses to Entrar para continuar", async () => {
     vi.mocked(fetchCurrentSession).mockResolvedValue({
       ok: true,
       status: 200,
@@ -64,25 +64,25 @@ describe("session state adapter", () => {
     const result = await loadSessionState({ refresh: true });
 
     expect(result.status).toBe("unauthenticated");
-    expect(result.label).toBe("Sessão necessária");
-    expect(result.description).toContain("dados de demonstração");
+    expect(result.label).toBe("Entrar para continuar");
+    expect(result.description).toContain("materiais");
   });
 
-  it("maps network failures to Backend offline", async () => {
+  it("maps network failures to Dados indisponíveis", async () => {
     vi.mocked(fetchCurrentSession).mockResolvedValue({
       ok: false,
       status: 502,
       source: "offline",
       error: {
         code: "backend_offline",
-        message: "Não foi possível conectar ao backend."
+        message: "Não foi possível carregar o acesso agora."
       }
     });
 
     const result = await loadSessionState({ refresh: true });
 
     expect(result.status).toBe("backend_offline");
-    expect(result.label).toBe("Backend offline");
+    expect(result.label).toBe("Dados indisponíveis");
   });
 
   it("maps mock mode from config without exposing sensitive auth internals", () => {

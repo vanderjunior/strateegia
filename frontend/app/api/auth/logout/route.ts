@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     });
   } catch {
     return NextResponse.json(
-      { detail: "Não foi possível conectar ao backend." },
+      { detail: "Não foi possível carregar o acesso agora." },
       { status: 502 }
     );
   }

@@ -31,11 +31,11 @@ function stateLabel(state: BackendConnectionInfo["state"]): string {
     case "offline":
       return "Dados reais indisponíveis";
     case "unsupported":
-      return "Painel em validação";
+      return "Demonstração";
     case "error":
       return "Revisão necessária";
     default:
-      return "Consulta local";
+      return "Demonstração";
   }
 }
 

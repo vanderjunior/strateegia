@@ -20,7 +20,7 @@ function UnauthenticatedDashboardPanel() {
     <div className="space-y-6">
       <SessionStatusNotice variant="dashboard" />
       <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
-        <Badge>acesso interno</Badge>
+        <Badge>entrar</Badge>
         <CardTitle className="mt-5 max-w-3xl break-words text-[2rem] leading-[1.02] sm:text-[2.35rem]">
           Entre para ver seus materiais, edital e caminho de estudo.
         </CardTitle>

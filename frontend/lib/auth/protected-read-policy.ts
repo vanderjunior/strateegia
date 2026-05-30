@@ -49,7 +49,7 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
         mode: "backend_offline",
         label: "Dados indisponíveis",
         description:
-          "Não foi possível carregar dados reais agora. A consulta local continua disponível e isso não indica perda de dados.",
+          "Não foi possível carregar dados reais agora. A demonstração continua disponível e isso não indica perda de dados.",
         badgeTone: "warning",
         canUseRealData: false,
         shouldShowDemoFallback: true,
@@ -61,16 +61,16 @@ export function resolveProtectedReadPolicy(sessionState: SessionState): Protecte
     default:
       return {
         mode: "unsupported",
-        label: "Consulta local",
+        label: "Demonstração",
         description:
-          "A sessão real ainda não está configurada neste ambiente. A área segue acessível com consulta local e dados de demonstração.",
+          "A área segue acessível com dados de demonstração.",
         badgeTone: "muted",
         canUseRealData: false,
         shouldShowDemoFallback: true,
         shouldShowSessionRequired: false,
         shouldAttemptProtectedRead: false,
         recommendedUserCopy:
-          "A consulta local continua disponível enquanto a leitura protegida desta área ainda não está configurada."
+          "A demonstração continua disponível enquanto a leitura protegida desta área ainda não está configurada."
       };
   }
 }

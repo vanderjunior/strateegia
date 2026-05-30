@@ -51,7 +51,7 @@ export async function fetchPipelineSummary(documentId: string): Promise<ApiResul
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure(

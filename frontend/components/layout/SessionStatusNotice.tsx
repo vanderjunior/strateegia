@@ -28,23 +28,30 @@ function statusBadgeClass(status: SessionState["status"]): string {
   }
 }
 
-function statusSourceLabel(sessionState: SessionState): string {
-  switch (sessionState.status) {
-    case "authenticated":
-      return "Dados reais";
-    case "unauthenticated":
-      return "Requer sessão";
-    case "backend_offline":
-      return "Consulta local";
-    case "unsupported":
-      return "Painel em validação";
-    default:
-      return "Dados de demonstração";
+function displaySessionLabel(sessionState: SessionState): string {
+  if (sessionState.status === "backend_offline") {
+    return "Dados indisponíveis";
   }
+  if (sessionState.status === "unauthenticated") {
+    return "Entrar para continuar";
+  }
+  return sessionState.label;
 }
 
-function displaySessionLabel(sessionState: SessionState): string {
-  return sessionState.status === "backend_offline" ? "Dados indisponíveis" : sessionState.label;
+function displaySessionDescription(sessionState: SessionState): string {
+  if (sessionState.status === "authenticated") {
+    return sessionState.userLabel ? `Olá, ${sessionState.userLabel}.` : "Você está conectado.";
+  }
+  if (sessionState.status === "unauthenticated") {
+    return "Entre para acessar seus materiais e orientações.";
+  }
+  if (sessionState.status === "backend_offline") {
+    return "Dados reais não carregados agora.";
+  }
+  if (sessionState.status === "mock_mode") {
+    return "Demonstração disponível para conhecer o fluxo.";
+  }
+  return "Entre quando a sessão estiver disponível.";
 }
 
 export function SessionStatusNotice({
@@ -128,26 +135,13 @@ export function SessionStatusNotice({
       <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">
-              sessão da aplicação
-            </div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-silver">sua conta</div>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.72)]">
-              {sessionState.status === "authenticated"
-                ? "A sessão atual permite consultar dados reais nas áreas protegidas, sem alterar seu progresso automaticamente."
-                : sessionState.status === "unauthenticated"
-                  ? "Para usar dados reais, será necessário entrar na aplicação. Enquanto isso, o painel usa dados de demonstração."
-                  : sessionState.status === "backend_offline"
-                    ? "Dados reais não carregados agora. Enquanto isso, o painel usa orientação de demonstração."
-                    : sessionState.status === "mock_mode"
-                      ? "Este ambiente usa dados de demonstração e não consulta a sessão real."
-                      : "A sessão real ainda não está configurada neste ambiente. O painel segue em modo de demonstração."}
+              {displaySessionDescription(sessionState)}
             </p>
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-2">
             <Badge className={statusBadgeClass(sessionState.status)}>{displaySessionLabel(sessionState)}</Badge>
-            <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
-              {statusSourceLabel(sessionState)}
-            </Badge>
             {actionControl}
           </div>
         </div>
@@ -160,20 +154,12 @@ export function SessionStatusNotice({
     <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
       <div className="flex flex-wrap gap-2">
         <Badge className={statusBadgeClass(sessionState.status)}>{displaySessionLabel(sessionState)}</Badge>
-        <Badge className="border-[rgba(168,184,196,0.18)] bg-[rgba(168,184,196,0.08)] text-silver">
-          {statusSourceLabel(sessionState)}
-        </Badge>
         {actionControl}
       </div>
-      <p className="mt-4 text-sm leading-7 text-silver">{sessionState.description}</p>
-      {sessionState.status === "authenticated" ? (
-        <p className="mt-3 text-xs leading-6 text-[rgba(232,238,242,0.62)]">
-          Sessões são locais neste ambiente; após reiniciar o backend, entre novamente.
-        </p>
-      ) : null}
+      <p className="mt-4 text-sm leading-7 text-silver">{displaySessionDescription(sessionState)}</p>
       {sessionState.userLabel ? (
         <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.62)]">
-          sessão reconhecida: {sessionState.userLabel}
+          {sessionState.userLabel}
         </p>
       ) : null}
       {actionMessage ? <p className="mt-3 text-sm text-silver">{actionMessage}</p> : null}

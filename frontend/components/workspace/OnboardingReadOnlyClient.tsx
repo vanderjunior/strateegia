@@ -55,7 +55,7 @@ export function OnboardingReadOnlyClient() {
         <div className="space-y-5">
           <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)]">
             <div className="section-kicker">disponível agora</div>
-            <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Fluxo inicial para staging interno</CardTitle>
+            <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">Primeiros passos disponíveis</CardTitle>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
               {viewModel.readyHighlights.map((item) => (
                 <li key={item} className="break-words">

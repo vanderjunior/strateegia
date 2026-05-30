@@ -8,7 +8,7 @@ vi.mock("@/lib/adapters/materials", () => ({
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este material."
+      detail: "Demonstração exibida até existir leitura segura para este material."
     },
     detail: null
   }))
@@ -21,7 +21,7 @@ vi.mock("@/lib/adapters/editais", () => ({
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este edital."
+      detail: "Demonstração exibida até existir leitura segura para este edital."
     },
     detail: null
   }))
@@ -34,7 +34,7 @@ vi.mock("@/lib/adapters/pipeline", () => ({
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este material."
+      detail: "Demonstração exibida até existir leitura segura para este material."
     },
     detail: null
   }))
@@ -48,7 +48,7 @@ vi.mock("@/lib/adapters/study-sessions", () => ({
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Sessão exibida por consulta local auditada enquanto a leitura do perfil PSCPP no backend não é necessária para este detalhe."
+      detail: "Orientação de demonstração exibida enquanto não há plano baseado no seu edital."
     },
     summary: [],
     nextSuggestedSessionId: "sessao-desconhecida",

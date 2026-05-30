@@ -91,7 +91,7 @@ export async function GET(
     return NextResponse.json(sanitizePipelineSummary(payload), { status: 200 });
   } catch {
     return NextResponse.json(
-      { detail: "Não foi possível conectar ao backend." },
+      { detail: "Não foi possível carregar os dados agora." },
       { status: 502 }
     );
   }

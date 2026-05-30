@@ -18,9 +18,9 @@ function entryStateLabel(state: UploadEntryState): string {
     case "endpoint_unavailable":
       return "Configuração necessária";
     case "ready_to_send":
-      return "Pronto para validação";
+      return "Pronto para envio";
     default:
-      return "Aguardando validação";
+      return "Antes do envio";
   }
 }
 
@@ -43,7 +43,7 @@ export function UploadValidationSummary({
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
       <Card className="min-w-0">
         <div className="section-kicker">tipos aceitos</div>
-        <CardTitle className="mt-5 break-words text-[1.8rem]">Validação inicial</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Antes do envio</CardTitle>
         <div className="mt-5 space-y-3">
           {acceptedTypes.map((item) => (
             <div
@@ -66,7 +66,7 @@ export function UploadValidationSummary({
 
       <Card className="min-w-0">
         <div className="section-kicker">estado</div>
-        <CardTitle className="mt-5 break-words text-[1.8rem]">Revisão antes do envio</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Antes do envio</CardTitle>
         <div className="mt-5 flex flex-wrap gap-2">
           <Badge className={productStatusClass(entryStateLabel(entryState))}>{entryStateLabel(entryState)}</Badge>
           <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">

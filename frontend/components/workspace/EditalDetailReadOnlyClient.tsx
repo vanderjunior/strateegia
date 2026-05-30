@@ -20,7 +20,7 @@ function buildFallback(editalId: string): { connection: BackendConnectionInfo; d
       state: "mock",
       source: "mock",
       title: "Dados de demonstração",
-      detail: "Consulta local exibida até existir leitura segura do backend para este edital."
+      detail: "Demonstração exibida até existir leitura segura para este edital."
     },
     detail: buildMockEditalDetail(editalId) ?? {
       id: editalId,
@@ -75,8 +75,7 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
         <Card className="min-w-0 border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
           <CardTitle className="text-[1.8rem] leading-[1.04]">Consulte os editais disponíveis</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-            A listagem real depende de sessão autenticada quando o backend estiver disponível. Enquanto isso,
-            os dados auditados continuam acessíveis nesta área.
+            Entre para consultar detalhes reais deste edital. Enquanto isso, a demonstração continua disponível.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceBackLink href="/editais">Voltar para editais</WorkspaceBackLink>

@@ -37,7 +37,7 @@ describe("editais list API wrapper", () => {
   it.each([
     [401, "unauthorized", "Sessão necessária."],
     [403, "unauthorized", "Sessão necessária."],
-    [502, "backend_offline", "Não foi possível conectar ao backend."],
+    [502, "backend_offline", "Não foi possível carregar os dados agora."],
     [503, "missing_base_url", "A listagem real de editais não está configurada neste ambiente."]
   ])("maps HTTP %i to %s", async (status, code, message) => {
     vi.stubGlobal(
@@ -99,7 +99,7 @@ describe("editais list API wrapper", () => {
     [401, "unauthorized", "Sessão necessária."],
     [403, "unauthorized", "Sessão necessária."],
     [404, "not_found", "Este conteúdo não está disponível nesta sessão."],
-    [502, "backend_offline", "Não foi possível conectar ao backend."],
+    [502, "backend_offline", "Não foi possível carregar os dados agora."],
     [503, "missing_base_url", "O resumo real do edital não está configurado neste ambiente."]
   ])("maps edital summary HTTP %i to %s", async (status, code, message) => {
     vi.stubGlobal(

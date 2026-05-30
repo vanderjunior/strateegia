@@ -17,7 +17,7 @@ export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
   bibliography: "Bibliografia / referência",
   note: "Anotação / resumo",
   other: "Outro",
-  unknown: "Não classificado"
+  unknown: "Tipo não informado"
 };
 
 export const MATERIAL_TYPE_OPTIONS: { id: MaterialType; label: string }[] = [
@@ -83,7 +83,7 @@ export async function fetchUserMaterialsList(): Promise<ApiResult<BackendProtect
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure(
@@ -147,7 +147,7 @@ export async function fetchMaterialSummary(materialId: string): Promise<ApiResul
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.", 502);
     }
     if (response.status === 503) {
       return makeApiFailure(
@@ -211,24 +211,24 @@ function normalizeUploadResult(response: BackendUploadedMaterialResponse): Uploa
     response.metadata.extraction_status === "extracted"
       ? "Texto extraído"
       : response.metadata.extraction_status.includes("pending")
-        ? "Aguardando validação"
+      ? "Aguardando envio"
         : response.metadata.extraction_status.includes("ocr")
           ? "OCR em validação"
-          : "Aguardando validação";
+          : "Aguardando envio";
 
   const processingStatus =
     response.metadata.status === "extracted"
       ? "Material processado"
       : response.metadata.status.includes("pending")
         ? "Recebido para validação"
-        : "Aguardando validação";
+        : "Aguardando envio";
 
   const reviewState =
     response.metadata.extraction_status === "extracted"
       ? "Pronto para revisão"
       : response.metadata.extraction_status.includes("ocr")
         ? "OCR em validação"
-        : "Aguardando validação";
+        : "Aguardando envio";
 
   return {
     documentId: response.metadata.document_id,
@@ -272,7 +272,7 @@ export async function uploadMaterialFile(
     });
 
     if (response.status === 502) {
-      return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.", 502);
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.", 502);
     }
     if (response.status === 401 || response.status === 403) {
       return makeApiFailure("backend", "auth_required", "Sessão necessária para enviar material.", response.status);
@@ -313,6 +313,6 @@ export async function uploadMaterialFile(
       return makeApiFailure("backend", "invalid_json", "Backend returned invalid JSON.", response.status);
     }
   } catch {
-    return makeApiFailure("offline", "backend_offline", "Não foi possível conectar ao backend.");
+    return makeApiFailure("offline", "backend_offline", "Não foi possível carregar os dados agora.");
   }
 }
