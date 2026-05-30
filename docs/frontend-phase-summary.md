@@ -39,6 +39,7 @@
 - Editais normal-user copy avoids protected-read/developer phrasing and presents edital state as a product empty state.
 - Onboarding is session-aware: the first step becomes `Conta ativa` when the user is already authenticated.
 - Legacy or pre-classification materials receive explanatory `Tipo não informado` guidance instead of looking like a broken zero-count dashboard.
+- Left navigation now separates available areas from gated/future areas: Ciclo waits for analyzed edital, while Questões, Simulados, and Execução are marked as preparation/unavailable instead of looking active.
 - Minimal internal-staging login/logout UX and simplified unauthenticated dashboard state.
 - Normal user surfaces avoid staging/backend diagnostic copy; those limitations remain documented instead of foregrounded in the UI.
 - Upload is visually gated by session: users must enter before the file picker and send controls are shown.
@@ -53,6 +54,7 @@
 - Auth/session remains intentionally minimal; there is no external provider, signup UI, or durable session store.
 - Dashboard study guidance waits for real analyzed edital context before presenting a concrete study orientation.
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
+- Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
 ## Validation Commands
 

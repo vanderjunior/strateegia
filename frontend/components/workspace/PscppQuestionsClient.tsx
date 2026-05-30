@@ -10,6 +10,11 @@ import {
   loadPscppQuestionsViewModel
 } from "@/lib/adapters/pscpp";
 import {
+  buildDefaultRealUserStudyReadiness,
+  loadRealUserStudyReadiness,
+  type RealUserStudyReadiness
+} from "@/lib/adapters/real-user-state";
+import {
   productStatusClass,
   WorkspaceLink,
   WorkspaceSourcePanel,
@@ -49,18 +54,60 @@ export function PscppQuestionsClient() {
   const [viewModel, setViewModel] = useState<PscppQuestionsViewModel>(
     buildMockPscppQuestionsViewModel()
   );
+  const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
 
   useEffect(() => {
     let active = true;
-    void loadPscppQuestionsViewModel().then((next) => {
+    void Promise.all([loadPscppQuestionsViewModel(), loadRealUserStudyReadiness()]).then(([next, nextReadiness]) => {
       if (active) {
         setViewModel(next);
+        setReadiness(nextReadiness);
       }
     });
     return () => {
       active = false;
     };
   }, []);
+
+  if (!readiness.canShowConcreteStudyPlan) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceSourcePanel
+          eyebrow="pscpp / questões"
+          title="Questões ainda não disponíveis"
+          subtitle="As questões dependem de edital analisado, materiais relacionados e revisão."
+          connection={readiness.connection}
+        />
+
+        <PscppSectionNav />
+
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)]">
+          <div className="section-kicker">em preparação</div>
+          <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+            Questões ainda não disponíveis.
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            As questões serão preparadas depois que houver edital analisado e materiais relacionados. Esta tela não
+            gera questões, não mostra respostas finais e não inicia simulado.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
+            <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+          </div>
+        </Card>
+
+        <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+          <div className="section-kicker">referência futura</div>
+          <CardTitle className="mt-5 text-[1.7rem] leading-[1.04]">Como esta área será usada depois</CardTitle>
+          <ul className="mt-4 space-y-3 text-sm leading-7 text-silver">
+            <li>• O edital analisado define o escopo.</li>
+            <li>• Materiais relacionados ajudam a validar cobertura.</li>
+            <li>• Questões revisadas poderão apoiar simulados quando essa etapa existir.</li>
+          </ul>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

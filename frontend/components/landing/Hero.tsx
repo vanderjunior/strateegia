@@ -77,7 +77,7 @@ export function Hero() {
               jornada
             </div>
             <div className="mt-5 space-y-2">
-              {["Começar", "Materiais", "Editais", "Mapa PSCPP", "Estudo", "Execução"].map((item, index) => (
+              {["Começar", "Materiais", "Editais", "Mapa PSCPP", "Estudo", "Próximas etapas"].map((item, index) => (
                 <div
                   key={item}
                   className={`rounded-xl px-3 py-2 text-sm ${

@@ -10,6 +10,11 @@ import {
   loadPscppCycleViewModel
 } from "@/lib/adapters/pscpp";
 import {
+  buildDefaultRealUserStudyReadiness,
+  loadRealUserStudyReadiness,
+  type RealUserStudyReadiness
+} from "@/lib/adapters/real-user-state";
+import {
   productStatusClass,
   WorkspaceLink,
   WorkspaceSourcePanel,
@@ -21,18 +26,61 @@ export function PscppCycleClient() {
   const [viewModel, setViewModel] = useState<PscppCycleViewModel>(
     buildMockPscppCycleViewModel()
   );
+  const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
 
   useEffect(() => {
     let active = true;
-    void loadPscppCycleViewModel().then((next) => {
+    void Promise.all([loadPscppCycleViewModel(), loadRealUserStudyReadiness()]).then(([next, nextReadiness]) => {
       if (active) {
         setViewModel(next);
+        setReadiness(nextReadiness);
       }
     });
     return () => {
       active = false;
     };
   }, []);
+
+  if (!readiness.canShowConcreteStudyPlan) {
+    return (
+      <div className="space-y-8">
+        <WorkspaceSourcePanel
+          eyebrow="pscpp / ciclo"
+          title="Ciclo aguardando edital analisado"
+          subtitle="Esta área depende de um edital analisado antes de virar caminho real."
+          connection={readiness.connection}
+        />
+
+        <PscppSectionNav />
+
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)]">
+          <div className="section-kicker">área gated</div>
+          <CardTitle className="mt-5 text-[1.75rem] leading-[1.04]">
+            Esta área depende de um edital analisado.
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            Envie um edital para iniciar o fluxo. Quando a análise estiver disponível, esta tela poderá mostrar um
+            ciclo conectado ao seu escopo real.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
+            <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+          </div>
+        </Card>
+
+        <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+          <div className="section-kicker">exemplo de referência</div>
+          <CardTitle className="mt-5 text-[1.7rem] leading-[1.04]">
+            Ciclo de demonstração, não personalizado.
+          </CardTitle>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+            A referência PSCPP pode ajudar a entender o formato geral, mas não cria agenda, não altera progresso e
+            ainda não representa seu ciclo de estudo.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

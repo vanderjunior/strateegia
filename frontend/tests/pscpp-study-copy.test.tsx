@@ -67,9 +67,11 @@ describe("PSCPP and study workspace copy", () => {
     );
 
     expect((await screen.findAllByText("Área PSCPP disponível como referência.")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Ciclo de referência PSCPP/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Questões candidatas como referência/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Guia flexível").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ciclo aguardando edital analisado/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Esta área depende de um edital analisado/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Questões ainda não disponíveis/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/As questões serão preparadas depois que houver edital analisado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ciclo de demonstração, não personalizado/i)).toBeInTheDocument();
     expect(screen.getAllByText("Seu estudo guiado ainda não foi montado.").length).toBeGreaterThan(0);
     expect(screen.queryByText("Pronto para estudo")).not.toBeInTheDocument();
     expect(screen.getAllByText("Ver exemplo").length).toBeGreaterThan(0);
@@ -86,6 +88,7 @@ describe("PSCPP and study workspace copy", () => {
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
     expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
     expect(screen.queryByText("Agendar")).not.toBeInTheDocument();
+    expect(screen.queryByText(/gabarito/i)).not.toBeInTheDocument();
   });
 
   it("keeps session 12 explicit about non-executable simulado limits", async () => {

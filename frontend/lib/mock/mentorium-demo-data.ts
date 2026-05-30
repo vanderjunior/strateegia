@@ -1362,6 +1362,25 @@ export const onboardingSteps: OnboardingStepItem[] = [
       href: "/study"
     },
     secondaryLinks: []
+  },
+  {
+    id: "onboarding-step-6",
+    stepNumber: 6,
+    title: "Questões e simulados serão liberados depois",
+    description: "Essas áreas dependem de edital analisado, materiais relacionados e revisão antes de uso.",
+    statusLabel: "Em preparação",
+    note: "Execução de simulado ainda não está disponível.",
+    cautionLabel: "Esta etapa não gera questões, não gera simulados e não altera progresso.",
+    primaryLink: {
+      label: "Ver referência PSCPP",
+      href: "/pscpp"
+    },
+    secondaryLinks: [
+      {
+        label: "Ver estudo guiado",
+        href: "/study"
+      }
+    ]
   }
 ];
 

@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const pathnameMock = vi.hoisted(() => ({
+  value: "/dashboard"
+}));
+
 vi.mock("@/lib/adapters/session", () => ({
   SESSION_STATE_CHANGED_EVENT: "mentorium:session-state-changed",
   buildDefaultSessionState: vi.fn(),
@@ -12,12 +16,18 @@ vi.mock("@/lib/api/auth", () => ({
   logoutCurrentSession: vi.fn()
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: vi.fn(() => pathnameMock.value)
+}));
+
+import { AppShell } from "@/components/layout/AppShell";
 import { SessionStatusNotice } from "@/components/layout/SessionStatusNotice";
 import { buildDefaultSessionState, loadSessionState } from "@/lib/adapters/session";
 import { logoutCurrentSession } from "@/lib/api/auth";
 
 describe("session status notice", () => {
   beforeEach(() => {
+    pathnameMock.value = "/dashboard";
     vi.mocked(buildDefaultSessionState).mockReturnValue({
       status: "unauthenticated",
       label: "Entrar para continuar",
@@ -140,5 +150,27 @@ describe("session status notice", () => {
     });
     expect(await screen.findByRole("link", { name: "Entrar" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument();
+  });
+
+  it("marks gated and future areas in the left navigation", async () => {
+    pathnameMock.value = "/pscpp/ciclo";
+
+    render(
+      <AppShell>
+        <div>Conteúdo</div>
+      </AppShell>
+    );
+
+    expect(screen.getByRole("link", { name: /Dashboard/i })).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("link", { name: /Ciclo Aguardando edital analisado/i })).toHaveAttribute(
+      "href",
+      "/pscpp/ciclo"
+    );
+    expect(screen.getByText("Questões").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getAllByText("Em preparação").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Simulados").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Execução").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Ainda não disponível")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Execução/i })).not.toBeInTheDocument();
   });
 });

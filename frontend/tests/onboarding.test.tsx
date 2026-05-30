@@ -37,6 +37,8 @@ describe("OnboardingReadOnlyClient", () => {
     expect(screen.getByText("Envie materiais de estudo")).toBeInTheDocument();
     expect(screen.getByText("Veja cobertura quando disponível")).toBeInTheDocument();
     expect(screen.getByText("Abra orientação de estudo quando houver edital analisado")).toBeInTheDocument();
+    expect(screen.getByText("Questões e simulados serão liberados depois")).toBeInTheDocument();
+    expect(screen.getByText("Execução de simulado ainda não está disponível.")).toBeInTheDocument();
 
     expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
     expect(screen.getByRole("link", { name: "Enviar edital" })).toHaveAttribute("href", "/materials/upload");

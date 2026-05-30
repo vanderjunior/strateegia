@@ -13,12 +13,12 @@ const navigationItems = [
   { label: "Começar", href: "/onboarding" },
   { label: "Materiais", href: "/materials" },
   { label: "Editais", href: "/editais" },
-  { label: "Estudo", href: "/study" },
-  { label: "Ciclo" },
-  { label: "Questões" },
-  { label: "Simulados" },
-  { label: "PSCPP", href: "/pscpp" },
-  { label: "Execução" }
+  { label: "Estudo", href: "/study", status: "Depende de edital" },
+  { label: "Ciclo", href: "/pscpp/ciclo", status: "Aguardando edital analisado" },
+  { label: "Questões", status: "Em preparação" },
+  { label: "Simulados", status: "Em preparação" },
+  { label: "PSCPP", href: "/pscpp", status: "Referência" },
+  { label: "Execução", status: "Ainda não disponível" }
 ] as const;
 
 function headerCopy(pathname: string) {
@@ -61,13 +61,13 @@ function headerCopy(pathname: string) {
   if (pathname.startsWith("/pscpp/ciclo")) {
     return {
       eyebrow: "mentorium / pscpp / ciclo",
-      title: "Ciclo PSCPP de referência"
+      title: "Ciclo aguardando edital analisado"
     };
   }
   if (pathname.startsWith("/pscpp/questoes")) {
     return {
       eyebrow: "mentorium / pscpp / questoes",
-      title: "Orientação de questões PSCPP"
+      title: "Questões ainda não disponíveis"
     };
   }
   if (pathname.startsWith("/pscpp/mapa")) {
@@ -120,17 +120,28 @@ export function AppShell({ children }: PropsWithChildren) {
                     : "border-transparent text-[rgba(168,184,196,0.45)]"
               }`;
 
+              const content = (
+                <>
+                  <span>{item.label}</span>
+                  {"status" in item ? (
+                    <span className="mt-1 block text-[11px] leading-4 text-[rgba(168,184,196,0.58)]">
+                      {item.status}
+                    </span>
+                  ) : null}
+                </>
+              );
+
               if (!href) {
                 return (
-                  <div key={item.label} className={className}>
-                    {item.label}
+                  <div key={item.label} className={className} aria-disabled="true">
+                    {content}
                   </div>
                 );
               }
 
               return (
                 <Link key={item.label} href={href} className={className}>
-                  {item.label}
+                  {content}
                 </Link>
               );
             })}
