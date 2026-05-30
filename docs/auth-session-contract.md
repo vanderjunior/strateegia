@@ -214,6 +214,13 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - The proxy reads backend `GET /api/materials/{document_id}/pipeline/summary`, forwards the browser cookie server-side, and returns only bounded pipeline status metadata.
 - The pipeline detail adapter no longer needs browser-facing chunk, section, or operational pipeline reads for the product timeline.
 
+## EditalAnalysis-C Strategy
+
+- Controlled edital analysis now has a same-origin proxy at `POST /api/materials/{materialId}/edital/analyze` in Next.
+- The proxy reads backend `POST /api/materials/{document_id}/edital/analyze`, forwards the browser cookie server-side, and returns only bounded lifecycle/count metadata.
+- The frontend API wrapper normalizes analyzed, needs-review, not-ready, auth, not-found, invalid-material-type, offline, and unsupported states with product-safe messages.
+- There is still no user-facing analyze button, no automatic analysis on upload, and no OCR/generation/progress behavior.
+
 ## Critical Gaps Before Real Auth UX
 
 1. No frontend login/logout/session-status UX.

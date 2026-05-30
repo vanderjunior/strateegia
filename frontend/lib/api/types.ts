@@ -32,6 +32,7 @@ export interface ApiErrorDetails {
     | "unsupported_file_type"
     | "validation_failed"
     | "invalid_credentials"
+    | "invalid_material_type"
     | "logged_out"
     | "missing_base_url"
     | "mock_mode"
@@ -39,6 +40,7 @@ export interface ApiErrorDetails {
     | "timeout"
     | "unauthorized"
     | "not_found"
+    | "not_ready"
     | "bad_request"
     | "payload_too_large"
     | "unsupported_media"
@@ -313,7 +315,7 @@ export interface BackendMaterialSummary {
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;
-  analysis_status?: "uploaded_not_analyzed" | "analyzed" | "needs_review" | "failed" | "unknown";
+  analysis_status?: EditalAnalysisStatus;
   status: string;
   review_state: string;
   topics_count: number;
@@ -335,7 +337,7 @@ export interface BackendEditalSummary {
   edital_id: string;
   document_id: string | null;
   title: string;
-  analysis_status?: "uploaded_not_analyzed" | "analyzed" | "needs_review" | "failed" | "unknown";
+  analysis_status?: EditalAnalysisStatus;
   created_at: string | null;
   updated_at: string | null;
   topics_count: number;
@@ -351,6 +353,38 @@ export interface BackendEditalSummary {
     has_gaps: boolean;
     needs_review: boolean;
   };
+  source: "user_scope";
+}
+
+export type EditalAnalysisStatus =
+  | "uploaded_not_analyzed"
+  | "analyzed"
+  | "needs_review"
+  | "failed"
+  | "not_ready"
+  | "unknown";
+
+export type EditalAnalysisResultStatus =
+  | "analyzed"
+  | "needs_review"
+  | "not_ready"
+  | "failed"
+  | "unauthorized"
+  | "not_found"
+  | "invalid_material_type"
+  | "backend_offline"
+  | "unsupported"
+  | "validation_failed";
+
+export interface BackendEditalAnalysisResponse {
+  edital_id: string;
+  document_id: string;
+  analysis_status: EditalAnalysisStatus;
+  review_state: string;
+  topics_count: number;
+  bibliography_count: number;
+  gaps_count: number;
+  warnings_count: number;
   source: "user_scope";
 }
 

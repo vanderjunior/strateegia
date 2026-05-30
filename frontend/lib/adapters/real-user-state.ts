@@ -118,6 +118,7 @@ function editalAnalysisStateFromItem(item: BackendProtectedEditaisListItem): Edi
     case "needs_review":
       return "analysis_needs_review";
     case "failed":
+    case "not_ready":
     case "unknown":
       return "analysis_unavailable";
     case "analyzed":

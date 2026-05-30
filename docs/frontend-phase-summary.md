@@ -21,6 +21,7 @@
 - `/api/materials/[materialId]/summary`
 - `/api/materials/[materialId]/pipeline/summary`
 - `/api/editais/[editalId]/summary`
+- `/api/materials/[materialId]/edital/analyze`
 
 ## Current Capabilities
 
@@ -33,6 +34,7 @@
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
+- A same-origin proxy and API wrapper exist for controlled edital analysis, but there is no user-facing analyze button and no automatic analysis after upload.
 - PSCPP guidance is framed as reference/demo when it is not driven by the user's analyzed edital.
 - Study workspace shows a next-step empty state until a real analyzed edital exists; demo orientations are clearly labeled as examples.
 - Editais workspace shows a clear empty state when no real edital analysis exists, including the case where an edital file was uploaded but not analyzed.
@@ -54,6 +56,7 @@
 - Auth/session remains intentionally minimal; there is no external provider, signup UI, or durable session store.
 - Dashboard study guidance waits for real analyzed edital context before presenting a concrete study orientation.
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
+- Controlled edital analysis remains explicitly invoked by API contract only; the current UI does not expose an action for it.
 - Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
 ## Validation Commands
