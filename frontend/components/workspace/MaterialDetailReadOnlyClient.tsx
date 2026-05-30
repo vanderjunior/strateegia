@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
-import type { BackendConnectionInfo, MaterialDetail } from "@/lib/api/types";
+import { analyzeMaterialAsEdital } from "@/lib/api/editais";
+import type { ApiResult, BackendConnectionInfo, BackendEditalAnalysisResponse, MaterialDetail } from "@/lib/api/types";
 import { buildMockMaterialDetail, loadMaterialDetail } from "@/lib/adapters/materials";
 import { sourceLabel } from "@/lib/adapters/capabilities";
 import {
@@ -41,6 +42,154 @@ function buildFallback(materialId: string): { connection: BackendConnectionInfo;
       sourceNote: "Consulte os dados de demonstração ou volte para a listagem de materiais."
     }
   };
+}
+
+type EditalAnalysisUiState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "analyzed"; data: BackendEditalAnalysisResponse }
+  | { status: "needs_review"; data: BackendEditalAnalysisResponse }
+  | { status: "not_ready" }
+  | { status: "invalid_material_type" }
+  | { status: "not_found" }
+  | { status: "offline" }
+  | { status: "unauthorized" };
+
+function editalAnalysisStateFromResult(result: ApiResult<BackendEditalAnalysisResponse>): EditalAnalysisUiState {
+  if (result.ok) {
+    if (result.data.analysis_status === "needs_review") {
+      return { status: "needs_review", data: result.data };
+    }
+    return { status: "analyzed", data: result.data };
+  }
+
+  switch (result.error.code) {
+    case "not_ready":
+      return { status: "not_ready" };
+    case "invalid_material_type":
+      return { status: "invalid_material_type" };
+    case "not_found":
+      return { status: "not_found" };
+    case "unauthorized":
+    case "auth_required":
+      return { status: "unauthorized" };
+    default:
+      return { status: "offline" };
+  }
+}
+
+function EditalAnalysisAction({
+  materialId,
+  detail,
+  connection
+}: {
+  materialId: string;
+  detail: MaterialDetail;
+  connection: BackendConnectionInfo;
+}) {
+  const [analysisState, setAnalysisState] = useState<EditalAnalysisUiState>({ status: "idle" });
+  const showSessionRequired = connection.state === "auth_required";
+  const canAnalyze = detail.source === "backend" && !showSessionRequired;
+
+  if (detail.materialType !== "edital" || (detail.source !== "backend" && !showSessionRequired)) {
+    return null;
+  }
+
+  const isLoading = analysisState.status === "loading";
+
+  async function handleAnalyze() {
+    setAnalysisState({ status: "loading" });
+    const result = await analyzeMaterialAsEdital(materialId);
+    setAnalysisState(editalAnalysisStateFromResult(result));
+  }
+
+  return (
+    <Card className="min-w-0 border-[rgba(201,169,110,0.18)] bg-[rgba(201,169,110,0.04)]">
+      <div className="section-kicker">edital</div>
+      <CardTitle className="mt-5 break-words text-[1.8rem]">Análise do edital</CardTitle>
+      <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+        Este arquivo foi marcado como edital. A análise identifica tópicos e referências para orientar o estudo.
+      </p>
+      <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+        Esta etapa não gera questões, simulados nem altera seu progresso.
+      </p>
+
+      {showSessionRequired ? (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-silver">Entre para analisar este edital.</p>
+          <WorkspaceLink href="/login">Entrar</WorkspaceLink>
+        </div>
+      ) : (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleAnalyze}
+            disabled={!canAnalyze || isLoading}
+            className="inline-flex items-center justify-center rounded-xl border border-[rgba(201,169,110,0.24)] bg-[rgba(201,169,110,0.10)] px-4 py-2 text-sm text-ink transition hover:-translate-y-0.5 hover:bg-[rgba(201,169,110,0.16)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-[rgba(201,169,110,0.10)]"
+          >
+            {isLoading ? "Analisando edital..." : "Analisar edital"}
+          </button>
+          <WorkspaceLink href="/materials">Voltar para materiais</WorkspaceLink>
+        </div>
+      )}
+
+      {analysisState.status === "analyzed" ? (
+        <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-7 text-emerald-100">
+          <p className="font-medium">Edital analisado.</p>
+          <p>
+            {analysisState.data.topics_count} tópicos · {analysisState.data.bibliography_count} bibliografia ·{" "}
+            {analysisState.data.gaps_count} gaps
+          </p>
+          <div className="mt-3">
+            <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+          </div>
+        </div>
+      ) : null}
+
+      {analysisState.status === "needs_review" ? (
+        <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          <p className="font-medium">Edital analisado, mas precisa de conferência.</p>
+          <p>
+            {analysisState.data.topics_count} tópicos · {analysisState.data.bibliography_count} bibliografia ·{" "}
+            {analysisState.data.gaps_count} gaps
+          </p>
+          <div className="mt-3">
+            <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
+          </div>
+        </div>
+      ) : null}
+
+      {analysisState.status === "not_ready" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Este edital ainda não está pronto para análise. Confira se o arquivo tem texto extraível ou envie uma versão textual.
+        </p>
+      ) : null}
+
+      {analysisState.status === "invalid_material_type" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Este material não está classificado como edital.
+        </p>
+      ) : null}
+
+      {analysisState.status === "not_found" ? (
+        <p className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-sm leading-7 text-rose-100">
+          Material não encontrado nesta sessão.
+        </p>
+      ) : null}
+
+      {analysisState.status === "offline" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Não foi possível concluir a análise agora.
+        </p>
+      ) : null}
+
+      {analysisState.status === "unauthorized" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Entre para analisar este edital.
+        </p>
+      ) : null}
+    </Card>
+  );
 }
 
 export function MaterialDetailReadOnlyClient({ materialId }: { materialId: string }) {
@@ -156,6 +305,8 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
           </div>
         </Card>
       </section>
+
+      <EditalAnalysisAction materialId={materialId} detail={detail} connection={connection} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="min-w-0">

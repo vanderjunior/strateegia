@@ -219,7 +219,7 @@ These routes use `_scoped_repository(request)` or `_current_user_id(request)` an
 - Controlled edital analysis now has a same-origin proxy at `POST /api/materials/{materialId}/edital/analyze` in Next.
 - The proxy reads backend `POST /api/materials/{document_id}/edital/analyze`, forwards the browser cookie server-side, and returns only bounded lifecycle/count metadata.
 - The frontend API wrapper normalizes analyzed, needs-review, not-ready, auth, not-found, invalid-material-type, offline, and unsupported states with product-safe messages.
-- There is still no user-facing analyze button, no automatic analysis on upload, and no OCR/generation/progress behavior.
+- The only user-facing analyze button is the minimal material-detail action for real uploaded editais; there is still no automatic analysis on upload and no OCR/generation/progress behavior.
 
 ## Critical Gaps Before Real Auth UX
 

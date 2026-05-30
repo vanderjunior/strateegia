@@ -1,8 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const realUserStateMock = vi.hoisted(() => ({
   readiness: undefined as unknown
+}));
+
+const editalAnalysisMock = vi.hoisted(() => ({
+  analyzeMaterialAsEdital: vi.fn()
 }));
 
 vi.mock("@/lib/adapters/session", () => ({
@@ -28,6 +32,17 @@ vi.mock("@/lib/api/config", () => ({
     forceMock: false
   }))
 }));
+
+vi.mock("@/lib/api/editais", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/editais")>(
+    "@/lib/api/editais"
+  );
+
+  return {
+    ...actual,
+    analyzeMaterialAsEdital: editalAnalysisMock.analyzeMaterialAsEdital
+  };
+});
 
 vi.mock("@/lib/adapters/materials", async () => {
   const actual = await vi.importActual<typeof import("@/lib/adapters/materials")>(
@@ -96,15 +111,39 @@ vi.mock("@/lib/adapters/real-user-state", async () => {
 
 import { EditaisReadOnlyClient } from "@/components/workspace/EditaisReadOnlyClient";
 import { EditalDetailReadOnlyClient } from "@/components/workspace/EditalDetailReadOnlyClient";
+import { MaterialDetailReadOnlyClient } from "@/components/workspace/MaterialDetailReadOnlyClient";
 import { MaterialUploadEntryClient } from "@/components/workspace/MaterialUploadEntryClient";
 import { MaterialsReadOnlyClient } from "@/components/workspace/MaterialsReadOnlyClient";
-import { loadMaterialsWorkspaceViewModel } from "@/lib/adapters/materials";
+import { loadMaterialDetail, loadMaterialsWorkspaceViewModel } from "@/lib/adapters/materials";
 import { loadEditaisWorkspaceViewModel } from "@/lib/adapters/editais";
+import type { MaterialDetail } from "@/lib/api/types";
 
 describe("materials, editais, and upload read-only invariants", () => {
   beforeEach(() => {
     realUserStateMock.readiness = undefined;
+    editalAnalysisMock.analyzeMaterialAsEdital.mockReset();
   });
+
+  function backendMaterialDetail(overrides: Partial<MaterialDetail> = {}): MaterialDetail {
+    return {
+      id: "doc-edital",
+      title: "edital-pscpp",
+      typeLabel: "TXT",
+      materialType: "edital",
+      materialTypeLabel: "Edital",
+      processingStatus: "Material processado",
+      extractionStatus: "Texto extraído",
+      sectionsCount: 2,
+      chunksCount: 8,
+      reviewState: "Pronto para revisão",
+      source: "backend",
+      relatedGaps: 0,
+      warnings: ["Este resumo mostra apenas metadados seguros do material."],
+      sectionPreviews: [],
+      sourceNote: "Resumo carregado por consulta protegida.",
+      ...overrides
+    };
+  }
 
   it("keeps materials workspace on product-friendly read-only CTAs", async () => {
     render(<MaterialsReadOnlyClient />);
@@ -317,5 +356,173 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
     expect(screen.queryByText("Concluir sessão")).not.toBeInTheDocument();
     expect(screen.queryByText("Agendar")).not.toBeInTheDocument();
+  });
+
+  it("does not show edital analysis action for non-edital material detail", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-study",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo"
+      })
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-study" />);
+
+    expect(await screen.findByText("edital-pscpp")).toBeInTheDocument();
+    expect(screen.queryByText("Análise do edital")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Analisar edital" })).not.toBeInTheDocument();
+  });
+
+  it("shows the minimal edital analysis action only for a real edital material", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail()
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-edital" />);
+
+    expect(await screen.findByText("Análise do edital")).toBeInTheDocument();
+    expect(screen.getByText(/Este arquivo foi marcado como edital/i)).toBeInTheDocument();
+    expect(screen.getByText("Esta etapa não gera questões, simulados nem altera seu progresso.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Analisar edital" })).toBeInTheDocument();
+    expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
+  });
+
+  it("runs edital analysis and shows bounded analyzed success with counts", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail()
+    });
+    editalAnalysisMock.analyzeMaterialAsEdital.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        edital_id: "edital:doc-edital",
+        document_id: "doc-edital",
+        analysis_status: "analyzed",
+        review_state: "ready_for_review",
+        topics_count: 4,
+        bibliography_count: 2,
+        gaps_count: 0,
+        warnings_count: 0,
+        source: "user_scope"
+      },
+      status: 200,
+      source: "backend"
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-edital" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Analisar edital" }));
+
+    expect(screen.getByRole("button", { name: "Analisando edital..." })).toBeDisabled();
+    await waitFor(() => expect(screen.getByText("Edital analisado.")).toBeInTheDocument());
+    expect(screen.getByText("4 tópicos · 2 bibliografia · 0 gaps")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver editais" })).toHaveAttribute("href", "/editais");
+    expect(editalAnalysisMock.analyzeMaterialAsEdital).toHaveBeenCalledWith("doc-edital");
+  });
+
+  it("shows safe edital analysis status messages", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValue({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail()
+    });
+
+    const cases = [
+      {
+        result: {
+          ok: true,
+          data: {
+            edital_id: "edital:doc-edital",
+            document_id: "doc-edital",
+            analysis_status: "needs_review",
+            review_state: "needs_review",
+            topics_count: 4,
+            bibliography_count: 2,
+            gaps_count: 1,
+            warnings_count: 1,
+            source: "user_scope"
+          },
+          status: 200,
+          source: "backend"
+        },
+        message: "Edital analisado, mas precisa de conferência."
+      },
+      {
+        result: {
+          ok: false,
+          status: 200,
+          source: "backend",
+          error: { code: "not_ready", message: "O edital ainda não está pronto para análise." }
+        },
+        message: "Este edital ainda não está pronto para análise. Confira se o arquivo tem texto extraível ou envie uma versão textual."
+      },
+      {
+        result: {
+          ok: false,
+          status: 422,
+          source: "backend",
+          error: { code: "invalid_material_type", message: "Este material não está classificado como edital." }
+        },
+        message: "Este material não está classificado como edital."
+      },
+      {
+        result: {
+          ok: false,
+          status: 404,
+          source: "backend",
+          error: { code: "not_found", message: "Material não encontrado." }
+        },
+        message: "Material não encontrado nesta sessão."
+      },
+      {
+        result: {
+          ok: false,
+          status: 502,
+          source: "offline",
+          error: { code: "backend_offline", message: "Não foi possível concluir a análise agora." }
+        },
+        message: "Não foi possível concluir a análise agora."
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      editalAnalysisMock.analyzeMaterialAsEdital.mockResolvedValueOnce(testCase.result);
+      const { unmount } = render(<MaterialDetailReadOnlyClient materialId="doc-edital" />);
+
+      fireEvent.click(await screen.findByRole("button", { name: "Analisar edital" }));
+
+      await waitFor(() => expect(screen.getByText(testCase.message)).toBeInTheDocument());
+      expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
+      expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
+      expect(screen.queryByText("Executar simulado")).not.toBeInTheDocument();
+      expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
+      expect(document.body.textContent).not.toContain("storage_path");
+      expect(document.body.textContent).not.toContain("gabarito");
+      expect(document.body.textContent).not.toContain("token");
+      unmount();
+    }
   });
 });

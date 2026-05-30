@@ -319,7 +319,7 @@ Frontend proxy/API status:
 - same-origin Next proxy exists at `POST /api/materials/{materialId}/edital/analyze`
 - the proxy forwards cookies server-side and whitelists the bounded response fields
 - frontend API helper `analyzeMaterialAsEdital(materialId)` normalizes auth, not-found, invalid-material-type, not-ready, offline, and unsupported states
-- no frontend UI action or automatic upload-triggered analysis exists yet
+- the only frontend UI action is the minimal material-detail manual analysis button for real uploaded editais; no automatic upload-triggered analysis exists
 
 ## Pipeline Status Reads
 

@@ -4,7 +4,7 @@
 
 Track the controlled edital analysis execution contract.
 
-The backend controlled endpoint is implemented. Frontend proxy/UI/action phases are still pending. This contract does not add buttons, automatic analysis on upload, OCR, generation, simulado execution, progress mutation, scheduler behavior, PostgreSQL, or auth-provider behavior.
+The backend controlled endpoint, frontend proxy/API wrapper, and minimal material-detail UI action are implemented. This contract does not add dashboard-wide buttons, automatic analysis on upload, OCR, generation, simulado execution, progress mutation, scheduler behavior, PostgreSQL, or auth-provider behavior.
 
 ## Current State
 
@@ -229,7 +229,7 @@ Add focused frontend tests when a UI/proxy phase is approved:
 ## Explicit Non-goals
 
 - No automatic analysis on upload.
-- No `Analisar edital` UI in this planning phase.
+- No dashboard-wide `Analisar edital` UI.
 - No OCR implementation or production OCR guarantee.
 - No process/reprocess action.
 - No bibliography alignment action in the same endpoint.
@@ -243,8 +243,8 @@ Add focused frontend tests when a UI/proxy phase is approved:
 
 ## Recommended Implementation Sequence
 
-1. `EditalAnalysis-B`: backend controlled endpoint, bounded response, owner-scope tests.
-2. `EditalAnalysis-C`: frontend same-origin proxy, sanitizer, API helper tests.
-3. `EditalAnalysis-D`: UI action gated to authenticated uploaded edital materials.
+1. `EditalAnalysis-B`: backend controlled endpoint, bounded response, owner-scope tests. Implemented.
+2. `EditalAnalysis-C`: frontend same-origin proxy, sanitizer, API helper tests. Implemented.
+3. `EditalAnalysis-D`: minimal material-detail UI action gated to authenticated uploaded edital materials. Implemented.
 4. `Coverage-A`: read-only edital x materials coverage contract.
 5. `StudyPlan-A`: concrete study guidance only after analyzed edital and coverage contracts are stable.
