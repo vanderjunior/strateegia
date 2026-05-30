@@ -362,6 +362,44 @@ Authenticated Compose browser QA passed after the user-facing copy cleanup:
 
 No backend behavior, edital analysis execution, OCR, processing, generation, progress, scheduler, PostgreSQL, provider, or signup behavior was added during this QA closeout.
 
+### Representative QA Seed
+
+Use the local seed script when the Compose volume needs representative browser QA data:
+
+```bash
+docker compose up -d
+scripts/seed_compose_qa_materials.sh
+```
+
+The script:
+
+- uses `FRONTEND_URL`, defaulting to `http://localhost:3000`
+- uses `BACKEND_URL`, defaulting to `http://localhost:8000`
+- registers or reuses `QA_SEED_USER`, defaulting to `compose-qa-seed`
+- logs in through the frontend `/api/auth/login` proxy
+- uploads small generated `.txt` files through frontend `/api/materials/upload`
+- creates examples for `edital`, `study_material`, `previous_exam`, `bibliography`, and `note`
+- omits `material_type` for one optional legacy item so `/materials` can show `Tipo não informado`
+- prints the bounded `/api/materials` response
+
+Override values only for local/internal QA:
+
+```bash
+QA_SEED_USER="compose-qa-seed-$(date +%s)" \
+QA_SEED_PASSWORD="<local-only-password>" \
+scripts/seed_compose_qa_materials.sh
+```
+
+After seeding, inspect these browser routes:
+
+- `http://localhost:3000/materials`
+- `http://localhost:3000/editais`
+- `http://localhost:3000/study`
+- `http://localhost:3000/pscpp`
+- `http://localhost:3000/materials/upload`
+
+The seed is not automatic and is not production data. Rerunning it creates additional QA materials for the same user. `docker compose down -v` deletes the persistent local volume and removes the seeded dataset.
+
 ### Single VM
 
 - Good second option if the team wants a persistent internal URL.
