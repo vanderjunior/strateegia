@@ -172,12 +172,14 @@ Current controlled analysis can prepare safe textual artifacts internally when n
 The current deterministic analyzer recognizes topics when both conditions are true:
 
 - Pipeline processing has created extraction, sections, and chunks.
-- A section heading is recognizable as content program text, for example a Markdown heading such as `## 1. CONTEUDO PROGRAMATICO`.
+- A section heading is recognizable as content program text, for example a Markdown heading such as `## 1. CONTEUDO PROGRAMATICO`, or a textual/PDF-extracted heading such as `1. CONTEUDO PROGRAMATICO`.
 - Topic lines are numbered or bulleted top-level entries, for example `1. Lingua Portuguesa: Compreensao de textos; Ortografia oficial`.
+- Subject headings ending in a colon, such as `Lingua Portuguesa:`, are recognized as topic candidates inside a content-program section.
+- Numbered subitems such as `1.1 Compreensao e interpretacao de textos` are recognized as bounded subtopic candidates under the current topic.
 
 The current deterministic analyzer recognizes bibliography when both conditions are true:
 
-- A section heading is recognizable as bibliography, for example `## 2. BIBLIOGRAFIA`.
+- A section heading is recognizable as bibliography, for example `## 2. BIBLIOGRAFIA`, `2. BIBLIOGRAFIA`, or `REFERÊNCIAS`.
 - Reference-like lines are present. Years improve confidence but are not exposed through bounded reads.
 
 Minimal structured Markdown fixture expected to reach `analysis_status=analyzed`:
@@ -207,7 +209,7 @@ Status criteria for the current implementation:
 
 Remaining parser limitations before Coverage-A:
 
-- If broader `.txt` support is needed, add a narrow parser enhancement that can split inline `Conteúdo programático: ...` text into bounded topic candidates without exposing raw text.
+- Inline prose such as `Conteúdo programático: Português, Informática...` remains conservative and may still return `needs_review` when there is no clear heading/topic structure.
 - Keep OCR, generation, coverage planning, and progress mutation out of this transition.
 
 ## Frontend Implications

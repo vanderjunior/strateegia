@@ -72,13 +72,24 @@ SIMPLE_UNSTRUCTURED_EDITAL = (
 
 TEXTUAL_PDF_EDITAL = """EDITAL DE QA
 
-CONTEUDO PROGRAMATICO
+1. CONTEUDO PROGRAMATICO
 
-1. Lingua Portuguesa: Compreensao e interpretacao de textos; Ortografia oficial.
-2. Informatica: Redes de computadores; Seguranca da informacao.
-3. Direito Administrativo: Atos administrativos; Poderes administrativos.
+Lingua Portuguesa:
+1.1 Compreensao e interpretacao de textos.
+1.2 Ortografia oficial.
+1.3 Pontuacao.
 
-BIBLIOGRAFIA
+Informatica:
+2.1 Redes de computadores.
+2.2 Seguranca da informacao.
+2.3 Banco de dados.
+
+Direito Administrativo:
+3.1 Atos administrativos.
+3.2 Poderes administrativos.
+3.3 Responsabilidade civil do Estado.
+
+2. BIBLIOGRAFIA
 
 BRASIL. Constituicao da Republica Federativa do Brasil. 1988.
 MANUAL DE QA. Referencia simulada para teste interno. 2026.
@@ -308,6 +319,8 @@ def test_controlled_edital_analysis_prepares_fresh_textual_pdf_without_ocr(tmp_p
     assert payload["document_id"] == document_id
     assert payload["analysis_status"] in {"analyzed", "needs_review"}
     assert payload["analysis_status"] != "not_ready"
+    assert payload["topics_count"] >= 3
+    assert payload["bibliography_count"] >= 2
 
     repeated = owner.post(f"/api/materials/{document_id}/edital/analyze")
     assert repeated.status_code == 200

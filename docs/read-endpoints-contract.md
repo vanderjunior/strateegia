@@ -267,6 +267,7 @@ Preconditions:
 - non-edital materials return `422`
 - if extracted text artifacts are missing for `.txt`, `.md`, or textual `.pdf`, the endpoint may run safe deterministic no-OCR textual preparation internally before analysis
 - textual PDFs use embedded-text extraction only; controlled analysis never triggers OCR
+- the deterministic parser recognizes common edital headings such as `CONTEUDO PROGRAMATICO`, `CONHECIMENTOS`, `BIBLIOGRAFIA`, and `REFERÊNCIAS`, plus numbered/bulleted topic lines and subject-colon topic headings
 - missing/insufficient safe text, OCR-required PDFs, and unsupported extraction states return a bounded `not_ready` response
 
 Implemented shape:

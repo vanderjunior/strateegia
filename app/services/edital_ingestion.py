@@ -212,6 +212,16 @@ class EditalIngestionService:
             text = "\n".join(chunk.text for chunk in section_chunks).strip() or fallback_text.strip()
             normalized_title = self._normalize_text(section.title)
             section_type, confidence, reasoning = self._classify_section(section.title)
+            if section_type == "unknown":
+                inferred_sections = self._infer_sections_from_text(
+                    section=section,
+                    text=text,
+                    source_chunk_ids=[chunk.chunk_id for chunk in section_chunks],
+                    base_order_index=index,
+                )
+                if inferred_sections:
+                    candidates.extend(inferred_sections)
+                    continue
             candidates.append(
                 EditalSectionCandidate(
                     section_id=section.section_id,
@@ -245,6 +255,79 @@ class EditalIngestionService:
             return "content_program", 0.6, "numbered heading suggests content program section"
         return "unknown", 0.35, "no strong edital section keyword detected"
 
+    def _infer_sections_from_text(
+        self,
+        *,
+        section: DocumentSection,
+        text: str,
+        source_chunk_ids: list[str],
+        base_order_index: int,
+    ) -> list[EditalSectionCandidate]:
+        inferred: list[dict[str, object]] = []
+        current: dict[str, object] | None = None
+
+        for line in self._meaningful_lines(text):
+            heading_title = self._heading_title_from_line(line)
+            section_type, confidence, reasoning = self._classify_section(heading_title or "")
+            if heading_title is not None and section_type != "unknown":
+                if current is not None:
+                    inferred.append(current)
+                current = {
+                    "title": heading_title,
+                    "section_type": section_type,
+                    "confidence": confidence,
+                    "reasoning": f"inferred from document text heading: {reasoning}",
+                    "lines": [],
+                }
+                continue
+            if current is not None:
+                current["lines"].append(line)
+
+        if current is not None:
+            inferred.append(current)
+
+        candidates: list[EditalSectionCandidate] = []
+        for offset, item in enumerate(inferred):
+            section_text = "\n".join(str(line) for line in item["lines"]).strip()
+            if not section_text:
+                continue
+            title = str(item["title"])
+            section_id = f"{section.section_id}:inferred:{offset}"
+            candidates.append(
+                EditalSectionCandidate(
+                    section_id=section_id,
+                    title=title,
+                    normalized_title=self._normalize_text(title),
+                    section_type=str(item["section_type"]),
+                    order_index=base_order_index + offset,
+                    source_chunk_ids=source_chunk_ids,
+                    text_excerpt=self._excerpt(section_text),
+                    confidence=float(item["confidence"]),
+                    reasoning=str(item["reasoning"]),
+                    metadata={"text": section_text},
+                )
+            )
+        return candidates
+
+    def _heading_title_from_line(self, line: str) -> str | None:
+        cleaned = line.strip(" \t#*-•")
+        cleaned = re.sub(r"^\d+(?:\.\d+)*[\.)]?\s+", "", cleaned).strip()
+        cleaned = cleaned.rstrip(":").strip()
+        if not cleaned or len(cleaned) > 120:
+            return None
+        normalized = self._normalize_text(cleaned)
+        known_heading_fragments = {
+            "conteudo programatico",
+            "conhecimentos",
+            "bibliografia",
+            "referencias",
+        }
+        if normalized in known_heading_fragments:
+            return cleaned
+        if any(fragment in normalized for fragment in known_heading_fragments):
+            return cleaned
+        return None
+
     def _topic_candidates(
         self,
         sections: list[EditalSectionCandidate],
@@ -257,22 +340,45 @@ class EditalIngestionService:
             if section.section_type != "content_program":
                 continue
             section_text = str(section.metadata.get("text") or "")
+            current_topic_id: str | None = None
             for raw_line in self._meaningful_lines(section_text):
-                topic_match = re.match(r"^(?:\d+[\.\)]\s+|[-*]\s+)(.+)$", raw_line)
-                colon_match = re.match(r"^([^:]{3,120}):\s+(.+)$", raw_line)
+                topic_match = re.match(r"^(?:\d+[\.\)]\s+|[-*•]\s+)(.+)$", raw_line)
+                subtopic_number_match = re.match(r"^\d+\.\d+(?:\.\d+)*\s+(.+)$", raw_line)
+                colon_match = re.match(r"^([^:]{3,120}):\s*(.*)$", raw_line)
                 candidate_text = None
                 trailing_text = None
                 reasoning = ""
                 confidence = 0.0
+                if subtopic_number_match and current_topic_id is not None:
+                    subtopic_title = subtopic_number_match.group(1).strip()
+                    subtopics.append(
+                        EditalSubtopicCandidate(
+                            subtopic_id=f"{current_topic_id}:subtopic:{subtopic_order}",
+                            parent_topic_id=current_topic_id,
+                            title=subtopic_title,
+                            normalized_title=self._normalize_text(subtopic_title),
+                            order_index=subtopic_order,
+                            source_chunk_ids=section.source_chunk_ids,
+                            source_excerpt=self._excerpt(raw_line),
+                            confidence=0.74,
+                            reasoning="numbered subtopic line inside content section",
+                        )
+                    )
+                    subtopic_order += 1
+                    continue
                 if topic_match:
                     candidate_text = topic_match.group(1).strip()
                     reasoning = "numbered or bulleted line inside content section"
                     confidence = 0.88
                 elif colon_match:
                     candidate_text = colon_match.group(1).strip()
-                    trailing_text = colon_match.group(2).strip()
-                    reasoning = "colon-separated topic line inside content section"
-                    confidence = 0.82
+                    trailing_text = colon_match.group(2).strip() or None
+                    reasoning = "subject heading or colon-separated topic line inside content section"
+                    confidence = 0.84 if trailing_text is None else 0.82
+                elif subtopic_number_match:
+                    candidate_text = subtopic_number_match.group(1).strip()
+                    reasoning = "numbered line inside content section"
+                    confidence = 0.72
                 if candidate_text is None:
                     continue
                 topic_title = candidate_text
@@ -295,6 +401,7 @@ class EditalIngestionService:
                         reasoning=reasoning,
                     )
                 )
+                current_topic_id = topic_id
                 if trailing_text:
                     for piece in self._split_inline_items(trailing_text):
                         subtopics.append(
