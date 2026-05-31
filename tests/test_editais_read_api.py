@@ -15,6 +15,7 @@ ALLOWED_ITEM_KEYS = {
     "updated_at",
     "analysis_status",
     "topics_count",
+    "subtopics_count",
     "bibliography_count",
     "gaps_count",
     "review_state",
@@ -147,6 +148,7 @@ def test_editais_list_returns_own_bounded_edital(tmp_path):
     assert item["document_id"] == edital["document_id"]
     assert item["title"] == "Edital analisado da sessão"
     assert item["topics_count"] >= 1
+    assert item["subtopics_count"] >= 0
     assert item["bibliography_count"] >= 0
     assert item["gaps_count"] == 0
     assert item["analysis_status"] in {"analyzed", "needs_review", "failed", "not_ready"}
@@ -207,6 +209,7 @@ def test_editais_list_shape_is_deterministic_and_bounded(tmp_path):
     for item in first["items"]:
         assert set(item.keys()) == ALLOWED_ITEM_KEYS
         assert isinstance(item["topics_count"], int)
+        assert isinstance(item["subtopics_count"], int)
         assert isinstance(item["bibliography_count"], int)
         assert isinstance(item["gaps_count"], int)
         assert isinstance(item["warnings_count"], int)

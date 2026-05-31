@@ -49,6 +49,7 @@ function sanitizeEditaisList(payload: unknown): BackendProtectedEditaisList {
       status: toSafeLifecycleStatus(rawItem.status, analysisStatus),
       review_state: toSafeString(rawItem.review_state) || "unknown",
       topics_count: toSafeNumber(rawItem.topics_count),
+      subtopics_count: toSafeNumber(rawItem.subtopics_count),
       bibliography_count: toSafeNumber(rawItem.bibliography_count),
       gaps_count: toSafeNumber(rawItem.gaps_count),
       coverage_status: toSafeString(rawItem.coverage_status) || "unknown",

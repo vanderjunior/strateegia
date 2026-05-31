@@ -1069,6 +1069,7 @@ def _bounded_edital_analysis_response(edital, repository: JsonStudyRepository, u
         "analysis_status": summary["analysis_status"],
         "review_state": summary["review_state"],
         "topics_count": summary["topics_count"],
+        "subtopics_count": summary["subtopics_count"],
         "bibliography_count": summary["bibliography_count"],
         "gaps_count": summary["gaps_count"],
         "warnings_count": summary["warnings_count"],
@@ -1212,6 +1213,7 @@ def _bounded_edital_item(edital, repository: JsonStudyRepository, user_id: str) 
         "updated_at": updated_at,
         "analysis_status": _bounded_edital_analysis_status(edital, ingestion_state, review_state),
         "topics_count": len(edital.topics),
+        "subtopics_count": len(edital.subtopics),
         "bibliography_count": len(edital.bibliography),
         "gaps_count": len(alignment_result.gaps) if alignment_result is not None else 0,
         "review_state": review_state,
@@ -1248,6 +1250,7 @@ def _bounded_edital_summary_flags(summary: dict[str, object]) -> dict[str, objec
     needs_review = summary["review_state"] != "ready_for_review"
     return {
         "has_topics": summary["topics_count"] > 0,
+        "has_subtopics": summary["subtopics_count"] > 0,
         "has_bibliography": summary["bibliography_count"] > 0,
         "has_gaps": summary["gaps_count"] > 0,
         "needs_review": needs_review,

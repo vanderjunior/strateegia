@@ -36,6 +36,7 @@ function sanitizeEditalAnalysis(payload: unknown): BackendEditalAnalysisResponse
     analysis_status: toSafeAnalysisStatus(raw.analysis_status),
     review_state: toSafeString(raw.review_state) || "unknown",
     topics_count: toSafeNumber(raw.topics_count),
+    subtopics_count: toSafeNumber(raw.subtopics_count),
     bibliography_count: toSafeNumber(raw.bibliography_count),
     gaps_count: toSafeNumber(raw.gaps_count),
     warnings_count: toSafeNumber(raw.warnings_count),

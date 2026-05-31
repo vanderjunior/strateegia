@@ -74,6 +74,7 @@ describe("editais list API wrapper", () => {
                 status: "not_ready",
                 review_state: "needs_review",
                 topics_count: 12,
+                subtopics_count: 42,
                 bibliography_count: 8,
                 gaps_count: 3,
                 coverage_status: "unknown",
@@ -135,6 +136,7 @@ describe("editais list API wrapper", () => {
             created_at: "2026-05-27T00:00:00Z",
             updated_at: "2026-05-27T00:05:00Z",
             topics_count: 12,
+            subtopics_count: 42,
             bibliography_count: 8,
             gaps_count: 3,
             review_state: "needs_review",
@@ -143,6 +145,7 @@ describe("editais list API wrapper", () => {
             warnings_count: 2,
             summary: {
               has_topics: true,
+              has_subtopics: true,
               has_bibliography: true,
               has_gaps: true,
               needs_review: true

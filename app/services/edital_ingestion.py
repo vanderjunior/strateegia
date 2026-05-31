@@ -342,33 +342,45 @@ class EditalIngestionService:
             section_text = str(section.metadata.get("text") or "")
             current_topic_id: str | None = None
             for raw_line in self._meaningful_lines(section_text):
-                topic_match = re.match(r"^(?:\d+[\.\)]\s+|[-*•]\s+)(.+)$", raw_line)
-                subtopic_number_match = re.match(r"^\d+\.\d+(?:\.\d+)*\s+(.+)$", raw_line)
+                top_level_number_match = re.match(r"^\d+[\.\)]\s+(.+)$", raw_line)
+                bullet_match = re.match(r"^[-*•]\s+(.+)$", raw_line)
+                subtopic_number_match = re.match(r"^\d+\.\d+(?:\.\d+)*[\.\)]?\s+(.+)$", raw_line)
                 colon_match = re.match(r"^([^:]{3,120}):\s*(.*)$", raw_line)
                 candidate_text = None
                 trailing_text = None
                 reasoning = ""
                 confidence = 0.0
                 if subtopic_number_match and current_topic_id is not None:
-                    subtopic_title = subtopic_number_match.group(1).strip()
-                    subtopics.append(
-                        EditalSubtopicCandidate(
-                            subtopic_id=f"{current_topic_id}:subtopic:{subtopic_order}",
-                            parent_topic_id=current_topic_id,
-                            title=subtopic_title,
-                            normalized_title=self._normalize_text(subtopic_title),
-                            order_index=subtopic_order,
-                            source_chunk_ids=section.source_chunk_ids,
-                            source_excerpt=self._excerpt(raw_line),
-                            confidence=0.74,
-                            reasoning="numbered subtopic line inside content section",
-                        )
+                    subtopic_order = self._append_subtopic_candidates(
+                        subtopics,
+                        parent_topic_id=current_topic_id,
+                        source_text=subtopic_number_match.group(1),
+                        order_index=subtopic_order,
+                        section=section,
+                        raw_line=raw_line,
+                        confidence=0.74,
+                        reasoning="numbered subtopic line inside content section",
                     )
-                    subtopic_order += 1
                     continue
-                if topic_match:
-                    candidate_text = topic_match.group(1).strip()
-                    reasoning = "numbered or bulleted line inside content section"
+                if bullet_match and current_topic_id is not None:
+                    subtopic_order = self._append_subtopic_candidates(
+                        subtopics,
+                        parent_topic_id=current_topic_id,
+                        source_text=bullet_match.group(1),
+                        order_index=subtopic_order,
+                        section=section,
+                        raw_line=raw_line,
+                        confidence=0.7,
+                        reasoning="bulleted subtopic line inside current content topic",
+                    )
+                    continue
+                if top_level_number_match:
+                    candidate_text = top_level_number_match.group(1).strip()
+                    reasoning = "numbered topic line inside content section"
+                    confidence = 0.88
+                elif bullet_match:
+                    candidate_text = bullet_match.group(1).strip()
+                    reasoning = "bulleted topic line inside content section"
                     confidence = 0.88
                 elif colon_match:
                     candidate_text = colon_match.group(1).strip()
@@ -403,23 +415,47 @@ class EditalIngestionService:
                 )
                 current_topic_id = topic_id
                 if trailing_text:
-                    for piece in self._split_inline_items(trailing_text):
-                        subtopics.append(
-                            EditalSubtopicCandidate(
-                                subtopic_id=f"{topic_id}:subtopic:{subtopic_order}",
-                                parent_topic_id=topic_id,
-                                title=piece,
-                                normalized_title=self._normalize_text(piece),
-                                order_index=subtopic_order,
-                                source_chunk_ids=section.source_chunk_ids,
-                                source_excerpt=self._excerpt(raw_line),
-                                confidence=0.76,
-                                reasoning="inline list after colon in topic candidate",
-                            )
-                        )
-                        subtopic_order += 1
+                    subtopic_order = self._append_subtopic_candidates(
+                        subtopics,
+                        parent_topic_id=topic_id,
+                        source_text=trailing_text,
+                        order_index=subtopic_order,
+                        section=section,
+                        raw_line=raw_line,
+                        confidence=0.76,
+                        reasoning="inline list after colon in topic candidate",
+                    )
                 topic_order += 1
         return topics, subtopics
+
+    def _append_subtopic_candidates(
+        self,
+        subtopics: list[EditalSubtopicCandidate],
+        *,
+        parent_topic_id: str,
+        source_text: str,
+        order_index: int,
+        section: EditalSectionCandidate,
+        raw_line: str,
+        confidence: float,
+        reasoning: str,
+    ) -> int:
+        for piece in self._split_inline_items(source_text):
+            subtopics.append(
+                EditalSubtopicCandidate(
+                    subtopic_id=f"{parent_topic_id}:subtopic:{order_index}",
+                    parent_topic_id=parent_topic_id,
+                    title=piece,
+                    normalized_title=self._normalize_text(piece),
+                    order_index=order_index,
+                    source_chunk_ids=section.source_chunk_ids,
+                    source_excerpt=self._excerpt(raw_line),
+                    confidence=confidence,
+                    reasoning=reasoning,
+                )
+            )
+            order_index += 1
+        return order_index
 
     def _bibliography_candidates(
         self,

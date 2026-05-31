@@ -168,6 +168,7 @@ Implemented shape:
       "analysis_status": "analyzed",
       "review_state": "review_required",
       "topics_count": 12,
+      "subtopics_count": 42,
       "bibliography_count": 8,
       "gaps_count": 3,
       "coverage_status": "partial",
@@ -189,6 +190,7 @@ Allowed fields:
 - `updated_at`
 - `review_state`
 - `topics_count`
+- `subtopics_count`
 - `bibliography_count`
 - `gaps_count`
 - `coverage_status`
@@ -214,6 +216,8 @@ Lifecycle semantics:
 - allowed backend `analysis_status` values are `analyzed`, `needs_review`, `failed`, and `not_ready`
 - concrete study guidance may unlock only for analyzed edital metadata that is ready for review; uploaded-only, needs-review, failed, unknown, and unavailable states remain conservative
 - these lifecycle fields are read-only metadata and do not imply edital ingestion, OCR, generation, or progress mutation
+- `topics_count` counts bounded top-level edital subjects/topics; `subtopics_count` counts bounded child items detected under those subjects, such as numbered `1.1` lines, bullets, or safe inline semicolon/comma lists
+- the deterministic parser remains conservative: bibliography/reference lines are not counted as topics or subtopics, and raw topic text/evidence excerpts are not exposed by bounded read endpoints
 
 ### `GET /api/editais/{edital_id}/summary`
 
@@ -233,6 +237,7 @@ Implemented shape:
   "analysis_status": "needs_review",
   "review_state": "review_required",
   "topics_count": 12,
+  "subtopics_count": 42,
   "bibliography_count": 8,
   "gaps_count": 3,
   "coverage_status": "partial",
@@ -240,6 +245,7 @@ Implemented shape:
   "alignment_status": "ready_for_review",
   "summary": {
     "has_topics": true,
+    "has_subtopics": true,
     "has_bibliography": true,
     "has_gaps": true,
     "needs_review": true
@@ -250,6 +256,7 @@ Implemented shape:
 
 Summary lifecycle semantics:
 - `analysis_status` is bounded metadata included in the summary response
+- `topics_count` and `subtopics_count` keep top-level subjects separate from bounded child items
 - `summary.needs_review: true` or non-ready status metadata keeps study guidance conservative
 - summary responses must never expose raw edital text, raw bibliography bodies, source evidence snippets, OCR content, storage paths, or generated answer/correction fields
 
@@ -267,7 +274,7 @@ Preconditions:
 - non-edital materials return `422`
 - if extracted text artifacts are missing for `.txt`, `.md`, or textual `.pdf`, the endpoint may run safe deterministic no-OCR textual preparation internally before analysis
 - textual PDFs use embedded-text extraction only; controlled analysis never triggers OCR
-- the deterministic parser recognizes common edital headings such as `CONTEUDO PROGRAMATICO`, `CONHECIMENTOS`, `BIBLIOGRAFIA`, and `REFERÊNCIAS`, plus numbered/bulleted topic lines and subject-colon topic headings
+- the deterministic parser recognizes common edital headings such as `CONTEUDO PROGRAMATICO`, `CONHECIMENTOS`, `BIBLIOGRAFIA`, and `REFERÊNCIAS`, plus subject-colon headings, numbered top-level topics, numbered subitems like `1.1`, and child bullets under a current topic
 - missing/insufficient safe text, OCR-required PDFs, and unsupported extraction states return a bounded `not_ready` response
 
 Implemented shape:
@@ -279,6 +286,7 @@ Implemented shape:
   "analysis_status": "analyzed",
   "review_state": "ready_for_review",
   "topics_count": 12,
+  "subtopics_count": 42,
   "bibliography_count": 8,
   "gaps_count": 0,
   "warnings_count": 1,
@@ -292,6 +300,7 @@ Allowed fields:
 - `analysis_status`
 - `review_state`
 - `topics_count`
+- `subtopics_count`
 - `bibliography_count`
 - `gaps_count`
 - `warnings_count`

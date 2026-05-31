@@ -28,6 +28,29 @@ Nao sera cobrado: sistemas militares sigilosos.
 Prova objetiva: 20 questoes, 40 pontos, 50%.
 """
 
+STRUCTURED_TOPIC_SUBTOPIC_EDITAL = b"""# Conteudo Programatico
+
+Lingua Portuguesa:
+1.1 Compreensao e interpretacao de textos.
+1.2 Ortografia oficial.
+1.3 Pontuacao.
+
+Informatica:
+2.1 Redes de computadores.
+2.2 Seguranca da informacao.
+2.3 Banco de dados.
+
+Direito Administrativo:
+- Atos administrativos.
+- Poderes administrativos.
+- Responsabilidade civil do Estado.
+
+# Bibliografia
+
+BRASIL. Constituicao da Republica Federativa do Brasil. 1988.
+MANUAL DE QA. Referencia simulada para teste interno. 2026.
+"""
+
 
 def create_services(tmp_path):
     repository = JsonStudyRepository(tmp_path / "study_data.json")
@@ -91,6 +114,41 @@ def test_edital_ingestion_extracts_candidate_sections_topics_subtopics_bibliogra
     assert all(topic.reasoning for topic in result.topics)
     assert events
     json.dumps(result.model_dump(mode="json"), ensure_ascii=True)
+
+
+def test_edital_ingestion_preserves_subjects_and_bounded_subtopics_separately(tmp_path):
+    repository, uploaded, edital_service = prepare_processed_material(
+        tmp_path,
+        filename="edital-estruturado.md",
+        payload=STRUCTURED_TOPIC_SUBTOPIC_EDITAL,
+    )
+
+    state = edital_service.ingest_document(uploaded.metadata.document_id, user_id="user-a")
+    result = repository.get_edital_extraction_result(uploaded.metadata.document_id, user_id="user-a")
+
+    assert state.status == "ready_for_review"
+    assert state.topics_detected == 3
+    assert state.subtopics_detected == 9
+    assert state.bibliography_items_detected == 2
+    assert result is not None
+    assert [topic.title for topic in result.topics] == [
+        "Lingua Portuguesa",
+        "Informatica",
+        "Direito Administrativo",
+    ]
+    assert [subtopic.title for subtopic in result.subtopics] == [
+        "Compreensao e interpretacao de textos",
+        "Ortografia oficial",
+        "Pontuacao",
+        "Redes de computadores",
+        "Seguranca da informacao",
+        "Banco de dados",
+        "Atos administrativos",
+        "Poderes administrativos",
+        "Responsabilidade civil do Estado",
+    ]
+    assert all("Constituicao" not in topic.title for topic in result.topics)
+    assert all("Constituicao" not in subtopic.title for subtopic in result.subtopics)
 
 
 def test_ocr_required_source_returns_insufficient_text_safely(tmp_path):

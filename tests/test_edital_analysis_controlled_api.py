@@ -14,6 +14,7 @@ ALLOWED_ANALYSIS_KEYS = {
     "analysis_status",
     "review_state",
     "topics_count",
+    "subtopics_count",
     "bibliography_count",
     "gaps_count",
     "warnings_count",
@@ -165,6 +166,7 @@ def assert_bounded_analysis_payload(payload: dict[str, object]) -> None:
     assert payload["analysis_status"] in {"analyzed", "needs_review", "failed", "not_ready"}
     assert payload["review_state"] in {"ready_for_review", "needs_review", "pending", "unknown"}
     assert isinstance(payload["topics_count"], int)
+    assert isinstance(payload["subtopics_count"], int)
     assert isinstance(payload["bibliography_count"], int)
     assert isinstance(payload["gaps_count"], int)
     assert isinstance(payload["warnings_count"], int)
@@ -320,6 +322,7 @@ def test_controlled_edital_analysis_prepares_fresh_textual_pdf_without_ocr(tmp_p
     assert payload["analysis_status"] in {"analyzed", "needs_review"}
     assert payload["analysis_status"] != "not_ready"
     assert payload["topics_count"] >= 3
+    assert payload["subtopics_count"] >= 9
     assert payload["bibliography_count"] >= 2
 
     repeated = owner.post(f"/api/materials/{document_id}/edital/analyze")
@@ -355,6 +358,7 @@ def test_controlled_edital_analysis_prepares_fresh_unstructured_text_as_needs_re
     assert payload["analysis_status"] == "needs_review"
     assert payload["review_state"] == "needs_review"
     assert payload["topics_count"] == 0
+    assert payload["subtopics_count"] == 0
     assert payload["bibliography_count"] == 0
     assert payload["warnings_count"] >= 1
 
@@ -381,6 +385,7 @@ def test_controlled_edital_analysis_prepares_and_analyzes_fresh_structured_markd
     assert payload["analysis_status"] == "analyzed"
     assert payload["review_state"] == "ready_for_review"
     assert payload["topics_count"] >= 3
+    assert payload["subtopics_count"] >= 9
     assert payload["bibliography_count"] >= 2
 
     repeated = owner.post(f"/api/materials/{document_id}/edital/analyze")

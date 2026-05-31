@@ -319,6 +319,7 @@ export interface BackendProtectedEditaisListItem {
   status: string;
   review_state: string;
   topics_count: number;
+  subtopics_count?: number;
   bibliography_count: number;
   gaps_count: number;
   coverage_status: string;
@@ -343,6 +344,7 @@ export interface BackendEditalSummary {
   created_at: string | null;
   updated_at: string | null;
   topics_count: number;
+  subtopics_count?: number;
   bibliography_count: number;
   gaps_count: number;
   review_state: string;
@@ -351,6 +353,7 @@ export interface BackendEditalSummary {
   warnings_count: number;
   summary: {
     has_topics: boolean;
+    has_subtopics?: boolean;
     has_bibliography: boolean;
     has_gaps: boolean;
     needs_review: boolean;
@@ -384,6 +387,7 @@ export interface BackendEditalAnalysisResponse {
   analysis_status: EditalAnalysisStatus;
   review_state: string;
   topics_count: number;
+  subtopics_count?: number;
   bibliography_count: number;
   gaps_count: number;
   warnings_count: number;

@@ -26,6 +26,7 @@ describe("edital summary same-origin proxy route", () => {
           document_id: "doc-1",
           title: "Edital analisado da sessão",
           topics_count: 0,
+          subtopics_count: 0,
           bibliography_count: 0,
           gaps_count: 0,
           review_state: "unknown",
@@ -67,6 +68,7 @@ describe("edital summary same-origin proxy route", () => {
           title: "Edital recebido",
           analysis_status: "not_ready",
           topics_count: 0,
+          subtopics_count: 0,
           bibliography_count: 0,
           gaps_count: 0,
           review_state: "needs_review",
@@ -108,6 +110,7 @@ describe("edital summary same-origin proxy route", () => {
             updated_at: "2026-05-27T00:05:00Z",
             analysis_status: "needs_review",
             topics_count: 12,
+            subtopics_count: 42,
             bibliography_count: 8,
             gaps_count: 3,
             review_state: "needs_review",
@@ -116,6 +119,7 @@ describe("edital summary same-origin proxy route", () => {
             warnings_count: 2,
             summary: {
               has_topics: true,
+              has_subtopics: true,
               has_bibliography: true,
               has_gaps: true,
               needs_review: true,
@@ -149,6 +153,7 @@ describe("edital summary same-origin proxy route", () => {
       updated_at: "2026-05-27T00:05:00Z",
       analysis_status: "needs_review",
       topics_count: 12,
+      subtopics_count: 42,
       bibliography_count: 8,
       gaps_count: 3,
       review_state: "needs_review",
@@ -157,6 +162,7 @@ describe("edital summary same-origin proxy route", () => {
       warnings_count: 2,
       summary: {
         has_topics: true,
+        has_subtopics: true,
         has_bibliography: true,
         has_gaps: true,
         needs_review: true

@@ -15,6 +15,7 @@ ALLOWED_SUMMARY_KEYS = {
     "updated_at",
     "analysis_status",
     "topics_count",
+    "subtopics_count",
     "bibliography_count",
     "gaps_count",
     "review_state",
@@ -28,6 +29,7 @@ ALLOWED_SUMMARY_KEYS = {
 
 ALLOWED_NESTED_SUMMARY_KEYS = {
     "has_topics",
+    "has_subtopics",
     "has_bibliography",
     "has_gaps",
     "needs_review",
@@ -155,10 +157,12 @@ def test_edital_summary_returns_own_bounded_summary(tmp_path):
     assert payload["source"] == "user_scope"
     assert payload["analysis_status"] in {"analyzed", "needs_review", "failed", "not_ready"}
     assert payload["topics_count"] >= 1
+    assert payload["subtopics_count"] >= 0
     assert payload["bibliography_count"] >= 0
     assert payload["gaps_count"] == 0
     assert isinstance(payload["warnings_count"], int)
     assert isinstance(payload["summary"]["has_topics"], bool)
+    assert isinstance(payload["summary"]["has_subtopics"], bool)
     assert isinstance(payload["summary"]["has_bibliography"], bool)
     assert isinstance(payload["summary"]["has_gaps"], bool)
     assert isinstance(payload["summary"]["needs_review"], bool)
@@ -216,6 +220,7 @@ def test_edital_summary_shape_is_deterministic_and_bounded(tmp_path):
     assert set(first.keys()) == ALLOWED_SUMMARY_KEYS
     assert set(first["summary"].keys()) == ALLOWED_NESTED_SUMMARY_KEYS
     assert isinstance(first["topics_count"], int)
+    assert isinstance(first["subtopics_count"], int)
     assert isinstance(first["bibliography_count"], int)
     assert isinstance(first["gaps_count"], int)
     assert_no_forbidden_terms(first)

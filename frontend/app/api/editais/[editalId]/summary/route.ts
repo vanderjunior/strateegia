@@ -40,6 +40,7 @@ function sanitizeSummary(value: unknown): BackendEditalSummary["summary"] {
   const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
     has_topics: toSafeBoolean(raw.has_topics),
+    has_subtopics: toSafeBoolean(raw.has_subtopics),
     has_bibliography: toSafeBoolean(raw.has_bibliography),
     has_gaps: toSafeBoolean(raw.has_gaps),
     needs_review: toSafeBoolean(raw.needs_review)
@@ -56,6 +57,7 @@ function sanitizeEditalSummary(payload: unknown): BackendEditalSummary {
     updated_at: toSafeNullableString(raw.updated_at),
     analysis_status: toSafeAnalysisStatus(raw.analysis_status),
     topics_count: toSafeNumber(raw.topics_count),
+    subtopics_count: toSafeNumber(raw.subtopics_count),
     bibliography_count: toSafeNumber(raw.bibliography_count),
     gaps_count: toSafeNumber(raw.gaps_count),
     review_state: toSafeString(raw.review_state) || "unknown",
