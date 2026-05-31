@@ -577,6 +577,7 @@ export interface GapItem {
 
 export interface EditalListItem {
   id: string;
+  detailHref?: string;
   title: string;
   analysisStatus?: EditalAnalysisStatus;
   statusLabel: string;

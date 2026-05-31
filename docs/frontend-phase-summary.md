@@ -39,6 +39,7 @@
 - Controlled edital analysis QA is closed for the current `not_ready` path: the bounded response is preserved through `/api/editais`, the UI shows `Edital recebido` / `Análise ainda não concluída`, and the copy avoids implying analyzed topics, bibliography, coverage, or crosswalk output.
 - Controlled edital analysis can now prepare fresh textual PDF editais through the backend no-OCR path; browser/API QA confirmed textual PDFs no longer remain `not_ready` solely because extraction artifacts were missing.
 - OCR-required PDFs remain `not_ready`, do not trigger OCR from controlled analysis, and continue to keep study and PSCPP guidance gated.
+- Editais list metrics distinguish editais enviados, análises concluídas, and items aguardando análise/conferência; visible detail links preserve encoded `edital_id` values such as `edital:...`.
 - PSCPP guidance is framed as reference/demo when it is not driven by the user's analyzed edital.
 - Study workspace shows a next-step empty state until a real analyzed edital exists; demo orientations are clearly labeled as examples.
 - Editais workspace shows a clear empty state when no real edital analysis exists, including the case where an edital file was uploaded but not analyzed.

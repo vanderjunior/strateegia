@@ -52,24 +52,30 @@ function baseConnection(overrides: Partial<BackendConnectionInfo> = {}): Backend
 }
 
 function buildSummary(
+  received: number,
   analyzed: number,
-  topics: number,
   bibliography: number,
   gaps: number,
-  reviewItems: number
+  pendingOrReviewItems: number
 ): WorkspaceSummaryMetric[] {
   return [
     {
-      id: "editais-analisados",
-      label: "Editais analisados",
-      value: String(analyzed),
-      detail: "Leituras preliminares disponíveis para revisão."
+      id: "editais-enviados",
+      label: "Editais enviados",
+      value: String(received),
+      detail: "Arquivos de edital recebidos ou já analisados."
     },
     {
-      id: "editais-topicos",
-      label: "Tópicos candidatos",
-      value: String(topics),
-      detail: "Tópicos identificados em leitura preliminar."
+      id: "analises-concluidas",
+      label: "Análises concluídas",
+      value: String(analyzed),
+      detail: "Editais com análise disponível para consulta."
+    },
+    {
+      id: "analises-pendentes",
+      label: "Aguardando análise ou conferência",
+      value: String(pendingOrReviewItems),
+      detail: "Editais recebidos, não concluídos ou conservadores."
     },
     {
       id: "editais-bibliografia",
@@ -82,23 +88,20 @@ function buildSummary(
       label: "Gaps encontrados",
       value: String(gaps),
       detail: "Pontos que ainda exigem cobertura ou material complementar."
-    },
-    {
-      id: "editais-review",
-      label: "Itens para conferência",
-      value: String(reviewItems),
-      detail: "Itens que devem ser revistos antes de serem tratados como definitivos."
     }
   ];
 }
 
 function mockSummary(items: EditalListItem[]): WorkspaceSummaryMetric[] {
+  const analyzedItems = items.filter((item) => item.analysisStatus === "analyzed");
+  const pendingOrReviewItems = items.filter((item) => item.analysisStatus !== "analyzed");
+
   return buildSummary(
     items.length,
-    items.reduce((total, item) => total + item.topicsCount, 0),
-    items.reduce((total, item) => total + item.bibliographyItemsCount, 0),
+    analyzedItems.length,
+    analyzedItems.reduce((total, item) => total + item.bibliographyItemsCount, 0),
     items.reduce((total, item) => total + item.gapsCount, 0),
-    items.filter((item) => item.reviewState !== "Pronto para revisão").length
+    pendingOrReviewItems.length
   );
 }
 
@@ -138,11 +141,16 @@ function isNotReadyAnalysisStatus(value: BackendProtectedEditaisListItem["analys
   return value === "not_ready" || value === "uploaded_not_analyzed";
 }
 
+function isAnalyzedAnalysisStatus(value: BackendProtectedEditaisListItem["analysis_status"]): boolean {
+  return value === "analyzed";
+}
+
 function mapProtectedEditalItem(item: BackendProtectedEditaisListItem): EditalListItem {
   const notReady = isNotReadyAnalysisStatus(item.analysis_status);
 
   return {
     id: item.edital_id,
+    detailHref: `/editais/${encodeURIComponent(item.edital_id)}`,
     title: notReady ? "Edital recebido" : item.title,
     analysisStatus: item.analysis_status,
     statusLabel: editalStatusLabel(item),
@@ -363,22 +371,24 @@ export async function loadEditaisWorkspaceViewModel(): Promise<EditaisWorkspaceV
   }
 
   const items = editaisResult.data.items.map(mapProtectedEditalItem);
+  const analyzedItems = items.filter((item) => isAnalyzedAnalysisStatus(item.analysisStatus));
+  const pendingOrReviewItems = items.filter((item) => !isAnalyzedAnalysisStatus(item.analysisStatus));
 
   return {
     ...fallback,
     connection: {
       state: "connected",
       source: "backend",
-      title: "Editais analisados",
-      detail: "A listagem abaixo mostra editais analisados disponíveis para consulta.",
+      title: "Editais",
+      detail: "A listagem abaixo separa editais recebidos, análises concluídas e itens que ainda aguardam conferência.",
       endpoint: "/api/editais"
     },
     summary: buildSummary(
-      editaisResult.data.total_editais,
-      editaisResult.data.total_topics,
-      editaisResult.data.total_bibliography_items,
-      editaisResult.data.total_gaps,
-      items.filter((item) => item.reviewState !== "Pronto para revisão").length
+      items.length,
+      analyzedItems.length,
+      analyzedItems.reduce((total, item) => total + item.bibliographyItemsCount, 0),
+      items.reduce((total, item) => total + item.gapsCount, 0),
+      pendingOrReviewItems.length
     ),
     items
   };
@@ -394,7 +404,8 @@ export async function loadEditalDetail(editalId: string): Promise<{
   detail: EditalDetail | null;
 }> {
   const config = getApiConfig();
-  const fallback = buildMockEditalDetail(editalId);
+  const resolvedEditalId = safeDecodeEditalRouteId(editalId);
+  const fallback = buildMockEditalDetail(resolvedEditalId);
 
   if (config.forceMock) {
     return {
@@ -415,7 +426,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
     };
   }
 
-  const editalResult = await fetchEditalSummary(editalId);
+  const editalResult = await fetchEditalSummary(resolvedEditalId);
   if (!editalResult.ok) {
     if (editalResult.status === 404) {
       return {
@@ -424,7 +435,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
           source: "backend",
           title: "Item não encontrado",
           detail: "Este conteúdo não está disponível nesta sessão.",
-          endpoint: `/api/editais/${editalId}/summary`
+          endpoint: `/api/editais/${resolvedEditalId}/summary`
         },
         detail: null
       };
@@ -436,7 +447,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
           source: "backend",
           title: "Requer sessão",
           detail: "Entre para ver os detalhes deste edital.",
-          endpoint: `/api/editais/${editalId}/summary`
+          endpoint: `/api/editais/${resolvedEditalId}/summary`
         },
         detail: fallback
       };
@@ -445,13 +456,13 @@ export async function loadEditalDetail(editalId: string): Promise<{
       connection: connectionFromFailure(
         editalResult.source,
         editalResult.error.message,
-        `/api/editais/${editalId}/summary`
+        `/api/editais/${resolvedEditalId}/summary`
       ),
       detail: fallback
     };
   }
 
-  const detail = buildDetailFromSummary(editalId, editalResult.data);
+  const detail = buildDetailFromSummary(resolvedEditalId, editalResult.data);
 
   return {
     connection: {
@@ -461,8 +472,16 @@ export async function loadEditalDetail(editalId: string): Promise<{
       detail: detail.analysisStatus === "not_ready" || detail.analysisStatus === "uploaded_not_analyzed"
         ? "Este edital foi recebido, mas a análise ainda não está concluída."
         : "Este resumo do edital usa informações organizadas da sua conta e continua sujeito a revisão.",
-      endpoint: `/api/editais/${editalId}/summary`
+      endpoint: `/api/editais/${resolvedEditalId}/summary`
     },
     detail
   };
+}
+
+function safeDecodeEditalRouteId(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }

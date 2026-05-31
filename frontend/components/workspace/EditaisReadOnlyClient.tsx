@@ -126,7 +126,9 @@ export function EditaisReadOnlyClient() {
               <span className="max-w-[18rem] text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
                 {notReady ? "Análise ainda não concluída." : "Análise sujeita a revisão."}
               </span>
-              <WorkspaceLink href={`/editais/${item.id}`}>Ver edital</WorkspaceLink>
+              <WorkspaceLink href={item.detailHref ?? `/editais/${encodeURIComponent(item.id)}`}>
+                Ver edital
+              </WorkspaceLink>
             </div>
           </Card>
             );

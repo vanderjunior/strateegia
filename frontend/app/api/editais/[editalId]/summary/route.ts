@@ -22,6 +22,20 @@ function toSafeString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+function toSafeAnalysisStatus(value: unknown): BackendEditalSummary["analysis_status"] {
+  if (
+    value === "uploaded_not_analyzed" ||
+    value === "analyzed" ||
+    value === "needs_review" ||
+    value === "failed" ||
+    value === "not_ready" ||
+    value === "unknown"
+  ) {
+    return value;
+  }
+  return "unknown";
+}
+
 function sanitizeSummary(value: unknown): BackendEditalSummary["summary"] {
   const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
@@ -40,6 +54,7 @@ function sanitizeEditalSummary(payload: unknown): BackendEditalSummary {
     title: toSafeString(raw.title) || "Edital analisado da sessão",
     created_at: toSafeNullableString(raw.created_at),
     updated_at: toSafeNullableString(raw.updated_at),
+    analysis_status: toSafeAnalysisStatus(raw.analysis_status),
     topics_count: toSafeNumber(raw.topics_count),
     bibliography_count: toSafeNumber(raw.bibliography_count),
     gaps_count: toSafeNumber(raw.gaps_count),
@@ -65,7 +80,8 @@ export async function GET(
     );
   }
 
-  const { editalId } = await params;
+  const { editalId: routeEditalId } = await params;
+  const editalId = safeDecodeRouteParam(routeEditalId);
 
   try {
     const backendResponse = await fetch(
@@ -98,5 +114,13 @@ export async function GET(
       { detail: "Não foi possível carregar os dados agora." },
       { status: 502 }
     );
+  }
+}
+
+function safeDecodeRouteParam(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
 }

@@ -404,6 +404,10 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     expect((await screen.findAllByText("Edital recebido")).length).toBeGreaterThan(0);
     expect(screen.getByText("Análise ainda não concluída")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver edital" })).toHaveAttribute(
+      "href",
+      "/editais/edital%3Adoc-1"
+    );
     expect(screen.getByText(/Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos/i)).toBeInTheDocument();
     expect(screen.getByText(/Confira se o arquivo tem texto extraível/i)).toBeInTheDocument();
     expect(screen.queryByText("Edital analisado")).not.toBeInTheDocument();

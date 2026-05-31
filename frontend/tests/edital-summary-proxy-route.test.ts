@@ -58,6 +58,43 @@ describe("edital summary same-origin proxy route", () => {
     );
   });
 
+  it("decodes an encoded edital_id route segment before forwarding to backend", async () => {
+    const fetchSpy = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          edital_id: "edital:doc-1",
+          document_id: "doc-1",
+          title: "Edital recebido",
+          analysis_status: "not_ready",
+          topics_count: 0,
+          bibliography_count: 0,
+          gaps_count: 0,
+          review_state: "needs_review",
+          coverage_status: "unknown",
+          alignment_status: "not_available",
+          warnings_count: 1,
+          summary: {},
+          source: "user_scope"
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const response = await GET(new Request("http://localhost/api/editais/edital%3Adoc-1/summary"), {
+      params: Promise.resolve({ editalId: "edital%3Adoc-1" })
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://backend:8000/api/editais/edital%3Adoc-1/summary",
+      expect.objectContaining({
+        method: "GET",
+        cache: "no-store"
+      })
+    );
+  });
+
   it("sanitizes the bounded summary before returning it to the browser", async () => {
     vi.stubGlobal(
       "fetch",
@@ -69,6 +106,7 @@ describe("edital summary same-origin proxy route", () => {
             title: "Edital analisado da sessão",
             created_at: "2026-05-27T00:00:00Z",
             updated_at: "2026-05-27T00:05:00Z",
+            analysis_status: "needs_review",
             topics_count: 12,
             bibliography_count: 8,
             gaps_count: 3,
@@ -109,6 +147,7 @@ describe("edital summary same-origin proxy route", () => {
       title: "Edital analisado da sessão",
       created_at: "2026-05-27T00:00:00Z",
       updated_at: "2026-05-27T00:05:00Z",
+      analysis_status: "needs_review",
       topics_count: 12,
       bibliography_count: 8,
       gaps_count: 3,
