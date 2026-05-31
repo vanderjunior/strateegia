@@ -140,7 +140,7 @@ describe("materials adapter", () => {
     const viewModel = await loadMaterialsWorkspaceViewModel();
     const payload = JSON.stringify(viewModel);
 
-    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.title).toBe("Informações da sua conta");
     expect(viewModel.items).toHaveLength(3);
     expect(viewModel.items[0]).toMatchObject({
       id: "doc-1",
@@ -250,7 +250,7 @@ describe("materials adapter", () => {
     const viewModel = await loadMaterialDetail("doc-1");
     const payload = JSON.stringify(viewModel);
 
-    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.title).toBe("Informações da sua conta");
     expect(viewModel.connection.endpoint).toBe("/api/materials/doc-1/summary");
     expect(viewModel.detail).toMatchObject({
       id: "doc-1",

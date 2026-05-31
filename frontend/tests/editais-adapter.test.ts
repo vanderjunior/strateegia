@@ -112,7 +112,8 @@ describe("editais adapter", () => {
     expect(viewModel.items).toHaveLength(1);
     expect(viewModel.items[0]).toMatchObject({
       id: "edital-user-1",
-      title: "Edital analisado da sessão",
+      title: "Edital recebido",
+      analysisStatus: "not_ready",
       statusLabel: "Edital recebido",
       reviewState: "Análise ainda não concluída",
       topicsCount: 12,
@@ -124,6 +125,7 @@ describe("editais adapter", () => {
     expect(payload).not.toContain("extracted_text");
     expect(payload).not.toContain("storage_path");
     expect(payload).not.toContain("Análise candidata");
+    expect(payload).not.toContain("Edital analisado da sessão");
   });
 
   it("shows requires session and keeps demo fallback when unauthenticated", async () => {
@@ -209,7 +211,7 @@ describe("editais adapter", () => {
     const viewModel = await loadEditalDetail("edital-user-1");
     const payload = JSON.stringify(viewModel);
 
-    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.title).toBe("Informações da sua conta");
     expect(viewModel.connection.endpoint).toBe("/api/editais/edital-user-1/summary");
     expect(viewModel.detail).toMatchObject({
       id: "edital-user-1",
@@ -225,6 +227,57 @@ describe("editais adapter", () => {
     expect(payload).not.toContain("evidence");
     expect(payload).not.toContain("storage_path");
     expect(payload).not.toContain("/Users/");
+  });
+
+  it("uses received-only copy for not-ready edital summary", async () => {
+    vi.mocked(fetchEditalSummary).mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        edital_id: "edital-user-1",
+        document_id: "doc-1",
+        title: "Edital analisado da sessão",
+        created_at: "2026-05-27T00:00:00Z",
+        updated_at: "2026-05-27T00:05:00Z",
+        analysis_status: "not_ready",
+        topics_count: 0,
+        bibliography_count: 0,
+        gaps_count: 0,
+        review_state: "needs_review",
+        coverage_status: "unknown",
+        alignment_status: "not_available",
+        warnings_count: 2,
+        summary: {
+          has_topics: false,
+          has_bibliography: false,
+          has_gaps: false,
+          needs_review: true
+        },
+        source: "user_scope"
+      }
+    });
+
+    const viewModel = await loadEditalDetail("edital-user-1");
+    const payload = JSON.stringify(viewModel);
+
+    expect(viewModel.detail).toMatchObject({
+      title: "Edital recebido",
+      analysisStatus: "not_ready",
+      statusLabel: "Edital recebido",
+      reviewState: "Análise ainda não concluída",
+      topicCandidates: [],
+      bibliographyCandidates: [],
+      coverageItems: [],
+      gapItems: []
+    });
+    expect(payload).toContain("Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos");
+    expect(payload).toContain("Confira se o arquivo tem texto extraível");
+    expect(payload).not.toContain("Edital analisado da sessão");
+    expect(payload).not.toContain("Análise candidata");
+    expect(payload).not.toContain("Alinhamento preliminar");
+    expect(payload).not.toContain("tópicos candidatos identificados");
+    expect(payload).not.toContain("Cobertura do edital");
   });
 
   it("keeps safe fallback when edital summary requires session", async () => {

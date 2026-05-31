@@ -388,7 +388,8 @@ describe("materials, editais, and upload read-only invariants", () => {
       items: [
         {
           id: "edital:doc-1",
-          title: "Edital analisado da sessão",
+          title: "Edital recebido",
+          analysisStatus: "not_ready",
           statusLabel: "Edital recebido",
           topicsCount: 0,
           bibliographyItemsCount: 0,
@@ -401,10 +402,16 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     render(<EditaisReadOnlyClient />);
 
-    expect(await screen.findByText("Edital recebido")).toBeInTheDocument();
+    expect((await screen.findAllByText("Edital recebido")).length).toBeGreaterThan(0);
     expect(screen.getByText("Análise ainda não concluída")).toBeInTheDocument();
+    expect(screen.getByText(/Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Confira se o arquivo tem texto extraível/i)).toBeInTheDocument();
     expect(screen.queryByText("Edital analisado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Edital analisado da sessão")).not.toBeInTheDocument();
     expect(screen.queryByText("Análise candidata")).not.toBeInTheDocument();
+    expect(screen.queryByText("Análise preliminar, sujeita a revisão.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/O cruzamento com materiais/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tópicos candidatos/i)).not.toBeInTheDocument();
   });
 
   it("keeps upload entry gated and free of process and generation controls without a session", async () => {

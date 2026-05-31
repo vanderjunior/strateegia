@@ -16,6 +16,11 @@ import {
   WorkspaceSummaryGrid
 } from "@/components/workspace/WorkspaceShared";
 import { Badge } from "@/components/ui/badge";
+import type { EditalListItem } from "@/lib/api/types";
+
+function isNotReadyEdital(item: EditalListItem): boolean {
+  return item.analysisStatus === "not_ready" || item.analysisStatus === "uploaded_not_analyzed";
+}
 
 export function EditaisReadOnlyClient() {
   const [viewModel, setViewModel] = useState<EditaisWorkspaceViewModel>(buildMockEditaisWorkspaceViewModel());
@@ -36,9 +41,10 @@ export function EditaisReadOnlyClient() {
     };
   }, []);
 
-  const hasRealAnalyzedEdital =
+  const hasRealEditalItems =
     viewModel.connection.state === "connected" && viewModel.connection.source === "backend" && viewModel.items.length > 0;
-  const showEmptyState = !hasRealAnalyzedEdital;
+  const hasAnalyzedEditalItems = hasRealEditalItems && viewModel.items.some((item) => !isNotReadyEdital(item));
+  const showEmptyState = !hasRealEditalItems;
   const emptyStateTitle =
     readiness.editalAnalysisState === "analysis_unavailable"
       ? "Análise indisponível"
@@ -59,11 +65,14 @@ export function EditaisReadOnlyClient() {
         </p>
       </Card>
 
-      {showEmptyState ? null : <WorkspaceSummaryGrid items={viewModel.summary} />}
+      {hasAnalyzedEditalItems ? <WorkspaceSummaryGrid items={viewModel.summary} /> : null}
 
-      {hasRealAnalyzedEdital ? (
+      {hasRealEditalItems ? (
         <section className="grid gap-4 lg:grid-cols-2">
-          {viewModel.items.map((item) => (
+          {viewModel.items.map((item) => {
+            const notReady = isNotReadyEdital(item);
+
+            return (
           <Card key={item.id} className="flex h-full min-w-0 flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 max-w-[19rem]">
@@ -77,40 +86,51 @@ export function EditaisReadOnlyClient() {
               <Badge className={productStatusClass(item.statusLabel)}>{item.statusLabel}</Badge>
               <Badge className={productStatusClass(item.reviewState)}>{item.reviewState}</Badge>
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                  tópicos
-                </div>
-                <p className="mt-2 text-sm text-ink">{item.topicsCount}</p>
+            {notReady ? (
+              <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)] p-4">
+                <p className="text-sm leading-7 text-silver">
+                  Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos para orientar o estudo.
+                </p>
+                <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+                  Confira se o arquivo tem texto extraível ou envie uma versão textual.
+                </p>
               </div>
-              <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                  bibliografia
+            ) : (
+              <>
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                      tópicos
+                    </div>
+                    <p className="mt-2 text-sm text-ink">{item.topicsCount}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                      bibliografia
+                    </div>
+                    <p className="mt-2 text-sm text-ink">{item.bibliographyItemsCount}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                      gaps
+                    </div>
+                    <p className="mt-2 text-sm text-ink">{item.gapsCount}</p>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm text-ink">{item.bibliographyItemsCount}</p>
-              </div>
-              <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                  gaps
-                </div>
-                <p className="mt-2 text-sm text-ink">{item.gapsCount}</p>
-              </div>
-            </div>
-            <p className="mt-5 text-sm leading-7 text-silver">
-              O edital é lido para destacar tópicos candidatos, bibliografia identificada e lacunas.
-            </p>
-            <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              O cruzamento com materiais ajuda a apontar cobertura parcial e gaps encontrados.
-            </p>
+                <p className="mt-5 text-sm leading-7 text-silver">
+                  O edital analisado ajuda a organizar tópicos, bibliografia e lacunas para conferência.
+                </p>
+              </>
+            )}
             <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <span className="max-w-[18rem] text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
-                Análise preliminar, sujeita a revisão.
+                {notReady ? "Análise ainda não concluída." : "Análise sujeita a revisão."}
               </span>
               <WorkspaceLink href={`/editais/${item.id}`}>Ver edital</WorkspaceLink>
             </div>
           </Card>
-          ))}
+            );
+          })}
         </section>
       ) : (
         <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">

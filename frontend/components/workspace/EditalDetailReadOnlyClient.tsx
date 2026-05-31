@@ -85,6 +85,8 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
     );
   }
 
+  const isNotReady = detail.analysisStatus === "not_ready" || detail.analysisStatus === "uploaded_not_analyzed";
+
   return (
     <div className="space-y-8">
       <WorkspaceBackLink href="/editais">Voltar para editais</WorkspaceBackLink>
@@ -92,7 +94,11 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
       <WorkspaceSourcePanel
         eyebrow="edital"
         title={detail.title}
-        subtitle="Tópicos candidatos, bibliografia identificada e alinhamento preliminar em revisão."
+        subtitle={
+          isNotReady
+            ? "Este edital foi recebido, mas a análise ainda não está concluída."
+            : "Informações do edital organizadas para conferência."
+        }
         connection={connection}
       />
 
@@ -103,29 +109,42 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
             <Badge className={productStatusClass(detail.statusLabel)}>{detail.statusLabel}</Badge>
             <Badge className={productStatusClass(detail.reviewState)}>{detail.reviewState}</Badge>
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                tópicos
-              </div>
-              <p className="mt-2 text-sm text-ink">{detail.topicsCount}</p>
+          {isNotReady ? (
+            <div className="mt-6 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)] p-4">
+              <p className="text-sm leading-7 text-silver">
+                Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos para orientar o estudo.
+              </p>
+              <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+                Confira se o arquivo tem texto extraível ou envie uma versão textual.
+              </p>
             </div>
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                bibliografia
+          ) : (
+            <>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                    tópicos
+                  </div>
+                  <p className="mt-2 text-sm text-ink">{detail.topicsCount}</p>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                    bibliografia
+                  </div>
+                  <p className="mt-2 text-sm text-ink">{detail.bibliographyItemsCount}</p>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                    gaps
+                  </div>
+                  <p className="mt-2 text-sm text-ink">{detail.gapsCount}</p>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-ink">{detail.bibliographyItemsCount}</p>
-            </div>
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                gaps
-              </div>
-              <p className="mt-2 text-sm text-ink">{detail.gapsCount}</p>
-            </div>
-          </div>
-          <p className="mt-6 text-sm leading-7 text-silver">
-            Os itens abaixo são candidatos e permanecem sujeitos a revisão antes de qualquer uso posterior.
-          </p>
+              <p className="mt-6 text-sm leading-7 text-silver">
+                Os itens abaixo são candidatos e permanecem sujeitos a revisão antes de qualquer uso posterior.
+              </p>
+            </>
+          )}
         </Card>
 
         <Card className="min-w-0">
@@ -139,7 +158,7 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      {isNotReady ? null : <section className="grid gap-4 xl:grid-cols-2">
         <Card className="min-w-0">
           <div className="section-kicker">tópicos candidatos</div>
           <CardTitle className="mt-5 break-words text-[1.8rem]">Tópicos candidatos</CardTitle>
@@ -174,9 +193,9 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
             <p className="mt-5 text-sm leading-7 text-silver">Nenhuma referência para exibir ainda.</p>
           )}
         </Card>
-      </section>
+      </section>}
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      {isNotReady ? null : <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="min-w-0">
           <div className="section-kicker">cobertura</div>
           <CardTitle className="mt-5 break-words text-[1.8rem]">Alinhamento preliminar</CardTitle>
@@ -214,11 +233,13 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
             ))}
           </div>
         </Card>
-      </section>
+      </section>}
 
       <Card className="min-w-0">
         <div className="section-kicker">notas</div>
-        <CardTitle className="mt-5 break-words text-[1.8rem]">Leitura sujeita a revisão</CardTitle>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">
+          {isNotReady ? "Análise ainda não concluída" : "Leitura sujeita a revisão"}
+        </CardTitle>
         <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
           {detail.notes.map((note) => (
             <li key={note}>• {note}</li>

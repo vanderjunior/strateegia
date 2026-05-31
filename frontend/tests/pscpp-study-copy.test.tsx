@@ -71,6 +71,10 @@ describe("PSCPP and study workspace copy", () => {
     expect(screen.getAllByText(/Esta área depende de um edital analisado/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Questões ainda não disponíveis/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/As questões serão preparadas depois que houver edital analisado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Dados reais da sessão/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/leituras protegidas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/metadados seguros/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/leitura protegida/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Ciclo de demonstração, não personalizado/i)).toBeInTheDocument();
     expect(screen.getAllByText("Seu estudo guiado ainda não foi montado.").length).toBeGreaterThan(0);
     expect(screen.queryByText("Pronto para estudo")).not.toBeInTheDocument();

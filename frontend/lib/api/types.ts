@@ -578,6 +578,7 @@ export interface GapItem {
 export interface EditalListItem {
   id: string;
   title: string;
+  analysisStatus?: EditalAnalysisStatus;
   statusLabel: string;
   topicsCount: number;
   bibliographyItemsCount: number;

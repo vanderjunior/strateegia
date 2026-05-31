@@ -252,7 +252,7 @@ function normalizeMaterialReviewState(summary: BackendMaterialSummary): string {
 }
 
 function normalizeMaterialWarnings(summary: BackendMaterialSummary): string[] {
-  const warnings = ["Este resumo mostra apenas metadados seguros do material."];
+  const warnings = ["Este resumo mostra apenas informações organizadas do material."];
   if (summary.extraction_status.toLowerCase().includes("ocr") || summary.pipeline.has_ocr_warning) {
     warnings.push("PDFs escaneados podem exigir OCR e revisão adicional.");
     warnings.push("OCR em validação.");
@@ -300,7 +300,7 @@ function buildMaterialDetailFromSummary(materialId: string, summary: BackendMate
           ]
         : [],
     sourceNote:
-      "Resumo carregado por consulta protegida e apresentado sem texto bruto, OCR completo ou trechos do documento."
+      "Resumo apresentado sem texto bruto, OCR completo ou trechos do documento."
   };
 }
 
@@ -364,9 +364,9 @@ export async function loadMaterialsWorkspaceViewModel(): Promise<MaterialsWorksp
     connection: {
       state: "connected",
       source: "backend",
-      title: "Dados reais da sessão",
+      title: "Informações da sua conta",
       detail:
-        "A listagem abaixo mostra os materiais recentes da sua sessão.",
+        "A listagem abaixo mostra seus materiais recentes.",
       endpoint: "/api/materials"
     },
     summary: workspaceSummary(
@@ -431,7 +431,7 @@ export async function loadMaterialDetail(materialId: string): Promise<{
           state: "auth_required",
           source: "backend",
           title: "Requer sessão",
-          detail: "Os detalhes reais do material exigem uma sessão válida para consulta protegida.",
+          detail: "Entre para ver os detalhes deste material.",
           endpoint: `/api/materials/${materialId}/summary`
         },
         detail: fallback
@@ -454,8 +454,8 @@ export async function loadMaterialDetail(materialId: string): Promise<{
     connection: {
       state: "connected",
       source: "backend",
-      title: "Dados reais da sessão",
-      detail: "Este resumo do material usa metadados seguros da sua sessão.",
+      title: "Informações da sua conta",
+      detail: "Este resumo do material usa informações organizadas da sua conta.",
       endpoint: `/api/materials/${materialId}/summary`
     },
     detail

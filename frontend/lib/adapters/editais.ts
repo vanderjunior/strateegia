@@ -134,10 +134,17 @@ function editalReviewLabel(item: BackendProtectedEditaisListItem): string {
   }
 }
 
+function isNotReadyAnalysisStatus(value: BackendProtectedEditaisListItem["analysis_status"]): boolean {
+  return value === "not_ready" || value === "uploaded_not_analyzed";
+}
+
 function mapProtectedEditalItem(item: BackendProtectedEditaisListItem): EditalListItem {
+  const notReady = isNotReadyAnalysisStatus(item.analysis_status);
+
   return {
     id: item.edital_id,
-    title: item.title,
+    title: notReady ? "Edital recebido" : item.title,
+    analysisStatus: item.analysis_status,
     statusLabel: editalStatusLabel(item),
     topicsCount: item.topics_count,
     bibliographyItemsCount: item.bibliography_count,
@@ -241,7 +248,8 @@ function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary)
 
   return {
     id: editalId,
-    title: summary.title || "Edital analisado",
+    title: notReady ? "Edital recebido" : summary.title || "Edital analisado",
+    analysisStatus: summary.analysis_status,
     statusLabel,
     topicsCount: summary.topics_count,
     bibliographyItemsCount: summary.bibliography_count,
@@ -254,22 +262,24 @@ function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary)
     bibliographyCandidates: !notReady && summary.summary.has_bibliography
       ? [`${summary.bibliography_count} referências identificadas para conferência`]
       : [],
-    coverageItems: [
-      {
-        id: `${summary.edital_id}:coverage`,
-        title: "Cobertura do edital",
-        coverageLabel,
-        detail: "Resumo de cobertura calculado por metadados seguros e sujeito a revisão.",
-        source: "backend"
-      },
-      {
-        id: `${summary.edital_id}:alignment`,
-        title: "Alinhamento da bibliografia",
-        coverageLabel: alignmentLabel,
-        detail: "Alinhamento preliminar sem evidências ou trechos brutos nesta tela.",
-        source: "backend"
-      }
-    ],
+    coverageItems: notReady
+      ? []
+      : [
+          {
+            id: `${summary.edital_id}:coverage`,
+            title: "Cobertura do edital",
+            coverageLabel,
+            detail: "Resumo de cobertura sujeito a revisão.",
+            source: "backend"
+          },
+          {
+            id: `${summary.edital_id}:alignment`,
+            title: "Alinhamento da bibliografia",
+            coverageLabel: alignmentLabel,
+            detail: "Alinhamento sem evidências ou trechos brutos nesta tela.",
+            source: "backend"
+          }
+        ],
     gapItems: !notReady && summary.summary.has_gaps
       ? [
           {
@@ -282,9 +292,11 @@ function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary)
         ]
       : [],
     warnings: [
-      "Este resumo mostra apenas metadados seguros do edital.",
       notReady
-        ? "Este edital ainda não está pronto para análise."
+        ? "Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos para orientar o estudo."
+        : "Este resumo mostra apenas informações organizadas do edital.",
+      notReady
+        ? "Confira se o arquivo tem texto extraível ou envie uma versão textual."
         : summary.summary.needs_review
         ? "A análise candidata precisa de conferência antes de orientar decisões finais."
         : "Mesmo quando pronto para revisão, o edital deve ser conferido antes de uso final.",
@@ -423,7 +435,7 @@ export async function loadEditalDetail(editalId: string): Promise<{
           state: "auth_required",
           source: "backend",
           title: "Requer sessão",
-          detail: "Os detalhes reais do edital exigem uma sessão válida para consulta protegida.",
+          detail: "Entre para ver os detalhes deste edital.",
           endpoint: `/api/editais/${editalId}/summary`
         },
         detail: fallback
@@ -445,8 +457,10 @@ export async function loadEditalDetail(editalId: string): Promise<{
     connection: {
       state: "connected",
       source: "backend",
-      title: "Dados reais da sessão",
-      detail: "Este resumo do edital usa metadados seguros da sua sessão e continua marcado como análise preliminar.",
+      title: "Informações da sua conta",
+      detail: detail.analysisStatus === "not_ready" || detail.analysisStatus === "uploaded_not_analyzed"
+        ? "Este edital foi recebido, mas a análise ainda não está concluída."
+        : "Este resumo do edital usa informações organizadas da sua conta e continua sujeito a revisão.",
       endpoint: `/api/editais/${editalId}/summary`
     },
     detail

@@ -139,7 +139,7 @@ export function buildDefaultRealUserStudyReadiness(
   const editalAnalysis = editalAnalysisCopy(editalAnalysisState);
 
   return {
-    connection: baseConnection("mock", "Orientação de demonstração", "A orientação concreta depende de dados reais da sessão."),
+    connection: baseConnection("mock", "Orientação de demonstração", "A orientação concreta depende das informações da sua conta."),
     isAuthenticated: false,
     hasRealMaterials: false,
     hasRealEditalMaterial: false,
@@ -242,7 +242,7 @@ export async function loadRealUserStudyReadiness(): Promise<RealUserStudyReadine
   const canShowConcreteStudyPlan = editalAnalysisState === "edital_analyzed";
 
   return buildDefaultRealUserStudyReadiness({
-    connection: baseConnection("backend", "Dados reais da sessão", "Estado calculado a partir de leituras protegidas e metadados seguros."),
+    connection: baseConnection("backend", "Informações da sua conta", "Estado baseado nos materiais e editais da sua conta."),
     isAuthenticated: true,
     hasRealMaterials: materialsResult.data.items.length > 0,
     hasRealEditalMaterial: hasEditalMaterial,

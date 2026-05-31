@@ -28,7 +28,7 @@ export function capabilityStatusBadgeClass(status: CapabilityStatus): string {
 export function sourceLabel(source: ApiSource): string {
   switch (source) {
     case "backend":
-      return "Dados reais";
+      return "Informações da sua conta";
     case "offline":
       return "Demonstração";
     case "unsupported":

@@ -190,7 +190,7 @@ export async function loadPipelineDetail(documentId: string): Promise<{
           state: "auth_required",
           source: "backend",
           title: "Requer sessão",
-          detail: "O pipeline real do material exige uma sessão válida para consulta protegida.",
+          detail: "Entre para ver a linha de processamento deste material.",
           endpoint: `/api/materials/${documentId}/pipeline/summary`
         },
         detail: fallback
@@ -210,8 +210,8 @@ export async function loadPipelineDetail(documentId: string): Promise<{
   const connection: BackendConnectionInfo = {
     state: "connected",
     source: "backend",
-    title: "Dados reais da sessão",
-    detail: "O pipeline foi consultado por resumo seguro e apresentado em linguagem de produto.",
+    title: "Informações da sua conta",
+    detail: "A linha de processamento foi apresentada em linguagem de produto.",
     endpoint: `/api/materials/${documentId}/pipeline/summary`
   };
 

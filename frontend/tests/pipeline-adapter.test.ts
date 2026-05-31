@@ -107,7 +107,7 @@ describe("pipeline adapter", () => {
     const viewModel = await loadPipelineDetail("doc-1");
     const payload = JSON.stringify(viewModel);
 
-    expect(viewModel.connection.title).toBe("Dados reais da sessão");
+    expect(viewModel.connection.title).toBe("Informações da sua conta");
     expect(viewModel.connection.endpoint).toBe("/api/materials/doc-1/pipeline/summary");
     expect(viewModel.detail).toMatchObject({
       documentId: "doc-1",
