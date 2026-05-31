@@ -157,6 +157,57 @@ OCR rule:
 - OCR-required material returns `not_ready`.
 - This contract must not implement OCR or promise scanned PDF support.
 
+## Current Readiness Criteria
+
+Current controlled analysis depends on existing persisted pipeline artifacts, not only on the upload response:
+
+- Uploading `.txt` or `.md` stores text on the uploaded material record, but controlled edital analysis reads the persisted `DocumentExtractionResult` created by `/api/materials/{document_id}/process`.
+- A freshly uploaded textual edital that has not been processed therefore returns `analysis_status=not_ready`, even when the upload response has extracted text.
+- Scanned PDFs, OCR-required files, missing extraction, or text shorter than the ingestion threshold remain `not_ready`.
+- Plain unstructured text such as `Conteúdo programático: Português, Informática...` is not enough to produce top-level topic candidates with the current deterministic parser.
+
+The current deterministic analyzer recognizes topics when both conditions are true:
+
+- Pipeline processing has created extraction, sections, and chunks.
+- A section heading is recognizable as content program text, for example a Markdown heading such as `## 1. CONTEUDO PROGRAMATICO`.
+- Topic lines are numbered or bulleted top-level entries, for example `1. Lingua Portuguesa: Compreensao de textos; Ortografia oficial`.
+
+The current deterministic analyzer recognizes bibliography when both conditions are true:
+
+- A section heading is recognizable as bibliography, for example `## 2. BIBLIOGRAFIA`.
+- Reference-like lines are present. Years improve confidence but are not exposed through bounded reads.
+
+Minimal structured Markdown fixture expected to reach `analysis_status=analyzed`:
+
+```markdown
+# EDITAL DE QA
+
+## 1. CONTEUDO PROGRAMATICO
+
+1. Lingua Portuguesa: Compreensao e interpretacao de textos; Ortografia oficial; Pontuacao.
+2. Informatica: Redes de computadores; Seguranca da informacao; Banco de dados.
+3. Direito Administrativo: Atos administrativos; Poderes administrativos; Responsabilidade civil do Estado.
+
+## 2. BIBLIOGRAFIA
+
+BRASIL. Constituicao da Republica Federativa do Brasil. 1988.
+MANUAL DE QA. Referencia simulada para teste interno. 2026.
+```
+
+Status criteria for the current implementation:
+
+- `not_ready`: no persisted safe extraction, OCR required, text too short, pending/started ingestion, or no safe source to inspect.
+- `needs_review`: bounded extraction exists but has warnings, such as no topic candidates, partial structure, alignment warnings, or gaps.
+- `analyzed`: bounded extraction exists, the ingestion state is ready for review, and no extraction/alignment warnings require conservative gating.
+
+`needs_review` and `not_ready` remain conservative states. They do not unlock concrete study, PSCPP personalization, Ciclo, Questões, Simulados, or Execução.
+
+Recommended next implementation before Coverage-A:
+
+- Decide whether controlled edital analysis should trigger the existing deterministic `/process` step for textual uploads, or whether the UI should require/offer a separate material processing step first.
+- If broader `.txt` support is needed, add a narrow parser enhancement that can split inline `Conteúdo programático: ...` text into bounded topic candidates without exposing raw text.
+- Keep OCR, generation, coverage planning, and progress mutation out of this transition.
+
 ## Frontend Implications
 
 Future phases may add:

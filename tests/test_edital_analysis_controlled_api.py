@@ -47,6 +47,29 @@ FORBIDDEN_RESPONSE_TERMS = (
 )
 
 
+MINIMAL_STRUCTURED_EDITAL = b"""# EDITAL DE QA
+
+## 1. CONTEUDO PROGRAMATICO
+
+1. Lingua Portuguesa: Compreensao e interpretacao de textos; Ortografia oficial; Pontuacao.
+
+2. Informatica: Redes de computadores; Seguranca da informacao; Banco de dados.
+
+3. Direito Administrativo: Atos administrativos; Poderes administrativos; Responsabilidade civil do Estado.
+
+## 2. BIBLIOGRAFIA
+
+BRASIL. Constituicao da Republica Federativa do Brasil. 1988.
+MANUAL DE QA. Referencia simulada para teste interno. 2026.
+"""
+
+
+SIMPLE_UNSTRUCTURED_EDITAL = (
+    b"Conteudo programatico: Portugues, Informatica, Direito Administrativo. "
+    b"Bibliografia: Constituicao Federal."
+)
+
+
 def create_clients(tmp_path):
     repository = JsonStudyRepository(tmp_path / "study_data.json")
     app = create_app(repository=repository)
@@ -189,6 +212,61 @@ def test_controlled_edital_analysis_returns_not_ready_without_safe_text(tmp_path
     assert payload["document_id"] == document_id
     assert payload["analysis_status"] == "not_ready"
     assert payload["review_state"] == "needs_review"
+
+
+def test_controlled_edital_analysis_returns_not_ready_for_fresh_text_upload_without_pipeline_artifacts(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    uploaded = upload_material(
+        owner,
+        filename="edital-simples.txt",
+        material_type="edital",
+        content=SIMPLE_UNSTRUCTURED_EDITAL,
+        content_type="text/plain",
+    )
+    document_id = uploaded["metadata"]["document_id"]
+
+    response = owner.post(f"/api/materials/{document_id}/edital/analyze")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert_bounded_analysis_payload(payload)
+    assert payload["document_id"] == document_id
+    assert payload["analysis_status"] == "not_ready"
+    assert payload["topics_count"] == 0
+    assert payload["bibliography_count"] == 0
+    assert payload["warnings_count"] >= 1
+
+
+def test_controlled_edital_analysis_analyzes_minimal_structured_markdown_fixture(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    uploaded = upload_material(
+        owner,
+        filename="edital-qa.md",
+        material_type="edital",
+        content=MINIMAL_STRUCTURED_EDITAL,
+        content_type="text/markdown",
+    )
+    document_id = uploaded["metadata"]["document_id"]
+    processed = owner.post(f"/api/materials/{document_id}/process")
+    assert processed.status_code == 200
+
+    response = owner.post(f"/api/materials/{document_id}/edital/analyze")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert_bounded_analysis_payload(payload)
+    assert payload["document_id"] == document_id
+    assert payload["edital_id"] == f"edital:{document_id}"
+    assert payload["analysis_status"] == "analyzed"
+    assert payload["review_state"] == "ready_for_review"
+    assert payload["topics_count"] >= 3
+    assert payload["bibliography_count"] >= 2
+
+    repeated = owner.post(f"/api/materials/{document_id}/edital/analyze")
+    assert repeated.status_code == 200
+    assert repeated.json() == payload
 
 
 def test_controlled_edital_analysis_returns_bounded_success_and_populates_reads(tmp_path):
