@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from app.repositories.json_store import JsonStudyRepository
+from tests.fixtures.ocr_documents import minimal_textual_pdf_bytes, ocr_required_pdf_result
 
 
 ALLOWED_ANALYSIS_KEYS = {
@@ -68,6 +69,20 @@ SIMPLE_UNSTRUCTURED_EDITAL = (
     b"Conteudo programatico: Portugues, Informatica, Direito Administrativo. "
     b"Bibliografia: Constituicao Federal."
 )
+
+TEXTUAL_PDF_EDITAL = """EDITAL DE QA
+
+CONTEUDO PROGRAMATICO
+
+1. Lingua Portuguesa: Compreensao e interpretacao de textos; Ortografia oficial.
+2. Informatica: Redes de computadores; Seguranca da informacao.
+3. Direito Administrativo: Atos administrativos; Poderes administrativos.
+
+BIBLIOGRAFIA
+
+BRASIL. Constituicao da Republica Federativa do Brasil. 1988.
+MANUAL DE QA. Referencia simulada para teste interno. 2026.
+"""
 
 
 def create_clients(tmp_path):
@@ -175,6 +190,24 @@ def test_controlled_edital_analysis_is_user_scoped(tmp_path):
     assert response.status_code == 404
 
 
+def test_controlled_edital_analysis_pdf_is_user_scoped(tmp_path):
+    owner, other, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    register_and_login(other, "other")
+    uploaded = upload_material(
+        owner,
+        filename="edital-textual.pdf",
+        material_type="edital",
+        content=minimal_textual_pdf_bytes(TEXTUAL_PDF_EDITAL),
+        content_type="application/pdf",
+    )
+    document_id = uploaded["metadata"]["document_id"]
+
+    response = other.post(f"/api/materials/{document_id}/edital/analyze")
+
+    assert response.status_code == 404
+
+
 def test_controlled_edital_analysis_rejects_non_edital_material(tmp_path):
     owner, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
@@ -192,9 +225,33 @@ def test_controlled_edital_analysis_rejects_non_edital_material(tmp_path):
     assert response.json()["detail"] == "Material is not classified as edital."
 
 
-def test_controlled_edital_analysis_returns_not_ready_without_safe_text(tmp_path):
+def test_controlled_edital_analysis_rejects_non_edital_pdf_material(tmp_path):
     owner, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
+    uploaded = upload_material(
+        owner,
+        filename="apostila.pdf",
+        material_type="study_material",
+        content=minimal_textual_pdf_bytes("Material de estudo com texto suficiente para leitura segura."),
+        content_type="application/pdf",
+    )
+    document_id = uploaded["metadata"]["document_id"]
+
+    response = owner.post(f"/api/materials/{document_id}/edital/analyze")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Material is not classified as edital."
+
+
+def test_controlled_edital_analysis_returns_not_ready_without_safe_text(tmp_path, monkeypatch):
+    owner, _, _, repository = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+
+    def fail_if_ocr_runs(*args, **kwargs):
+        raise AssertionError("Controlled edital analysis must not run OCR automatically.")
+
+    monkeypatch.setattr("app.services.document_pipeline.extract_text_from_pdf", lambda _path: ocr_required_pdf_result())
+    monkeypatch.setattr("app.services.document_pipeline.extract_text_with_ocr", fail_if_ocr_runs)
     uploaded = upload_material(
         owner,
         filename="edital.pdf",
@@ -212,6 +269,56 @@ def test_controlled_edital_analysis_returns_not_ready_without_safe_text(tmp_path
     assert payload["document_id"] == document_id
     assert payload["analysis_status"] == "not_ready"
     assert payload["review_state"] == "needs_review"
+    extraction = repository.get_document_extraction_result(document_id, user_id=registered_user_id(owner))
+    assert extraction is not None
+    assert extraction.metadata["requires_ocr"] is True
+    assert extraction.metadata["ocr_attempted"] is False
+
+
+def registered_user_id(client: TestClient) -> str:
+    me = client.get("/api/auth/me")
+    assert me.status_code == 200
+    payload = me.json()
+    assert payload["authenticated"] is True
+    return payload["user"]["user_id"]
+
+
+def test_controlled_edital_analysis_prepares_fresh_textual_pdf_without_ocr(tmp_path, monkeypatch):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+
+    def fail_if_ocr_runs(*args, **kwargs):
+        raise AssertionError("Controlled edital analysis must not run OCR automatically.")
+
+    monkeypatch.setattr("app.services.document_pipeline.extract_text_with_ocr", fail_if_ocr_runs)
+    uploaded = upload_material(
+        owner,
+        filename="edital-textual.pdf",
+        material_type="edital",
+        content=minimal_textual_pdf_bytes(TEXTUAL_PDF_EDITAL),
+        content_type="application/pdf",
+    )
+    document_id = uploaded["metadata"]["document_id"]
+
+    response = owner.post(f"/api/materials/{document_id}/edital/analyze")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert_bounded_analysis_payload(payload)
+    assert payload["document_id"] == document_id
+    assert payload["analysis_status"] in {"analyzed", "needs_review"}
+    assert payload["analysis_status"] != "not_ready"
+
+    repeated = owner.post(f"/api/materials/{document_id}/edital/analyze")
+    assert repeated.status_code == 200
+    assert repeated.json() == payload
+
+    list_response = owner.get("/api/editais")
+    assert list_response.status_code == 200
+    list_payload = list_response.json()
+    assert list_payload["count"] == 1
+    assert [item["edital_id"] for item in list_payload["items"]] == [payload["edital_id"]]
+    assert_no_forbidden_terms(list_payload)
 
 
 def test_controlled_edital_analysis_prepares_fresh_unstructured_text_as_needs_review(tmp_path):

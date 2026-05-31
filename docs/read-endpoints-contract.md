@@ -265,8 +265,9 @@ Preconditions:
 - missing or non-owner materials return `404`
 - the uploaded material must have `material_type: "edital"`
 - non-edital materials return `422`
-- if extracted text artifacts are missing for `.txt` or `.md`, the endpoint may run safe deterministic textual preparation internally before analysis
-- missing/insufficient safe text, OCR-required files, and unsupported extraction states return a bounded `not_ready` response
+- if extracted text artifacts are missing for `.txt`, `.md`, or textual `.pdf`, the endpoint may run safe deterministic no-OCR textual preparation internally before analysis
+- textual PDFs use embedded-text extraction only; controlled analysis never triggers OCR
+- missing/insufficient safe text, OCR-required PDFs, and unsupported extraction states return a bounded `not_ready` response
 
 Implemented shape:
 

@@ -57,11 +57,28 @@ class DocumentPipelineService:
 
         return self._process_material(material, user_id=user_id)
 
+    def prepare_document_without_ocr(
+        self,
+        document_id: str,
+        *,
+        user_id: str | None,
+    ) -> DocumentPipelineState:
+        material = self.repository.get_uploaded_material(document_id, user_id=user_id)
+        if material is None:
+            raise ValueError("Document not found.")
+
+        existing_state = self.repository.get_document_pipeline_state(document_id, user_id=user_id)
+        if existing_state is not None and existing_state.current_stage in FINAL_PIPELINE_STAGES:
+            return existing_state
+
+        return self._process_material(material, user_id=user_id, allow_ocr=False)
+
     def _process_material(
         self,
         material: UploadedMaterial,
         *,
         user_id: str | None,
+        allow_ocr: bool = True,
     ) -> DocumentPipelineState:
         document_id = material.metadata.document_id
         created_at = utc_now()
@@ -117,6 +134,7 @@ class DocumentPipelineService:
                     file_path=file_path,
                     events=events,
                     user_id=user_id,
+                    allow_ocr=allow_ocr,
                 )
             error = DocumentProcessingError(
                 code="unsupported_material_type",
@@ -207,6 +225,7 @@ class DocumentPipelineService:
         file_path: Path,
         events: list[DocumentPipelineEvent],
         user_id: str | None,
+        allow_ocr: bool = True,
     ) -> DocumentPipelineState:
         events.append(
             self._event(
@@ -231,6 +250,22 @@ class DocumentPipelineService:
                 requires_ocr=pdf_result.requires_ocr,
             )
         if pdf_result.requires_ocr:
+            if not allow_ocr:
+                return self._finalize_pdf_pending(
+                    material,
+                    base_state,
+                    events=events,
+                    user_id=user_id,
+                    extraction_method=pdf_result.extraction_method,
+                    page_count=pdf_result.page_count,
+                    pages_extracted=pdf_result.pages_extracted,
+                    warnings=pdf_result.warnings,
+                    extraction_status=pdf_result.extraction_status,
+                    metadata_updates={
+                        "ocr_required": True,
+                        "ocr_attempted": False,
+                    },
+                )
             ocr_result = extract_text_with_ocr(file_path)
             if ocr_result.text and bool(ocr_result.metadata.get("ocr_text_useful")):
                 return self._finalize_text_processing(

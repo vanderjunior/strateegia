@@ -162,9 +162,11 @@ OCR rule:
 Current controlled analysis can prepare safe textual artifacts internally when needed:
 
 - Uploading `.txt` or `.md` stores text on the uploaded material record.
-- When controlled analysis starts and no persisted `DocumentExtractionResult` exists, the backend runs the existing deterministic document pipeline for `.txt` and `.md` materials only.
+- When controlled analysis starts and no persisted `DocumentExtractionResult` exists, the backend runs a no-OCR deterministic preparation helper for `.txt`, `.md`, and textual `.pdf` materials.
+- Textual PDFs use deterministic embedded-text extraction only. If useful text is present, the helper persists extraction, chunks, sections, and pipeline metadata through the existing bounded finalizer.
 - Users do not need a separate visible `Processar` step before `Analisar edital` for textual materials.
 - Scanned PDFs, OCR-required files, unsupported files, missing extraction, or text shorter than the ingestion threshold remain `not_ready`.
+- Controlled analysis never triggers OCR. OCR-required PDFs are marked pending/not-ready for later explicit OCR-capable flows.
 - Plain unstructured text such as `Conteúdo programático: Português, Informática...` can be prepared safely, but it returns `needs_review` when no top-level topic candidates are recognized.
 
 The current deterministic analyzer recognizes topics when both conditions are true:
@@ -239,7 +241,8 @@ Implemented focused backend tests cover:
 - `404` missing material.
 - `404` non-owner material.
 - `422` or `400` for material whose `material_type` is not `edital`.
-- Safe deterministic textual preparation for fresh `.txt`/`.md` edital uploads when extraction artifacts are missing.
+- Safe deterministic textual preparation for fresh `.txt`, `.md`, and textual `.pdf` edital uploads when extraction artifacts are missing.
+- OCR-required PDFs return `not_ready` without calling OCR.
 - `not_ready` response for OCR-required, unsupported, missing safe extraction, or insufficient text.
 - `analyzed` or `needs_review` response for an owned edital material with safe extracted text.
 - Idempotent repeated call for an already final controlled analysis state.
