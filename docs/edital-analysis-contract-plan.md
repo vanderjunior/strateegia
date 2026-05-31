@@ -159,12 +159,13 @@ OCR rule:
 
 ## Current Readiness Criteria
 
-Current controlled analysis depends on existing persisted pipeline artifacts, not only on the upload response:
+Current controlled analysis can prepare safe textual artifacts internally when needed:
 
-- Uploading `.txt` or `.md` stores text on the uploaded material record, but controlled edital analysis reads the persisted `DocumentExtractionResult` created by `/api/materials/{document_id}/process`.
-- A freshly uploaded textual edital that has not been processed therefore returns `analysis_status=not_ready`, even when the upload response has extracted text.
-- Scanned PDFs, OCR-required files, missing extraction, or text shorter than the ingestion threshold remain `not_ready`.
-- Plain unstructured text such as `Conteúdo programático: Português, Informática...` is not enough to produce top-level topic candidates with the current deterministic parser.
+- Uploading `.txt` or `.md` stores text on the uploaded material record.
+- When controlled analysis starts and no persisted `DocumentExtractionResult` exists, the backend runs the existing deterministic document pipeline for `.txt` and `.md` materials only.
+- Users do not need a separate visible `Processar` step before `Analisar edital` for textual materials.
+- Scanned PDFs, OCR-required files, unsupported files, missing extraction, or text shorter than the ingestion threshold remain `not_ready`.
+- Plain unstructured text such as `Conteúdo programático: Português, Informática...` can be prepared safely, but it returns `needs_review` when no top-level topic candidates are recognized.
 
 The current deterministic analyzer recognizes topics when both conditions are true:
 
@@ -196,15 +197,14 @@ MANUAL DE QA. Referencia simulada para teste interno. 2026.
 
 Status criteria for the current implementation:
 
-- `not_ready`: no persisted safe extraction, OCR required, text too short, pending/started ingestion, or no safe source to inspect.
+- `not_ready`: no safe extraction can be prepared, OCR required, text too short, pending/started ingestion, or no safe source to inspect.
 - `needs_review`: bounded extraction exists but has warnings, such as no topic candidates, partial structure, alignment warnings, or gaps.
 - `analyzed`: bounded extraction exists, the ingestion state is ready for review, and no extraction/alignment warnings require conservative gating.
 
 `needs_review` and `not_ready` remain conservative states. They do not unlock concrete study, PSCPP personalization, Ciclo, Questões, Simulados, or Execução.
 
-Recommended next implementation before Coverage-A:
+Remaining parser limitations before Coverage-A:
 
-- Decide whether controlled edital analysis should trigger the existing deterministic `/process` step for textual uploads, or whether the UI should require/offer a separate material processing step first.
 - If broader `.txt` support is needed, add a narrow parser enhancement that can split inline `Conteúdo programático: ...` text into bounded topic candidates without exposing raw text.
 - Keep OCR, generation, coverage planning, and progress mutation out of this transition.
 
@@ -239,7 +239,8 @@ Implemented focused backend tests cover:
 - `404` missing material.
 - `404` non-owner material.
 - `422` or `400` for material whose `material_type` is not `edital`.
-- `not_ready` response for missing extraction or insufficient text.
+- Safe deterministic textual preparation for fresh `.txt`/`.md` edital uploads when extraction artifacts are missing.
+- `not_ready` response for OCR-required, unsupported, missing safe extraction, or insufficient text.
 - `analyzed` or `needs_review` response for an owned edital material with safe extracted text.
 - Idempotent repeated call for an already final controlled analysis state.
 - Response shape contains only allowed keys.

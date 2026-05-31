@@ -1076,6 +1076,13 @@ def _bounded_edital_analysis_response(edital, repository: JsonStudyRepository, u
     }
 
 
+def _can_prepare_textual_edital_material(material) -> bool:
+    suffix = str(
+        material.metadata.metadata.get("extension") or Path(material.metadata.filename).suffix
+    ).lower()
+    return suffix in {".txt", ".md"}
+
+
 @router.post("/materials/{document_id}/edital/analyze")
 def analyze_edital(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -1085,6 +1092,12 @@ def analyze_edital(document_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Material not found.")
     if _uploaded_material_type(material) != "edital":
         raise HTTPException(status_code=422, detail="Material is not classified as edital.")
+
+    if (
+        repository.get_document_extraction_result(document_id, user_id=user_id) is None
+        and _can_prepare_textual_edital_material(material)
+    ):
+        get_document_pipeline_service(request).process_document(document_id, user_id=user_id)
 
     state = get_edital_ingestion_service(request).ingest_document(document_id, user_id=user_id)
     if state is None:

@@ -214,7 +214,7 @@ def test_controlled_edital_analysis_returns_not_ready_without_safe_text(tmp_path
     assert payload["review_state"] == "needs_review"
 
 
-def test_controlled_edital_analysis_returns_not_ready_for_fresh_text_upload_without_pipeline_artifacts(tmp_path):
+def test_controlled_edital_analysis_prepares_fresh_unstructured_text_as_needs_review(tmp_path):
     owner, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
     uploaded = upload_material(
@@ -232,13 +232,14 @@ def test_controlled_edital_analysis_returns_not_ready_for_fresh_text_upload_with
     assert response.status_code == 200
     assert_bounded_analysis_payload(payload)
     assert payload["document_id"] == document_id
-    assert payload["analysis_status"] == "not_ready"
+    assert payload["analysis_status"] == "needs_review"
+    assert payload["review_state"] == "needs_review"
     assert payload["topics_count"] == 0
     assert payload["bibliography_count"] == 0
     assert payload["warnings_count"] >= 1
 
 
-def test_controlled_edital_analysis_analyzes_minimal_structured_markdown_fixture(tmp_path):
+def test_controlled_edital_analysis_prepares_and_analyzes_fresh_structured_markdown_fixture(tmp_path):
     owner, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
     uploaded = upload_material(
@@ -249,8 +250,6 @@ def test_controlled_edital_analysis_analyzes_minimal_structured_markdown_fixture
         content_type="text/markdown",
     )
     document_id = uploaded["metadata"]["document_id"]
-    processed = owner.post(f"/api/materials/{document_id}/process")
-    assert processed.status_code == 200
 
     response = owner.post(f"/api/materials/{document_id}/edital/analyze")
     payload = response.json()
@@ -267,6 +266,12 @@ def test_controlled_edital_analysis_analyzes_minimal_structured_markdown_fixture
     repeated = owner.post(f"/api/materials/{document_id}/edital/analyze")
     assert repeated.status_code == 200
     assert repeated.json() == payload
+
+    list_response = owner.get("/api/editais")
+    assert list_response.status_code == 200
+    list_payload = list_response.json()
+    assert list_payload["count"] == 1
+    assert [item["edital_id"] for item in list_payload["items"]] == [payload["edital_id"]]
 
 
 def test_controlled_edital_analysis_returns_bounded_success_and_populates_reads(tmp_path):
