@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
-import type { BackendConnectionInfo, EditalDetail } from "@/lib/api/types";
+import { fetchEditalCoverage } from "@/lib/api/editais";
+import type {
+  ApiResult,
+  BackendConnectionInfo,
+  BackendEditalCoverage,
+  BackendEditalCoverageItem,
+  EditalDetail
+} from "@/lib/api/types";
 import { buildMockEditalDetail, loadEditalDetail } from "@/lib/adapters/editais";
 import { sourceLabel } from "@/lib/adapters/capabilities";
 import {
@@ -41,13 +48,162 @@ function buildFallback(editalId: string): { connection: BackendConnectionInfo; d
   };
 }
 
+type CoverageViewState =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; coverage: BackendEditalCoverage }
+  | { status: "not_ready" | "auth_required" | "not_found" | "unavailable"; message: string };
+
+function coverageStatusLabel(status: BackendEditalCoverageItem["status"]): string {
+  switch (status) {
+    case "covered":
+      return "Coberto";
+    case "partial":
+      return "Parcial";
+    case "uncovered":
+      return "Sem material";
+    case "needs_review":
+      return "Precisa de conferência";
+    default:
+      return "Precisa de conferência";
+  }
+}
+
+function coverageStateFromResult(result: ApiResult<BackendEditalCoverage>): CoverageViewState {
+  if (result.ok) {
+    return { status: "ready", coverage: result.data };
+  }
+
+  if (result.error.code === "not_ready") {
+    return {
+      status: "not_ready",
+      message: "A cobertura ainda não está pronta. Ela depende de um edital analisado e de materiais de estudo enviados."
+    };
+  }
+
+  if (result.error.code === "auth_required" || result.error.code === "unauthorized") {
+    return {
+      status: "auth_required",
+      message: "Entre para ver a cobertura do edital."
+    };
+  }
+
+  if (result.error.code === "not_found") {
+    return {
+      status: "not_found",
+      message: "Edital não encontrado."
+    };
+  }
+
+  return {
+    status: "unavailable",
+    message: "Não foi possível consultar a cobertura agora."
+  };
+}
+
+function coverageStateHasMessage(
+  coverageState: CoverageViewState
+): coverageState is Extract<CoverageViewState, { message: string }> {
+  return (
+    coverageState.status === "not_ready" ||
+    coverageState.status === "auth_required" ||
+    coverageState.status === "not_found" ||
+    coverageState.status === "unavailable"
+  );
+}
+
+function CoverageSummaryCard({ coverageState }: { coverageState: CoverageViewState }) {
+  return (
+    <Card className="min-w-0">
+      <div className="section-kicker">cobertura</div>
+      <CardTitle className="mt-5 break-words text-[1.8rem]">Cobertura do edital</CardTitle>
+
+      {coverageState.status === "loading" ? (
+        <p className="mt-5 text-sm leading-7 text-silver">Consultando cobertura do edital...</p>
+      ) : null}
+
+      {coverageState.status === "idle" ? (
+        <p className="mt-5 text-sm leading-7 text-silver">Cobertura ainda não consultada.</p>
+      ) : null}
+
+      {coverageStateHasMessage(coverageState) ? (
+        <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)] p-4">
+          <p className="text-sm leading-7 text-silver">{coverageState.message}</p>
+        </div>
+      ) : null}
+
+      {coverageState.status === "ready" ? (
+        <>
+          <div className="mt-6 grid gap-4 md:grid-cols-4">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                com material
+              </div>
+              <p className="mt-2 text-sm text-ink">{coverageState.coverage.covered_subtopics_count}</p>
+            </div>
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                parcial
+              </div>
+              <p className="mt-2 text-sm text-ink">{coverageState.coverage.partial_subtopics_count}</p>
+            </div>
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                sem material
+              </div>
+              <p className="mt-2 text-sm text-ink">{coverageState.coverage.uncovered_subtopics_count}</p>
+            </div>
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                considerados
+              </div>
+              <p className="mt-2 text-sm text-ink">{coverageState.coverage.materials_considered_count}</p>
+            </div>
+          </div>
+
+          <p className="mt-5 text-sm leading-7 text-silver">
+            Esta leitura é inicial e pode precisar de conferência antes de orientar decisões de estudo.
+          </p>
+
+          {coverageState.coverage.items.length ? (
+            <div className="mt-5 space-y-3">
+              {coverageState.coverage.items.map((item) => (
+                <div
+                  key={item.topic_id}
+                  className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="break-words text-sm text-ink">{item.label}</p>
+                    <Badge className={productStatusClass(coverageStatusLabel(item.status))}>
+                      {coverageStatusLabel(item.status)}
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-silver">
+                    {item.covered_count} com material · {item.partial_count} parcial · {item.uncovered_count} sem material
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm leading-7 text-silver">
+              Ainda não há tópicos com cobertura calculada.
+            </p>
+          )}
+        </>
+      ) : null}
+    </Card>
+  );
+}
+
 export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
   const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: EditalDetail | null }>(
     buildFallback(editalId)
   );
+  const [coverageState, setCoverageState] = useState<CoverageViewState>({ status: "idle" });
+  const { connection, detail } = viewModel;
 
   useEffect(() => {
     let active = true;
+    setCoverageState({ status: "idle" });
     void loadEditalDetail(editalId).then((next) => {
       if (active) {
         setViewModel(next);
@@ -58,7 +214,24 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
     };
   }, [editalId]);
 
-  const { connection, detail } = viewModel;
+  useEffect(() => {
+    if (!detail) {
+      setCoverageState({ status: "idle" });
+      return;
+    }
+
+    let active = true;
+    setCoverageState({ status: "loading" });
+    void fetchEditalCoverage(detail.id).then((result) => {
+      if (active) {
+        setCoverageState(coverageStateFromResult(result));
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [detail]);
 
   if (!detail) {
     return (
@@ -234,6 +407,8 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
           </div>
         </Card>
       </section>}
+
+      <CoverageSummaryCard coverageState={coverageState} />
 
       <Card className="min-w-0">
         <div className="section-kicker">notas</div>

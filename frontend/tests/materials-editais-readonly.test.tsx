@@ -6,7 +6,8 @@ const realUserStateMock = vi.hoisted(() => ({
 }));
 
 const editalAnalysisMock = vi.hoisted(() => ({
-  analyzeMaterialAsEdital: vi.fn()
+  analyzeMaterialAsEdital: vi.fn(),
+  fetchEditalCoverage: vi.fn()
 }));
 
 vi.mock("@/lib/adapters/session", () => ({
@@ -40,7 +41,8 @@ vi.mock("@/lib/api/editais", async () => {
 
   return {
     ...actual,
-    analyzeMaterialAsEdital: editalAnalysisMock.analyzeMaterialAsEdital
+    analyzeMaterialAsEdital: editalAnalysisMock.analyzeMaterialAsEdital,
+    fetchEditalCoverage: editalAnalysisMock.fetchEditalCoverage
   };
 });
 
@@ -122,6 +124,16 @@ describe("materials, editais, and upload read-only invariants", () => {
   beforeEach(() => {
     realUserStateMock.readiness = undefined;
     editalAnalysisMock.analyzeMaterialAsEdital.mockReset();
+    editalAnalysisMock.fetchEditalCoverage.mockReset();
+    editalAnalysisMock.fetchEditalCoverage.mockResolvedValue({
+      ok: false,
+      status: 200,
+      source: "backend",
+      error: {
+        code: "not_ready",
+        message: "A cobertura ainda não está pronta para este edital."
+      }
+    });
   });
 
   function backendMaterialDetail(overrides: Partial<MaterialDetail> = {}): MaterialDetail {
@@ -416,6 +428,103 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.queryByText("Análise preliminar, sujeita a revisão.")).not.toBeInTheDocument();
     expect(screen.queryByText(/O cruzamento com materiais/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/tópicos candidatos/i)).not.toBeInTheDocument();
+  });
+
+  it("shows bounded edital coverage counts on edital detail", async () => {
+    editalAnalysisMock.fetchEditalCoverage.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        edital_id: "edital-pscpp-referencia",
+        analysis_status: "analyzed",
+        coverage_status: "partial",
+        topics_count: 2,
+        subtopics_count: 5,
+        covered_subtopics_count: 2,
+        partial_subtopics_count: 1,
+        uncovered_subtopics_count: 2,
+        out_of_scope_materials_count: 0,
+        materials_considered_count: 3,
+        source: "user_scope",
+        items: [
+          {
+            topic_id: "topic-1",
+            label: "Direito Administrativo",
+            subtopics_count: 3,
+            covered_count: 1,
+            partial_count: 1,
+            uncovered_count: 1,
+            status: "partial"
+          }
+        ]
+      }
+    });
+
+    render(<EditalDetailReadOnlyClient editalId="edital-pscpp-referencia" />);
+
+    expect(await screen.findByText("Cobertura do edital")).toBeInTheDocument();
+    expect(screen.getByText("Direito Administrativo")).toBeInTheDocument();
+    expect(screen.getByText("Parcial")).toBeInTheDocument();
+    expect(screen.getByText("1 com material · 1 parcial · 1 sem material")).toBeInTheDocument();
+    expect(screen.getAllByText("3").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Esta leitura é inicial/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("storage_path");
+    expect(document.body.textContent).not.toContain("extracted_text");
+    expect(document.body.textContent).not.toContain("gabarito");
+  });
+
+  it("shows product-safe coverage fallback states on edital detail", async () => {
+    const cases = [
+      {
+        result: {
+          ok: false,
+          status: 200,
+          source: "backend",
+          error: { code: "not_ready", message: "A cobertura ainda não está pronta para este edital." }
+        },
+        message: "A cobertura ainda não está pronta. Ela depende de um edital analisado e de materiais de estudo enviados."
+      },
+      {
+        result: {
+          ok: false,
+          status: 401,
+          source: "backend",
+          error: { code: "auth_required", message: "Entre para ver a cobertura do edital." }
+        },
+        message: "Entre para ver a cobertura do edital."
+      },
+      {
+        result: {
+          ok: false,
+          status: 404,
+          source: "backend",
+          error: { code: "not_found", message: "Edital não encontrado." }
+        },
+        message: "Edital não encontrado."
+      },
+      {
+        result: {
+          ok: false,
+          status: 502,
+          source: "offline",
+          error: { code: "backend_offline", message: "Não foi possível consultar a cobertura agora." }
+        },
+        message: "Não foi possível consultar a cobertura agora."
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      editalAnalysisMock.fetchEditalCoverage.mockResolvedValueOnce(testCase.result);
+      const { unmount } = render(<EditalDetailReadOnlyClient editalId="edital-pscpp-referencia" />);
+
+      await waitFor(() => expect(screen.getByText(testCase.message)).toBeInTheDocument());
+      expect(screen.queryByText(/evidence/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/confidence/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/storage_path/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/gabarito/i)).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it("keeps upload entry gated and free of process and generation controls without a session", async () => {

@@ -4,7 +4,7 @@
 
 Define the next read-only contract for comparing an analyzed edital against user materials without exposing raw content or adding study execution behavior.
 
-Backend Coverage-B and frontend Coverage-C proxy/API wrapper are implemented. Visible UI migration is still pending.
+Backend Coverage-B, frontend Coverage-C proxy/API wrapper, and Coverage-D minimal edital detail UI are implemented.
 
 ## Current Prerequisites
 
@@ -156,13 +156,14 @@ Coverage-C adds:
 - proxy-side whitelist sanitization for top-level and item fields
 - product-safe mapping for auth-required, not-found, not-ready, offline, unsupported, and invalid-response states
 
-Future UI should show simple read-only labels:
+Coverage-D adds a minimal read-only card on edital detail with simple labels:
 
 - `Cobertura do edital`
-- `Topicos com material`
-- `Topicos sem material`
-- `Materiais fora do edital`
-- `Precisa de conferencia`
+- `Com material`
+- `Parcial`
+- `Sem material`
+- `Materiais considerados`
+- `Precisa de conferência`
 
 Future UI must not show:
 
@@ -196,13 +197,13 @@ Frontend tests:
 - API wrapper maps `401`, `404`, `502`, and `503`
 - API wrapper maps `coverage_status: "not_ready"` to a product-safe not-ready result
 - API wrapper maps invalid JSON or invalid bounded shape to `invalid_response`
-- adapter maps coverage states to product labels
+- edital detail UI maps coverage states to product labels
 - `not_ready` coverage does not unlock study, PSCPP, Ciclo, Questões, Simulado, or progress UI
 - UI does not show raw/internal copy or backend/pipeline terminology
 
 ## Explicit Non-Goals
 
-- no visible coverage UI in Coverage-C
+- no automatic study unlock from coverage UI
 - no question generation
 - no simulado generation or execution
 - no progress mutation
@@ -216,6 +217,6 @@ Frontend tests:
 
 ## Recommended Implementation Sequence
 
-1. Coverage-D: add minimal read-only card on edital detail.
-2. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
+1. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
+2. Keep any future richer coverage UX behind a separate read-only contract.
 3. StudyPlan-Planning-A: define study-plan contract only after coverage is validated.

@@ -35,7 +35,7 @@
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
 - A same-origin proxy and API wrapper exist for controlled edital analysis; the only user-facing action is a minimal manual material-detail button for real uploaded editais.
-- A same-origin proxy and API wrapper exist for bounded edital coverage reads; no visible coverage card or study unlock has been added yet.
+- A same-origin proxy, API wrapper, and minimal edital detail card exist for bounded edital coverage reads; the card is read-only and does not unlock study planning.
 - Material detail now exposes a minimal manual `Analisar edital` action only for authenticated real materials classified as `edital`.
 - Controlled edital analysis QA is closed for the current `not_ready` path: the bounded response is preserved through `/api/editais`, the UI shows `Edital recebido` / `Análise ainda não concluída`, and the copy avoids implying analyzed topics, bibliography, coverage, or crosswalk output.
 - Controlled edital analysis can now prepare fresh textual PDF editais through the backend no-OCR path; browser/API QA confirmed textual PDFs no longer remain `not_ready` solely because extraction artifacts were missing.
@@ -63,7 +63,7 @@
 - Dashboard study guidance waits for real analyzed edital context before presenting a concrete study orientation.
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
 - Controlled edital analysis remains explicit and manual; uploads still do not trigger analysis automatically, and `analysis_status=not_ready` does not unlock study or PSCPP planning.
-- Edital coverage is backend/API-ready but not visible in the UI yet; it remains read-only and does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
+- Edital coverage is visible only as a bounded read-only card on edital detail; it does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -93,6 +93,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 
 ## Recommended Next Phases
 
-1. Coverage-D: add a minimal read-only coverage card on edital detail.
-2. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
-3. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
+1. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
+2. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
