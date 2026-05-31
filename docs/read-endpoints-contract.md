@@ -4,7 +4,7 @@
 
 Define the dedicated bounded read endpoints needed after the initial `/api/dashboard/overview` interim strategy.
 
-This document is a contract and test-planning artifact only. It does not introduce new backend behavior yet.
+This document records the bounded read contracts that are implemented or planned for protected read surfaces.
 
 ## Current Interim State
 
@@ -17,6 +17,7 @@ This document is a contract and test-planning artifact only. It does not introdu
 - The dashboard overview is no longer the source for materials/editais list proxies.
 - Backend `GET /api/materials/{document_id}/pipeline/summary` now provides the bounded pipeline detail contract.
 - Frontend pipeline detail uses the same-origin bounded pipeline summary proxy.
+- Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -41,6 +42,10 @@ This document is a contract and test-planning artifact only. It does not introdu
 - `GET /api/materials/{document_id}/pipeline/summary`
 - `GET /api/pipeline/recent`
 
+### Phase 4: coverage reads
+
+- `GET /api/editais/{edital_id}/coverage`
+
 ### Later
 
 - `GET /api/study/today`
@@ -52,8 +57,9 @@ This document is a contract and test-planning artifact only. It does not introdu
 3. `GET /api/materials/{document_id}/summary`
 4. `GET /api/editais/{edital_id}/summary`
 5. `GET /api/materials/{document_id}/pipeline/summary`
-6. `GET /api/pipeline/recent`
-7. `GET /api/study/today`
+6. `GET /api/editais/{edital_id}/coverage`
+7. `GET /api/pipeline/recent`
+8. `GET /api/study/today`
 
 ## Proposed Response Shapes
 
@@ -332,6 +338,91 @@ Frontend proxy/API status:
 - the proxy forwards cookies server-side and whitelists the bounded response fields
 - frontend API helper `analyzeMaterialAsEdital(materialId)` normalizes auth, not-found, invalid-material-type, not-ready, offline, and unsupported states
 - the only frontend UI action is the minimal material-detail manual analysis button for real uploaded editais; no automatic upload-triggered analysis exists
+
+### `GET /api/editais/{edital_id}/coverage`
+
+Purpose:
+- return a bounded, read-only coverage summary comparing one owned edital against current user materials
+- implemented in Coverage-B as an authenticated, user-scoped, metadata-only endpoint
+- does not add study plan generation, question generation, simulado generation/execution, progress mutation, scheduler behavior, OCR, LLM calls, or frontend UI unlocks
+
+Behavior:
+- unauthenticated requests return `401`
+- missing or non-owner editais return `404`
+- `analysis_status: "not_ready"` returns `coverage_status: "not_ready"` with empty coverage
+- analyzed or needs-review editais are compared conservatively against bounded material metadata only
+- the edital source document is excluded from material consideration
+- materials with `material_type: "study_material"` are primary candidates
+- materials with `material_type: "bibliography"` or `previous_exam` can provide supporting/partial signals
+- `edital`, `unknown`, `other`, and `note` materials do not falsely cover edital subtopics in the initial contract
+
+Implemented shape:
+
+```json
+{
+  "edital_id": "edital:doc-123",
+  "analysis_status": "analyzed",
+  "coverage_status": "partial",
+  "topics_count": 3,
+  "subtopics_count": 9,
+  "covered_subtopics_count": 4,
+  "partial_subtopics_count": 2,
+  "uncovered_subtopics_count": 3,
+  "out_of_scope_materials_count": 1,
+  "materials_considered_count": 5,
+  "items": [
+    {
+      "topic_id": "topic-1",
+      "label": "Lingua Portuguesa",
+      "subtopics_count": 3,
+      "covered_count": 1,
+      "partial_count": 1,
+      "uncovered_count": 1,
+      "status": "partial"
+    }
+  ],
+  "source": "user_scope"
+}
+```
+
+Allowed top-level fields:
+- `edital_id`
+- `analysis_status`
+- `coverage_status`
+- `topics_count`
+- `subtopics_count`
+- `covered_subtopics_count`
+- `partial_subtopics_count`
+- `uncovered_subtopics_count`
+- `out_of_scope_materials_count`
+- `materials_considered_count`
+- `items`
+- `source`
+
+Allowed item fields:
+- `topic_id`
+- `label`
+- `subtopics_count`
+- `covered_count`
+- `partial_count`
+- `uncovered_count`
+- `status`
+
+Forbidden fields:
+- raw edital text
+- raw material text
+- `extracted_text`
+- raw chunks or sections
+- OCR dumps
+- evidence snippets
+- raw bibliography bodies
+- base64 payloads
+- `storage_path`
+- private paths
+- owner internals
+- password/session fields
+- answer key, gabarito, or correction payloads
+- worker/job/internal traces
 
 ## Pipeline Status Reads
 

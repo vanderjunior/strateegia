@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from pathlib import Path
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, Response, UploadFile
@@ -1257,6 +1259,190 @@ def _bounded_edital_summary_flags(summary: dict[str, object]) -> dict[str, objec
     }
 
 
+def _coverage_tokens(value: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    return {
+        token
+        for token in re.findall(r"[a-z0-9]+", normalized.lower())
+        if len(token) >= 3
+    }
+
+
+def _coverage_material_contexts(
+    repository: JsonStudyRepository,
+    *,
+    user_id: str,
+    source_document_id: str,
+) -> tuple[list[dict[str, object]], int]:
+    contexts: list[dict[str, object]] = []
+    out_of_scope_count = 0
+    for material in repository.list_uploaded_materials(user_id=user_id):
+        document_id = material.metadata.document_id
+        if document_id == source_document_id:
+            continue
+        material_type = _uploaded_material_type(material)
+        if material_type not in {"study_material", "bibliography", "previous_exam"}:
+            out_of_scope_count += 1
+            continue
+
+        display_filename = _material_display_filename(
+            material.metadata.original_filename,
+            material.metadata.filename,
+        )
+        section_titles = [
+            section.title
+            for section in repository.list_document_sections(document_id, user_id=user_id)
+            if section.title
+        ]
+        tokens = _coverage_tokens(" ".join([display_filename, material_type, *section_titles]))
+        if not tokens:
+            out_of_scope_count += 1
+            continue
+        contexts.append(
+            {
+                "document_id": document_id,
+                "material_type": material_type,
+                "tokens": tokens,
+            }
+        )
+    return contexts, out_of_scope_count
+
+
+def _coverage_match_state(
+    *,
+    topic_tokens: set[str],
+    subtopic_tokens: set[str],
+    contexts: list[dict[str, object]],
+) -> str:
+    if not subtopic_tokens and not topic_tokens:
+        return "uncovered"
+
+    target_tokens = subtopic_tokens or topic_tokens
+    for context in contexts:
+        context_tokens = context["tokens"]
+        if not isinstance(context_tokens, set):
+            continue
+        subtopic_overlap = target_tokens & context_tokens
+        topic_overlap = topic_tokens & context_tokens
+        material_type = context["material_type"]
+        if material_type == "study_material" and (
+            len(subtopic_overlap) >= min(2, len(target_tokens))
+            or (len(target_tokens) == 1 and bool(subtopic_overlap))
+        ):
+            return "covered"
+        if subtopic_overlap or topic_overlap:
+            return "partial"
+    return "uncovered"
+
+
+def _bounded_edital_coverage_response(
+    edital,
+    repository: JsonStudyRepository,
+    user_id: str,
+) -> dict[str, object]:
+    summary = _bounded_edital_item(edital, repository, user_id)
+    analysis_status = str(summary["analysis_status"])
+    empty_response = {
+        "edital_id": edital.edital_id,
+        "analysis_status": analysis_status,
+        "coverage_status": "not_ready" if analysis_status == "not_ready" else "unknown",
+        "topics_count": len(edital.topics),
+        "subtopics_count": len(edital.subtopics),
+        "covered_subtopics_count": 0,
+        "partial_subtopics_count": 0,
+        "uncovered_subtopics_count": 0,
+        "out_of_scope_materials_count": 0,
+        "materials_considered_count": 0,
+        "items": [],
+        "source": "user_scope",
+    }
+    if analysis_status in {"not_ready", "failed", "unknown"}:
+        return empty_response
+
+    contexts, out_of_scope_count = _coverage_material_contexts(
+        repository,
+        user_id=user_id,
+        source_document_id=edital.document_id,
+    )
+    subtopics_by_topic: dict[str, list[object]] = {}
+    for subtopic in edital.subtopics:
+        subtopics_by_topic.setdefault(subtopic.parent_topic_id, []).append(subtopic)
+
+    items: list[dict[str, object]] = []
+    covered_total = 0
+    partial_total = 0
+    uncovered_total = 0
+    for topic in sorted(edital.topics, key=lambda item: item.order_index):
+        topic_tokens = _coverage_tokens(topic.title)
+        topic_subtopics = sorted(
+            subtopics_by_topic.get(topic.topic_id, []),
+            key=lambda item: item.order_index,
+        )
+        covered_count = 0
+        partial_count = 0
+        uncovered_count = 0
+        for subtopic in topic_subtopics:
+            state = _coverage_match_state(
+                topic_tokens=topic_tokens,
+                subtopic_tokens=_coverage_tokens(subtopic.title),
+                contexts=contexts,
+            )
+            if state == "covered":
+                covered_count += 1
+            elif state == "partial":
+                partial_count += 1
+            else:
+                uncovered_count += 1
+
+        if topic_subtopics and covered_count == len(topic_subtopics):
+            topic_status = "covered"
+        elif covered_count or partial_count:
+            topic_status = "partial"
+        elif topic_subtopics:
+            topic_status = "uncovered"
+        else:
+            topic_status = "needs_review"
+
+        covered_total += covered_count
+        partial_total += partial_count
+        uncovered_total += uncovered_count
+        items.append(
+            {
+                "topic_id": topic.topic_id,
+                "label": topic.title,
+                "subtopics_count": len(topic_subtopics),
+                "covered_count": covered_count,
+                "partial_count": partial_count,
+                "uncovered_count": uncovered_count,
+                "status": topic_status,
+            }
+        )
+
+    if not edital.subtopics:
+        coverage_status = "needs_review"
+    elif covered_total == len(edital.subtopics):
+        coverage_status = "ready_for_review"
+    elif covered_total or partial_total:
+        coverage_status = "partial"
+    else:
+        coverage_status = "needs_review"
+
+    return {
+        "edital_id": edital.edital_id,
+        "analysis_status": analysis_status,
+        "coverage_status": coverage_status,
+        "topics_count": len(edital.topics),
+        "subtopics_count": len(edital.subtopics),
+        "covered_subtopics_count": covered_total,
+        "partial_subtopics_count": partial_total,
+        "uncovered_subtopics_count": uncovered_total,
+        "out_of_scope_materials_count": out_of_scope_count,
+        "materials_considered_count": len(contexts),
+        "items": items,
+        "source": "user_scope",
+    }
+
+
 @router.get("/editais/{edital_id}/summary")
 def get_edital_summary(edital_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -1270,6 +1456,16 @@ def get_edital_summary(edital_id: str, request: Request):
         "summary": _bounded_edital_summary_flags(summary),
         "source": "user_scope",
     }
+
+
+@router.get("/editais/{edital_id}/coverage")
+def get_edital_coverage(edital_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    edital = repository.get_edital_extraction_by_id(edital_id, user_id=user_id)
+    if edital is None:
+        raise HTTPException(status_code=404, detail="Edital extraction not found.")
+    return _bounded_edital_coverage_response(edital, repository, user_id)
 
 
 @router.get("/edital/{edital_id}")

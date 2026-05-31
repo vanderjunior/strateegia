@@ -4,7 +4,7 @@
 
 Define the next read-only contract for comparing an analyzed edital against user materials without exposing raw content or adding study execution behavior.
 
-This is a planning document only. Coverage is not implemented yet.
+Backend Coverage-B is implemented. Frontend proxy and UI migration are still pending.
 
 ## Current Prerequisites
 
@@ -16,9 +16,9 @@ This is a planning document only. Coverage is not implemented yet.
 - Candidate source materials may include `study_material`, `bibliography`, and later `previous_exam`, but the edital itself remains the source of scope.
 - Existing bounded material reads expose metadata, counts, and status only. They do not expose raw text, chunks, OCR, or storage paths.
 
-## Proposed Endpoint
+## Implemented Endpoint
 
-Preferred future endpoint:
+Implemented backend endpoint:
 
 ```http
 GET /api/editais/{edital_id}/coverage
@@ -45,7 +45,7 @@ The endpoint must:
 - never generate questions, simulados, study sessions, or answer keys
 - never run OCR, LLM calls, or background processing
 
-## Proposed Response Shape
+## Implemented Response Shape
 
 ```json
 {
@@ -133,9 +133,9 @@ Initial implementation should be deterministic and conservative:
 - Treat a match against a filename or type alone as weak unless reinforced by additional bounded metadata.
 - Keep matching idempotent and synchronous for the first read-only contract.
 
-Important implementation note:
+Implementation note:
 
-- Existing bibliography alignment internals already compute richer evidence and topic coverage, but that shape is too operational for the browser-facing product contract. Coverage-A should expose a new bounded summary instead of passing through alignment evidence.
+- Existing bibliography alignment internals already compute richer evidence and topic coverage, but that shape is too operational for the browser-facing product contract. Coverage-B exposes a new bounded summary instead of passing through alignment evidence.
 
 ## Material Type Behavior
 
@@ -167,7 +167,7 @@ Future UI must not show:
 
 Coverage should not unlock concrete study by itself unless the future product rule explicitly requires both analyzed edital lifecycle and acceptable coverage state.
 
-## Test Plan
+## Test Coverage
 
 Backend tests:
 
@@ -176,12 +176,14 @@ Backend tests:
 - `not_ready` edital returns bounded `coverage_status: "not_ready"`
 - analyzed edital with no candidate materials returns all subtopics uncovered
 - analyzed edital with matching bounded material metadata returns conservative `partial` or `covered` counts
+- edital source material is excluded from material consideration
+- `unknown` material does not falsely cover edital subtopics
 - low-confidence matches remain `needs_review`
 - response shape is deterministic and bounded
 - repeated `GET` is idempotent
 - no raw text, chunks, OCR, storage paths, token/session fields, answer keys, gabarito, or evidence snippets leak
 
-Frontend tests:
+Future frontend tests:
 
 - same-origin proxy preserves bounded coverage fields only
 - API wrapper maps `401`, `404`, `502`, and `503`
@@ -191,7 +193,7 @@ Frontend tests:
 
 ## Explicit Non-Goals
 
-- no Coverage endpoint in this planning phase
+- no frontend coverage proxy or UI in Coverage-B
 - no question generation
 - no simulado generation or execution
 - no progress mutation
@@ -205,8 +207,7 @@ Frontend tests:
 
 ## Recommended Implementation Sequence
 
-1. Coverage-B: implement backend read-only `GET /api/editais/{edital_id}/coverage`.
-2. Coverage-C: add frontend same-origin proxy and API wrapper.
-3. Coverage-D: add minimal read-only card on edital detail.
-4. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
-5. StudyPlan-Planning-A: define study-plan contract only after coverage is validated.
+1. Coverage-C: add frontend same-origin proxy and API wrapper.
+2. Coverage-D: add minimal read-only card on edital detail.
+3. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
+4. StudyPlan-Planning-A: define study-plan contract only after coverage is validated.
