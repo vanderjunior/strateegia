@@ -344,6 +344,69 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(screen.queryByText(/sessão reconhecida/i)).not.toBeInTheDocument();
   });
 
+  it("shows not-ready edital lifecycle without analyzed or candidate wording", async () => {
+    realUserStateMock.readiness = {
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Dados reais disponíveis",
+        detail: "Materiais disponíveis."
+      },
+      isAuthenticated: true,
+      hasRealMaterials: true,
+      hasRealEditalMaterial: true,
+      hasRealStudyMaterial: false,
+      hasAnalyzedEdital: false,
+      editalAnalysisState: "edital_uploaded_not_analyzed",
+      editalAnalysisLabel: "Edital enviado",
+      editalAnalysisDescription: "Edital recebido. A análise ainda não foi executada nesta versão.",
+      canShowConcreteStudyPlan: false,
+      shouldShowEditalUploadCTA: false,
+      shouldShowStudyMaterialCTA: true,
+      materialsCount: 1,
+      editalMaterialsCount: 1,
+      studyMaterialsCount: 0,
+      materialTypeCounts: {
+        edital: 1,
+        study_material: 0,
+        previous_exam: 0,
+        bibliography: 0,
+        note: 0,
+        other: 0,
+        unknown: 0
+      }
+    };
+
+    vi.mocked(loadEditaisWorkspaceViewModel).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Editais",
+        detail: "Editais disponíveis."
+      },
+      summary: [],
+      items: [
+        {
+          id: "edital:doc-1",
+          title: "Edital analisado da sessão",
+          statusLabel: "Edital recebido",
+          topicsCount: 0,
+          bibliographyItemsCount: 0,
+          gapsCount: 0,
+          reviewState: "Análise ainda não concluída",
+          source: "backend"
+        }
+      ]
+    });
+
+    render(<EditaisReadOnlyClient />);
+
+    expect(await screen.findByText("Edital recebido")).toBeInTheDocument();
+    expect(screen.getByText("Análise ainda não concluída")).toBeInTheDocument();
+    expect(screen.queryByText("Edital analisado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Análise candidata")).not.toBeInTheDocument();
+  });
+
   it("keeps upload entry gated and free of process and generation controls without a session", async () => {
     render(<MaterialUploadEntryClient />);
 

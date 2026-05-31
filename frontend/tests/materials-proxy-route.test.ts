@@ -59,7 +59,7 @@ describe("materials same-origin proxy route", () => {
                 document_id: "doc-1",
                 display_filename: "roteiro.pdf",
                 content_type: "pdf",
-                material_type: "previous_exam",
+                material_type: "edital",
                 created_at: "2026-05-27T00:00:00Z",
                 updated_at: "2026-05-27T00:05:00Z",
                 processing_status: "ready_for_review",
@@ -72,9 +72,23 @@ describe("materials same-origin proxy route", () => {
                 extracted_text: "RAW-SHOULD-NOT-LEAK",
                 storage_path: "/Users/private/upload.pdf",
                 token: "secret"
+              },
+              {
+                document_id: "doc-2",
+                display_filename: "bibliografia.md",
+                content_type: "md",
+                material_type: "bibliography",
+                created_at: "2026-05-27T00:00:00Z",
+                processing_status: "extraction_pending",
+                extraction_status: "pending",
+                chunk_count: 0,
+                section_count: 0,
+                review_state: "pending",
+                warnings_count: 0,
+                latest_pipeline_status: "uploaded"
               }
             ],
-            count: 1,
+            count: 2,
             source: "user_scope"
           }),
           { status: 200, headers: { "content-type": "application/json" } }
@@ -88,16 +102,16 @@ describe("materials same-origin proxy route", () => {
 
     expect(response.status).toBe(200);
     expect(payload).toEqual({
-      total_materials: 1,
+      total_materials: 2,
       processed_count: 1,
-      pending_count: 0,
+      pending_count: 1,
       ocr_required_count: 0,
       items: [
         {
           document_id: "doc-1",
           display_filename: "roteiro.pdf",
           content_type: "pdf",
-          material_type: "previous_exam",
+          material_type: "edital",
           status: "ready_for_review",
           uploaded_at: "2026-05-27T00:00:00Z",
           extraction_status: "textual_pdf",
@@ -105,6 +119,19 @@ describe("materials same-origin proxy route", () => {
           metadata_status: "ready",
           chunk_count: 12,
           section_count: 4
+        },
+        {
+          document_id: "doc-2",
+          display_filename: "bibliografia.md",
+          content_type: "md",
+          material_type: "bibliography",
+          status: "extraction_pending",
+          uploaded_at: "2026-05-27T00:00:00Z",
+          extraction_status: "pending",
+          current_stage: "uploaded",
+          metadata_status: "not_ready",
+          chunk_count: 0,
+          section_count: 0
         }
       ]
     });

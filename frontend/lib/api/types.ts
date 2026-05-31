@@ -322,6 +322,8 @@ export interface BackendProtectedEditaisListItem {
   bibliography_count: number;
   gaps_count: number;
   coverage_status: string;
+  alignment_status?: string;
+  warnings_count?: number;
   latest_document_id?: string | null;
 }
 

@@ -102,15 +102,47 @@ function mockSummary(items: EditalListItem[]): WorkspaceSummaryMetric[] {
   );
 }
 
+function editalStatusLabel(item: BackendProtectedEditaisListItem): string {
+  switch (item.analysis_status) {
+    case "not_ready":
+    case "uploaded_not_analyzed":
+      return "Edital recebido";
+    case "analyzed":
+      return "Edital analisado";
+    case "needs_review":
+      return "Edital analisado, mas precisa de conferência";
+    case "failed":
+      return "Não foi possível analisar este edital";
+    default:
+      return item.status === "analyzed" ? "Edital analisado" : "Análise indisponível";
+  }
+}
+
+function editalReviewLabel(item: BackendProtectedEditaisListItem): string {
+  switch (item.analysis_status) {
+    case "not_ready":
+    case "uploaded_not_analyzed":
+      return "Análise ainda não concluída";
+    case "analyzed":
+      return reviewLabelForState(item.review_state);
+    case "needs_review":
+      return "Precisa de conferência";
+    case "failed":
+      return "Análise indisponível";
+    default:
+      return reviewLabelForState(item.review_state);
+  }
+}
+
 function mapProtectedEditalItem(item: BackendProtectedEditaisListItem): EditalListItem {
   return {
     id: item.edital_id,
     title: item.title,
-    statusLabel: item.status,
+    statusLabel: editalStatusLabel(item),
     topicsCount: item.topics_count,
     bibliographyItemsCount: item.bibliography_count,
     gapsCount: item.gaps_count,
-    reviewState: item.review_state,
+    reviewState: editalReviewLabel(item),
     source: "backend"
   };
 }
@@ -189,20 +221,37 @@ function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary)
   const reviewState = reviewLabelForState(summary.review_state);
   const coverageLabel = coverageLabelForState(summary.coverage_status);
   const alignmentLabel = alignmentLabelForState(summary.alignment_status);
+  const statusLabel =
+    summary.analysis_status === "not_ready" || summary.analysis_status === "uploaded_not_analyzed"
+      ? "Edital recebido"
+      : summary.analysis_status === "analyzed"
+        ? "Edital analisado"
+        : summary.analysis_status === "needs_review"
+          ? "Edital analisado, mas precisa de conferência"
+          : summary.analysis_status === "failed"
+            ? "Não foi possível analisar este edital"
+            : "Análise indisponível";
+  const safeReviewState =
+    summary.analysis_status === "not_ready" || summary.analysis_status === "uploaded_not_analyzed"
+      ? "Análise ainda não concluída"
+      : summary.analysis_status === "failed"
+        ? "Análise indisponível"
+        : reviewState;
+  const notReady = summary.analysis_status === "not_ready" || summary.analysis_status === "uploaded_not_analyzed";
 
   return {
     id: editalId,
     title: summary.title || "Edital analisado",
-    statusLabel: "Análise candidata",
+    statusLabel,
     topicsCount: summary.topics_count,
     bibliographyItemsCount: summary.bibliography_count,
     gapsCount: summary.gaps_count,
-    reviewState,
+    reviewState: safeReviewState,
     source: "backend",
-    topicCandidates: summary.summary.has_topics
+    topicCandidates: !notReady && summary.summary.has_topics
       ? [`${summary.topics_count} tópicos candidatos identificados`]
       : [],
-    bibliographyCandidates: summary.summary.has_bibliography
+    bibliographyCandidates: !notReady && summary.summary.has_bibliography
       ? [`${summary.bibliography_count} referências identificadas para conferência`]
       : [],
     coverageItems: [
@@ -221,7 +270,7 @@ function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary)
         source: "backend"
       }
     ],
-    gapItems: summary.summary.has_gaps
+    gapItems: !notReady && summary.summary.has_gaps
       ? [
           {
             id: `${summary.edital_id}:gaps`,
@@ -234,13 +283,15 @@ function buildDetailFromSummary(editalId: string, summary: BackendEditalSummary)
       : [],
     warnings: [
       "Este resumo mostra apenas metadados seguros do edital.",
-      summary.summary.needs_review
+      notReady
+        ? "Este edital ainda não está pronto para análise."
+        : summary.summary.needs_review
         ? "A análise candidata precisa de conferência antes de orientar decisões finais."
         : "Mesmo quando pronto para revisão, o edital deve ser conferido antes de uso final.",
       `${summary.warnings_count} avisos registrados para revisão.`
     ],
     notes: [
-      "Alinhamento preliminar sujeito a revisão.",
+      notReady ? "Análise ainda não concluída." : "Alinhamento preliminar sujeito a revisão.",
       "Esta tela não exibe texto bruto, evidências ou bibliografia completa do edital."
     ]
   };

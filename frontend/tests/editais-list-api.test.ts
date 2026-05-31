@@ -70,12 +70,15 @@ describe("editais list API wrapper", () => {
                 edital_id: "edital-user-1",
                 latest_document_id: "doc-1",
                 title: "Edital analisado da sessão",
-                status: "Análise candidata",
-                review_state: "Precisa de conferência",
+                analysis_status: "not_ready",
+                status: "not_ready",
+                review_state: "needs_review",
                 topics_count: 12,
                 bibliography_count: 8,
                 gaps_count: 3,
-                coverage_status: "Cobertura parcial"
+                coverage_status: "unknown",
+                alignment_status: "not_available",
+                warnings_count: 2
               }
             ]
           }),
@@ -91,6 +94,9 @@ describe("editais list API wrapper", () => {
       throw new Error("expected success");
     }
     expect(result.data.items[0].edital_id).toBe("edital-user-1");
+    expect(result.data.items[0].analysis_status).toBe("not_ready");
+    expect(result.data.items[0].review_state).toBe("needs_review");
+    expect(JSON.stringify(result.data)).not.toContain("Análise candidata");
     expect(JSON.stringify(result.data)).not.toContain("token");
     expect(JSON.stringify(result.data)).not.toContain("cookie");
   });

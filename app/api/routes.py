@@ -722,6 +722,22 @@ def _material_requires_ocr(extraction, pipeline_state) -> bool:
     return False
 
 
+def _material_type_from_metadata(metadata) -> str:
+    candidates = [
+        metadata.metadata.get("material_type"),
+        getattr(metadata, "material_type", None),
+        metadata.metadata.get("upload_intent"),
+    ]
+    for candidate in candidates:
+        try:
+            normalized = normalize_material_type(str(candidate or ""))
+        except ValueError:
+            continue
+        if normalized != "unknown":
+            return normalized
+    return "unknown"
+
+
 def _bounded_material_item(material, repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
     metadata = material.metadata
     document_id = metadata.document_id
@@ -733,10 +749,7 @@ def _bounded_material_item(material, repository: JsonStudyRepository, user_id: s
     metadata_status = pipeline_state.metadata_status if pipeline_state is not None else "not_ready"
     chunk_count = pipeline_state.chunk_count if pipeline_state is not None else 0
     section_count = pipeline_state.section_count if pipeline_state is not None else 0
-    try:
-        material_type = normalize_material_type(str(metadata.metadata.get("material_type") or "unknown"))
-    except ValueError:
-        material_type = "unknown"
+    material_type = _material_type_from_metadata(metadata)
 
     if requires_ocr:
         processing_status = "ocr_required"
@@ -1030,10 +1043,7 @@ def get_material_sections(document_id: str, request: Request):
 
 
 def _uploaded_material_type(material) -> str:
-    try:
-        return normalize_material_type(str(material.metadata.metadata.get("material_type") or "unknown"))
-    except ValueError:
-        return "unknown"
+    return _material_type_from_metadata(material.metadata)
 
 
 def _bounded_edital_analysis_status(edital, ingestion_state, review_state: str) -> str:

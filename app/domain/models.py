@@ -1487,6 +1487,7 @@ class DocumentMetadata(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     extraction_status: str = DocumentIngestionStatus.UPLOADED.value
+    material_type: str | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
     error_message: str | None = None
 

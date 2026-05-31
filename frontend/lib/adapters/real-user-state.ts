@@ -114,11 +114,11 @@ function editalItemNeedsReview(item: BackendProtectedEditaisListItem): boolean {
 function editalAnalysisStateFromItem(item: BackendProtectedEditaisListItem): EditalAnalysisState {
   switch (item.analysis_status) {
     case "uploaded_not_analyzed":
+    case "not_ready":
       return "edital_uploaded_not_analyzed";
     case "needs_review":
       return "analysis_needs_review";
     case "failed":
-    case "not_ready":
     case "unknown":
       return "analysis_unavailable";
     case "analyzed":

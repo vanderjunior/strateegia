@@ -149,6 +149,38 @@ def test_materials_list_returns_own_bounded_uploaded_materials(tmp_path):
     assert_no_forbidden_terms(payload)
 
 
+def test_materials_list_preserves_uploaded_material_type_metadata(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "typed-owner")
+    edital = upload_material(
+        owner,
+        filename="edital.md",
+        content=b"# Edital\n\nConteudo seguro.",
+        material_type="edital",
+    )
+    bibliography = upload_material(
+        owner,
+        filename="bibliografia.md",
+        content=b"# Bibliografia\n\nReferencia segura.",
+        material_type="bibliography",
+    )
+    legacy = upload_material(
+        owner,
+        filename="sem-tipo.md",
+        content=b"# Sem tipo\n\nMaterial legado.",
+    )
+
+    response = owner.get("/api/materials")
+    payload = response.json()
+    items_by_id = {item["document_id"]: item for item in payload["items"]}
+
+    assert response.status_code == 200
+    assert items_by_id[edital["metadata"]["document_id"]]["material_type"] == "edital"
+    assert items_by_id[bibliography["metadata"]["document_id"]]["material_type"] == "bibliography"
+    assert items_by_id[legacy["metadata"]["document_id"]]["material_type"] == "unknown"
+    assert_no_forbidden_terms(payload)
+
+
 def test_materials_list_is_user_scoped(tmp_path):
     owner, other, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")

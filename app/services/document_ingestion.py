@@ -79,6 +79,7 @@ def ingest_uploaded_material(
         created_at=created_at,
         updated_at=created_at,
         extraction_status=DocumentIngestionStatus.UPLOADED.value,
+        material_type=normalized_material_type,
         metadata={"extension": suffix, "material_type": normalized_material_type},
     )
 

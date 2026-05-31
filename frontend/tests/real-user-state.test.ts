@@ -173,6 +173,32 @@ describe("real user edital analysis state", () => {
     expect(readiness.canShowConcreteStudyPlan).toBe(false);
   });
 
+  it("keeps not-ready edital lifecycle uploaded-only and locked", async () => {
+    mockMaterials([{ document_id: "doc-edital", display_filename: "edital.pdf", material_type: "edital" }]);
+    mockEditais([
+      {
+        edital_id: "edital-1",
+        title: "Edital recebido",
+        analysis_status: "not_ready",
+        status: "not_ready",
+        review_state: "needs_review",
+        topics_count: 0,
+        bibliography_count: 0,
+        gaps_count: 0,
+        coverage_status: "unknown",
+        alignment_status: "not_available",
+        warnings_count: 2
+      }
+    ]);
+
+    const readiness = await loadRealUserStudyReadiness();
+
+    expect(readiness.editalAnalysisState).toBe("edital_uploaded_not_analyzed");
+    expect(readiness.editalAnalysisLabel).toBe("Edital enviado");
+    expect(readiness.hasAnalyzedEdital).toBe(false);
+    expect(readiness.canShowConcreteStudyPlan).toBe(false);
+  });
+
   it("marks analysis unavailable when protected reads cannot determine state", async () => {
     mockMaterials([]);
     vi.mocked(fetchUserEditaisList).mockResolvedValue({

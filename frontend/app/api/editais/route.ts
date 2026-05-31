@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerBackendBaseUrl } from "@/lib/api/config";
-import type { BackendProtectedEditaisList } from "@/lib/api/types";
+import type { BackendProtectedEditaisList, EditalAnalysisStatus } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,37 +14,25 @@ function toSafeString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function statusLabelForReviewState(value: string): string {
-  if (value === "ready_for_review") {
-    return "Análise candidata";
-  }
-  return "Análise candidata";
+const ALLOWED_ANALYSIS_STATUSES = new Set<EditalAnalysisStatus>([
+  "uploaded_not_analyzed",
+  "analyzed",
+  "needs_review",
+  "failed",
+  "not_ready",
+  "unknown"
+]);
+
+function toSafeAnalysisStatus(value: unknown): EditalAnalysisStatus {
+  return typeof value === "string" && ALLOWED_ANALYSIS_STATUSES.has(value as EditalAnalysisStatus)
+    ? (value as EditalAnalysisStatus)
+    : "unknown";
 }
 
-function reviewLabelForState(value: string): string {
-  if (value === "ready_for_review") {
-    return "Pronto para revisão";
-  }
-  if (value === "pending") {
-    return "Alinhamento preliminar";
-  }
-  return "Precisa de conferência";
-}
-
-function coverageLabelForState(value: string): string {
-  if (value === "good") {
-    return "Cobertura boa";
-  }
-  if (value === "gap_found") {
-    return "Gap encontrado";
-  }
-  if (value === "needs_material") {
-    return "Precisa de material";
-  }
-  if (value === "partial") {
-    return "Cobertura parcial";
-  }
-  return "Alinhamento preliminar";
+function toSafeLifecycleStatus(value: unknown, fallback: EditalAnalysisStatus): EditalAnalysisStatus {
+  return typeof value === "string" && ALLOWED_ANALYSIS_STATUSES.has(value as EditalAnalysisStatus)
+    ? (value as EditalAnalysisStatus)
+    : fallback;
 }
 
 function sanitizeEditaisList(payload: unknown): BackendProtectedEditaisList {
@@ -52,19 +40,21 @@ function sanitizeEditaisList(payload: unknown): BackendProtectedEditaisList {
   const rawItems = Array.isArray(raw.items) ? raw.items : [];
   const items = rawItems.map((item) => {
     const rawItem = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-    const reviewState = toSafeString(rawItem.review_state);
-    const coverageStatus = toSafeString(rawItem.coverage_status);
+    const analysisStatus = toSafeAnalysisStatus(rawItem.analysis_status);
 
     return {
       edital_id: toSafeString(rawItem.edital_id),
       title: toSafeString(rawItem.title) || "Edital analisado da sessão",
-      status: statusLabelForReviewState(reviewState),
-      review_state: reviewLabelForState(reviewState),
+      analysis_status: analysisStatus,
+      status: toSafeLifecycleStatus(rawItem.status, analysisStatus),
+      review_state: toSafeString(rawItem.review_state) || "unknown",
       topics_count: toSafeNumber(rawItem.topics_count),
       bibliography_count: toSafeNumber(rawItem.bibliography_count),
       gaps_count: toSafeNumber(rawItem.gaps_count),
-      coverage_status: coverageLabelForState(coverageStatus),
-      latest_document_id: toSafeString(rawItem.document_id) || null
+      coverage_status: toSafeString(rawItem.coverage_status) || "unknown",
+      alignment_status: toSafeString(rawItem.alignment_status) || "unknown",
+      warnings_count: toSafeNumber(rawItem.warnings_count),
+      latest_document_id: toSafeString(rawItem.document_id ?? rawItem.latest_document_id) || null
     };
   });
 

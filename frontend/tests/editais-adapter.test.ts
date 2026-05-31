@@ -87,12 +87,15 @@ describe("editais adapter", () => {
           {
             edital_id: "edital-user-1",
             title: "Edital analisado da sessão",
-            status: "Análise candidata",
-            review_state: "Precisa de conferência",
+            analysis_status: "not_ready",
+            status: "not_ready",
+            review_state: "needs_review",
             topics_count: 12,
             bibliography_count: 8,
             gaps_count: 3,
-            coverage_status: "Cobertura parcial",
+            coverage_status: "unknown",
+            alignment_status: "not_available",
+            warnings_count: 2,
             latest_document_id: "doc-1",
             raw_text: "não deve aparecer",
             extracted_text: "não deve aparecer",
@@ -110,8 +113,8 @@ describe("editais adapter", () => {
     expect(viewModel.items[0]).toMatchObject({
       id: "edital-user-1",
       title: "Edital analisado da sessão",
-      statusLabel: "Análise candidata",
-      reviewState: "Precisa de conferência",
+      statusLabel: "Edital recebido",
+      reviewState: "Análise ainda não concluída",
       topicsCount: 12,
       bibliographyItemsCount: 8,
       gapsCount: 3,
@@ -120,6 +123,7 @@ describe("editais adapter", () => {
     expect(payload).not.toContain("raw_text");
     expect(payload).not.toContain("extracted_text");
     expect(payload).not.toContain("storage_path");
+    expect(payload).not.toContain("Análise candidata");
   });
 
   it("shows requires session and keeps demo fallback when unauthenticated", async () => {
@@ -181,6 +185,7 @@ describe("editais adapter", () => {
         title: "Edital analisado da sessão",
         created_at: "2026-05-27T00:00:00Z",
         updated_at: "2026-05-27T00:05:00Z",
+        analysis_status: "needs_review",
         topics_count: 12,
         bibliography_count: 8,
         gaps_count: 3,
@@ -209,7 +214,7 @@ describe("editais adapter", () => {
     expect(viewModel.detail).toMatchObject({
       id: "edital-user-1",
       title: "Edital analisado da sessão",
-      statusLabel: "Análise candidata",
+      statusLabel: "Edital analisado, mas precisa de conferência",
       reviewState: "Precisa de conferência",
       topicsCount: 12,
       bibliographyItemsCount: 8,

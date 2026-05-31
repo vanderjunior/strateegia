@@ -61,6 +61,8 @@ describe("editais same-origin proxy route", () => {
                 title: "Edital analisado da sessão",
                 created_at: "2026-05-27T00:00:00Z",
                 updated_at: "2026-05-27T00:05:00Z",
+                analysis_status: "not_ready",
+                status: "Análise candidata",
                 topics_count: 12,
                 bibliography_count: 8,
                 gaps_count: 3,
@@ -96,12 +98,15 @@ describe("editais same-origin proxy route", () => {
         {
           edital_id: "edital:doc-1",
           title: "Edital analisado da sessão",
-          status: "Análise candidata",
-          review_state: "Precisa de conferência",
+          analysis_status: "not_ready",
+          status: "not_ready",
+          review_state: "needs_review",
           topics_count: 12,
           bibliography_count: 8,
           gaps_count: 3,
-          coverage_status: "Cobertura parcial",
+          coverage_status: "partial",
+          alignment_status: "needs_review",
+          warnings_count: 2,
           latest_document_id: "doc-1"
         }
       ]
@@ -111,6 +116,7 @@ describe("editais same-origin proxy route", () => {
     expect(dumped).not.toContain("storage_path");
     expect(dumped).not.toContain("/Users/");
     expect(dumped).not.toContain("secret");
+    expect(dumped).not.toContain("Análise candidata");
   });
 
   it.each([401, 403])("passes through auth status %i", async (status) => {

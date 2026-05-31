@@ -159,6 +159,39 @@ def test_material_summary_returns_own_bounded_material_summary(tmp_path):
     assert_no_forbidden_terms(payload)
 
 
+def test_material_summary_preserves_uploaded_material_type_metadata(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "typed-owner")
+    edital = upload_material(
+        owner,
+        filename="edital-summary.md",
+        content=b"# Edital\n\nConteudo seguro.",
+        material_type="edital",
+    )
+    bibliography = upload_material(
+        owner,
+        filename="bibliografia-summary.md",
+        content=b"# Bibliografia\n\nReferencia segura.",
+        material_type="bibliography",
+    )
+    legacy = upload_material(
+        owner,
+        filename="sem-tipo-summary.md",
+        content=b"# Sem tipo\n\nMaterial legado.",
+    )
+
+    edital_payload = owner.get(f"/api/materials/{edital['metadata']['document_id']}/summary").json()
+    bibliography_payload = owner.get(f"/api/materials/{bibliography['metadata']['document_id']}/summary").json()
+    legacy_payload = owner.get(f"/api/materials/{legacy['metadata']['document_id']}/summary").json()
+
+    assert edital_payload["material_type"] == "edital"
+    assert bibliography_payload["material_type"] == "bibliography"
+    assert legacy_payload["material_type"] == "unknown"
+    assert_no_forbidden_terms(edital_payload)
+    assert_no_forbidden_terms(bibliography_payload)
+    assert_no_forbidden_terms(legacy_payload)
+
+
 def test_material_summary_is_user_scoped(tmp_path):
     owner, other, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")

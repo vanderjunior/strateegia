@@ -134,6 +134,39 @@ describe("material summary same-origin proxy route", () => {
     expect(dumped).not.toContain("secret");
   });
 
+  it("preserves edital material_type in the bounded summary", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            document_id: "doc-edital",
+            display_filename: "edital.md",
+            content_type: "md",
+            material_type: "edital",
+            processing_status: "text_extracted",
+            extraction_status: "extracted",
+            review_state: "needs_review",
+            chunk_count: 0,
+            section_count: 0,
+            warnings_count: 0,
+            pipeline: {},
+            source: "user_scope"
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const response = await GET(new Request("http://localhost/api/materials/doc-edital/summary"), {
+      params: Promise.resolve({ materialId: "doc-edital" })
+    });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.material_type).toBe("edital");
+  });
+
   it.each([401, 403, 404])("passes through backend status %i", async (status) => {
     vi.stubGlobal(
       "fetch",
