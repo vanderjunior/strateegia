@@ -362,6 +362,22 @@ Authenticated Compose browser QA passed after the user-facing copy cleanup:
 
 No backend behavior, edital analysis execution, OCR, processing, generation, progress, scheduler, PostgreSQL, provider, or signup behavior was added during this QA closeout.
 
+### EditalAnalysis-F1 Compose/API QA
+
+Controlled edital analysis QA passed for safe textual PDF preparation:
+
+- Uploading a PDF with `material_type=edital` showed the material under the Editais grouping.
+- Material detail exposed the existing manual `Analisar edital` action for the uploaded edital.
+- Clicking analyze used the controlled endpoint: `POST /api/materials/{document_id}/edital/analyze`.
+- Fresh textual PDFs no longer returned `not_ready` solely because extraction artifacts were missing.
+- When deterministic embedded-text extraction succeeded, the bounded result returned `analyzed` or `needs_review` according to the current parser output.
+- OCR-required PDFs remained bounded `not_ready`.
+- Controlled analysis did not trigger OCR.
+- Browser/API inspection found no raw PDF text, storage path, token, password hash, answer key, or gabarito exposure.
+- `/study` and `/pscpp` remained gated unless the edital lifecycle truly allowed unlock.
+
+Known limitation: textual PDF structure recognition is still conservative. A textual PDF may return `needs_review` until a later parser/coverage phase improves section/topic recognition. Scanned or OCR-required PDFs still require a separate explicit OCR-capable contract and are not analyzed automatically.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
