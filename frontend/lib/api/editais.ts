@@ -5,6 +5,7 @@ import type {
   ApiResult,
   BackendEditalAnalysisResponse,
   BackendBibliographyAlignment,
+  BackendEditalCoverage,
   BackendEditalExtraction,
   BackendEditalSummary,
   BackendProtectedEditaisList
@@ -151,6 +152,93 @@ export async function fetchEditalSummary(editalId: string): Promise<ApiResult<Ba
     }
   } catch {
     return makeApiFailure("offline", "network_error", "Não foi possível consultar o resumo real do edital.");
+  }
+}
+
+function isValidCoveragePayload(data: BackendEditalCoverage): boolean {
+  return (
+    typeof data.edital_id === "string" &&
+    typeof data.coverage_status === "string" &&
+    Array.isArray(data.items) &&
+    data.source === "user_scope"
+  );
+}
+
+export async function fetchEditalCoverage(editalId: string): Promise<ApiResult<BackendEditalCoverage>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: a cobertura real do edital não foi consultada.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "A cobertura do edital não está configurada neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch(`/api/editais/${encodeURIComponent(editalId)}/coverage`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível consultar a cobertura agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "A cobertura do edital não está configurada neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Edital não encontrado.", 404);
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para ver a cobertura do edital.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        `Backend returned HTTP ${response.status}.`,
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendEditalCoverage;
+      if (!isValidCoveragePayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível consultar a cobertura agora.", response.status);
+      }
+      if (data.coverage_status === "not_ready") {
+        return makeApiFailure(
+          "backend",
+          "not_ready",
+          "A cobertura ainda não está pronta para este edital.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data,
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível consultar a cobertura agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível consultar a cobertura agora.");
   }
 }
 

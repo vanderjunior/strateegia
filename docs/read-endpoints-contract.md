@@ -344,7 +344,8 @@ Frontend proxy/API status:
 Purpose:
 - return a bounded, read-only coverage summary comparing one owned edital against current user materials
 - implemented in Coverage-B as an authenticated, user-scoped, metadata-only endpoint
-- does not add study plan generation, question generation, simulado generation/execution, progress mutation, scheduler behavior, OCR, LLM calls, or frontend UI unlocks
+- Coverage-C adds the same-origin frontend proxy and API wrapper
+- does not add visible coverage UI, study plan generation, question generation, simulado generation/execution, progress mutation, scheduler behavior, OCR, LLM calls, or frontend UI unlocks
 
 Behavior:
 - unauthenticated requests return `401`
@@ -423,6 +424,12 @@ Forbidden fields:
 - password/session fields
 - answer key, gabarito, or correction payloads
 - worker/job/internal traces
+
+Frontend proxy/API status:
+- same-origin Next proxy exists at `GET /api/editais/{editalId}/coverage`
+- the proxy forwards cookies server-side and whitelists the bounded response fields
+- frontend API helper `fetchEditalCoverage(editalId)` normalizes auth-required, not-found, not-ready, backend-offline, unsupported, and invalid-response states
+- no visible coverage UI or study unlock exists in Coverage-C
 
 ## Pipeline Status Reads
 

@@ -4,7 +4,7 @@
 
 Define the next read-only contract for comparing an analyzed edital against user materials without exposing raw content or adding study execution behavior.
 
-Backend Coverage-B is implemented. Frontend proxy and UI migration are still pending.
+Backend Coverage-B and frontend Coverage-C proxy/API wrapper are implemented. Visible UI migration is still pending.
 
 ## Current Prerequisites
 
@@ -149,6 +149,13 @@ Implementation note:
 
 ## Frontend Implications
 
+Coverage-C adds:
+
+- same-origin Next proxy at `GET /api/editais/{editalId}/coverage`
+- frontend API helper `fetchEditalCoverage(editalId)`
+- proxy-side whitelist sanitization for top-level and item fields
+- product-safe mapping for auth-required, not-found, not-ready, offline, unsupported, and invalid-response states
+
 Future UI should show simple read-only labels:
 
 - `Cobertura do edital`
@@ -183,17 +190,19 @@ Backend tests:
 - repeated `GET` is idempotent
 - no raw text, chunks, OCR, storage paths, token/session fields, answer keys, gabarito, or evidence snippets leak
 
-Future frontend tests:
+Frontend tests:
 
 - same-origin proxy preserves bounded coverage fields only
 - API wrapper maps `401`, `404`, `502`, and `503`
+- API wrapper maps `coverage_status: "not_ready"` to a product-safe not-ready result
+- API wrapper maps invalid JSON or invalid bounded shape to `invalid_response`
 - adapter maps coverage states to product labels
 - `not_ready` coverage does not unlock study, PSCPP, Ciclo, Questões, Simulado, or progress UI
 - UI does not show raw/internal copy or backend/pipeline terminology
 
 ## Explicit Non-Goals
 
-- no frontend coverage proxy or UI in Coverage-B
+- no visible coverage UI in Coverage-C
 - no question generation
 - no simulado generation or execution
 - no progress mutation
@@ -207,7 +216,6 @@ Future frontend tests:
 
 ## Recommended Implementation Sequence
 
-1. Coverage-C: add frontend same-origin proxy and API wrapper.
-2. Coverage-D: add minimal read-only card on edital detail.
-3. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
-4. StudyPlan-Planning-A: define study-plan contract only after coverage is validated.
+1. Coverage-D: add minimal read-only card on edital detail.
+2. Coverage-QA: validate browser, API, no-leakage, and conservative gating.
+3. StudyPlan-Planning-A: define study-plan contract only after coverage is validated.

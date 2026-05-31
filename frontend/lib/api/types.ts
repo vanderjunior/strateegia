@@ -46,7 +46,8 @@ export interface ApiErrorDetails {
     | "unsupported_media"
     | "validation_error"
     | "http_error"
-    | "invalid_json";
+    | "invalid_json"
+    | "invalid_response";
   message: string;
 }
 
@@ -391,6 +392,44 @@ export interface BackendEditalAnalysisResponse {
   bibliography_count: number;
   gaps_count: number;
   warnings_count: number;
+  source: "user_scope";
+}
+
+export type EditalCoverageStatus =
+  | "not_ready"
+  | "partial"
+  | "ready_for_review"
+  | "needs_review"
+  | "unknown";
+
+export type EditalCoverageItemStatus =
+  | "covered"
+  | "partial"
+  | "uncovered"
+  | "needs_review";
+
+export interface BackendEditalCoverageItem {
+  topic_id: string;
+  label: string;
+  subtopics_count: number;
+  covered_count: number;
+  partial_count: number;
+  uncovered_count: number;
+  status: EditalCoverageItemStatus;
+}
+
+export interface BackendEditalCoverage {
+  edital_id: string;
+  analysis_status: EditalAnalysisStatus;
+  coverage_status: EditalCoverageStatus;
+  topics_count: number;
+  subtopics_count: number;
+  covered_subtopics_count: number;
+  partial_subtopics_count: number;
+  uncovered_subtopics_count: number;
+  out_of_scope_materials_count: number;
+  materials_considered_count: number;
+  items: BackendEditalCoverageItem[];
   source: "user_scope";
 }
 
