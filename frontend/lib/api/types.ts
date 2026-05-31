@@ -313,6 +313,23 @@ export interface BackendMaterialSummary {
   source: "user_scope";
 }
 
+export type StudyMaterialPreparationStatus =
+  | "ready_for_study"
+  | "needs_review"
+  | "not_ready"
+  | "failed";
+
+export interface BackendStudyMaterialPreparationResponse {
+  document_id: string;
+  preparation_status: StudyMaterialPreparationStatus;
+  material_type: "study_material";
+  section_count: number;
+  chunk_count: number;
+  warnings_count: number;
+  ready_for_study: boolean;
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;

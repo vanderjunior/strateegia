@@ -20,6 +20,7 @@
 - `/api/materials/upload`
 - `/api/materials/[materialId]/summary`
 - `/api/materials/[materialId]/pipeline/summary`
+- `/api/materials/[materialId]/study/prepare`
 - `/api/editais/[editalId]/summary`
 - `/api/materials/[materialId]/edital/analyze`
 
@@ -31,6 +32,7 @@
 - Controlled upload entry using the existing same-origin upload proxy path.
 - Upload UI asks for a user-facing file classification (`Edital`, `Material de estudo`, `Prova anterior`, `Bibliografia / referência`, `Anotação / resumo`, `Outro`) before sending; the normalized `material_type` is persisted as bounded metadata and does not trigger processing.
 - Materials can be grouped and filtered by persisted `material_type` in a read-only way; grouping does not trigger ingestion, OCR, generation, or study planning.
+- Study material detail exposes a minimal manual `Preparar para estudo` action only for authenticated real materials classified as `study_material`; it uses deterministic no-OCR preparation and returns bounded readiness counts only.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -56,6 +58,7 @@
 ## Current Limitations
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
+- Study material preparation does not generate summaries, questions, simulados, study cycles, or progress updates.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
@@ -96,6 +99,6 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 ## Recommended Next Phases
 
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
-2. StudyMaterial-A: define bounded study material preparation/readiness for the core study flow.
+2. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
 4. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.

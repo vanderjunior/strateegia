@@ -1086,6 +1086,70 @@ def _can_prepare_edital_material_without_ocr(material) -> bool:
     return suffix in {".txt", ".md", ".pdf"}
 
 
+def _bounded_study_material_preparation_response(
+    material,
+    repository: JsonStudyRepository,
+    user_id: str,
+) -> dict[str, object]:
+    document_id = material.metadata.document_id
+    summary = _bounded_material_item(material, repository, user_id)
+    pipeline_summary = _bounded_material_pipeline_summary(material, repository, user_id)
+    extraction = repository.get_document_extraction_result(document_id, user_id=user_id)
+
+    section_count = int(summary["section_count"])
+    chunk_count = int(summary["chunk_count"])
+    warnings_count = int(summary["warnings_count"])
+    pipeline_status = str(pipeline_summary["status"] or "")
+    has_safe_text = extraction is not None and bool((extraction.text or "").strip())
+
+    if pipeline_status in {"failed", "unsupported"} or str(summary["processing_status"]) == "unknown":
+        preparation_status = "failed"
+    elif bool(pipeline_summary["has_ocr_warning"]) or str(summary["extraction_status"]) == "ocr_required":
+        preparation_status = "not_ready"
+    elif has_safe_text and section_count > 0 and chunk_count > 0:
+        preparation_status = "ready_for_study"
+    elif has_safe_text:
+        preparation_status = "needs_review"
+    else:
+        preparation_status = "not_ready"
+
+    return {
+        "document_id": document_id,
+        "preparation_status": preparation_status,
+        "material_type": "study_material",
+        "section_count": section_count,
+        "chunk_count": chunk_count,
+        "warnings_count": warnings_count,
+        "ready_for_study": preparation_status == "ready_for_study",
+        "source": "user_scope",
+    }
+
+
+@router.post("/materials/{document_id}/study/prepare")
+def prepare_study_material(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    material = repository.get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    if _uploaded_material_type(material) != "study_material":
+        raise HTTPException(status_code=422, detail="Material is not classified as study material.")
+
+    if (
+        repository.get_document_extraction_result(document_id, user_id=user_id) is None
+        and _can_prepare_edital_material_without_ocr(material)
+    ):
+        try:
+            get_document_pipeline_service(request).prepare_document_without_ocr(document_id, user_id=user_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail="Material not found.") from exc
+
+    refreshed_material = repository.get_uploaded_material(document_id, user_id=user_id)
+    if refreshed_material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    return _bounded_study_material_preparation_response(refreshed_material, repository, user_id)
+
+
 @router.post("/materials/{document_id}/edital/analyze")
 def analyze_edital(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)

@@ -154,6 +154,42 @@ Implemented shape:
 }
 ```
 
+### Controlled action: `POST /api/materials/{document_id}/study/prepare`
+
+Purpose:
+- prepare one owned `material_type=study_material` for later study using the existing deterministic no-OCR document preparation path
+- return bounded readiness metadata only
+- not generate summaries, questions, simulados, study cycles, or progress updates
+
+Implemented shape:
+
+```json
+{
+  "document_id": "doc-123",
+  "preparation_status": "ready_for_study",
+  "material_type": "study_material",
+  "section_count": 4,
+  "chunk_count": 12,
+  "warnings_count": 0,
+  "ready_for_study": true,
+  "source": "user_scope"
+}
+```
+
+Status semantics:
+- `ready_for_study`: safe text exists and bounded sections/chunks were created
+- `needs_review`: safe text exists but structure is weak or incomplete
+- `not_ready`: no safe text is available or OCR is required
+- `failed`: controlled deterministic preparation failed
+
+Rules:
+- authenticated and user-scoped
+- missing or non-owner material returns `404`
+- non-`study_material` material returns `422`
+- `.txt`, `.md`, and textual `.pdf` can be prepared deterministically
+- OCR-required PDFs return `not_ready`; OCR is not triggered
+- response must not expose raw text, chunks, sections, OCR output, storage paths, answer keys, gabarito, or progress/correction fields
+
 ### `GET /api/editais`
 
 Purpose:

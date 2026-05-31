@@ -111,8 +111,11 @@ Expected bounded fields:
 Rules:
 
 - study material must be prepared before it can generate study blocks
+- minimal controlled preparation now exists through `POST /api/materials/{document_id}/study/prepare`
+- current preparation returns bounded readiness metadata only: status, section count, chunk count, warnings count, and `ready_for_study`
 - OCR-required material remains not ready until a separate OCR-capable contract exists
 - preparation does not imply summary/question generation
+- later refinements still need topic mapping before concrete study blocks can be built
 
 ### Study Block
 
@@ -253,6 +256,7 @@ Rules:
 - Auth/session and Docker Compose internal staging are working.
 - Upload supports persisted `material_type`.
 - Materials can be grouped by type in read-only UI.
+- Study materials can be explicitly prepared through a controlled no-OCR action on material detail.
 - Controlled edital analysis exists for uploaded `material_type=edital`.
 - The deterministic edital parser can extract candidate sections/topics/subtopics/bibliography from structured textual sources.
 - Bounded list/detail reads exist for materials, editais, material summary, edital summary, and pipeline summary.
@@ -264,7 +268,7 @@ Rules:
 
 - Reliable edital taxonomy with area/theme -> topic -> subtopic.
 - Bounded bibliography material preparation.
-- Bounded study material preparation/readiness.
+- Topic-aware study material preparation/readiness beyond the current metadata-only preparation action.
 - Coverage refinement based on prepared study materials.
 - Study block sequencing from edital taxonomy and coverage.
 - Safe study material summary contract.
@@ -277,7 +281,7 @@ Rules:
 ## Recommended Implementation Sequence
 
 1. `StudyMaterial-A`:
-   Define and implement bounded study material preparation/readiness for `material_type=study_material`.
+   Minimal controlled preparation/readiness for `material_type=study_material` is implemented. Later refinements can add topic mapping, but not summaries/questions/progress without separate contracts.
 
 2. `StudySession-A`:
    Define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
@@ -361,10 +365,10 @@ Preferred copy:
 
 ## Recommended Next Implementation Phase
 
-Recommended next phase: `StudyMaterial-A`, after or alongside `EditalTaxonomy-A`.
+Recommended next phase: `StudySession-A`, after or alongside `EditalTaxonomy-A` and later StudyMaterial refinements.
 
 Reason:
 
-- The product cannot create truthful study blocks until study materials have a bounded preparation/readiness state.
+- The product now has a minimal bounded preparation/readiness state for study materials.
 - Summaries, fixation questions, reinforcement, and review blocks all depend on knowing which prepared material content maps to which edital topic/subtopic.
-- This keeps the product focused on learning from user materials before introducing simulations or progress mutation.
+- The next product challenge is defining read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials, without introducing summaries, questions, simulations, or progress mutation too early.

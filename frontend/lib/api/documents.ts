@@ -6,7 +6,9 @@ import type {
   BackendDocumentSummary,
   BackendMaterialSummary,
   BackendProtectedMaterialsList,
+  BackendStudyMaterialPreparationResponse,
   MaterialType,
+  StudyMaterialPreparationStatus,
   UploadMaterialResult
 } from "@/lib/api/types";
 
@@ -190,6 +192,121 @@ export async function fetchMaterialSummary(materialId: string): Promise<ApiResul
     }
   } catch {
     return makeApiFailure("offline", "network_error", "Não foi possível consultar o resumo real do material.");
+  }
+}
+
+const STUDY_PREPARATION_STATUSES = new Set<StudyMaterialPreparationStatus>([
+  "ready_for_study",
+  "needs_review",
+  "not_ready",
+  "failed"
+]);
+
+function isValidStudyPreparationPayload(data: BackendStudyMaterialPreparationResponse): boolean {
+  return (
+    typeof data.document_id === "string" &&
+    STUDY_PREPARATION_STATUSES.has(data.preparation_status) &&
+    data.material_type === "study_material" &&
+    typeof data.section_count === "number" &&
+    typeof data.chunk_count === "number" &&
+    typeof data.warnings_count === "number" &&
+    typeof data.ready_for_study === "boolean" &&
+    data.source === "user_scope"
+  );
+}
+
+function normalizeStudyPreparationPayload(
+  data: BackendStudyMaterialPreparationResponse
+): BackendStudyMaterialPreparationResponse {
+  return {
+    document_id: data.document_id,
+    preparation_status: data.preparation_status,
+    material_type: "study_material",
+    section_count: data.section_count,
+    chunk_count: data.chunk_count,
+    warnings_count: data.warnings_count,
+    ready_for_study: data.ready_for_study,
+    source: "user_scope"
+  };
+}
+
+export async function prepareStudyMaterial(
+  materialId: string
+): Promise<ApiResult<BackendStudyMaterialPreparationResponse>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: o material real não foi preparado.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "A preparação do material não está configurada neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch(`/api/materials/${encodeURIComponent(materialId)}/study/prepare`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível preparar o material agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "A preparação do material não está configurada neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Material não encontrado nesta sessão.", 404);
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para preparar este material.", response.status);
+    }
+    if (response.status === 422) {
+      return makeApiFailure(
+        "backend",
+        "invalid_material_type",
+        "Este arquivo não está classificado como material de estudo.",
+        422
+      );
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        `Backend returned HTTP ${response.status}.`,
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendStudyMaterialPreparationResponse;
+      if (!isValidStudyPreparationPayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível preparar o material agora.", response.status);
+      }
+      return {
+        ok: true,
+        data: normalizeStudyPreparationPayload(data),
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível preparar o material agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível preparar o material agora.");
   }
 }
 

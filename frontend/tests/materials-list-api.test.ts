@@ -4,7 +4,7 @@ vi.mock("@/lib/api/config", () => ({
   getApiConfig: vi.fn()
 }));
 
-import { fetchMaterialSummary, fetchUserMaterialsList } from "@/lib/api/documents";
+import { fetchMaterialSummary, fetchUserMaterialsList, prepareStudyMaterial } from "@/lib/api/documents";
 import { getApiConfig } from "@/lib/api/config";
 
 describe("materials list API wrapper", () => {
@@ -163,5 +163,90 @@ describe("materials list API wrapper", () => {
     expect(result.data.pipeline.ready_for_review).toBe(true);
     expect(JSON.stringify(result.data)).not.toContain("token");
     expect(JSON.stringify(result.data)).not.toContain("cookie");
+  });
+
+  it.each([
+    [401, "auth_required", "Entre para preparar este material."],
+    [403, "auth_required", "Entre para preparar este material."],
+    [404, "not_found", "Material não encontrado nesta sessão."],
+    [422, "invalid_material_type", "Este arquivo não está classificado como material de estudo."],
+    [502, "backend_offline", "Não foi possível preparar o material agora."],
+    [503, "missing_base_url", "A preparação do material não está configurada neste ambiente."]
+  ])("maps study material preparation HTTP %i to %s", async (status, code, message) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("{}", { status, headers: { "content-type": "application/json" } }))
+    );
+
+    const result = await prepareStudyMaterial("doc-1");
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected failure");
+    }
+    expect(result.error.code).toBe(code);
+    expect(result.error.message).toBe(message);
+  });
+
+  it("returns the bounded study material preparation payload on success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            document_id: "doc-1",
+            preparation_status: "ready_for_study",
+            material_type: "study_material",
+            section_count: 4,
+            chunk_count: 12,
+            warnings_count: 0,
+            ready_for_study: true,
+            source: "user_scope",
+            extracted_text: "RAW-SHOULD-NOT-LEAK",
+            storage_path: "/Users/private/aula.md",
+            token: "TOKEN-SHOULD-NOT-LEAK"
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const result = await prepareStudyMaterial("doc-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected success");
+    }
+    expect(result.data).toMatchObject({
+      document_id: "doc-1",
+      preparation_status: "ready_for_study",
+      material_type: "study_material",
+      section_count: 4,
+      chunk_count: 12,
+      ready_for_study: true
+    });
+    expect(JSON.stringify(result.data)).not.toContain("extracted_text");
+    expect(JSON.stringify(result.data)).not.toContain("storage_path");
+    expect(JSON.stringify(result.data)).not.toContain("TOKEN-SHOULD-NOT-LEAK");
+  });
+
+  it("maps invalid study preparation shape to invalid_response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ document_id: "doc-1", preparation_status: "surprise" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+      )
+    );
+
+    const result = await prepareStudyMaterial("doc-1");
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected failure");
+    }
+    expect(result.error.code).toBe("invalid_response");
   });
 });
