@@ -64,6 +64,7 @@
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
 - Controlled edital analysis remains explicit and manual; uploads still do not trigger analysis automatically, and `analysis_status=not_ready` does not unlock study or PSCPP planning.
 - Edital coverage is visible only as a bounded read-only card on edital detail; it does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
+- Scope modeling is documented in `docs/scope-model-contract-plan.md`: edital remains the official scope source, bibliography is a reference source that may be separate, study materials are learning content, and previous exams are later practice/style inputs.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -93,5 +94,6 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 
 ## Recommended Next Phases
 
-1. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-2. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
+1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
+2. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
+3. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
