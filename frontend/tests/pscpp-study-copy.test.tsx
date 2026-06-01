@@ -49,6 +49,20 @@ vi.mock("@/lib/adapters/real-user-state", async () => {
   };
 });
 
+vi.mock("@/lib/api/study", () => ({
+  fetchNextStudySession: vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    source: "backend",
+    data: {
+      session_status: "not_ready",
+      message: "Envie e prepare um material de estudo para começar.",
+      next_actions: [{ label: "Enviar material", href: "/materials/upload" }],
+      source: "user_scope"
+    }
+  }))
+}));
+
 import { PscppWorkspaceClient } from "@/components/workspace/PscppWorkspaceClient";
 import { PscppCycleClient } from "@/components/workspace/PscppCycleClient";
 import { PscppQuestionsClient } from "@/components/workspace/PscppQuestionsClient";
@@ -76,10 +90,10 @@ describe("PSCPP and study workspace copy", () => {
     expect(screen.queryByText(/metadados seguros/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/leitura protegida/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Ciclo de demonstração, não personalizado/i)).toBeInTheDocument();
-    expect(screen.getAllByText("Seu estudo guiado ainda não foi montado.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Seu estudo ainda não está pronto.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Envie e prepare um material de estudo para começar.").length).toBeGreaterThan(0);
     expect(screen.queryByText("Pronto para estudo")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Ver exemplo").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Ainda não baseado no seu edital/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/ainda não está baseado no seu edital/i)).length).toBeGreaterThan(0);
 
     expect(screen.queryByText(/question-style profile/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/study-cycle profile/i)).not.toBeInTheDocument();

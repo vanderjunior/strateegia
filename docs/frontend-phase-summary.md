@@ -21,6 +21,8 @@
 - `/api/materials/[materialId]/summary`
 - `/api/materials/[materialId]/pipeline/summary`
 - `/api/materials/[materialId]/study/prepare`
+- `/api/materials/[materialId]/study/summary`
+- `/api/study/session/next`
 - `/api/editais/[editalId]/summary`
 - `/api/materials/[materialId]/edital/analyze`
 
@@ -38,6 +40,8 @@
 - Material detail now shows a minimal read-only `Resumo do material` card for real prepared `study_material` items; summaries are conservative placeholders and do not generate questions, simulados, or progress.
 - After `Preparar para estudo` succeeds on material detail, the bounded summary card refreshes in-place; if refresh fails, the UI keeps the prepare success visible and shows a safe retry-later message.
 - Prepare-then-summary QA is closed through Compose/browser/API: a real `study_material` showed the not-ready summary state, refreshed in-place after `Preparar para estudo`, and displayed bounded section titles, placeholder summaries, key points, estimated minutes, and ready labels without raw content exposure.
+- Backend `GET /api/study/session/next` and frontend same-origin `/api/study/session/next` now provide a minimal read-only next study session from one prepared `study_material`; it is idempotent, user-scoped, and does not mutate progress.
+- `/study` can now show `Estudo de agora` from a prepared material, including bounded section titles, placeholder summaries, key points, estimated minutes, and safe links back to the material.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -49,7 +53,7 @@
 - OCR-required PDFs remain `not_ready`, do not trigger OCR from controlled analysis, and continue to keep study and PSCPP guidance gated.
 - Editais list metrics distinguish editais enviados, análises concluídas, and items aguardando análise/conferência; visible detail links preserve encoded `edital_id` values such as `edital:...`.
 - PSCPP guidance is framed as reference/demo when it is not driven by the user's analyzed edital.
-- Study workspace shows a next-step empty state until a real analyzed edital exists; demo orientations are clearly labeled as examples.
+- Study workspace shows a next-step empty state until a prepared study material exists, then shows a read-only material-based session. Edital-driven planning remains gated until a real analyzed edital exists.
 - Editais workspace shows a clear empty state when no real edital analysis exists, including the case where an edital file was uploaded but not analyzed.
 - Editais normal-user copy avoids protected-read/developer phrasing and presents edital state as a product empty state.
 - Onboarding is session-aware: the first step becomes `Conta ativa` when the user is already authenticated.
@@ -63,12 +67,12 @@
 ## Current Limitations
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
-- Study material preparation does not generate summaries, questions, simulados, study cycles, or progress updates.
+- Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
 - Auth/session remains intentionally minimal; there is no external provider, signup UI, or durable session store.
-- Dashboard study guidance waits for real analyzed edital context before presenting a concrete study orientation.
+- Dashboard study guidance still waits for real analyzed edital context before presenting edital-driven planning; `/study` can show one material-based read-only session from prepared study material.
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
 - Controlled edital analysis remains explicit and manual; uploads still do not trigger analysis automatically, and `analysis_status=not_ready` does not unlock study or PSCPP planning.
 - Edital coverage is visible only as a bounded read-only card on edital detail; it does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
@@ -76,7 +80,7 @@
 - Core study flow is documented in `docs/study-core-contract-plan.md`: prepare study materials, build study blocks, show summaries, add fixation questions, reinforce errors, and review after every 3 materials before later simulados.
 - Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders and minimal material-detail UI now exist, and future generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
-- Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
+- Ciclo, Questões, Simulados, Execução, progress mutation, and multi-material study cycles are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
 ## Validation Commands
 
@@ -105,6 +109,7 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 ## Recommended Next Phases
 
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
-2. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
+2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
+4. StudyBlocks-A: plan edital-aware ordering across multiple prepared materials without progress mutation.
+5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.

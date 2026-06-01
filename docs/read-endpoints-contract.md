@@ -48,7 +48,7 @@ This document records the bounded read contracts that are implemented or planned
 
 ### Later
 
-- `GET /api/study/today`
+- `GET /api/study/session/next`
 
 ## Recommended Implementation Order
 
@@ -59,7 +59,7 @@ This document records the bounded read contracts that are implemented or planned
 5. `GET /api/materials/{document_id}/pipeline/summary`
 6. `GET /api/editais/{edital_id}/coverage`
 7. `GET /api/pipeline/recent`
-8. `GET /api/study/today`
+8. `GET /api/study/session/next`
 
 ## Proposed Response Shapes
 
@@ -238,6 +238,86 @@ Rules:
 - frontend proxy path is `GET /api/materials/[materialId]/study/summary`
 - section summaries are conservative placeholders, not generated final truth
 - key points are derived from bounded section titles/headings only
+- response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
+
+### `GET /api/study/session/next`
+
+Purpose:
+- return one minimal read-only study session from an owned prepared `material_type=study_material`
+- use existing bounded study summary fields as the session content
+- not require edital alignment yet, but preserve a safe note when the session is not fully connected to an analyzed edital
+- implemented in StudySession-A as an idempotent backend read-only contract
+
+Implemented ready shape:
+
+```json
+{
+  "session_status": "ready",
+  "session_id": "study-session:doc-123",
+  "document_id": "doc-123",
+  "material_title": "aula.md",
+  "material_type": "study_material",
+  "summary_status": "ready",
+  "estimated_minutes": 10,
+  "sections_count": 2,
+  "items": [
+    {
+      "section_id": "doc-123:section:0",
+      "title": "Atos administrativos",
+      "summary": "Resumo em preparação para esta seção.",
+      "key_points": ["Atos administrativos"],
+      "estimated_minutes": 5,
+      "status": "ready"
+    }
+  ],
+  "next_actions": [
+    {
+      "label": "Abrir material",
+      "href": "/materials/doc-123"
+    },
+    {
+      "label": "Ver materiais",
+      "href": "/materials"
+    }
+  ],
+  "message": "Este estudo ainda não está conectado completamente ao edital.",
+  "source": "user_scope"
+}
+```
+
+Implemented not-ready shape:
+
+```json
+{
+  "session_status": "not_ready",
+  "message": "Envie e prepare um material de estudo para começar.",
+  "next_actions": [
+    {
+      "label": "Enviar material",
+      "href": "/materials/upload"
+    },
+    {
+      "label": "Ver materiais",
+      "href": "/materials"
+    }
+  ],
+  "source": "user_scope"
+}
+```
+
+Selection strategy:
+- consider only owned materials with `material_type=study_material`
+- ignore editais, bibliography, previous exams, notes, other, and unknown materials as primary session sources
+- consider only prepared summaries with `summary_status=ready` or `needs_review` and at least one bounded summary item
+- prefer `ready` over `needs_review`
+- choose the oldest deterministic candidate within the preferred status group by `created_at`, then `document_id`
+
+Rules:
+- authenticated and user-scoped
+- unauthenticated returns `401`
+- no prepared study material returns `200` with `session_status=not_ready`
+- `GET` is idempotent and does not prepare materials, mark completion, mutate progress, generate questions, generate simulados, call OCR, or call an LLM
+- frontend proxy path is `GET /api/study/session/next`
 - response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
 
 ### `GET /api/editais`
@@ -658,24 +738,13 @@ Suggested shape:
 }
 ```
 
-### `GET /api/study/today`
+### `GET /api/study/session/next`
 
 Purpose:
-- later, expose bounded session guidance only after the list contracts stabilize
+- implemented minimal next-session guidance from prepared study materials
+- later phases may extend this into edital-aware multi-material study blocks without progress mutation
 
-Suggested shape:
-
-```json
-{
-  "session_available": true,
-  "session_id": "sess-123",
-  "title": "Sessão sugerida",
-  "subject_label": "Navegação",
-  "gap_count": 2,
-  "materials_count": 3,
-  "review_state": "guide_only"
-}
-```
+See the implemented shape above.
 
 ## Auth and Owner-Scope Rules
 

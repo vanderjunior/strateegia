@@ -1196,6 +1196,91 @@ def _bounded_study_material_summary_response(
     }
 
 
+def _bounded_study_session_action(label: str, href: str) -> dict[str, object]:
+    return {
+        "label": label,
+        "href": href,
+    }
+
+
+def _has_analyzed_edital_for_study(repository: JsonStudyRepository, user_id: str) -> bool:
+    for edital in repository.list_user_edital_extractions(user_id=user_id):
+        summary = _bounded_edital_item(edital, repository, user_id)
+        if summary["analysis_status"] == "analyzed" and summary["review_state"] == "ready_for_review":
+            return True
+    return False
+
+
+def _not_ready_study_session_response() -> dict[str, object]:
+    return {
+        "session_status": "not_ready",
+        "message": "Envie e prepare um material de estudo para começar.",
+        "next_actions": [
+            _bounded_study_session_action("Enviar material", "/materials/upload"),
+            _bounded_study_session_action("Ver materiais", "/materials"),
+        ],
+        "source": "user_scope",
+    }
+
+
+def _bounded_next_study_session_response(
+    summary: dict[str, object],
+    repository: JsonStudyRepository,
+    user_id: str,
+) -> dict[str, object]:
+    document_id = str(summary["document_id"])
+    items = list(summary["items"])
+    estimated_minutes = sum(int(item["estimated_minutes"]) for item in items)
+    session_status = "ready" if summary["summary_status"] == "ready" else "needs_review"
+    has_analyzed_edital = _has_analyzed_edital_for_study(repository, user_id)
+    message = (
+        "Comece por este material preparado."
+        if has_analyzed_edital
+        else "Este estudo ainda não está conectado completamente ao edital."
+    )
+
+    return {
+        "session_status": session_status,
+        "session_id": f"study-session:{document_id}",
+        "document_id": document_id,
+        "material_title": summary["title"],
+        "material_type": "study_material",
+        "summary_status": summary["summary_status"],
+        "estimated_minutes": estimated_minutes,
+        "sections_count": int(summary["sections_count"]),
+        "items": items,
+        "next_actions": [
+            _bounded_study_session_action("Abrir material", f"/materials/{document_id}"),
+            _bounded_study_session_action("Ver materiais", "/materials"),
+        ],
+        "message": message,
+        "source": "user_scope",
+    }
+
+
+@router.get("/study/session/next")
+def get_next_study_session(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    candidates: list[tuple[int, str, str, object, dict[str, object]]] = []
+    for material in repository.list_uploaded_materials(user_id=user_id):
+        if _uploaded_material_type(material) != "study_material":
+            continue
+        summary = _bounded_study_material_summary_response(material, repository, user_id)
+        if summary["summary_status"] not in {"ready", "needs_review"} or not summary["items"]:
+            continue
+        created_at = material.metadata.created_at.isoformat()
+        status_rank = 0 if summary["summary_status"] == "ready" else 1
+        candidates.append((status_rank, created_at, material.metadata.document_id, material, summary))
+
+    if not candidates:
+        return _not_ready_study_session_response()
+
+    candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+    _, _, _, _, selected_summary = candidates[0]
+    return _bounded_next_study_session_response(selected_summary, repository, user_id)
+
+
 @router.post("/materials/{document_id}/study/prepare")
 def prepare_study_material(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)

@@ -284,7 +284,7 @@ Rules:
    Minimal controlled preparation/readiness for `material_type=study_material` is implemented. Later refinements can add topic mapping, but not summaries/questions/progress without separate contracts.
 
 2. `StudySession-A`:
-   Define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
+   Minimal read-only next session from one prepared `study_material` is implemented through `GET /api/study/session/next`. Later refinements can add edital-aware ordering across multiple materials, but not progress, questions, review blocks, or simulados without separate contracts.
 
 3. `StudySummary-A`:
    Define bounded candidate summaries for a study block. If generation is used, keep it behind an explicit review-only contract.
@@ -365,10 +365,11 @@ Preferred copy:
 
 ## Recommended Next Implementation Phase
 
-Recommended next phase: `StudySession-A`, after or alongside `EditalTaxonomy-A` and later StudyMaterial refinements.
+Recommended next phase: `StudySession-QA-A`, followed by edital-aware `StudyBlocks-A` planning after or alongside `EditalTaxonomy-A`.
 
 Reason:
 
-- The product now has a minimal bounded preparation/readiness state for study materials.
-- Summaries, fixation questions, reinforcement, and review blocks all depend on knowing which prepared material content maps to which edital topic/subtopic.
-- The next product challenge is defining read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials, without introducing summaries, questions, simulations, or progress mutation too early.
+- The product now has a minimal bounded preparation/readiness state and a single read-only next-session surface for prepared study materials.
+- Browser/API QA should confirm the new `/study` session path before layering additional study structure on top.
+- Summaries, fixation questions, reinforcement, and review blocks still depend on knowing which prepared material content maps to which edital topic/subtopic.
+- The next product challenge is defining edital-aware ordering across prepared materials, without introducing questions, simulations, or progress mutation too early.
