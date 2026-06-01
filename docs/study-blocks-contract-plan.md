@@ -308,7 +308,7 @@ The frontend should not:
    Frontend same-origin proxy/API wrapper is implemented.
 
 3. `StudyBlocks-C`:
-   Add minimal `/study` blocks UI while keeping `/api/study/session/next` as the simple fallback.
+   Minimal `/study` blocks UI is implemented while keeping `/api/study/session/next` as the simple fallback.
 
 4. `StudyBlockDetail-A`:
    Add read-only block detail page if needed.

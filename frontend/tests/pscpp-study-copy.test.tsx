@@ -50,6 +50,15 @@ vi.mock("@/lib/adapters/real-user-state", async () => {
 });
 
 vi.mock("@/lib/api/study", () => ({
+  fetchStudyBlocks: vi.fn(async () => ({
+    ok: false,
+    status: 200,
+    source: "backend",
+    error: {
+      code: "not_ready",
+      message: "Envie e prepare um material de estudo para montar seus blocos."
+    }
+  })),
   fetchNextStudySession: vi.fn(async () => ({
     ok: true,
     status: 200,

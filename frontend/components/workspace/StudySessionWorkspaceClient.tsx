@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { StudySessionWorkspaceViewModel } from "@/lib/api/types";
-import type { BackendNextStudySession } from "@/lib/api/types";
-import { fetchNextStudySession } from "@/lib/api/study";
+import type { BackendNextStudySession, BackendStudyBlocks } from "@/lib/api/types";
+import { fetchNextStudySession, fetchStudyBlocks } from "@/lib/api/study";
 import {
   buildMockStudySessionWorkspaceViewModel,
   loadStudySessionWorkspaceViewModel
@@ -30,6 +30,10 @@ export function StudySessionWorkspaceClient() {
     buildMockStudySessionWorkspaceViewModel()
   );
   const [readiness, setReadiness] = useState<RealUserStudyReadiness>(buildDefaultRealUserStudyReadiness());
+  const [studyBlocks, setStudyBlocks] = useState<BackendStudyBlocks | null>(null);
+  const [studyBlocksState, setStudyBlocksState] = useState<
+    "loading" | "ready" | "not_ready" | "auth_required" | "unavailable"
+  >("loading");
   const [nextStudySession, setNextStudySession] = useState<BackendNextStudySession | null>(null);
   const [nextStudySessionState, setNextStudySessionState] = useState<
     "loading" | "ready" | "not_ready" | "auth_required" | "offline" | "unsupported"
@@ -40,12 +44,26 @@ export function StudySessionWorkspaceClient() {
     void Promise.all([
       loadStudySessionWorkspaceViewModel(),
       loadRealUserStudyReadiness(),
+      fetchStudyBlocks(),
       fetchNextStudySession()
     ]).then(
-      ([nextViewModel, nextReadiness, nextSessionResult]) => {
+      ([nextViewModel, nextReadiness, blocksResult, nextSessionResult]) => {
         if (active) {
           setViewModel(nextViewModel);
           setReadiness(nextReadiness);
+          if (blocksResult.ok) {
+            setStudyBlocks(blocksResult.data);
+            setStudyBlocksState(blocksResult.data.items.length ? "ready" : "not_ready");
+          } else if (blocksResult.error.code === "not_ready") {
+            setStudyBlocks(null);
+            setStudyBlocksState("not_ready");
+          } else if (blocksResult.error.code === "auth_required" || blocksResult.error.code === "unauthorized") {
+            setStudyBlocks(null);
+            setStudyBlocksState("auth_required");
+          } else {
+            setStudyBlocks(null);
+            setStudyBlocksState("unavailable");
+          }
           if (nextSessionResult.ok) {
             setNextStudySession(nextSessionResult.data);
             setNextStudySessionState(
@@ -77,6 +95,121 @@ export function StudySessionWorkspaceClient() {
     [viewModel]
   );
   const usesDemoMaterials = viewModel.connection.source === "mock";
+
+  if (studyBlocks && studyBlocks.items.length) {
+    const connectedToEdital = studyBlocks.scope_status === "connected_to_edital";
+    const scopeCopy = connectedToEdital
+      ? "Conectado ao edital."
+      : "Baseado nos materiais preparados. Ainda não conectado completamente ao edital.";
+
+    return (
+      <div className="space-y-8">
+        <WorkspaceSourcePanel
+          eyebrow="estudo"
+          title="Seu caminho de estudo"
+          subtitle="Comece pelos blocos preparados a partir dos seus materiais."
+          connection={{
+            state: "connected",
+            source: "backend",
+            title: "Dados reais",
+            detail: scopeCopy
+          }}
+        />
+
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+          <div className="section-kicker">blocos preparados</div>
+          <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 max-w-3xl">
+              <CardTitle className="break-words text-[1.95rem] leading-[1.02]">
+                {connectedToEdital ? "Blocos conectados ao edital" : "Blocos baseados nos materiais"}
+              </CardTitle>
+              <p className="mt-4 text-sm leading-7 text-silver">{scopeCopy}</p>
+            </div>
+            <Badge className={productStatusClass(studyBlocks.blocks_status === "ready" ? "Pronto" : "Conferir")}>
+              {studyBlocks.blocks_status === "ready" ? "Pronto para estudo" : "Precisa de conferência"}
+            </Badge>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted">blocos</p>
+              <p className="mt-2 text-2xl text-ink">{studyBlocks.blocks_count}</p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted">tempo estimado</p>
+              <p className="mt-2 text-2xl text-ink">{studyBlocks.estimated_minutes} min</p>
+            </div>
+          </div>
+
+          <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+            Esta tela ainda não altera seu progresso. Questões e revisões serão adicionadas depois.
+          </p>
+        </Card>
+
+        <section className="space-y-4">
+          <div>
+            <div className="section-kicker">caminho sugerido</div>
+            <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">O que estudar agora</h2>
+          </div>
+          <div className="grid gap-4 2xl:grid-cols-2">
+            {studyBlocks.items.map((block) => {
+              const statusLabel =
+                block.status === "ready"
+                  ? "Pronto para estudo"
+                  : block.status === "not_ready"
+                    ? "Ainda não pronto"
+                    : "Precisa de conferência";
+              const actions = block.actions.length
+                ? block.actions
+                : [{ label: "Ver material", href: `/materials/${block.material_id}` }];
+              return (
+                <Card key={block.block_id} className="h-full min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 max-w-3xl">
+                      <div className="section-kicker">bloco de estudo</div>
+                      <CardTitle className="mt-4 break-words text-[1.55rem] leading-[1.05] sm:text-[1.7rem]">
+                        {block.title}
+                      </CardTitle>
+                    </div>
+                    <Badge className={productStatusClass(statusLabel)}>{statusLabel}</Badge>
+                  </div>
+
+                  {block.topic_label || block.subtopic_label ? (
+                    <p className="mt-4 text-sm leading-7 text-silver">
+                      {[block.topic_label, block.subtopic_label].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted">material</p>
+                      <p className="mt-2 break-words text-sm text-ink">{block.material_title}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted">seções</p>
+                      <p className="mt-2 text-lg text-ink">{block.sections_count}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted">tempo</p>
+                      <p className="mt-2 text-lg text-ink">{block.estimated_minutes} min</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    {actions.map((action) => (
+                      <WorkspaceLink key={`${block.block_id}-${action.label}-${action.href}`} href={action.href}>
+                        {action.label}
+                      </WorkspaceLink>
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   if (nextStudySession?.session_status === "ready" || nextStudySession?.session_status === "needs_review") {
     return (
@@ -173,15 +306,15 @@ export function StudySessionWorkspaceClient() {
     );
   }
 
-  if (nextStudySessionState !== "loading") {
+  if (studyBlocksState !== "loading" && nextStudySessionState !== "loading") {
     const title =
-      nextStudySessionState === "auth_required"
+      studyBlocksState === "auth_required" || nextStudySessionState === "auth_required"
         ? "Entre para ver sua sessão de estudo."
         : "Seu estudo ainda não está pronto.";
     const detail =
-      nextStudySessionState === "auth_required"
+      studyBlocksState === "auth_required" || nextStudySessionState === "auth_required"
         ? "Entre para carregar seus materiais preparados."
-        : nextStudySessionState === "offline"
+        : nextStudySessionState === "offline" && studyBlocksState === "unavailable"
           ? "Não foi possível carregar a sessão agora."
           : "Envie e prepare um material de estudo para começar.";
 
@@ -190,9 +323,9 @@ export function StudySessionWorkspaceClient() {
         <WorkspaceSourcePanel
           eyebrow="estudo"
           title="Estudo guiado"
-          subtitle="A próxima sessão aparece quando houver material de estudo preparado."
+          subtitle="O caminho aparece quando houver material de estudo preparado."
           connection={
-            nextStudySessionState === "offline"
+            nextStudySessionState === "offline" && studyBlocksState === "unavailable"
               ? {
                   state: "offline",
                   source: "offline",
@@ -210,7 +343,7 @@ export function StudySessionWorkspaceClient() {
           </CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">{detail}</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            {nextStudySessionState === "auth_required" ? (
+            {studyBlocksState === "auth_required" || nextStudySessionState === "auth_required" ? (
               <WorkspaceLink href="/login">Entrar</WorkspaceLink>
             ) : (
               <WorkspaceLink href="/materials/upload">Enviar material</WorkspaceLink>

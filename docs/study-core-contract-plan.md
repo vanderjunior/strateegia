@@ -286,19 +286,22 @@ Rules:
 2. `StudySession-A`:
    Minimal read-only next session from one prepared `study_material` is implemented through `GET /api/study/session/next`. Later refinements can add edital-aware ordering across multiple materials, but not progress, questions, review blocks, or simulados without separate contracts.
 
-3. `StudySummary-A`:
+3. `StudyBlocks-A/B/C`:
+   Backend study blocks, frontend proxy/API, and minimal `/study` block rendering are implemented. Blocks remain read-only and do not mutate progress, create questions, create reviews, or execute simulados.
+
+4. `StudySummary-A`:
    Define bounded candidate summaries for a study block. If generation is used, keep it behind an explicit review-only contract.
 
-4. `FixationQuestions-A`:
+5. `FixationQuestions-A`:
    Define fixation question candidates for a study block without exposing answer keys prematurely.
 
-5. `ErrorReinforcement-A`:
+6. `ErrorReinforcement-A`:
    Define how missed fixation questions map to topic/subtopic reinforcement.
 
-6. `ReviewBlock-A`:
+7. `ReviewBlock-A`:
    Define the cumulative review block after every 3 studied materials.
 
-7. `Simulado` later:
+8. `Simulado` later:
    Define exam/simulation generation and execution only after the study loop is stable.
 
 Important dependency:
@@ -365,11 +368,11 @@ Preferred copy:
 
 ## Recommended Next Implementation Phase
 
-Recommended next phase: `StudySession-QA-A`, followed by edital-aware `StudyBlocks-A` planning after or alongside `EditalTaxonomy-A`.
+Recommended next phase: `StudyBlocks-QA-A`, followed by `StudyBlockDetail-A` or fixation-question planning after browser/API validation.
 
 Reason:
 
-- The product now has a minimal bounded preparation/readiness state and a single read-only next-session surface for prepared study materials.
-- Browser/API QA should confirm the new `/study` session path before layering additional study structure on top.
+- The product now has bounded preparation/readiness, one-material fallback, and a minimal read-only `/study` blocks surface.
+- Browser/API QA should confirm the new `/study` blocks path before layering additional study structure on top.
 - Summaries, fixation questions, reinforcement, and review blocks still depend on knowing which prepared material content maps to which edital topic/subtopic.
 - The next product challenge is defining edital-aware ordering across prepared materials, without introducing questions, simulations, or progress mutation too early.

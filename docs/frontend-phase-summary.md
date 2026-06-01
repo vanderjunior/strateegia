@@ -43,7 +43,7 @@
 - Prepare-then-summary QA is closed through Compose/browser/API: a real `study_material` showed the not-ready summary state, refreshed in-place after `Preparar para estudo`, and displayed bounded section titles, placeholder summaries, key points, estimated minutes, and ready labels without raw content exposure.
 - Backend `GET /api/study/session/next` and frontend same-origin `/api/study/session/next` now provide a minimal read-only next study session from one prepared `study_material`; it is idempotent, user-scoped, and does not mutate progress.
 - Backend `GET /api/study/blocks` and frontend same-origin `/api/study/blocks` proxy/API helper now exist as a bounded read-only study-block sequence from prepared `study_material` files, with conservative edital topic/subtopic matching when safe.
-- `/study` can now show `Estudo de agora` from a prepared material, including bounded section titles, placeholder summaries, key points, estimated minutes, and safe links back to the material.
+- `/study` now renders bounded study blocks first when available, including material-only and edital-connected states, and keeps the one-material `Estudo de agora` session as a fallback when blocks are unavailable.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -70,12 +70,12 @@
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
-- Study blocks have backend and frontend API contracts only; no visible UI, review-after-3 behavior, progress mutation, questions, generation, simulado, OCR, or LLM behavior has been added.
+- Study blocks have a minimal `/study` list UI, but no block detail page, review-after-3 behavior, progress mutation, questions, generation, simulado, OCR, or LLM behavior has been added.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
 - Auth/session remains intentionally minimal; there is no external provider, signup UI, or durable session store.
-- Dashboard study guidance still waits for real analyzed edital context before presenting edital-driven planning; `/study` can show one material-based read-only session from prepared study material.
+- Dashboard study guidance still waits for real analyzed edital context before presenting edital-driven planning; `/study` can show bounded blocks from prepared study materials, including material-only blocks when edital scope is not connected.
 - Upload classification is persisted metadata only; an uploaded `edital` does not mean the edital has been analyzed.
 - Controlled edital analysis remains explicit and manual; uploads still do not trigger analysis automatically, and `analysis_status=not_ready` does not unlock study or PSCPP planning.
 - Edital coverage is visible only as a bounded read-only card on edital detail; it does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
@@ -114,5 +114,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
 2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. StudyBlocks-C: add minimal `/study` rendering for the bounded study-block read while keeping the existing one-material session fallback.
+4. StudyBlocks-QA-A: browser/API QA for the minimal `/study` blocks UI and fallback behavior.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
