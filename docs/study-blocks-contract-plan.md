@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Define the backend-owned contract for edital-aware study blocks before implementing `StudyBlocks-A`.
+Define the backend-owned contract for edital-aware study blocks implemented in `StudyBlocks-A`.
 
-This is a planning document only. It does not add endpoints, frontend UI, block computation, progress mutation, generated summaries, generated questions, simulados, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This document records the first backend read-only contract. It does not add frontend UI, progress mutation, generated summaries, generated questions, simulados, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -29,9 +29,7 @@ The edital remains the official scope source. Prepared study materials remain th
 The first contract should make the study path understandable without pretending that progress tracking,
 question generation, cumulative review, or simulado execution already exists.
 
-## Proposed Endpoint
-
-Preferred endpoint:
+## Implemented Endpoint
 
 ```http
 GET /api/study/blocks
@@ -75,7 +73,7 @@ Fallback state:
 
 ## Proposed Response Shape
 
-Bounded top-level response:
+Implemented bounded top-level response:
 
 ```json
 {
@@ -113,7 +111,7 @@ Bounded top-level response:
 }
 ```
 
-Not-ready response:
+Implemented not-ready response:
 
 ```json
 {
@@ -122,17 +120,7 @@ Not-ready response:
   "blocks_count": 0,
   "estimated_minutes": 0,
   "items": [],
-  "message": "Envie e prepare um material de estudo para começar.",
-  "actions": [
-    {
-      "label": "Enviar material",
-      "href": "/materials/upload"
-    },
-    {
-      "label": "Ver materiais",
-      "href": "/materials"
-    }
-  ],
+  "message": "Envie e prepare um material de estudo para montar seus blocos.",
   "source": "user_scope"
 }
 ```
@@ -145,7 +133,6 @@ Allowed top-level fields:
 - `estimated_minutes`
 - `items`
 - `message`
-- `actions`
 - `source`
 
 Allowed item fields:
@@ -315,7 +302,7 @@ The frontend should not:
 ## Future Phases
 
 1. `StudyBlocks-A`:
-   Implement backend read-only `GET /api/study/blocks`.
+   Backend read-only `GET /api/study/blocks` is implemented.
 
 2. `StudyBlocks-B`:
    Add frontend same-origin proxy/API wrapper.

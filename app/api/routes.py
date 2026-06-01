@@ -1258,6 +1258,214 @@ def _bounded_next_study_session_response(
     }
 
 
+def _not_ready_study_blocks_response() -> dict[str, object]:
+    return {
+        "blocks_status": "not_ready",
+        "scope_status": "not_ready",
+        "blocks_count": 0,
+        "estimated_minutes": 0,
+        "items": [],
+        "message": "Envie e prepare um material de estudo para montar seus blocos.",
+        "source": "user_scope",
+    }
+
+
+def _study_blocks_candidate_edital(repository: JsonStudyRepository, user_id: str):
+    candidates = []
+    for edital in repository.list_user_edital_extractions(user_id=user_id):
+        summary = _bounded_edital_item(edital, repository, user_id)
+        if summary["analysis_status"] not in {"analyzed", "needs_review"}:
+            continue
+        if not edital.topics and not edital.subtopics:
+            continue
+        status_rank = 0 if summary["analysis_status"] == "analyzed" else 1
+        review_rank = 0 if summary["review_state"] == "ready_for_review" else 1
+        candidates.append((status_rank, review_rank, edital.document_id, edital))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+    return candidates[0][3]
+
+
+def _study_blocks_match_edital_scope(edital, value: str) -> dict[str, object] | None:
+    value_tokens = _coverage_tokens(value)
+    if not value_tokens:
+        return None
+
+    topics = sorted(edital.topics, key=lambda item: (item.order_index, item.topic_id))
+    subtopics_by_topic: dict[str, list[object]] = {}
+    for subtopic in edital.subtopics:
+        subtopics_by_topic.setdefault(subtopic.parent_topic_id, []).append(subtopic)
+
+    best: tuple[int, int, int, object, object | None] | None = None
+    for topic in topics:
+        topic_tokens = _coverage_tokens(topic.title)
+        subtopics = sorted(
+            subtopics_by_topic.get(topic.topic_id, []),
+            key=lambda item: (item.order_index, item.subtopic_id),
+        )
+        if not subtopics:
+            score = len(value_tokens & topic_tokens)
+            if score:
+                candidate = (score, topic.order_index, 0, topic, None)
+                if best is None or (score, -topic.order_index, 0) > (best[0], -best[1], -best[2]):
+                    best = candidate
+            continue
+        for subtopic in subtopics:
+            subtopic_tokens = _coverage_tokens(subtopic.title)
+            score = len(value_tokens & topic_tokens) + (len(value_tokens & subtopic_tokens) * 2)
+            if not score:
+                continue
+            candidate = (score, topic.order_index, subtopic.order_index, topic, subtopic)
+            if best is None or (score, -topic.order_index, -subtopic.order_index) > (best[0], -best[1], -best[2]):
+                best = candidate
+
+    if best is None:
+        return None
+
+    _, topic_order, subtopic_order, topic, subtopic = best
+    return {
+        "topic_id": topic.topic_id,
+        "topic_label": _bounded_study_summary_title(topic.title, fallback="Tópico do edital"),
+        "topic_order": topic_order,
+        "subtopic_id": subtopic.subtopic_id if subtopic is not None else None,
+        "subtopic_label": (
+            _bounded_study_summary_title(subtopic.title, fallback="Subtópico do edital")
+            if subtopic is not None
+            else None
+        ),
+        "subtopic_order": subtopic_order,
+    }
+
+
+def _bounded_study_block_item(
+    *,
+    summary: dict[str, object],
+    material,
+    section_item: dict[str, object],
+    section_index: int,
+    edital_scope: dict[str, object] | None,
+    edital_available: bool,
+) -> tuple[tuple[int, int, int, int, str, str, int], dict[str, object]]:
+    document_id = str(summary["document_id"])
+    material_title = str(summary["title"])
+    section_title = str(section_item["title"])
+    connected = edital_scope is not None
+    scope_key = (
+        str(edital_scope["subtopic_id"] or edital_scope["topic_id"])
+        if edital_scope is not None
+        else "material"
+    )
+    block_id = f"study-block:{scope_key}:{document_id}:{section_index}"
+    item_status = str(section_item["status"])
+    summary_status = str(summary["summary_status"])
+    status = (
+        "ready"
+        if item_status == "ready" and summary_status == "ready" and (connected or not edital_available)
+        else "needs_review"
+    )
+    title = (
+        str(edital_scope["subtopic_label"] or edital_scope["topic_label"])
+        if edital_scope is not None
+        else section_title
+    )
+    created_at = material.metadata.created_at.isoformat()
+    sort_key = (
+        0 if connected else 1,
+        int(edital_scope["topic_order"]) if edital_scope is not None else 10_000,
+        int(edital_scope["subtopic_order"]) if edital_scope is not None else 10_000,
+        0 if status == "ready" else 1,
+        created_at,
+        document_id,
+        section_index,
+    )
+
+    return (
+        sort_key,
+        {
+            "block_id": block_id,
+            "title": title,
+            "topic_id": edital_scope["topic_id"] if edital_scope is not None else None,
+            "topic_label": edital_scope["topic_label"] if edital_scope is not None else None,
+            "subtopic_id": edital_scope["subtopic_id"] if edital_scope is not None else None,
+            "subtopic_label": edital_scope["subtopic_label"] if edital_scope is not None else None,
+            "material_id": document_id,
+            "material_title": material_title,
+            "sections_count": 1,
+            "summary_status": summary_status,
+            "estimated_minutes": int(section_item["estimated_minutes"]),
+            "status": status if summary_status != "failed" else "not_ready",
+            "actions": [
+                _bounded_study_session_action("Estudar bloco", f"/study/blocks/{block_id}"),
+            ],
+        },
+    )
+
+
+def _bounded_study_blocks_response(repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    prepared_summaries: list[tuple[object, dict[str, object]]] = []
+    for material in repository.list_uploaded_materials(user_id=user_id):
+        if _uploaded_material_type(material) != "study_material":
+            continue
+        summary = _bounded_study_material_summary_response(material, repository, user_id)
+        if summary["summary_status"] not in {"ready", "needs_review"} or not summary["items"]:
+            continue
+        prepared_summaries.append((material, summary))
+
+    if not prepared_summaries:
+        return _not_ready_study_blocks_response()
+
+    edital = _study_blocks_candidate_edital(repository, user_id)
+    rows: list[tuple[tuple[int, int, int, int, str, str, int], dict[str, object]]] = []
+    connected_count = 0
+    for material, summary in prepared_summaries:
+        material_title = str(summary["title"])
+        for section_index, section_item in enumerate(list(summary["items"])):
+            match_value = " ".join([material_title, str(section_item["title"])])
+            edital_scope = _study_blocks_match_edital_scope(edital, match_value) if edital is not None else None
+            if edital_scope is not None:
+                connected_count += 1
+            rows.append(
+                _bounded_study_block_item(
+                    summary=summary,
+                    material=material,
+                    section_item=section_item,
+                    section_index=section_index,
+                    edital_scope=edital_scope,
+                    edital_available=edital is not None,
+                )
+            )
+
+    rows.sort(key=lambda row: row[0])
+    items = [item for _, item in rows]
+    estimated_minutes = sum(int(item["estimated_minutes"]) for item in items)
+    if edital is None:
+        blocks_status = "partial"
+        scope_status = "material_only"
+    elif connected_count == len(items) and all(item["status"] == "ready" for item in items):
+        blocks_status = "ready"
+        scope_status = "connected_to_edital"
+    else:
+        blocks_status = "needs_review"
+        scope_status = "connected_to_edital" if connected_count else "material_only"
+
+    return {
+        "blocks_status": blocks_status,
+        "scope_status": scope_status,
+        "blocks_count": len(items),
+        "estimated_minutes": estimated_minutes,
+        "items": items,
+        "source": "user_scope",
+    }
+
+
+@router.get("/study/blocks")
+def get_study_blocks(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_study_blocks_response(repository, user_id)
+
+
 @router.get("/study/session/next")
 def get_next_study_session(request: Request):
     user_id = _require_authenticated_user_id(request)

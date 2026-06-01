@@ -18,6 +18,7 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/materials/{document_id}/pipeline/summary` now provides the bounded pipeline detail contract.
 - Frontend pipeline detail uses the same-origin bounded pipeline summary proxy.
 - Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
+- Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend proxy/UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -49,6 +50,7 @@ This document records the bounded read contracts that are implemented or planned
 ### Later
 
 - `GET /api/study/session/next`
+- `GET /api/study/blocks`
 
 ## Recommended Implementation Order
 
@@ -60,6 +62,7 @@ This document records the bounded read contracts that are implemented or planned
 6. `GET /api/editais/{edital_id}/coverage`
 7. `GET /api/pipeline/recent`
 8. `GET /api/study/session/next`
+9. `GET /api/study/blocks`
 
 ## Proposed Response Shapes
 
@@ -318,6 +321,85 @@ Rules:
 - no prepared study material returns `200` with `session_status=not_ready`
 - `GET` is idempotent and does not prepare materials, mark completion, mutate progress, generate questions, generate simulados, call OCR, or call an LLM
 - frontend proxy path is `GET /api/study/session/next`
+- response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
+
+### `GET /api/study/blocks`
+
+Purpose:
+- return a backend-owned bounded sequence of study blocks from owned prepared `material_type=study_material` files
+- connect blocks to analyzed edital topic/subtopic scope when a safe bounded label match exists
+- return material-only blocks when prepared materials exist but no analyzed edital is available
+- keep block ordering server-side so the frontend does not compute topic/material matching
+- implemented in StudyBlocks-A as an idempotent backend read-only contract
+
+Implemented ready/partial shape:
+
+```json
+{
+  "blocks_status": "ready",
+  "scope_status": "connected_to_edital",
+  "blocks_count": 1,
+  "estimated_minutes": 5,
+  "items": [
+    {
+      "block_id": "study-block:subtopic-1:doc-123:0",
+      "title": "Atos administrativos",
+      "topic_id": "topic-1",
+      "topic_label": "Direito Administrativo",
+      "subtopic_id": "subtopic-1",
+      "subtopic_label": "Atos administrativos",
+      "material_id": "doc-123",
+      "material_title": "aula.md",
+      "sections_count": 1,
+      "summary_status": "ready",
+      "estimated_minutes": 5,
+      "status": "ready",
+      "actions": [
+        {
+          "label": "Estudar bloco",
+          "href": "/study/blocks/study-block:subtopic-1:doc-123:0"
+        }
+      ]
+    }
+  ],
+  "source": "user_scope"
+}
+```
+
+Implemented not-ready shape:
+
+```json
+{
+  "blocks_status": "not_ready",
+  "scope_status": "not_ready",
+  "blocks_count": 0,
+  "estimated_minutes": 0,
+  "items": [],
+  "message": "Envie e prepare um material de estudo para montar seus blocos.",
+  "source": "user_scope"
+}
+```
+
+Status semantics:
+- `not_ready`: no prepared `study_material` with bounded summary items exists
+- `partial`: prepared material blocks exist, but no analyzed edital is available
+- `ready`: prepared blocks are connected to analyzed edital scope and have ready summary structure
+- `needs_review`: edital exists but mapping is weak/incomplete, or one or more blocks need review
+
+Ordering strategy:
+- connected edital topic/subtopic blocks first
+- then summary readiness
+- then material `created_at`
+- then `document_id`
+- then section order
+
+Rules:
+- authenticated and user-scoped
+- unauthenticated returns `401`
+- `GET` is idempotent and does not prepare materials, mark completion, mutate progress, generate questions, generate simulados, call OCR, or call an LLM
+- ignores editais, bibliography, previous exams, notes, other, and unknown materials as primary study-block sources
+- frontend proxy/UI are pending
+- review-after-3 is not implemented yet
 - response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
 
 ### `GET /api/editais`

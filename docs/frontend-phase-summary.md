@@ -41,6 +41,7 @@
 - After `Preparar para estudo` succeeds on material detail, the bounded summary card refreshes in-place; if refresh fails, the UI keeps the prepare success visible and shows a safe retry-later message.
 - Prepare-then-summary QA is closed through Compose/browser/API: a real `study_material` showed the not-ready summary state, refreshed in-place after `Preparar para estudo`, and displayed bounded section titles, placeholder summaries, key points, estimated minutes, and ready labels without raw content exposure.
 - Backend `GET /api/study/session/next` and frontend same-origin `/api/study/session/next` now provide a minimal read-only next study session from one prepared `study_material`; it is idempotent, user-scoped, and does not mutate progress.
+- Backend `GET /api/study/blocks` now exists as a read-only bounded study-block sequence from prepared `study_material` files, with conservative edital topic/subtopic matching when safe; frontend proxy/UI are still pending.
 - `/study` can now show `Estudo de agora` from a prepared material, including bounded section titles, placeholder summaries, key points, estimated minutes, and safe links back to the material.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
@@ -68,6 +69,7 @@
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
+- Study blocks are backend-only for now; no frontend proxy/UI, review-after-3 behavior, progress mutation, questions, generation, simulado, OCR, or LLM behavior has been added.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
@@ -111,5 +113,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
 2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. StudyBlocks-A: plan edital-aware ordering across multiple prepared materials without progress mutation.
+4. StudyBlocks-B: add the same-origin frontend proxy/API wrapper for the bounded backend study-block read.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
