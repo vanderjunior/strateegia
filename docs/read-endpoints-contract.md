@@ -197,7 +197,8 @@ Purpose:
 - provide conservative section-level placeholders from prepared section metadata only
 - not generate final summaries, questions, simulados, study cycles, or progress updates
 - implemented in StudySummary-B as a backend read-only contract
-- frontend same-origin proxy/API wrapper implemented in StudySummary-C; visible UI is pending
+- frontend same-origin proxy/API wrapper implemented in StudySummary-C
+- minimal material-detail read-only UI implemented in StudySummary-D
 
 Implemented shape:
 

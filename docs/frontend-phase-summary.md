@@ -34,7 +34,8 @@
 - Materials can be grouped and filtered by persisted `material_type` in a read-only way; grouping does not trigger ingestion, OCR, generation, or study planning.
 - Study material detail exposes a minimal manual `Preparar para estudo` action only for authenticated real materials classified as `study_material`; it uses deterministic no-OCR preparation and returns bounded readiness counts only.
 - Study material preparation QA is closed for the minimal `.txt` path through Compose/API: authenticated upload as `Material de estudo` prepared successfully, non-study materials returned `422`, and the response stayed bounded.
-- Backend `GET /api/materials/{document_id}/study/summary` and frontend same-origin `/api/materials/[materialId]/study/summary` proxy/API helper now exist as a bounded prepared-material summary contract; visible UI is still pending.
+- Backend `GET /api/materials/{document_id}/study/summary` and frontend same-origin `/api/materials/[materialId]/study/summary` proxy/API helper now exist as a bounded prepared-material summary contract.
+- Material detail now shows a minimal read-only `Resumo do material` card for real prepared `study_material` items; summaries are conservative placeholders and do not generate questions, simulados, or progress.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -71,7 +72,7 @@
 - Edital coverage is visible only as a bounded read-only card on edital detail; it does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
 - Scope modeling is documented in `docs/scope-model-contract-plan.md`: edital remains the official scope source, bibliography is a reference source that may be separate, study materials are learning content, and previous exams are later practice/style inputs.
 - Core study flow is documented in `docs/study-core-contract-plan.md`: prepare study materials, build study blocks, show summaries, add fixation questions, reinforce errors, and review after every 3 materials before later simulados.
-- Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders now exist, and future frontend/generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
+- Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders and minimal material-detail UI now exist, and future generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -102,7 +103,7 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 ## Recommended Next Phases
 
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
-2. StudySummary-B: define the backend read-only prepared-material summary contract.
+2. StudySummary-QA-A: browser/API QA for the minimal read-only study summary card.
 3. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
 4. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.

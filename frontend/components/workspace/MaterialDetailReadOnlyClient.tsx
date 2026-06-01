@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { analyzeMaterialAsEdital } from "@/lib/api/editais";
-import { prepareStudyMaterial } from "@/lib/api/documents";
+import { fetchStudyMaterialSummary, prepareStudyMaterial } from "@/lib/api/documents";
 import type {
   ApiResult,
   BackendConnectionInfo,
   BackendEditalAnalysisResponse,
   BackendStudyMaterialPreparationResponse,
+  BackendStudyMaterialSummary,
   MaterialDetail
 } from "@/lib/api/types";
 import { buildMockMaterialDetail, loadMaterialDetail } from "@/lib/adapters/materials";
@@ -73,6 +74,17 @@ type StudyPreparationUiState =
   | { status: "offline" }
   | { status: "unauthorized" };
 
+type StudySummaryUiState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; data: BackendStudyMaterialSummary }
+  | { status: "needs_review"; data: BackendStudyMaterialSummary }
+  | { status: "not_ready" }
+  | { status: "invalid_material_type" }
+  | { status: "not_found" }
+  | { status: "offline" }
+  | { status: "unauthorized" };
+
 function editalAnalysisStateFromResult(result: ApiResult<BackendEditalAnalysisResponse>): EditalAnalysisUiState {
   if (result.ok) {
     if (result.data.analysis_status === "needs_review") {
@@ -120,6 +132,179 @@ function studyPreparationStateFromResult(
     default:
       return { status: "offline" };
   }
+}
+
+function studySummaryStateFromResult(result: ApiResult<BackendStudyMaterialSummary>): StudySummaryUiState {
+  if (result.ok) {
+    if (result.data.summary_status === "ready") {
+      return { status: "ready", data: result.data };
+    }
+    if (result.data.summary_status === "needs_review") {
+      return { status: "needs_review", data: result.data };
+    }
+    return { status: "not_ready" };
+  }
+
+  switch (result.error.code) {
+    case "not_ready":
+      return { status: "not_ready" };
+    case "invalid_material_type":
+      return { status: "invalid_material_type" };
+    case "not_found":
+      return { status: "not_found" };
+    case "unauthorized":
+    case "auth_required":
+      return { status: "unauthorized" };
+    default:
+      return { status: "offline" };
+  }
+}
+
+function StudySummaryCard({
+  materialId,
+  detail,
+  connection
+}: {
+  materialId: string;
+  detail: MaterialDetail;
+  connection: BackendConnectionInfo;
+}) {
+  const [summaryState, setSummaryState] = useState<StudySummaryUiState>({ status: "idle" });
+  const showSessionRequired = connection.state === "auth_required";
+  const shouldShow = detail.materialType === "study_material" && (detail.source === "backend" || showSessionRequired);
+
+  useEffect(() => {
+    let active = true;
+    if (!shouldShow || showSessionRequired || detail.source !== "backend") {
+      setSummaryState({ status: showSessionRequired && detail.materialType === "study_material" ? "unauthorized" : "idle" });
+      return () => {
+        active = false;
+      };
+    }
+
+    setSummaryState({ status: "loading" });
+    void fetchStudyMaterialSummary(materialId).then((result) => {
+      if (active) {
+        setSummaryState(studySummaryStateFromResult(result));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [detail.materialType, detail.source, materialId, shouldShow, showSessionRequired]);
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  const summaryData =
+    summaryState.status === "ready" || summaryState.status === "needs_review" ? summaryState.data : null;
+
+  return (
+    <Card className="min-w-0 border-[rgba(119,190,169,0.18)] bg-[rgba(119,190,169,0.04)]">
+      <div className="section-kicker">resumo</div>
+      <CardTitle className="mt-5 break-words text-[1.8rem]">Resumo do material</CardTitle>
+      <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
+        Use este resumo como apoio inicial à leitura.
+      </p>
+      <p className="mt-2 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+        Ele ainda não substitui o estudo do material original.
+      </p>
+
+      {summaryState.status === "loading" ? (
+        <p className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)] p-4 text-sm leading-7 text-silver">
+          Consultando resumo do material...
+        </p>
+      ) : null}
+
+      {summaryData ? (
+        <div className="mt-6 space-y-5">
+          <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+            <p className="break-words text-sm font-medium text-ink">{summaryData.title}</p>
+            <p className="mt-2 text-sm text-silver">
+              {summaryData.sections_count} {summaryData.sections_count === 1 ? "seção" : "seções"}
+            </p>
+          </div>
+
+          {summaryData.items.length ? (
+            <div className="space-y-3">
+              {summaryData.items.map((item) => (
+                <div
+                  key={item.section_id}
+                  className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-medium text-ink">{item.title}</p>
+                      <p className="mt-3 text-sm leading-7 text-silver">{item.summary}</p>
+                    </div>
+                    <Badge className={productStatusClass(item.status === "ready" ? "Pronto para estudo" : "Precisa de conferência")}>
+                      {item.status === "ready" ? "Pronto para estudo" : "Precisa de conferência"}
+                    </Badge>
+                  </div>
+
+                  {item.key_points.length ? (
+                    <div className="mt-4">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
+                        Pontos principais
+                      </p>
+                      <ul className="mt-2 space-y-2 text-sm leading-7 text-silver">
+                        {item.key_points.map((point) => (
+                          <li key={point} className="break-words">
+                            • {point}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  <p className="mt-4 text-xs uppercase tracking-[0.16em] text-[rgba(232,238,242,0.58)]">
+                    {item.estimated_minutes} min de leitura estimada
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+              Ainda não há seções prontas para exibição.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {summaryState.status === "not_ready" ? (
+        <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          <p className="font-medium">O resumo ainda não está pronto.</p>
+          <p className="mt-2">Prepare o material para organizar a leitura.</p>
+        </div>
+      ) : null}
+
+      {summaryState.status === "invalid_material_type" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Este arquivo não está classificado como material de estudo.
+        </p>
+      ) : null}
+
+      {summaryState.status === "not_found" ? (
+        <p className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-sm leading-7 text-rose-100">
+          Material não encontrado.
+        </p>
+      ) : null}
+
+      {summaryState.status === "offline" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Não foi possível consultar o resumo agora.
+        </p>
+      ) : null}
+
+      {summaryState.status === "unauthorized" ? (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-silver">Entre para ver o resumo do material.</p>
+          <WorkspaceLink href="/login">Entrar</WorkspaceLink>
+        </div>
+      ) : null}
+    </Card>
+  );
 }
 
 function StudyPreparationAction({
@@ -458,6 +643,8 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
       </section>
 
       <StudyPreparationAction materialId={materialId} detail={detail} connection={connection} />
+
+      <StudySummaryCard materialId={materialId} detail={detail} connection={connection} />
 
       <EditalAnalysisAction materialId={materialId} detail={detail} connection={connection} />
 

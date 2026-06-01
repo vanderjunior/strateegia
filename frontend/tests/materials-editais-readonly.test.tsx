@@ -11,7 +11,8 @@ const editalAnalysisMock = vi.hoisted(() => ({
 }));
 
 const studyPreparationMock = vi.hoisted(() => ({
-  prepareStudyMaterial: vi.fn()
+  prepareStudyMaterial: vi.fn(),
+  fetchStudyMaterialSummary: vi.fn()
 }));
 
 vi.mock("@/lib/adapters/session", () => ({
@@ -57,7 +58,8 @@ vi.mock("@/lib/api/documents", async () => {
 
   return {
     ...actual,
-    prepareStudyMaterial: studyPreparationMock.prepareStudyMaterial
+    prepareStudyMaterial: studyPreparationMock.prepareStudyMaterial,
+    fetchStudyMaterialSummary: studyPreparationMock.fetchStudyMaterialSummary
   };
 });
 
@@ -141,6 +143,7 @@ describe("materials, editais, and upload read-only invariants", () => {
     editalAnalysisMock.analyzeMaterialAsEdital.mockReset();
     editalAnalysisMock.fetchEditalCoverage.mockReset();
     studyPreparationMock.prepareStudyMaterial.mockReset();
+    studyPreparationMock.fetchStudyMaterialSummary.mockReset();
     editalAnalysisMock.fetchEditalCoverage.mockResolvedValue({
       ok: false,
       status: 200,
@@ -157,6 +160,15 @@ describe("materials, editais, and upload read-only invariants", () => {
       error: {
         code: "backend_offline",
         message: "Não foi possível preparar o material agora."
+      }
+    });
+    studyPreparationMock.fetchStudyMaterialSummary.mockResolvedValue({
+      ok: false,
+      status: 200,
+      source: "backend",
+      error: {
+        code: "not_ready",
+        message: "O resumo ainda não está pronto para este material."
       }
     });
   });
@@ -635,6 +647,192 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(await screen.findByText("Análise do edital")).toBeInTheDocument();
     expect(screen.queryByText("Preparação para estudo")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Preparar para estudo" })).not.toBeInTheDocument();
+  });
+
+  it("renders the read-only study summary card for a prepared study material", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-study",
+        title: "aula-estudo.md",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo"
+      })
+    });
+    studyPreparationMock.fetchStudyMaterialSummary.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        document_id: "doc-study",
+        summary_status: "ready",
+        material_type: "study_material",
+        title: "aula-estudo.md",
+        sections_count: 1,
+        items: [
+          {
+            section_id: "section-1",
+            title: "Atos administrativos",
+            summary: "Resumo em preparação para esta seção.",
+            key_points: ["Atos administrativos"],
+            estimated_minutes: 8,
+            status: "ready"
+          }
+        ],
+        warnings_count: 0,
+        source: "user_scope"
+      }
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-study" />);
+
+    expect(await screen.findByText("Resumo do material")).toBeInTheDocument();
+    expect(screen.getByText("Use este resumo como apoio inicial à leitura.")).toBeInTheDocument();
+    expect(screen.getByText("Ele ainda não substitui o estudo do material original.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Atos administrativos")).toBeInTheDocument());
+    expect(screen.getByText("Resumo em preparação para esta seção.")).toBeInTheDocument();
+    expect(screen.getByText("Pronto para estudo")).toBeInTheDocument();
+    expect(screen.getByText("8 min de leitura estimada")).toBeInTheDocument();
+    expect(studyPreparationMock.fetchStudyMaterialSummary).toHaveBeenCalledWith("doc-study");
+    expect(document.body.textContent).not.toContain("storage_path");
+    expect(document.body.textContent).not.toContain("extracted_text");
+    expect(document.body.textContent).not.toContain("gabarito");
+    expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
+  });
+
+  it("renders needs-review and empty-section study summary states safely", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-study",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo"
+      })
+    });
+    studyPreparationMock.fetchStudyMaterialSummary.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        document_id: "doc-study",
+        summary_status: "needs_review",
+        material_type: "study_material",
+        title: "aula-sem-secao.txt",
+        sections_count: 0,
+        items: [],
+        warnings_count: 1,
+        source: "user_scope"
+      }
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-study" />);
+
+    expect(await screen.findByText("Resumo do material")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Ainda não há seções prontas para exibição.")).toBeInTheDocument());
+    expect(document.body.textContent).not.toContain("chunk");
+    expect(document.body.textContent).not.toContain("storage_path");
+  });
+
+  it("shows safe study summary unavailable messages", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValue({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-study",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo"
+      })
+    });
+
+    const cases = [
+      {
+        result: {
+          ok: false,
+          status: 200,
+          source: "backend",
+          error: { code: "not_ready", message: "O resumo ainda não está pronto para este material." }
+        },
+        message: "O resumo ainda não está pronto."
+      },
+      {
+        result: {
+          ok: false,
+          status: 401,
+          source: "backend",
+          error: { code: "auth_required", message: "Entre para ver o resumo do material." }
+        },
+        message: "Entre para ver o resumo do material."
+      },
+      {
+        result: {
+          ok: false,
+          status: 404,
+          source: "backend",
+          error: { code: "not_found", message: "Material não encontrado." }
+        },
+        message: "Material não encontrado."
+      },
+      {
+        result: {
+          ok: false,
+          status: 502,
+          source: "offline",
+          error: { code: "backend_offline", message: "Não foi possível consultar o resumo agora." }
+        },
+        message: "Não foi possível consultar o resumo agora."
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      studyPreparationMock.fetchStudyMaterialSummary.mockResolvedValueOnce(testCase.result);
+      const { unmount } = render(<MaterialDetailReadOnlyClient materialId="doc-study" />);
+
+      await waitFor(() => expect(screen.getByText(testCase.message)).toBeInTheDocument());
+      expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
+      expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
+      expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
+      expect(document.body.textContent).not.toContain("storage_path");
+      expect(document.body.textContent).not.toContain("gabarito");
+      unmount();
+    }
+  });
+
+  it("does not render study summary card for non-study material detail", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-edital",
+        materialType: "edital",
+        materialTypeLabel: "Edital"
+      })
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-edital" />);
+
+    expect(await screen.findByText("Análise do edital")).toBeInTheDocument();
+    expect(screen.queryByText("Resumo do material")).not.toBeInTheDocument();
+    expect(studyPreparationMock.fetchStudyMaterialSummary).not.toHaveBeenCalled();
   });
 
   it("prepares a study material and shows bounded readiness counts", async () => {

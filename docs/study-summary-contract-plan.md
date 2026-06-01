@@ -4,7 +4,7 @@
 
 Define the future contract for study summaries created from prepared `material_type=study_material` uploads.
 
-This began as a planning document. StudySummary-B implemented the backend read-only endpoint, and StudySummary-C added the frontend same-origin proxy/API wrapper. Visible UI, LLM calls, generated summaries, fixation questions, study sessions, progress mutation, simulado execution, OCR, PostgreSQL, auth provider work, and signup remain out of scope.
+This began as a planning document. StudySummary-B implemented the backend read-only endpoint, StudySummary-C added the frontend same-origin proxy/API wrapper, and StudySummary-D added a minimal read-only material-detail card. LLM calls, generated summaries, fixation questions, study sessions, progress mutation, simulado execution, OCR, PostgreSQL, auth provider work, and signup remain out of scope.
 
 ## Current Implementation Status
 
@@ -25,9 +25,15 @@ Implemented in StudySummary-C:
 - defensive proxy sanitization of top-level and item fields
 - product-safe API result mapping for `not_ready`, auth, not found, invalid material type, offline, unsupported, and invalid response states
 
+Implemented in StudySummary-D:
+
+- minimal material-detail `Resumo do material` card for real `material_type=study_material`
+- loading, ready, needs-review, not-ready, auth, not-found, offline, and invalid-type states
+- compact rendering of section title, placeholder summary, key points, estimated minutes, and review status
+- no visible UI for non-study materials
+
 Pending:
 
-- material detail summary UI
 - generated/review-only summary candidates
 - fixation questions
 - study session/cycle integration
@@ -280,8 +286,9 @@ All future summary endpoints must remain authenticated, user-scoped, bounded, de
 1. `StudySummary-B`: backend read-only/draft contract for `GET /api/materials/{document_id}/study/summary`.
 2. `StudySummary-C`: frontend same-origin proxy and API helper.
 3. `StudySummary-D`: minimal material-detail UI card for `Resumo do material`.
-4. `StudySession-A`: organize the first study screen from analyzed edital taxonomy plus prepared materials.
-5. `FixationQuestions-Planning-A`: define question candidate boundaries, answer-key handling, and review language.
-6. `FixationQuestions-A`: add bounded fixation question candidates.
-7. `ErrorReinforcement-A`: map missed questions back to topic/subtopic reinforcement.
-8. `ReviewBlock-A`: add the cumulative review rule after every 3 studied materials.
+4. `StudySummary-QA-A`: browser/API QA for the minimal read-only summary card.
+5. `StudySession-A`: organize the first study screen from analyzed edital taxonomy plus prepared materials.
+6. `FixationQuestions-Planning-A`: define question candidate boundaries, answer-key handling, and review language.
+7. `FixationQuestions-A`: add bounded fixation question candidates.
+8. `ErrorReinforcement-A`: map missed questions back to topic/subtopic reinforcement.
+9. `ReviewBlock-A`: add the cumulative review rule after every 3 studied materials.
