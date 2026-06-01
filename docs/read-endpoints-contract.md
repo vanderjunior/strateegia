@@ -190,6 +190,53 @@ Rules:
 - OCR-required PDFs return `not_ready`; OCR is not triggered
 - response must not expose raw text, chunks, sections, OCR output, storage paths, answer keys, gabarito, or progress/correction fields
 
+### `GET /api/materials/{document_id}/study/summary`
+
+Purpose:
+- return a bounded read-only study summary structure for one owned prepared `material_type=study_material`
+- provide conservative section-level placeholders from prepared section metadata only
+- not generate final summaries, questions, simulados, study cycles, or progress updates
+- implemented in StudySummary-B as a backend-only contract; frontend proxy/UI is pending
+
+Implemented shape:
+
+```json
+{
+  "document_id": "doc-123",
+  "summary_status": "ready",
+  "material_type": "study_material",
+  "title": "aula.md",
+  "sections_count": 2,
+  "items": [
+    {
+      "section_id": "doc-123:section:0",
+      "title": "Atos administrativos",
+      "summary": "Resumo em preparação para esta seção.",
+      "key_points": ["Atos administrativos"],
+      "estimated_minutes": 5,
+      "status": "ready"
+    }
+  ],
+  "warnings_count": 0,
+  "source": "user_scope"
+}
+```
+
+Status semantics:
+- `ready`: prepared material has usable section titles and no warnings
+- `needs_review`: prepared material exists but structure is weak, generic, or warning-bearing
+- `not_ready`: material is not prepared, has no prepared sections, or has no safe extraction artifacts
+- `failed`: deterministic preparation status failed
+
+Rules:
+- authenticated and user-scoped
+- missing or non-owner material returns `404`
+- non-`study_material` material returns `422`
+- `GET` is idempotent and does not auto-prepare material
+- section summaries are conservative placeholders, not generated final truth
+- key points are derived from bounded section titles/headings only
+- response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
+
 ### `GET /api/editais`
 
 Purpose:

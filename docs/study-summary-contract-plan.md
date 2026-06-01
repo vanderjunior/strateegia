@@ -4,7 +4,28 @@
 
 Define the future contract for study summaries created from prepared `material_type=study_material` uploads.
 
-This is a planning document only. It does not add endpoints, UI behavior, LLM calls, generated summaries, fixation questions, study sessions, progress mutation, simulado execution, OCR, PostgreSQL, auth provider work, or signup.
+This began as a planning document. StudySummary-B now implements the backend read-only endpoint, while frontend proxy/UI, LLM calls, generated summaries, fixation questions, study sessions, progress mutation, simulado execution, OCR, PostgreSQL, auth provider work, and signup remain out of scope.
+
+## Current Implementation Status
+
+Implemented in StudySummary-B:
+
+- backend `GET /api/materials/{document_id}/study/summary`
+- authenticated and user-scoped
+- restricted to `material_type=study_material`
+- returns `not_ready` without mutation when the material has not been prepared
+- returns bounded section-level items from prepared section metadata
+- uses conservative placeholder text: `Resumo em preparação para esta seção.`
+- derives key points from section titles/headings only
+
+Pending:
+
+- frontend same-origin proxy
+- frontend API helper
+- material detail summary UI
+- generated/review-only summary candidates
+- fixation questions
+- study session/cycle integration
 
 ## Product Objective
 
@@ -36,7 +57,7 @@ If the material is missing, non-owned, not a study material, OCR-required, or no
 
 ## Proposed Future Endpoint
 
-Recommended initial endpoint:
+Implemented initial endpoint:
 
 ```http
 GET /api/materials/{document_id}/study/summary
@@ -259,4 +280,3 @@ All future summary endpoints must remain authenticated, user-scoped, bounded, de
 6. `FixationQuestions-A`: add bounded fixation question candidates.
 7. `ErrorReinforcement-A`: map missed questions back to topic/subtopic reinforcement.
 8. `ReviewBlock-A`: add the cumulative review rule after every 3 studied materials.
-

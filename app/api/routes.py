@@ -1125,6 +1125,77 @@ def _bounded_study_material_preparation_response(
     }
 
 
+def _bounded_study_summary_title(value: object, fallback: str = "Material de estudo") -> str:
+    title = " ".join(str(value or "").split())
+    unsafe_markers = ("storage_path", "/Users/", "C:\\", "password_hash", "studyflow_session")
+    if any(marker.lower() in title.lower() for marker in unsafe_markers):
+        return fallback
+    if not title:
+        return fallback
+    return title[:120]
+
+
+def _bounded_study_summary_item(section, chunk_count: int) -> dict[str, object]:
+    title = _bounded_study_summary_title(section.title, fallback="Seção sem título")
+    has_specific_title = title.lower() not in {"document", "seção sem título", "section"}
+    estimated_minutes = max(3, min(20, max(1, chunk_count) * 5))
+    return {
+        "section_id": section.section_id,
+        "title": title,
+        "summary": "Resumo em preparação para esta seção.",
+        "key_points": [title] if has_specific_title else [],
+        "estimated_minutes": estimated_minutes,
+        "status": "ready" if has_specific_title else "needs_review",
+    }
+
+
+def _bounded_study_material_summary_response(
+    material,
+    repository: JsonStudyRepository,
+    user_id: str,
+) -> dict[str, object]:
+    document_id = material.metadata.document_id
+    preparation = _bounded_study_material_preparation_response(material, repository, user_id)
+    warnings_count = int(preparation["warnings_count"])
+    sections = sorted(
+        repository.list_document_sections(document_id, user_id=user_id),
+        key=lambda section: (section.order_index, section.section_id),
+    )
+    chunks = repository.list_document_chunks(document_id, user_id=user_id)
+    chunks_by_section: dict[str, int] = {}
+    for chunk in chunks:
+        if chunk.section_id:
+            chunks_by_section[chunk.section_id] = chunks_by_section.get(chunk.section_id, 0) + 1
+
+    if preparation["preparation_status"] in {"not_ready", "failed"} or not sections:
+        summary_status = "not_ready" if preparation["preparation_status"] != "failed" else "failed"
+        items: list[dict[str, object]] = []
+    else:
+        items = [
+            _bounded_study_summary_item(
+                section,
+                chunks_by_section.get(section.section_id, 0),
+            )
+            for section in sections
+        ]
+        has_ready_item = any(item["status"] == "ready" for item in items)
+        summary_status = "ready" if has_ready_item and warnings_count == 0 else "needs_review"
+
+    return {
+        "document_id": document_id,
+        "summary_status": summary_status,
+        "material_type": "study_material",
+        "title": _bounded_study_summary_title(
+            _material_display_filename(material.metadata.original_filename, material.metadata.filename),
+            fallback="Material de estudo",
+        ),
+        "sections_count": len(sections),
+        "items": items,
+        "warnings_count": warnings_count,
+        "source": "user_scope",
+    }
+
+
 @router.post("/materials/{document_id}/study/prepare")
 def prepare_study_material(document_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -1148,6 +1219,18 @@ def prepare_study_material(document_id: str, request: Request):
     if refreshed_material is None:
         raise HTTPException(status_code=404, detail="Material not found.")
     return _bounded_study_material_preparation_response(refreshed_material, repository, user_id)
+
+
+@router.get("/materials/{document_id}/study/summary")
+def get_study_material_summary(document_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    material = repository.get_uploaded_material(document_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Material not found.")
+    if _uploaded_material_type(material) != "study_material":
+        raise HTTPException(status_code=422, detail="Material is not classified as study material.")
+    return _bounded_study_material_summary_response(material, repository, user_id)
 
 
 @router.post("/materials/{document_id}/edital/analyze")
