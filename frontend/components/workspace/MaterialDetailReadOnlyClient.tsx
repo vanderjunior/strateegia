@@ -80,6 +80,7 @@ type StudySummaryUiState =
   | { status: "ready"; data: BackendStudyMaterialSummary }
   | { status: "needs_review"; data: BackendStudyMaterialSummary }
   | { status: "not_ready" }
+  | { status: "refresh_failed" }
   | { status: "invalid_material_type" }
   | { status: "not_found" }
   | { status: "offline" }
@@ -163,11 +164,13 @@ function studySummaryStateFromResult(result: ApiResult<BackendStudyMaterialSumma
 function StudySummaryCard({
   materialId,
   detail,
-  connection
+  connection,
+  refreshVersion
 }: {
   materialId: string;
   detail: MaterialDetail;
   connection: BackendConnectionInfo;
+  refreshVersion: number;
 }) {
   const [summaryState, setSummaryState] = useState<StudySummaryUiState>({ status: "idle" });
   const showSessionRequired = connection.state === "auth_required";
@@ -185,13 +188,17 @@ function StudySummaryCard({
     setSummaryState({ status: "loading" });
     void fetchStudyMaterialSummary(materialId).then((result) => {
       if (active) {
+        if (!result.ok && refreshVersion > 0 && result.error.code !== "not_ready") {
+          setSummaryState({ status: "refresh_failed" });
+          return;
+        }
         setSummaryState(studySummaryStateFromResult(result));
       }
     });
     return () => {
       active = false;
     };
-  }, [detail.materialType, detail.source, materialId, shouldShow, showSessionRequired]);
+  }, [detail.materialType, detail.source, materialId, refreshVersion, shouldShow, showSessionRequired]);
 
   if (!shouldShow) {
     return null;
@@ -297,6 +304,12 @@ function StudySummaryCard({
         </p>
       ) : null}
 
+      {summaryState.status === "refresh_failed" ? (
+        <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          Material preparado. Não foi possível atualizar o resumo agora.
+        </p>
+      ) : null}
+
       {summaryState.status === "unauthorized" ? (
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <p className="text-sm text-silver">Entre para ver o resumo do material.</p>
@@ -310,11 +323,13 @@ function StudySummaryCard({
 function StudyPreparationAction({
   materialId,
   detail,
-  connection
+  connection,
+  onPrepared
 }: {
   materialId: string;
   detail: MaterialDetail;
   connection: BackendConnectionInfo;
+  onPrepared: () => void;
 }) {
   const [preparationState, setPreparationState] = useState<StudyPreparationUiState>({ status: "idle" });
   const showSessionRequired = connection.state === "auth_required";
@@ -330,6 +345,9 @@ function StudyPreparationAction({
     setPreparationState({ status: "loading" });
     const result = await prepareStudyMaterial(materialId);
     setPreparationState(studyPreparationStateFromResult(result));
+    if (result.ok) {
+      onPrepared();
+    }
   }
 
   return (
@@ -532,6 +550,7 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
   const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: MaterialDetail | null }>(
     buildFallback(materialId)
   );
+  const [studySummaryRefreshVersion, setStudySummaryRefreshVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -642,9 +661,19 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
         </Card>
       </section>
 
-      <StudyPreparationAction materialId={materialId} detail={detail} connection={connection} />
+      <StudyPreparationAction
+        materialId={materialId}
+        detail={detail}
+        connection={connection}
+        onPrepared={() => setStudySummaryRefreshVersion((version) => version + 1)}
+      />
 
-      <StudySummaryCard materialId={materialId} detail={detail} connection={connection} />
+      <StudySummaryCard
+        materialId={materialId}
+        detail={detail}
+        connection={connection}
+        refreshVersion={studySummaryRefreshVersion}
+      />
 
       <EditalAnalysisAction materialId={materialId} detail={detail} connection={connection} />
 

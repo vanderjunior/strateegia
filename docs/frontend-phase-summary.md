@@ -36,6 +36,7 @@
 - Study material preparation QA is closed for the minimal `.txt` path through Compose/API: authenticated upload as `Material de estudo` prepared successfully, non-study materials returned `422`, and the response stayed bounded.
 - Backend `GET /api/materials/{document_id}/study/summary` and frontend same-origin `/api/materials/[materialId]/study/summary` proxy/API helper now exist as a bounded prepared-material summary contract.
 - Material detail now shows a minimal read-only `Resumo do material` card for real prepared `study_material` items; summaries are conservative placeholders and do not generate questions, simulados, or progress.
+- After `Preparar para estudo` succeeds on material detail, the bounded summary card refreshes in-place; if refresh fails, the UI keeps the prepare success visible and shows a safe retry-later message.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.

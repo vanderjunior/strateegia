@@ -878,6 +878,141 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(document.body.textContent).not.toContain("gabarito");
   });
 
+  it("refreshes the study summary after successful preparation without remounting", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-study",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo"
+      })
+    });
+    studyPreparationMock.fetchStudyMaterialSummary
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 200,
+        source: "backend",
+        error: { code: "not_ready", message: "O resumo ainda não está pronto para este material." }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        source: "backend",
+        data: {
+          document_id: "doc-study",
+          summary_status: "ready",
+          material_type: "study_material",
+          title: "aula-preparada.md",
+          sections_count: 1,
+          items: [
+            {
+              section_id: "section-1",
+              title: "Direito Administrativo",
+              summary: "Resumo em preparação para esta seção.",
+              key_points: ["Direito Administrativo"],
+              estimated_minutes: 6,
+              status: "ready"
+            }
+          ],
+          warnings_count: 0,
+          source: "user_scope"
+        }
+      });
+    studyPreparationMock.prepareStudyMaterial.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        document_id: "doc-study",
+        preparation_status: "ready_for_study",
+        material_type: "study_material",
+        section_count: 1,
+        chunk_count: 2,
+        warnings_count: 0,
+        ready_for_study: true,
+        source: "user_scope"
+      }
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-study" />);
+
+    await waitFor(() => expect(screen.getByText("O resumo ainda não está pronto.")).toBeInTheDocument());
+    fireEvent.click(await screen.findByRole("button", { name: "Preparar para estudo" }));
+
+    await waitFor(() => expect(screen.getByText("Material pronto para estudo.")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Direito Administrativo")).toBeInTheDocument());
+    expect(screen.getByText("6 min de leitura estimada")).toBeInTheDocument();
+    expect(studyPreparationMock.prepareStudyMaterial).toHaveBeenCalledWith("doc-study");
+    expect(studyPreparationMock.fetchStudyMaterialSummary).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).not.toContain("storage_path");
+    expect(document.body.textContent).not.toContain("gabarito");
+    expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
+  });
+
+  it("keeps prepare success visible when summary refresh fails after preparation", async () => {
+    vi.mocked(loadMaterialDetail).mockResolvedValueOnce({
+      connection: {
+        state: "connected",
+        source: "backend",
+        title: "Materiais",
+        detail: "Material disponível."
+      },
+      detail: backendMaterialDetail({
+        id: "doc-study",
+        materialType: "study_material",
+        materialTypeLabel: "Material de estudo"
+      })
+    });
+    studyPreparationMock.fetchStudyMaterialSummary
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 200,
+        source: "backend",
+        error: { code: "not_ready", message: "O resumo ainda não está pronto para este material." }
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        source: "offline",
+        error: { code: "backend_offline", message: "Não foi possível consultar o resumo agora." }
+      });
+    studyPreparationMock.prepareStudyMaterial.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        document_id: "doc-study",
+        preparation_status: "ready_for_study",
+        material_type: "study_material",
+        section_count: 1,
+        chunk_count: 2,
+        warnings_count: 0,
+        ready_for_study: true,
+        source: "user_scope"
+      }
+    });
+
+    render(<MaterialDetailReadOnlyClient materialId="doc-study" />);
+
+    await waitFor(() => expect(screen.getByText("O resumo ainda não está pronto.")).toBeInTheDocument());
+    fireEvent.click(await screen.findByRole("button", { name: "Preparar para estudo" }));
+
+    await waitFor(() => expect(screen.getByText("Material pronto para estudo.")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Material preparado. Não foi possível atualizar o resumo agora.")).toBeInTheDocument()
+    );
+    expect(studyPreparationMock.fetchStudyMaterialSummary).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).not.toContain("storage_path");
+    expect(document.body.textContent).not.toContain("gabarito");
+  });
+
   it("shows safe study preparation status messages", async () => {
     vi.mocked(loadMaterialDetail).mockResolvedValue({
       connection: {

@@ -32,6 +32,12 @@ Implemented in StudySummary-D:
 - compact rendering of section title, placeholder summary, key points, estimated minutes, and review status
 - no visible UI for non-study materials
 
+Implemented in StudySummary-D1:
+
+- successful `Preparar para estudo` on material detail triggers an in-place bounded summary refetch
+- prepare success remains visible if the follow-up summary refresh fails
+- failed refresh shows `Material preparado. Não foi possível atualizar o resumo agora.`
+
 Pending:
 
 - generated/review-only summary candidates
