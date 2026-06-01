@@ -70,6 +70,7 @@
 - Edital coverage is visible only as a bounded read-only card on edital detail; it does not unlock study, PSCPP, Ciclo, Questões, Simulados, or progress.
 - Scope modeling is documented in `docs/scope-model-contract-plan.md`: edital remains the official scope source, bibliography is a reference source that may be separate, study materials are learning content, and previous exams are later practice/style inputs.
 - Core study flow is documented in `docs/study-core-contract-plan.md`: prepare study materials, build study blocks, show summaries, add fixation questions, reinforce errors, and review after every 3 materials before later simulados.
+- Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: summaries should be bounded, user-scoped, reviewable study units built only after study material preparation, with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, and Execução are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -100,6 +101,7 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 ## Recommended Next Phases
 
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
-2. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
-3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
+2. StudySummary-B: define the backend read-only prepared-material summary contract.
+3. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
+4. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
+5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
