@@ -4,7 +4,7 @@
 
 Define the future contract for study summaries created from prepared `material_type=study_material` uploads.
 
-This began as a planning document. StudySummary-B now implements the backend read-only endpoint, while frontend proxy/UI, LLM calls, generated summaries, fixation questions, study sessions, progress mutation, simulado execution, OCR, PostgreSQL, auth provider work, and signup remain out of scope.
+This began as a planning document. StudySummary-B implemented the backend read-only endpoint, and StudySummary-C added the frontend same-origin proxy/API wrapper. Visible UI, LLM calls, generated summaries, fixation questions, study sessions, progress mutation, simulado execution, OCR, PostgreSQL, auth provider work, and signup remain out of scope.
 
 ## Current Implementation Status
 
@@ -18,10 +18,15 @@ Implemented in StudySummary-B:
 - uses conservative placeholder text: `Resumo em preparação para esta seção.`
 - derives key points from section titles/headings only
 
+Implemented in StudySummary-C:
+
+- frontend same-origin `GET /api/materials/[materialId]/study/summary`
+- frontend `fetchStudyMaterialSummary(materialId)` API helper
+- defensive proxy sanitization of top-level and item fields
+- product-safe API result mapping for `not_ready`, auth, not found, invalid material type, offline, unsupported, and invalid response states
+
 Pending:
 
-- frontend same-origin proxy
-- frontend API helper
 - material detail summary UI
 - generated/review-only summary candidates
 - fixation questions

@@ -7,8 +7,11 @@ import type {
   BackendMaterialSummary,
   BackendProtectedMaterialsList,
   BackendStudyMaterialPreparationResponse,
+  BackendStudyMaterialSummary,
   MaterialType,
   StudyMaterialPreparationStatus,
+  StudyMaterialSummaryItemStatus,
+  StudyMaterialSummaryStatus,
   UploadMaterialResult
 } from "@/lib/api/types";
 
@@ -307,6 +310,144 @@ export async function prepareStudyMaterial(
     }
   } catch {
     return makeApiFailure("offline", "backend_offline", "Não foi possível preparar o material agora.");
+  }
+}
+
+const STUDY_SUMMARY_STATUSES = new Set<StudyMaterialSummaryStatus>([
+  "ready",
+  "needs_review",
+  "not_ready",
+  "failed"
+]);
+
+const STUDY_SUMMARY_ITEM_STATUSES = new Set<StudyMaterialSummaryItemStatus>([
+  "ready",
+  "needs_review"
+]);
+
+function isValidStudySummaryPayload(data: BackendStudyMaterialSummary): boolean {
+  return (
+    typeof data.document_id === "string" &&
+    STUDY_SUMMARY_STATUSES.has(data.summary_status) &&
+    data.material_type === "study_material" &&
+    typeof data.title === "string" &&
+    typeof data.sections_count === "number" &&
+    Array.isArray(data.items) &&
+    data.items.every(
+      (item) =>
+        typeof item.section_id === "string" &&
+        typeof item.title === "string" &&
+        typeof item.summary === "string" &&
+        Array.isArray(item.key_points) &&
+        item.key_points.every((point) => typeof point === "string") &&
+        typeof item.estimated_minutes === "number" &&
+        STUDY_SUMMARY_ITEM_STATUSES.has(item.status)
+    ) &&
+    typeof data.warnings_count === "number" &&
+    data.source === "user_scope"
+  );
+}
+
+function normalizeStudySummaryPayload(data: BackendStudyMaterialSummary): BackendStudyMaterialSummary {
+  return {
+    document_id: data.document_id,
+    summary_status: data.summary_status,
+    material_type: "study_material",
+    title: data.title,
+    sections_count: data.sections_count,
+    items: data.items.map((item) => ({
+      section_id: item.section_id,
+      title: item.title,
+      summary: item.summary,
+      key_points: item.key_points,
+      estimated_minutes: item.estimated_minutes,
+      status: item.status
+    })),
+    warnings_count: data.warnings_count,
+    source: "user_scope"
+  };
+}
+
+export async function fetchStudyMaterialSummary(
+  materialId: string
+): Promise<ApiResult<BackendStudyMaterialSummary>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: o resumo do material não foi consultado.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "O resumo do material não está configurado neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch(`/api/materials/${encodeURIComponent(materialId)}/study/summary`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível consultar o resumo agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "O resumo do material não está configurado neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Material não encontrado.", 404);
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para ver o resumo do material.", response.status);
+    }
+    if (response.status === 422) {
+      return makeApiFailure(
+        "backend",
+        "invalid_material_type",
+        "Este arquivo não está classificado como material de estudo.",
+        422
+      );
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        `Backend returned HTTP ${response.status}.`,
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendStudyMaterialSummary;
+      if (!isValidStudySummaryPayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível consultar o resumo agora.", response.status);
+      }
+      if (data.summary_status === "not_ready") {
+        return makeApiFailure("backend", "not_ready", "O resumo ainda não está pronto para este material.", response.status);
+      }
+      return {
+        ok: true,
+        data: normalizeStudySummaryPayload(data),
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível consultar o resumo agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível consultar o resumo agora.");
   }
 }
 

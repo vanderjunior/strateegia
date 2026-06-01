@@ -330,6 +330,34 @@ export interface BackendStudyMaterialPreparationResponse {
   source: "user_scope";
 }
 
+export type StudyMaterialSummaryStatus =
+  | "ready"
+  | "needs_review"
+  | "not_ready"
+  | "failed";
+
+export type StudyMaterialSummaryItemStatus = "ready" | "needs_review";
+
+export interface BackendStudyMaterialSummaryItem {
+  section_id: string;
+  title: string;
+  summary: string;
+  key_points: string[];
+  estimated_minutes: number;
+  status: StudyMaterialSummaryItemStatus;
+}
+
+export interface BackendStudyMaterialSummary {
+  document_id: string;
+  summary_status: StudyMaterialSummaryStatus;
+  material_type: "study_material";
+  title: string;
+  sections_count: number;
+  items: BackendStudyMaterialSummaryItem[];
+  warnings_count: number;
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;
