@@ -378,6 +378,21 @@ Controlled edital analysis QA passed for safe textual PDF preparation:
 
 Known limitation: textual PDF structure recognition is still conservative. A textual PDF may return `needs_review` until a later parser/coverage phase improves section/topic recognition. Scanned or OCR-required PDFs still require a separate explicit OCR-capable contract and are not analyzed automatically.
 
+### StudyMaterial-A Compose/API QA
+
+Minimal study material preparation QA passed for the controlled no-OCR path:
+
+- Rebuilt the Compose backend/frontend images before QA so the running containers included `POST /api/materials/{document_id}/study/prepare` and the frontend proxy `/api/materials/[materialId]/study/prepare`.
+- Login through the frontend auth proxy returned `200` with an authenticated local QA user.
+- Uploading a small `.txt` file through `/api/materials/upload` with `material_type=study_material` returned `201` with sanitized bounded metadata.
+- Calling `POST /api/materials/{document_id}/study/prepare` through the frontend proxy returned `200` with `preparation_status=ready_for_study`, `section_count=1`, `chunk_count=1`, `warnings_count=0`, and `ready_for_study=true`.
+- `/api/materials` showed the uploaded file as `material_type=study_material` under the bounded materials list.
+- Uploading the same file as `material_type=edital` and calling the study preparation endpoint returned `422`, confirming non-study materials are not prepared through this action.
+- API inspection found no raw extracted text, chunk or section body, storage path, token, password hash, answer key, or gabarito exposure.
+- The UI action remains limited to authenticated real materials classified as `study_material`; editais, bibliography, previous exams, notes, and other materials do not show the study preparation action.
+
+Textual PDF and OCR-required PDF behavior is covered by targeted backend tests: textual PDFs use deterministic embedded-text extraction without a separate visible process step, while OCR-required PDFs return bounded `not_ready` and do not trigger OCR. This flow still does not generate summaries, fixation questions, study sessions, simulados, progress updates, or LLM content.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
