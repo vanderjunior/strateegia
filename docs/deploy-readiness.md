@@ -409,6 +409,20 @@ Prepare-then-summary QA passed for the bounded material summary flow:
 
 Known limitation: study summaries remain conservative placeholders derived from prepared section metadata. This QA did not add generated summaries, fixation questions, study sessions, simulados, progress updates, OCR, or LLM behavior.
 
+### StudyBlocks-QA-A Compose/API QA
+
+Bounded `/study` blocks QA passed after rebuilding the Compose frontend/backend images:
+
+- Backend `GET /api/exam-profiles`, frontend `GET /`, and frontend `GET /study` returned `200`.
+- Unauthenticated frontend `GET /api/study/blocks` returned `401`, confirming protected proxy behavior.
+- Authenticated `GET /api/study/blocks` with no prepared study material returned `blocks_status=not_ready`, `scope_status=not_ready`, `blocks_count=0`, and the safe next-step message.
+- Uploading a small Markdown file as `material_type=study_material`, then calling `POST /api/materials/{document_id}/study/prepare`, returned a bounded ready-for-study result.
+- After preparation, `GET /api/study/blocks` returned `blocks_status=partial`, `scope_status=material_only`, two bounded block items, material title, section counts, estimated minutes, and safe read-only actions.
+- Uploading and analyzing a small textual edital, then re-checking blocks, returned `blocks_status=ready`, `scope_status=connected_to_edital`, bounded topic labels, material title, section counts, estimated minutes, and safe read-only actions.
+- API inspection found no raw extracted text, chunk or section body, storage path, token, password hash, answer key, gabarito, generated-question, simulado, or progress-mutation exposure.
+
+Known limitations: `/study` still has no block detail page, review-after-3 behavior, progress mutation, questions, generated summaries, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior. The older one-material `Estudo de agora` view remains only as a fallback if the blocks API is unavailable or unsupported.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
