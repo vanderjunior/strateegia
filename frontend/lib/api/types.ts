@@ -391,6 +391,43 @@ export type BackendNextStudySession =
   | BackendNextStudySessionReady
   | BackendNextStudySessionNotReady;
 
+export type StudyBlocksStatus = "ready" | "partial" | "not_ready" | "needs_review";
+
+export type StudyBlocksScopeStatus = "connected_to_edital" | "material_only" | "not_ready";
+
+export type StudyBlockItemStatus = "ready" | "needs_review" | "not_ready";
+
+export interface BackendStudyBlockAction {
+  label: string;
+  href: string;
+}
+
+export interface BackendStudyBlockItem {
+  block_id: string;
+  title: string;
+  topic_id: string | null;
+  topic_label: string | null;
+  subtopic_id: string | null;
+  subtopic_label: string | null;
+  material_id: string;
+  material_title: string;
+  sections_count: number;
+  summary_status: StudyMaterialSummaryStatus;
+  estimated_minutes: number;
+  status: StudyBlockItemStatus;
+  actions: BackendStudyBlockAction[];
+}
+
+export interface BackendStudyBlocks {
+  blocks_status: StudyBlocksStatus;
+  scope_status: StudyBlocksScopeStatus;
+  blocks_count: number;
+  estimated_minutes: number;
+  items: BackendStudyBlockItem[];
+  message?: string;
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;

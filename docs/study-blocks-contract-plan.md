@@ -48,8 +48,8 @@ Why not extend `GET /api/study/session/next` immediately:
 - Study blocks require multi-material ordering, edital scope, section matches, and block statuses.
 - Keeping the endpoints separate avoids mixing a simple fallback session with future edital-aware planning.
 
-`GET /api/study/blocks` should be read-only, authenticated, user-scoped, idempotent, and safe to call
-from a same-origin frontend proxy.
+`GET /api/study/blocks` is read-only, authenticated, user-scoped, idempotent, and safe to call
+from the same-origin frontend proxy.
 
 ## Prerequisites
 
@@ -283,7 +283,7 @@ Do not pass through alignment evidence or raw excerpts.
 
 The frontend should:
 
-- call a same-origin proxy for `GET /api/study/blocks`
+- call the same-origin proxy for `GET /api/study/blocks`
 - render block titles, statuses, estimates, and actions
 - show not-ready, auth-required, offline, and unsupported states
 - keep copy simple and user-facing
@@ -305,7 +305,7 @@ The frontend should not:
    Backend read-only `GET /api/study/blocks` is implemented.
 
 2. `StudyBlocks-B`:
-   Add frontend same-origin proxy/API wrapper.
+   Frontend same-origin proxy/API wrapper is implemented.
 
 3. `StudyBlocks-C`:
    Add minimal `/study` blocks UI while keeping `/api/study/session/next` as the simple fallback.

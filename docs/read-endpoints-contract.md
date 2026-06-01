@@ -18,7 +18,7 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/materials/{document_id}/pipeline/summary` now provides the bounded pipeline detail contract.
 - Frontend pipeline detail uses the same-origin bounded pipeline summary proxy.
 - Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
-- Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend proxy/UI migration is pending.
+- Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper exist, and visible UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -398,7 +398,9 @@ Rules:
 - unauthenticated returns `401`
 - `GET` is idempotent and does not prepare materials, mark completion, mutate progress, generate questions, generate simulados, call OCR, or call an LLM
 - ignores editais, bibliography, previous exams, notes, other, and unknown materials as primary study-block sources
-- frontend proxy/UI are pending
+- frontend proxy path is `GET /api/study/blocks`
+- frontend API helper is `fetchStudyBlocks()`
+- visible UI is pending
 - review-after-3 is not implemented yet
 - response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
 
