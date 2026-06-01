@@ -393,6 +393,22 @@ Minimal study material preparation QA passed for the controlled no-OCR path:
 
 Textual PDF and OCR-required PDF behavior is covered by targeted backend tests: textual PDFs use deterministic embedded-text extraction without a separate visible process step, while OCR-required PDFs return bounded `not_ready` and do not trigger OCR. This flow still does not generate summaries, fixation questions, study sessions, simulados, progress updates, or LLM content.
 
+### StudySummary-D1 Compose Browser/API QA
+
+Prepare-then-summary QA passed for the bounded material summary flow:
+
+- Compose was rebuilt and both services responded before QA.
+- Login through `/login` worked with a local QA user.
+- Uploading a small `.md` file through `/materials/upload` with `material_type=study_material` returned sanitized bounded metadata.
+- Material detail showed `Preparação para estudo` and `Resumo do material` with the safe not-ready copy before preparation.
+- Clicking `Preparar para estudo` showed the success state and refreshed the summary card in the same page session.
+- The refreshed summary displayed bounded section count, section titles, placeholder summaries, key points, estimated minutes, and ready labels.
+- The frontend summary API returned `summary_status=ready`, `sections_count=2`, bounded item titles, placeholder summaries, key points, and estimated minutes.
+- A material uploaded as `material_type=edital` did not show the study preparation action or study summary card.
+- Browser/API inspection found no raw extracted text, chunk or section body, storage path, token, password hash, answer key, gabarito, generated-question, simulado, or progress-mutation exposure.
+
+Known limitation: study summaries remain conservative placeholders derived from prepared section metadata. This QA did not add generated summaries, fixation questions, study sessions, simulados, progress updates, OCR, or LLM behavior.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:

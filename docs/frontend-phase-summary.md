@@ -37,6 +37,7 @@
 - Backend `GET /api/materials/{document_id}/study/summary` and frontend same-origin `/api/materials/[materialId]/study/summary` proxy/API helper now exist as a bounded prepared-material summary contract.
 - Material detail now shows a minimal read-only `Resumo do material` card for real prepared `study_material` items; summaries are conservative placeholders and do not generate questions, simulados, or progress.
 - After `Preparar para estudo` succeeds on material detail, the bounded summary card refreshes in-place; if refresh fails, the UI keeps the prepare success visible and shows a safe retry-later message.
+- Prepare-then-summary QA is closed through Compose/browser/API: a real `study_material` showed the not-ready summary state, refreshed in-place after `Preparar para estudo`, and displayed bounded section titles, placeholder summaries, key points, estimated minutes, and ready labels without raw content exposure.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -104,7 +105,6 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 ## Recommended Next Phases
 
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
-2. StudySummary-QA-A: browser/API QA for the minimal read-only study summary card.
-3. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
-4. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
+2. StudySession-A: define read-only study blocks/sessions from analyzed edital taxonomy plus prepared materials.
+3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
+4. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
