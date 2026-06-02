@@ -18,7 +18,8 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/materials/{document_id}/pipeline/summary` now provides the bounded pipeline detail contract.
 - Frontend pipeline detail uses the same-origin bounded pipeline summary proxy.
 - Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
-- Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper exist, and visible UI migration is pending.
+- Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper and minimal `/study` UI exist.
+- Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend proxy/UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -51,6 +52,7 @@ This document records the bounded read contracts that are implemented or planned
 
 - `GET /api/study/session/next`
 - `GET /api/study/blocks`
+- `GET /api/study/blocks/{block_id}`
 
 ## Recommended Implementation Order
 
@@ -63,6 +65,7 @@ This document records the bounded read contracts that are implemented or planned
 7. `GET /api/pipeline/recent`
 8. `GET /api/study/session/next`
 9. `GET /api/study/blocks`
+10. `GET /api/study/blocks/{block_id}`
 
 ## Proposed Response Shapes
 
@@ -400,9 +403,70 @@ Rules:
 - ignores editais, bibliography, previous exams, notes, other, and unknown materials as primary study-block sources
 - frontend proxy path is `GET /api/study/blocks`
 - frontend API helper is `fetchStudyBlocks()`
-- visible UI is pending
+- visible `/study` list UI exists
 - review-after-3 is not implemented yet
 - response must not expose raw text, chunks, sections, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, or correction fields
+
+### `GET /api/study/blocks/{block_id}`
+
+Purpose:
+- return a backend-owned bounded detail read for one current user study block
+- resolve `block_id` against the same deterministic block ids produced by `GET /api/study/blocks`
+- enrich the selected block with bounded prepared-material summary sections
+- keep block resolution, user scope, topic/material/section mapping, and stale/missing handling server-side
+- implemented in StudyBlockDetail-A as an idempotent backend read-only contract
+
+Implemented shape:
+
+```json
+{
+  "block_id": "study-block:subtopic-1:doc-123:0",
+  "detail_status": "ready",
+  "title": "Atos administrativos",
+  "topic_id": "topic-1",
+  "topic_label": "Direito Administrativo",
+  "subtopic_id": "subtopic-1",
+  "subtopic_label": "Atos administrativos",
+  "material_id": "doc-123",
+  "material_title": "aula.md",
+  "summary_status": "ready",
+  "estimated_minutes": 5,
+  "sections": [
+    {
+      "section_id": "doc-123:section:0",
+      "title": "Atos administrativos",
+      "summary": "Resumo em preparação para esta seção.",
+      "key_points": ["Atos administrativos"],
+      "estimated_minutes": 5,
+      "status": "ready"
+    }
+  ],
+  "actions": [
+    {
+      "label": "Abrir material",
+      "href": "/materials/doc-123"
+    },
+    {
+      "label": "Voltar ao caminho de estudo",
+      "href": "/study"
+    }
+  ],
+  "source": "user_scope"
+}
+```
+
+Status semantics:
+- `ready`: block resolves to prepared study material and ready bounded summary sections
+- `needs_review`: block resolves, but mapping or summary structure is weak
+- `not_ready`: block resolves structurally but has no usable bounded summary section
+
+Rules:
+- authenticated and user-scoped
+- unauthenticated returns `401`
+- missing, non-owner, or unresolvable blocks return `404`
+- repeated `GET` is idempotent and does not prepare materials, mark completion, mutate progress, generate questions, generate simulados, call OCR, or call an LLM
+- frontend proxy/API/UI are pending
+- response must not expose raw text, chunks, section bodies, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, correction fields, or internal traces
 
 ### `GET /api/editais`
 

@@ -45,6 +45,7 @@
 - Backend `GET /api/study/blocks` and frontend same-origin `/api/study/blocks` proxy/API helper now exist as a bounded read-only study-block sequence from prepared `study_material` files, with conservative edital topic/subtopic matching when safe.
 - `/study` now renders bounded study blocks first when available, including material-only and edital-connected states, and keeps the one-material `Estudo de agora` session as a fallback when blocks are unavailable.
 - Study blocks QA is closed through Compose/API: unauthenticated access returned `401`, authenticated no-material state returned `not_ready`, a prepared study material returned `partial` / `material_only`, and an analyzed edital plus prepared matching material returned `ready` / `connected_to_edital` with bounded topic labels and no raw content exposure.
+- Backend `GET /api/study/blocks/{block_id}` now exists as a bounded read-only block detail contract. Frontend proxy/API and `/study/blocks/[blockId]` UI remain pending.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -71,7 +72,7 @@
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
-- Study blocks have a minimal `/study` list UI, but no block detail page, review-after-3 behavior, progress mutation, questions, generation, simulado, OCR, or LLM behavior has been added.
+- Study blocks have a minimal `/study` list UI and backend block detail read, but no frontend block detail page, review-after-3 behavior, progress mutation, questions, generation, simulado, OCR, or LLM behavior has been added.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
@@ -83,7 +84,7 @@
 - Scope modeling is documented in `docs/scope-model-contract-plan.md`: edital remains the official scope source, bibliography is a reference source that may be separate, study materials are learning content, and previous exams are later practice/style inputs.
 - Core study flow is documented in `docs/study-core-contract-plan.md`: prepare study materials, build study blocks, show summaries, add fixation questions, reinforce errors, and review after every 3 materials before later simulados.
 - Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders and minimal material-detail UI now exist, and future generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
-- Study block detail planning is documented in `docs/study-block-detail-contract-plan.md`: the future detail surface should use backend-owned `GET /api/study/blocks/{block_id}` resolution and render bounded summary sections without progress, questions, simulado, generation, OCR, LLM, or frontend-only matching.
+- Study block detail planning is documented in `docs/study-block-detail-contract-plan.md`: backend-owned `GET /api/study/blocks/{block_id}` resolution now exists, while frontend detail rendering remains pending and must stay bounded without progress, questions, simulado, generation, OCR, LLM, or frontend-only matching.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, Execução, progress mutation, and multi-material study cycles are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -116,5 +117,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
 2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. StudyBlockDetail-A planning/audit only, if the next product step needs a bounded block detail surface.
+4. StudyBlockDetail-B: frontend same-origin proxy/API helper for the backend block detail read.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.

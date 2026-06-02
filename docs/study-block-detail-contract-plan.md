@@ -4,7 +4,7 @@
 
 Define the future read-only contract for studying one block from the `/study` path.
 
-This is planning only. It does not add backend endpoints, frontend pages, progress mutation, generated questions, simulados, generated summaries, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. StudyBlockDetail-A implemented the backend read-only endpoint. It does not add frontend pages, progress mutation, generated questions, simulados, generated summaries, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -25,6 +25,7 @@ The page should feel like a focused study surface, not a technical artifact view
 Implemented today:
 
 - `GET /api/study/blocks` returns a bounded list/overview sequence of study blocks.
+- `GET /api/study/blocks/{block_id}` resolves one current user block and returns bounded detail data.
 - `/study` renders those blocks first when available.
 - Block list items may include actions pointing to future `/study/blocks/{block_id}` URLs.
 - `GET /api/materials/{document_id}/study/summary` returns bounded prepared-material section summaries.
@@ -32,13 +33,13 @@ Implemented today:
 
 Current limitation:
 
-- No block detail endpoint exists.
+- No frontend same-origin proxy for block detail exists.
 - No `/study/blocks/[blockId]` page exists.
 - The list item is intentionally compact and should not become the source of truth for richer detail.
 
-## Proposed Future Endpoint
+## Implemented Backend Endpoint
 
-Preferred endpoint:
+Implemented endpoint:
 
 ```http
 GET /api/study/blocks/{block_id}
@@ -61,7 +62,7 @@ Why the existing list endpoint is not enough:
 - Future detail behavior may need to resolve changed material summaries, weak edital matches, or unavailable blocks at request time.
 - Reusing only the list item would make the frontend responsible for reconstructing server-owned relationships.
 
-## Proposed Bounded Response Shape
+## Implemented Bounded Response Shape
 
 ```json
 {
@@ -208,7 +209,7 @@ Purpose:
 - material/topic context
 - safe navigation actions
 
-It should resolve the block server-side instead of trusting the frontend list item.
+It resolves the block server-side instead of trusting the frontend list item.
 
 ### `GET /api/materials/{document_id}/study/summary`
 
@@ -264,21 +265,21 @@ The frontend should only render bounded backend output and safe fallback states.
 
 ## Backend Responsibilities
 
-Future backend work should:
+The backend endpoint:
 
 - require authentication
 - use current user scope
 - resolve `block_id` against the user's current prepared materials and analyzed edital state
 - derive sections from bounded study summary data
 - return only whitelisted fields
-- preserve `404` for missing/non-owner blocks
+- preserve `404` for missing/non-owner/unresolvable blocks
 - keep raw extraction artifacts server-side
 
 The backend should own block identity semantics because current block ids encode matching inputs that may change as the matching strategy improves.
 
 ## Future Phases
 
-1. `StudyBlockDetail-A`: backend `GET /api/study/blocks/{block_id}` endpoint.
+1. `StudyBlockDetail-A`: backend `GET /api/study/blocks/{block_id}` endpoint is implemented.
 2. `StudyBlockDetail-B`: frontend same-origin proxy/API helper.
 3. `StudyBlockDetail-C`: minimal `/study/blocks/[blockId]` page UI.
 4. `StudyBlockDetail-QA-A`: browser/API QA and no-leakage validation.

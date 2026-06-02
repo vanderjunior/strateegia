@@ -1459,11 +1459,94 @@ def _bounded_study_blocks_response(repository: JsonStudyRepository, user_id: str
     }
 
 
+def _study_block_section_index(block_id: str) -> int | None:
+    try:
+        return int(block_id.rsplit(":", 1)[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def _bounded_study_block_detail_response(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+) -> dict[str, object]:
+    blocks = _bounded_study_blocks_response(repository, user_id)
+    block = next(
+        (
+            item
+            for item in blocks.get("items", [])
+            if isinstance(item, dict) and item.get("block_id") == block_id
+        ),
+        None,
+    )
+    if block is None:
+        raise HTTPException(status_code=404, detail="Study block not found")
+
+    material_id = str(block["material_id"])
+    material = repository.get_uploaded_material(material_id, user_id=user_id)
+    if material is None:
+        raise HTTPException(status_code=404, detail="Study block not found")
+
+    summary = _bounded_study_material_summary_response(material, repository, user_id)
+    summary_items = list(summary["items"])
+    section_index = _study_block_section_index(block_id)
+    if section_index is None:
+        raise HTTPException(status_code=404, detail="Study block not found")
+
+    if 0 <= section_index < len(summary_items):
+        sections = [summary_items[section_index]]
+    else:
+        sections = []
+
+    summary_status = str(summary["summary_status"])
+    if summary_status not in {"ready", "needs_review", "not_ready"}:
+        summary_status = "not_ready"
+
+    if not sections:
+        detail_status = "not_ready"
+    elif str(block["status"]) == "ready" and summary_status == "ready":
+        detail_status = "ready"
+    else:
+        detail_status = "needs_review"
+
+    estimated_minutes = sum(int(section["estimated_minutes"]) for section in sections)
+    if estimated_minutes == 0:
+        estimated_minutes = int(block["estimated_minutes"])
+
+    return {
+        "block_id": str(block["block_id"]),
+        "detail_status": detail_status,
+        "title": str(block["title"]),
+        "topic_id": block["topic_id"],
+        "topic_label": block["topic_label"],
+        "subtopic_id": block["subtopic_id"],
+        "subtopic_label": block["subtopic_label"],
+        "material_id": material_id,
+        "material_title": str(block["material_title"]),
+        "summary_status": summary_status,
+        "estimated_minutes": estimated_minutes,
+        "sections": sections,
+        "actions": [
+            _bounded_study_session_action("Abrir material", f"/materials/{material_id}"),
+            _bounded_study_session_action("Voltar ao caminho de estudo", "/study"),
+        ],
+        "source": "user_scope",
+    }
+
+
 @router.get("/study/blocks")
 def get_study_blocks(request: Request):
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_study_blocks_response(repository, user_id)
+
+
+@router.get("/study/blocks/{block_id}")
+def get_study_block_detail(block_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_study_block_detail_response(repository, user_id, block_id)
 
 
 @router.get("/study/session/next")
