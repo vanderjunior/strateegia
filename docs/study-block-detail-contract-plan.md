@@ -4,7 +4,7 @@
 
 Define the future read-only contract for studying one block from the `/study` path.
 
-This began as a planning document. StudyBlockDetail-A implemented the backend read-only endpoint, and StudyBlockDetail-B added the frontend same-origin proxy/API wrapper. It does not add frontend pages, progress mutation, generated questions, simulados, generated summaries, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. StudyBlockDetail-A implemented the backend read-only endpoint, StudyBlockDetail-B added the frontend same-origin proxy/API wrapper, and StudyBlockDetail-C added the minimal read-only `/study/blocks/[blockId]` page. It does not add progress mutation, generated questions, simulados, generated summaries, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -26,16 +26,16 @@ Implemented today:
 
 - `GET /api/study/blocks` returns a bounded list/overview sequence of study blocks.
 - `GET /api/study/blocks/{block_id}` resolves one current user block and returns bounded detail data.
-- Frontend same-origin `GET /api/study/blocks/[blockId]` and `fetchStudyBlockDetail(blockId)` exist.
+- Frontend same-origin `GET /api/study/blocks/[blockId]`, `fetchStudyBlockDetail(blockId)`, and `/study/blocks/[blockId]` exist.
 - `/study` renders those blocks first when available.
-- Block list items may include actions pointing to future `/study/blocks/{block_id}` URLs.
+- Block list items may include actions pointing to `/study/blocks/{block_id}` URLs.
 - `GET /api/materials/{document_id}/study/summary` returns bounded prepared-material section summaries.
 - The one-material `GET /api/study/session/next` remains a fallback.
 
 Current limitation:
 
-- No `/study/blocks/[blockId]` page exists.
-- The list item is intentionally compact and should not become the source of truth for richer detail.
+- Browser/API QA for `/study/blocks/[blockId]` is still pending.
+- The list item remains intentionally compact and should not become the source of truth for richer detail.
 
 ## Implemented Backend Endpoint
 
@@ -230,7 +230,7 @@ It should not become the block-detail contract.
 
 ## Frontend Responsibilities
 
-Future page:
+Implemented page:
 
 ```text
 /study/blocks/[blockId]
@@ -243,7 +243,7 @@ GET /api/study/blocks/[blockId]
 fetchStudyBlockDetail(blockId)
 ```
 
-The page should show:
+The page shows:
 
 - block title
 - edital topic/subtopic when available
@@ -288,7 +288,7 @@ The backend should own block identity semantics because current block ids encode
 
 1. `StudyBlockDetail-A`: backend `GET /api/study/blocks/{block_id}` endpoint is implemented.
 2. `StudyBlockDetail-B`: frontend same-origin proxy/API helper is implemented.
-3. `StudyBlockDetail-C`: minimal `/study/blocks/[blockId]` page UI.
+3. `StudyBlockDetail-C`: minimal `/study/blocks/[blockId]` page UI is implemented.
 4. `StudyBlockDetail-QA-A`: browser/API QA and no-leakage validation.
 5. `FixationQuestions-Planning-A`: bounded fixation-question and answer-key boundary planning.
 
