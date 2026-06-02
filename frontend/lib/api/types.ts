@@ -428,6 +428,34 @@ export interface BackendStudyBlocks {
   source: "user_scope";
 }
 
+export type BackendStudyBlockDetailStatus = "ready" | "needs_review" | "not_ready";
+
+export interface BackendStudyBlockDetailSection {
+  section_id: string;
+  title: string;
+  summary: string;
+  key_points: string[];
+  estimated_minutes: number;
+  status: "ready" | "needs_review";
+}
+
+export interface BackendStudyBlockDetail {
+  block_id: string;
+  detail_status: BackendStudyBlockDetailStatus;
+  title: string;
+  topic_id: string | null;
+  topic_label: string | null;
+  subtopic_id: string | null;
+  subtopic_label: string | null;
+  material_id: string;
+  material_title: string;
+  summary_status: Exclude<StudyMaterialSummaryStatus, "failed">;
+  estimated_minutes: number;
+  sections: BackendStudyBlockDetailSection[];
+  actions: BackendStudyBlockAction[];
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;

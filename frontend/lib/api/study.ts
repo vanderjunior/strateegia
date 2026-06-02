@@ -4,8 +4,10 @@ import type {
   ApiResult,
   BackendNextStudySession,
   BackendStudyBlockItem,
+  BackendStudyBlockDetail,
   BackendStudyBlocks,
   BackendStudyMaterialSummaryItem,
+  BackendStudyBlockDetailStatus,
   StudyBlockItemStatus,
   StudyBlocksScopeStatus,
   StudyBlocksStatus,
@@ -26,6 +28,12 @@ const SCOPE_STATUSES = new Set<StudyBlocksScopeStatus>([
 ]);
 
 const BLOCK_ITEM_STATUSES = new Set<StudyBlockItemStatus>([
+  "ready",
+  "needs_review",
+  "not_ready"
+]);
+
+const BLOCK_DETAIL_STATUSES = new Set<BackendStudyBlockDetailStatus>([
   "ready",
   "needs_review",
   "not_ready"
@@ -89,6 +97,35 @@ function isStudyBlockItem(value: unknown): value is BackendStudyBlockItem {
   );
 }
 
+function isDetailSummaryStatus(value: unknown): value is BackendStudyBlockDetail["summary_status"] {
+  return typeof value === "string" && SUMMARY_STATUSES.has(value) && value !== "failed";
+}
+
+function isStudyBlockDetail(value: unknown): value is BackendStudyBlockDetail {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<BackendStudyBlockDetail>;
+  return (
+    typeof data.block_id === "string" &&
+    Boolean(data.detail_status && BLOCK_DETAIL_STATUSES.has(data.detail_status)) &&
+    typeof data.title === "string" &&
+    (data.topic_id === null || typeof data.topic_id === "string") &&
+    (data.topic_label === null || typeof data.topic_label === "string") &&
+    (data.subtopic_id === null || typeof data.subtopic_id === "string") &&
+    (data.subtopic_label === null || typeof data.subtopic_label === "string") &&
+    typeof data.material_id === "string" &&
+    typeof data.material_title === "string" &&
+    isDetailSummaryStatus(data.summary_status) &&
+    typeof data.estimated_minutes === "number" &&
+    Array.isArray(data.sections) &&
+    data.sections.every(isSummaryItem) &&
+    Array.isArray(data.actions) &&
+    data.actions.every(isAction) &&
+    data.source === "user_scope"
+  );
+}
+
 function isStudyBlocksPayload(value: unknown): value is BackendStudyBlocks {
   if (!value || typeof value !== "object") {
     return false;
@@ -135,6 +172,84 @@ function isNextStudySessionPayload(value: unknown): value is BackendNextStudySes
     typeof data.message === "string" &&
     data.source === "user_scope"
   );
+}
+
+export async function fetchStudyBlockDetail(blockId: string): Promise<ApiResult<BackendStudyBlockDetail>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: este bloco real não foi consultado.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "Este bloco de estudo não está configurado neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch(`/api/study/blocks/${encodeURIComponent(blockId)}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar este bloco agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "Este bloco de estudo não está configurado neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para ver este bloco de estudo.", response.status);
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Bloco de estudo não encontrado.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível carregar este bloco agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendStudyBlockDetail;
+      if (!isStudyBlockDetail(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível carregar este bloco agora.", response.status);
+      }
+      if (data.detail_status === "not_ready") {
+        return makeApiFailure(
+          "backend",
+          "not_ready",
+          "Este bloco ainda não está pronto para estudo.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data,
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível carregar este bloco agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível carregar este bloco agora.");
+  }
 }
 
 export async function fetchStudyBlocks(): Promise<ApiResult<BackendStudyBlocks>> {
