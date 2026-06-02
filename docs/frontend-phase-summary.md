@@ -88,6 +88,7 @@
 - Core study flow is documented in `docs/study-core-contract-plan.md`: prepare study materials, build study blocks, show summaries, add fixation questions, reinforce errors, and review after every 3 materials before later simulados.
 - Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders and minimal material-detail UI now exist, and future generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
 - Study block detail planning is documented in `docs/study-block-detail-contract-plan.md`: backend-owned `GET /api/study/blocks/{block_id}` resolution, frontend proxy/API helper, and minimal detail rendering now exist and must stay bounded without progress, questions, simulado, generation, OCR, LLM, or frontend-only matching.
+- Fixation question planning is documented in `docs/fixation-questions-contract-plan.md`: future questions must start as review-only candidates tied to study blocks, with no answer-key/gabarito exposure, correction result, progress mutation, simulado execution, OCR, or LLM behavior in the initial contract.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, Execução, progress mutation, and multi-material study cycles are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -120,5 +121,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
 2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. FixationQuestions-Planning-A: define bounded fixation-question/readiness boundaries without exposing answer keys or adding execution.
+4. FixationQuestions-B: backend read-only/draft endpoint for bounded review-only question candidates.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
