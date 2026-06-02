@@ -421,7 +421,26 @@ Bounded `/study` blocks QA passed after rebuilding the Compose frontend/backend 
 - Uploading and analyzing a small textual edital, then re-checking blocks, returned `blocks_status=ready`, `scope_status=connected_to_edital`, bounded topic labels, material title, section counts, estimated minutes, and safe read-only actions.
 - API inspection found no raw extracted text, chunk or section body, storage path, token, password hash, answer key, gabarito, generated-question, simulado, or progress-mutation exposure.
 
-Known limitations: `/study` still has no block detail page, review-after-3 behavior, progress mutation, questions, generated summaries, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior. The older one-material `Estudo de agora` view remains only as a fallback if the blocks API is unavailable or unsupported.
+Known limitations: `/study` now has a minimal block detail page, but still has no review-after-3 behavior, progress mutation, questions, generated summaries, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior. The older one-material `Estudo de agora` view remains only as a fallback if the blocks API is unavailable or unsupported.
+
+### StudyBlockDetail-QA-A Compose Browser/API QA
+
+Read-only `/study/blocks/[blockId]` QA passed after rebuilding the Compose frontend/backend images:
+
+- Backend `GET /api/exam-profiles` and frontend `GET /` returned `200`.
+- Login through `/login` worked with the local `compose-qa-seed` user.
+- A seeded `qa-material-estudo.txt` material was prepared through the existing study preparation proxy and returned `ready_for_study=true`.
+- Authenticated `GET /api/study/blocks` returned `blocks_status=partial`, `scope_status=material_only`, `blocks_count=1`, one safe `Estudar bloco` action, and a `block_id` containing `:` separators.
+- Authenticated `GET /api/study/blocks/{encoded_block_id}` returned bounded detail with `detail_status=needs_review`, the material title, one summary section, estimated minutes, and no raw content.
+- Browser `/study` showed `Seu caminho de estudo`, `Baseado nos materiais preparados`, `qa-material-estudo.txt`, and a single `Estudar bloco` link.
+- Clicking the block action opened `/study/blocks/study-block:material:{document_id}:0` successfully; there was no false `Bloco de estudo não encontrado` for the visible block.
+- Browser detail showed `Estudar bloco`, the material title, `Resumo do bloco`, `Precisa de conferência`, `Abrir material`, and `Voltar ao caminho de estudo`.
+- Unauthenticated frontend `GET /api/study/blocks/{block_id}` returned `401`.
+- Authenticated missing-block `GET /api/study/blocks/study-block%3Amissing%3Adoc%3A0` returned `404`.
+- A small copy cleanup removed visible study-surface wording about future questions/progress and replaced it with simple read-only study guidance.
+- Browser/API inspection found no raw extracted text, chunk or section body, storage path, token, password hash, answer key, gabarito, generated-question, simulado, completion, or progress-mutation exposure.
+
+Known limitations: this QA observed the `material_only` / `needs_review` detail path. Connected edital topic/subtopic detail and explicit `not_ready` page rendering remain covered by automated tests until a suitable browser dataset is available. Key points appear when the backend returns them; the seeded QA detail did not include key points.
 
 ### Representative QA Seed
 

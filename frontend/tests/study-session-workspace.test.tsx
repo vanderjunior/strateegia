@@ -213,7 +213,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(screen.getByText("Aula preparada")).toBeInTheDocument();
     expect(screen.getByText("Atos administrativos")).toBeInTheDocument();
     expect(screen.getByText("Resumo em preparação para esta seção.")).toBeInTheDocument();
-    expect(screen.getByText("Esta sessão ainda não altera seu progresso. Questões e revisão serão adicionadas depois.")).toBeInTheDocument();
+    expect(screen.getByText("Use esta orientação para organizar a leitura deste material.")).toBeInTheDocument();
     expect(screen.getByText("Abrir material")).toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();

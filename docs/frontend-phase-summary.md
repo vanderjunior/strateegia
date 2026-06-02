@@ -48,6 +48,7 @@
 - Study blocks QA is closed through Compose/API: unauthenticated access returned `401`, authenticated no-material state returned `not_ready`, a prepared study material returned `partial` / `material_only`, and an analyzed edital plus prepared matching material returned `ready` / `connected_to_edital` with bounded topic labels and no raw content exposure.
 - Backend `GET /api/study/blocks/{block_id}`, frontend same-origin `/api/study/blocks/[blockId]`, `fetchStudyBlockDetail(blockId)`, and visible `/study/blocks/[blockId]` UI now exist as a bounded read-only block detail surface.
 - Study block detail renders topic/subtopic context when available, material title, bounded summary sections, key points, estimated minutes, safe navigation actions, and safe loading/auth/not-found/unavailable/not-ready states.
+- Study block detail QA is closed through Compose/browser/API for the material-only needs-review path: `/study` linked to an encoded block detail URL, `/study/blocks/[blockId]` opened successfully, bounded detail rendered safely, unauthenticated detail returned `401`, authenticated missing block returned `404`, and no raw content or mutation/generation copy appeared.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -119,5 +120,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
 2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. StudyBlockDetail-QA-A: browser/API QA for `/study/blocks/[blockId]`, including ready, needs-review, not-ready, and no-leakage checks.
+4. FixationQuestions-Planning-A: define bounded fixation-question/readiness boundaries without exposing answer keys or adding execution.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.

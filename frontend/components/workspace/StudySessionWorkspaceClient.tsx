@@ -142,7 +142,7 @@ export function StudySessionWorkspaceClient() {
           </div>
 
           <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-            Esta tela ainda não altera seu progresso. Questões e revisões serão adicionadas depois.
+            Use estes blocos como orientação de leitura. Nenhuma ação adicional é necessária nesta tela.
           </p>
         </Card>
 
@@ -256,7 +256,7 @@ export function StudySessionWorkspaceClient() {
           </div>
 
           <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-            Esta sessão ainda não altera seu progresso. Questões e revisão serão adicionadas depois.
+            Use esta orientação para organizar a leitura deste material.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -420,7 +420,7 @@ export function StudySessionWorkspaceClient() {
 
       <div className="flex flex-wrap gap-2">
         <Badge className={productStatusClass("Guia flexível")}>Guia flexível</Badge>
-        <Badge className={productStatusClass("Não altera seu progresso")}>Não altera seu progresso</Badge>
+        <Badge className={productStatusClass("Somente leitura")}>Somente leitura</Badge>
       </div>
 
       <WorkspaceSummaryGrid items={viewModel.summary} />
@@ -490,8 +490,8 @@ export function StudySessionWorkspaceClient() {
           <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
             <CardTitle className="text-[1.7rem] leading-[1.05]">Nenhuma sessão sugerida para exibir agora</CardTitle>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-              Consulte o ciclo PSCPP para revisar o caminho de estudo. O guia continua disponível sem criar agenda
-              automaticamente e sem alterar seu progresso.
+              Consulte o ciclo PSCPP para revisar o caminho de estudo. O guia continua disponível apenas como
+              orientação.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>
