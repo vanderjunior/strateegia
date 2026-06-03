@@ -20,7 +20,8 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
 - Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper and minimal `/study` UI exist.
 - Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
-- Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper exist, and visible UI migration is pending.
+- Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper and visible review-only card exist.
+- Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend proxy/UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -55,6 +56,7 @@ This document records the bounded read contracts that are implemented or planned
 - `GET /api/study/blocks`
 - `GET /api/study/blocks/{block_id}`
 - `GET /api/study/blocks/{block_id}/questions`
+- `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
 
 ## Recommended Implementation Order
 
@@ -69,6 +71,7 @@ This document records the bounded read contracts that are implemented or planned
 9. `GET /api/study/blocks`
 10. `GET /api/study/blocks/{block_id}`
 11. `GET /api/study/blocks/{block_id}/questions`
+12. `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
 
 ## Proposed Response Shapes
 
@@ -523,6 +526,64 @@ Rules:
 - frontend API helper is `fetchStudyBlockQuestions(blockId)`
 - answer keys and gabarito are not returned
 - response must not expose raw text, chunks, section bodies, OCR output, storage paths, evidence snippets, answer keys, gabarito, correctness flags, correction fields, progress payloads, or internal traces
+
+### Controlled review action: `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
+
+Purpose:
+- accept one bounded answer for a generated fixation-question candidate
+- validate authentication and user scope through the current study block
+- validate that `question_id` belongs to the current bounded candidates for `block_id`
+- return conservative review feedback and a reinforcement suggestion
+- remain stateless: no answer persistence, score record, correction record, or progress mutation
+- implemented in AnswerReview-B as a backend-only contract; frontend proxy/UI remain pending
+
+Implemented request shape:
+
+```json
+{
+  "answer": "string",
+  "answer_format": "text"
+}
+```
+
+Allowed `answer_format` values:
+- `text`
+- `choice`
+- `true_false`
+
+Implemented response shape:
+
+```json
+{
+  "block_id": "study-block:material:doc-123:0",
+  "question_id": "question:study-block:material:doc-123:0:0",
+  "review_status": "reviewed",
+  "result": "ungraded",
+  "feedback": "Compare sua resposta com o resumo do bloco e revise os pontos principais relacionados.",
+  "reinforcement": {
+    "topic_label": "Direito Administrativo",
+    "subtopic_label": "Atos administrativos",
+    "message": "Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.",
+    "suggested_action": "review_summary"
+  },
+  "source": "user_scope"
+}
+```
+
+Status semantics:
+- `review_status=reviewed` with `result=ungraded`: current conservative short-answer review
+- `review_status=needs_review`: no safe automatic review rule exists for the candidate/format
+- `review_status=not_ready` and `unsupported`: reserved for future bounded states
+
+Rules:
+- unauthenticated returns `401`
+- missing, non-owner, or unresolvable blocks return `404`
+- question ids that are not generated for the current block return `404`
+- invalid request bodies return `422`
+- answer strings are trimmed, required, and length-bounded
+- repeated `POST` with the same input is idempotent because no state is written
+- short-answer candidates are not graded for correctness in this phase
+- answer keys, gabarito, correct answers, correct alternatives, authoritative correctness flags, solutions, hidden rationale, scores, correction records, progress payloads, raw content, storage paths, tokens, and internal traces are forbidden
 
 ### `GET /api/editais`
 

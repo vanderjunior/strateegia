@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Define the future contract for answering fixation questions and receiving safe review feedback after studying one block.
+Define the contract for answering fixation questions and receiving safe review feedback after studying one block.
 
-This is a planning document only. It does not add endpoints, UI behavior, answer input, correction, scoring, answer-key exposure, progress mutation, error reinforcement, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. AnswerReview-B implemented the backend stateless endpoint `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`. It does not add frontend proxy/UI behavior, answer-key exposure, scoring, persistence, progress mutation, error reinforcement, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -26,14 +26,16 @@ Implemented today:
 - `/study/blocks/[blockId]` shows one bounded block detail.
 - `GET /api/study/blocks/{block_id}/questions` returns deterministic review-only fixation question candidates.
 - Frontend same-origin `GET /api/study/blocks/[blockId]/questions` and `fetchStudyBlockQuestions(blockId)` render the `Questões de fixação` card.
+- Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` returns conservative bounded feedback for one submitted answer.
 
 Current boundaries:
 
 - questions are candidates/review-only
-- no answer input exists
+- no frontend answer input exists
 - no gabarito or answer key is shown
-- no correction exists for these fixation questions
+- short-answer review is conservative and ungraded
 - no score is created
+- no answer attempt is persisted
 - no progress is mutated
 - no simulado execution is enabled
 - no OCR or LLM behavior is triggered
@@ -57,7 +59,7 @@ This can validate UX copy such as `Sua resposta` without adding backend semantic
 
 ### Stage 2: Backend Answer Review, No Progress Mutation
 
-Future backend/frontend phase:
+Backend portion implemented in AnswerReview-B:
 
 - add a scoped answer-review endpoint
 - validate that the question belongs to the block
@@ -66,6 +68,8 @@ Future backend/frontend phase:
 - do not persist scores
 - do not mutate progress
 - do not reveal answer keys by default
+
+Frontend proxy/API and UI remain pending.
 
 ### Stage 3: Error Classification and Reinforcement Suggestion
 
@@ -84,9 +88,7 @@ Future mutation phase:
 - update progress only after a separate progress contract
 - define idempotency, rollback, audit, and no-leakage rules
 
-## Preferred Future Endpoint
-
-Preferred endpoint:
+## Implemented Backend Endpoint
 
 ```http
 POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review
@@ -113,7 +115,7 @@ Why it is less suitable initially:
 - it increases the risk of frontend-only block/question reconstruction
 - it is less explicit about the block currently being studied
 
-## Request Shape Proposal
+## Implemented Request Shape
 
 ```json
 {
@@ -141,7 +143,7 @@ Rules:
 - do not accept client-submitted correctness flags
 - do not accept progress targets or score payloads
 
-## Response Shape Proposal
+## Implemented Response Shape
 
 ```json
 {
@@ -220,7 +222,7 @@ Forbidden response fields:
 
 ## Answer Key Policy
 
-Current fixation question display must continue not exposing answer keys or gabarito.
+Current fixation question display and stateless answer review continue not exposing answer keys or gabarito.
 
 Conservative future policy:
 
@@ -334,13 +336,14 @@ Purpose:
 - no correction
 - no progress mutation
 
-### Future `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
+### `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
 
 Purpose:
 
 - review one submitted answer
 - return bounded feedback
 - optionally suggest reinforcement
+- stateless and idempotent for the same input
 - no progress mutation in the first implementation
 
 ### Existing legacy answer endpoints
@@ -355,7 +358,6 @@ Existing simulado answer submission, correction, scoring, answer-key boundary, a
 
 No:
 
-- backend endpoint in this planning phase
 - frontend answer input in this planning phase
 - answer key exposure by default
 - gabarito exposure
@@ -375,12 +377,11 @@ No:
 
 ## Recommended Future Phases
 
-1. `AnswerReview-B`: backend answer-review endpoint, no progress mutation.
-2. `AnswerReview-C`: frontend same-origin proxy/API helper.
-3. `AnswerReview-D`: minimal answer/review UI on block detail.
-4. `AnswerReview-QA-A`: browser/API QA for answer review boundaries.
-5. `ErrorReinforcement-Planning-A`: define weak-topic reinforcement contract.
-6. `ReviewBlock-Planning-A`: define cumulative review after every 3 materials.
+1. `AnswerReview-C`: frontend same-origin proxy/API helper.
+2. `AnswerReview-D`: minimal answer/review UI on block detail.
+3. `AnswerReview-QA-A`: browser/API QA for answer review boundaries.
+4. `ErrorReinforcement-Planning-A`: define weak-topic reinforcement contract.
+5. `ReviewBlock-Planning-A`: define cumulative review after every 3 materials.
 
 ## Safety Checklist For Implementation
 

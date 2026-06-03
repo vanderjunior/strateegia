@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from app.api.schemas import (
     AnswerSubmission as FeedbackAnswerSubmission,
     SessionAnswerRequest,
+    StudyBlockAnswerReviewRequest,
     UserLoginRequest,
     UserRegisterRequest,
     SessionStartRequest,
@@ -1662,6 +1663,80 @@ def _bounded_fixation_questions_response(
     }
 
 
+ANSWER_REVIEW_FORMATS = {"text", "choice", "true_false"}
+MAX_ANSWER_REVIEW_LENGTH = 2000
+
+
+def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> tuple[str, str]:
+    answer = payload.answer.strip()
+    answer_format = payload.answer_format.strip()
+    if not answer:
+        raise HTTPException(status_code=422, detail="answer is required.")
+    if len(answer) > MAX_ANSWER_REVIEW_LENGTH:
+        raise HTTPException(status_code=422, detail="answer is too long.")
+    if answer_format not in ANSWER_REVIEW_FORMATS:
+        raise HTTPException(status_code=422, detail="answer_format is invalid.")
+    return answer, answer_format
+
+
+def _bounded_answer_review_response(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+    question_id: str,
+    payload: StudyBlockAnswerReviewRequest,
+) -> dict[str, object]:
+    _answer, answer_format = _validate_answer_review_request(payload)
+    questions = _bounded_fixation_questions_response(repository, user_id, block_id)
+    question = next(
+        (
+            item
+            for item in questions["items"]
+            if isinstance(item, dict) and item.get("question_id") == question_id
+        ),
+        None,
+    )
+    if question is None:
+        raise HTTPException(status_code=404, detail="Study block question not found.")
+
+    topic_label = question["topic_label"] if isinstance(question.get("topic_label"), str) else None
+    subtopic_label = question["subtopic_label"] if isinstance(question.get("subtopic_label"), str) else None
+    focus_label = subtopic_label or topic_label
+    if focus_label:
+        reinforcement_message = (
+            f"Revise o resumo do bloco e compare sua resposta com os pontos principais de {focus_label}."
+        )
+    else:
+        reinforcement_message = "Revise o resumo do bloco e compare sua resposta com os pontos principais."
+
+    question_type = str(question.get("type") or "")
+    if question_type == "short_answer" and answer_format == "text":
+        review_status = "reviewed"
+        result = "ungraded"
+        feedback = "Compare sua resposta com o resumo do bloco e revise os pontos principais relacionados."
+        suggested_action = "review_summary"
+    else:
+        review_status = "needs_review"
+        result = "needs_review"
+        feedback = "Esta questão ainda não tem uma regra segura de revisão automática."
+        suggested_action = "revisit_block"
+
+    return {
+        "block_id": str(questions["block_id"]),
+        "question_id": question_id,
+        "review_status": review_status,
+        "result": result,
+        "feedback": feedback,
+        "reinforcement": {
+            "topic_label": topic_label,
+            "subtopic_label": subtopic_label,
+            "message": reinforcement_message,
+            "suggested_action": suggested_action,
+        },
+        "source": "user_scope",
+    }
+
+
 @router.get("/study/blocks")
 def get_study_blocks(request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -1674,6 +1749,18 @@ def get_study_block_questions(block_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_fixation_questions_response(repository, user_id, block_id)
+
+
+@router.post("/study/blocks/{block_id}/questions/{question_id}/answer/review")
+def review_study_block_answer(
+    block_id: str,
+    question_id: str,
+    payload: StudyBlockAnswerReviewRequest,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_answer_review_response(repository, user_id, block_id, question_id, payload)
 
 
 @router.get("/study/blocks/{block_id}")

@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+
+class StudyBlockAnswerReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    answer: str
+    answer_format: str
 
 
 class AnswerSubmission(BaseModel):
