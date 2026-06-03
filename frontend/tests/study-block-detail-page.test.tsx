@@ -54,9 +54,15 @@ function readyQuestions(overrides: Record<string, unknown> = {}) {
     items: [
       {
         question_id: "question:study-block:topic-1:doc-1:0:0",
-        type: "short_answer",
-        prompt: "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
-        alternatives: [],
+        type: "multiple_choice",
+        prompt: "Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisão de Atos administrativos.",
+        alternatives: [
+          { id: "A", text: "Revisar Atos administrativos." },
+          { id: "B", text: "Relacionar Direito Administrativo ao resumo do bloco." },
+          { id: "C", text: "Identificar pontos principais de Atos administrativos." },
+          { id: "D", text: "Retomar Direito Administrativo no material estudado." },
+          { id: "E", text: "Comparar Atos administrativos com os demais pontos do bloco." }
+        ],
         topic_label: "Direito Administrativo",
         subtopic_label: "Atos administrativos",
         difficulty: "basic",
@@ -117,8 +123,10 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Esta tela mostra apenas uma orientação de leitura para este bloco.")).toBeInTheDocument();
     expect(await screen.findByText("Questões de fixação")).toBeInTheDocument();
     expect(screen.getByText("Use estas questões como revisão inicial do bloco. Elas ainda não exibem respostas oficiais nem avaliam respostas.")).toBeInTheDocument();
-    expect(screen.getByText("Resposta curta · Básica")).toBeInTheDocument();
-    expect(screen.getByText("1. Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.")).toBeInTheDocument();
+    expect(screen.getByText("Múltipla escolha · Básica")).toBeInTheDocument();
+    expect(screen.getByText("1. Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisão de Atos administrativos.")).toBeInTheDocument();
+    expect(screen.getByText("A. Revisar Atos administrativos.")).toBeInTheDocument();
+    expect(screen.getByText("E. Comparar Atos administrativos com os demais pontos do bloco.")).toBeInTheDocument();
     expect(screen.getByText("Questão candidata")).toBeInTheDocument();
     expect(screen.getByText("Sem respostas oficiais nesta etapa")).toBeInTheDocument();
   });
@@ -156,9 +164,11 @@ describe("StudyBlockDetailReadOnlyClient", () => {
         items: [
           {
             ...readyQuestions().items[0],
+            type: "true_false",
+            prompt: "Considere o ponto Leitura inicial como foco de revisão deste bloco.",
             alternatives: [
-              { id: "A", text: "Certo" },
-              { id: "B", text: "Errado" }
+              { id: "C", text: "Certo" },
+              { id: "E", text: "Errado" }
             ],
             topic_label: null,
             subtopic_label: null,
@@ -176,9 +186,9 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Leitura inicial")).toBeInTheDocument();
     expect(screen.queryByText("Direito Administrativo · Atos administrativos")).not.toBeInTheDocument();
     expect(screen.getByText("Estas questões precisam de conferência.")).toBeInTheDocument();
-    expect(screen.getByText("Resposta curta · Média")).toBeInTheDocument();
-    expect(screen.getByText("A. Certo")).toBeInTheDocument();
-    expect(screen.getByText("B. Errado")).toBeInTheDocument();
+    expect(screen.getByText("Certo ou errado · Média")).toBeInTheDocument();
+    expect(screen.getByText("C. Certo")).toBeInTheDocument();
+    expect(screen.getByText("E. Errado")).toBeInTheDocument();
   });
 
   it("renders not-ready state safely", async () => {

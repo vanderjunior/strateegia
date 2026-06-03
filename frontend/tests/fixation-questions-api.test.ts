@@ -15,9 +15,15 @@ function readyQuestionsPayload() {
     items: [
       {
         question_id: "question:study-block:topic-1:doc-1:0:0",
-        type: "short_answer",
-        prompt: "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
-        alternatives: [],
+        type: "multiple_choice",
+        prompt: "Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisão de Atos administrativos.",
+        alternatives: [
+          { id: "A", text: "Revisar Atos administrativos." },
+          { id: "B", text: "Relacionar Direito Administrativo ao resumo do bloco." },
+          { id: "C", text: "Identificar pontos principais de Atos administrativos." },
+          { id: "D", text: "Retomar Direito Administrativo no material estudado." },
+          { id: "E", text: "Comparar Atos administrativos com os demais pontos do bloco." }
+        ],
         topic_label: "Direito Administrativo",
         subtopic_label: "Atos administrativos",
         difficulty: "basic",
@@ -63,8 +69,8 @@ describe("fixation questions API wrapper", () => {
     }
     expect(result.data.question_status).toBe("ready");
     expect(result.data.mode).toBe("review_only");
-    expect(result.data.items[0].type).toBe("short_answer");
-    expect(result.data.items[0].alternatives).toEqual([]);
+    expect(result.data.items[0].type).toBe("multiple_choice");
+    expect(result.data.items[0].alternatives.map((alternative) => alternative.id)).toEqual(["A", "B", "C", "D", "E"]);
     expect(JSON.stringify(result.data)).not.toContain("answer_key");
     expect(JSON.stringify(result.data)).not.toContain("gabarito");
     expect(JSON.stringify(result.data)).not.toContain("correction");
