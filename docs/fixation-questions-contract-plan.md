@@ -4,7 +4,7 @@
 
 Define the first safe contract for fixation questions after a user studies a bounded study block.
 
-This is a planning document only. It does not add backend endpoints, frontend UI, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. It does not add frontend UI, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -66,9 +66,9 @@ Useful bounded data available today:
 
 Existing simulado/question/correction/progress areas should not be reused as browser-facing fixation-question behavior yet. They include answer-key, correction, submission, and progress guardrail concepts that are intentionally later-stage and must stay separate until a dedicated answer/review contract exists.
 
-## Proposed Future Endpoint Strategy
+## Implemented Backend Endpoint Strategy
 
-Preferred first read endpoint:
+First read endpoint:
 
 ```http
 GET /api/study/blocks/{block_id}/questions
@@ -80,7 +80,7 @@ Why this endpoint first:
 - the backend owns user scope and block resolution
 - the backend can decide whether the block is ready for question candidates
 - the frontend should not infer questions from summary text
-- a `GET` can return existing bounded candidates or `not_ready` without mutation
+- a `GET` can return bounded candidates or `not_ready` without mutation
 
 If question drafting/generation is needed later, use a separate explicit draft action:
 
@@ -88,13 +88,14 @@ If question drafting/generation is needed later, use a separate explicit draft a
 POST /api/study/blocks/{block_id}/questions/draft
 ```
 
-The staged approach should be:
+The staged approach is:
 
-1. Planning now.
-2. Backend read-only/draft contract later.
-3. Frontend review-only display later.
-4. Answer/correction contract later.
-5. Progress mutation much later.
+1. Planning completed.
+2. Backend read-only candidate contract implemented.
+3. Frontend same-origin proxy/API helper pending.
+4. Frontend review-only display pending.
+5. Answer/correction contract later.
+6. Progress mutation much later.
 
 Do not make `GET /api/study/blocks/{block_id}` responsible for question generation or answer-key policy.
 
@@ -107,19 +108,10 @@ Do not make `GET /api/study/blocks/{block_id}` responsible for question generati
   "mode": "review_only",
   "items": [
     {
-      "question_id": "question-candidate-1",
-      "type": "true_false",
-      "prompt": "A afirmacao revisa um ponto central do bloco.",
-      "alternatives": [
-        {
-          "id": "A",
-          "text": "Certo"
-        },
-        {
-          "id": "B",
-          "text": "Errado"
-        }
-      ],
+      "question_id": "question:study-block:topic-1:doc-123:0:0",
+      "type": "short_answer",
+      "prompt": "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
+      "alternatives": [],
       "topic_label": "Direito Administrativo",
       "subtopic_label": "Atos administrativos",
       "difficulty": "basic",
@@ -156,11 +148,11 @@ Allowed alternative fields:
 - `id`
 - `text`
 
-Recommended status values:
+Implemented and reserved status values:
 
 - `question_status`: `ready`, `needs_review`, `not_ready`, `unsupported`
 - `mode`: `review_only`
-- `type`: `true_false`, `multiple_choice`, `short_answer`
+- `type`: `short_answer`; `true_false` and `multiple_choice` are reserved for later phases
 - `difficulty`: `basic`, `medium`, `hard`
 - item `status`: `candidate`, `needs_review`
 
@@ -211,10 +203,10 @@ Possible future correction flow:
 Questions may be derived from bounded study data:
 
 - block title
-- bounded section summary
+- bounded section summary when a later phase makes that useful
 - key points
 - topic/subtopic labels
-- material title when useful
+- material title when useful in a later phase
 - exam profile style later
 
 Questions must not be derived from frontend-visible raw data:
@@ -232,14 +224,16 @@ The backend should own derivation. The frontend should render bounded question c
 
 Start simple.
 
-Recommended first options:
+Implemented first option:
+
+- `short_answer` prompt-only review candidates
+
+Recommended future options:
 
 - `true_false` for future CEBRASPE-style review
 - `multiple_choice` for future FGV-style review
 
-Recommended deferral:
-
-- `short_answer` can wait until answer validation/correction rules are clearer
+The current endpoint intentionally returns empty `alternatives` and no answer key.
 
 The first implementation should likely choose one type or return a generic review-only model before attempting board-specific question behavior.
 
@@ -345,9 +339,9 @@ They should not be surfaced as fixation-question UI or reused directly for block
 
 ## Non-goals
 
-- No backend endpoint in this phase.
 - No frontend UI in this phase.
 - No generated questions.
+- No official/final questions.
 - No final answer keys.
 - No gabarito.
 - No correction result.
@@ -366,18 +360,17 @@ They should not be surfaced as fixation-question UI or reused directly for block
 
 ## Recommended Future Phases
 
-1. `FixationQuestions-B`: backend read-only/draft endpoint.
-2. `FixationQuestions-C`: frontend same-origin proxy/API helper.
-3. `FixationQuestions-D`: minimal review-only questions UI on block detail.
-4. `FixationQuestions-QA-A`: browser/API QA and no-leakage validation.
-5. `AnswerReview-Planning-A`: answer submission, correction, and answer-key reveal boundaries.
-6. `ErrorReinforcement-Planning-A`: wrong-answer classification and reinforcement contract.
-7. `ReviewBlock-Planning-A`: cumulative review after every 3 studied/prepared materials.
+1. `FixationQuestions-C`: frontend same-origin proxy/API helper.
+2. `FixationQuestions-D`: minimal review-only questions UI on block detail.
+3. `FixationQuestions-QA-A`: browser/API QA and no-leakage validation.
+4. `AnswerReview-Planning-A`: answer submission, correction, and answer-key reveal boundaries.
+5. `ErrorReinforcement-Planning-A`: wrong-answer classification and reinforcement contract.
+6. `ReviewBlock-Planning-A`: cumulative review after every 3 studied/prepared materials.
 
 ## Open Questions
 
-- Should first fixation questions be deterministic placeholders, authored fixtures, or generated candidates behind a review-only draft contract?
-- Should `GET /api/study/blocks/{block_id}/questions` ever create candidates, or only read previously drafted candidates?
+- Should future generated fixation questions replace or complement the deterministic review-only prompts?
+- Should `GET /api/study/blocks/{block_id}/questions` continue deriving candidates on demand, or read previously drafted candidates once a draft contract exists?
 - Should material-only blocks allow questions before edital connection, or return `needs_review` until topic scope exists?
 - Which first type is safest: `true_false`, `multiple_choice`, or a generic prompt-only review item?
 - When answer review exists, should explanations reveal the answer immediately after a response or only after explicit review?

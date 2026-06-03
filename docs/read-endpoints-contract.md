@@ -19,7 +19,8 @@ This document records the bounded read contracts that are implemented or planned
 - Frontend pipeline detail uses the same-origin bounded pipeline summary proxy.
 - Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
 - Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper and minimal `/study` UI exist.
-- Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper exist, and visible UI migration is pending.
+- Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
+- Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend proxy/UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -53,6 +54,7 @@ This document records the bounded read contracts that are implemented or planned
 - `GET /api/study/session/next`
 - `GET /api/study/blocks`
 - `GET /api/study/blocks/{block_id}`
+- `GET /api/study/blocks/{block_id}/questions`
 
 ## Recommended Implementation Order
 
@@ -66,6 +68,7 @@ This document records the bounded read contracts that are implemented or planned
 8. `GET /api/study/session/next`
 9. `GET /api/study/blocks`
 10. `GET /api/study/blocks/{block_id}`
+11. `GET /api/study/blocks/{block_id}/questions`
 
 ## Proposed Response Shapes
 
@@ -467,8 +470,57 @@ Rules:
 - repeated `GET` is idempotent and does not prepare materials, mark completion, mutate progress, generate questions, generate simulados, call OCR, or call an LLM
 - frontend proxy path is `GET /api/study/blocks/[blockId]`
 - frontend API helper is `fetchStudyBlockDetail(blockId)`
-- visible `/study/blocks/[blockId]` UI is pending
+- visible `/study/blocks/[blockId]` UI exists
 - response must not expose raw text, chunks, section bodies, OCR output, storage paths, evidence snippets, answer keys, gabarito, progress, correction fields, or internal traces
+
+### `GET /api/study/blocks/{block_id}/questions`
+
+Purpose:
+- return deterministic read-only fixation-question candidates for one current user study block
+- reuse backend-owned block detail resolution and user scope
+- derive candidates only from bounded block detail fields such as block title, topic/subtopic labels, section titles, and key points
+- keep the surface review-only: no answer submission, answer key, correction, scoring, progress mutation, simulado execution, OCR, or LLM behavior
+- implemented in FixationQuestions-B as an idempotent backend read-only contract
+
+Implemented shape:
+
+```json
+{
+  "block_id": "study-block:subtopic-1:doc-123:0",
+  "question_status": "ready",
+  "mode": "review_only",
+  "items": [
+    {
+      "question_id": "question:study-block:subtopic-1:doc-123:0:0",
+      "type": "short_answer",
+      "prompt": "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
+      "alternatives": [],
+      "topic_label": "Direito Administrativo",
+      "subtopic_label": "Atos administrativos",
+      "difficulty": "basic",
+      "status": "candidate"
+    }
+  ],
+  "warnings_count": 0,
+  "source": "user_scope"
+}
+```
+
+Status semantics:
+- `ready`: block detail is ready and at least one bounded candidate can be derived
+- `needs_review`: block detail resolves but mapping or summary structure needs review; candidates are marked `needs_review`
+- `not_ready`: block detail has no usable bounded study content for question candidates
+- `unsupported`: reserved for future policy-disabled cases
+
+Rules:
+- authenticated and user-scoped
+- unauthenticated returns `401`
+- missing, non-owner, or unresolvable blocks return `404`
+- repeated `GET` is idempotent and does not create attempts, mark completion, mutate progress, generate official questions, generate simulados, call OCR, or call an LLM
+- candidates are limited and deduplicated deterministically
+- first implementation returns `short_answer` review prompts with empty `alternatives`
+- answer keys and gabarito are not returned
+- response must not expose raw text, chunks, section bodies, OCR output, storage paths, evidence snippets, answer keys, gabarito, correctness flags, correction fields, progress payloads, or internal traces
 
 ### `GET /api/editais`
 

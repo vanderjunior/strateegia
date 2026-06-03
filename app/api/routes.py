@@ -1535,11 +1535,145 @@ def _bounded_study_block_detail_response(
     }
 
 
+def _safe_fixation_question_label(value: object) -> str | None:
+    label = _bounded_study_summary_title(value, fallback="")
+    if not label:
+        return None
+    if label.strip().lower() in {"document", "section", "seção sem título", "material de estudo"}:
+        return None
+    return label
+
+
+def _append_fixation_candidate(
+    candidates: list[dict[str, object]],
+    seen_prompts: set[str],
+    *,
+    block_id: str,
+    prompt: str,
+    topic_label: str | None,
+    subtopic_label: str | None,
+    status: str,
+) -> None:
+    safe_prompt = _bounded_study_summary_title(prompt, fallback="")
+    if not safe_prompt:
+        return
+    prompt_key = safe_prompt.casefold()
+    if prompt_key in seen_prompts or len(candidates) >= 5:
+        return
+    seen_prompts.add(prompt_key)
+    candidates.append(
+        {
+            "question_id": f"question:{block_id}:{len(candidates)}",
+            "type": "short_answer",
+            "prompt": safe_prompt,
+            "alternatives": [],
+            "topic_label": topic_label,
+            "subtopic_label": subtopic_label,
+            "difficulty": "basic",
+            "status": status,
+        }
+    )
+
+
+def _bounded_fixation_questions_response(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+) -> dict[str, object]:
+    detail = _bounded_study_block_detail_response(repository, user_id, block_id)
+    if detail["detail_status"] == "not_ready":
+        return {
+            "block_id": str(detail["block_id"]),
+            "question_status": "not_ready",
+            "mode": "review_only",
+            "items": [],
+            "warnings_count": 0,
+            "source": "user_scope",
+        }
+
+    item_status = "candidate" if detail["detail_status"] == "ready" else "needs_review"
+    topic_label = detail["topic_label"] if isinstance(detail["topic_label"], str) else None
+    subtopic_label = detail["subtopic_label"] if isinstance(detail["subtopic_label"], str) else None
+    candidates: list[dict[str, object]] = []
+    seen_prompts: set[str] = set()
+
+    for section in detail["sections"]:
+        for key_point in section["key_points"]:
+            label = _safe_fixation_question_label(key_point)
+            if label is None:
+                continue
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=f"Explique, com suas palavras, o ponto principal relacionado a {label}.",
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
+            )
+        section_title = _safe_fixation_question_label(section["title"])
+        if section_title is not None:
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=f"Quais ideias centrais você deve revisar em {section_title}?",
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
+            )
+
+    topic_prompt_label = subtopic_label or topic_label
+    if topic_prompt_label:
+        _append_fixation_candidate(
+            candidates,
+            seen_prompts,
+            block_id=str(detail["block_id"]),
+            prompt=f"Como este bloco se relaciona com o tópico {topic_prompt_label}?",
+            topic_label=topic_label,
+            subtopic_label=subtopic_label,
+            status=item_status,
+        )
+
+    block_title = _safe_fixation_question_label(detail["title"])
+    if block_title is not None:
+        _append_fixation_candidate(
+            candidates,
+            seen_prompts,
+            block_id=str(detail["block_id"]),
+            prompt=f"Quais pontos você deve lembrar ao revisar {block_title}?",
+            topic_label=topic_label,
+            subtopic_label=subtopic_label,
+            status=item_status,
+        )
+
+    if not candidates:
+        question_status = "not_ready"
+    else:
+        question_status = "ready" if detail["detail_status"] == "ready" else "needs_review"
+
+    return {
+        "block_id": str(detail["block_id"]),
+        "question_status": question_status,
+        "mode": "review_only",
+        "items": candidates,
+        "warnings_count": 1 if question_status == "needs_review" else 0,
+        "source": "user_scope",
+    }
+
+
 @router.get("/study/blocks")
 def get_study_blocks(request: Request):
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_study_blocks_response(repository, user_id)
+
+
+@router.get("/study/blocks/{block_id}/questions")
+def get_study_block_questions(block_id: str, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_fixation_questions_response(repository, user_id, block_id)
 
 
 @router.get("/study/blocks/{block_id}")
