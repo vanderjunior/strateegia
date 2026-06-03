@@ -495,9 +495,15 @@ Implemented shape:
   "items": [
     {
       "question_id": "question:study-block:subtopic-1:doc-123:0:0",
-      "type": "short_answer",
-      "prompt": "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
-      "alternatives": [],
+      "type": "multiple_choice",
+      "prompt": "Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisão de Atos administrativos.",
+      "alternatives": [
+        { "id": "A", "text": "Revisar Atos administrativos." },
+        { "id": "B", "text": "Relacionar Direito Administrativo ao resumo do bloco." },
+        { "id": "C", "text": "Identificar pontos principais de Atos administrativos." },
+        { "id": "D", "text": "Retomar Direito Administrativo no material estudado." },
+        { "id": "E", "text": "Comparar Atos administrativos com os demais pontos do bloco." }
+      ],
       "topic_label": "Direito Administrativo",
       "subtopic_label": "Atos administrativos",
       "difficulty": "basic",
@@ -521,7 +527,9 @@ Rules:
 - missing, non-owner, or unresolvable blocks return `404`
 - repeated `GET` is idempotent and does not create attempts, mark completion, mutate progress, generate official questions, generate simulados, call OCR, or call an LLM
 - candidates are limited and deduplicated deterministically
-- first implementation returns `short_answer` review prompts with empty `alternatives`
+- PSCPP/default objective review prefers `multiple_choice` with display-only alternatives `A`, `B`, `C`, `D`, `E`
+- CEBRASPE-style review can use `true_false` with `Certo` and `Errado`
+- `short_answer` remains fallback only when no safe objective alternatives can be formed
 - frontend proxy path is `GET /api/study/blocks/[blockId]/questions`
 - frontend API helper is `fetchStudyBlockQuestions(blockId)`
 - answer keys and gabarito are not returned

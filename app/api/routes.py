@@ -1545,6 +1545,91 @@ def _safe_fixation_question_label(value: object) -> str | None:
     return label
 
 
+def _deduplicate_fixation_labels(values: list[str | None]) -> list[str]:
+    labels: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        label = _safe_fixation_question_label(value)
+        if label is None:
+            continue
+        key = label.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        labels.append(label)
+    return labels
+
+
+def _fixation_labels_from_detail(detail: dict[str, object]) -> list[str]:
+    values: list[str | None] = []
+    if isinstance(detail.get("subtopic_label"), str):
+        values.append(str(detail["subtopic_label"]))
+    if isinstance(detail.get("topic_label"), str):
+        values.append(str(detail["topic_label"]))
+    if isinstance(detail.get("title"), str):
+        values.append(str(detail["title"]))
+    for section in detail["sections"]:
+        if not isinstance(section, dict):
+            continue
+        if isinstance(section.get("title"), str):
+            values.append(str(section["title"]))
+        key_points = section.get("key_points")
+        if isinstance(key_points, list):
+            values.extend(str(item) for item in key_points if isinstance(item, str))
+    return _deduplicate_fixation_labels(values)
+
+
+def _resolve_fixation_question_profile(detail: dict[str, object]) -> str:
+    return "multiple_choice_ae"
+
+
+def _objective_alternative_texts(label: str) -> list[str]:
+    return [
+        f"Revisar {label}.",
+        f"Relacionar {label} ao resumo do bloco.",
+        f"Identificar pontos principais de {label}.",
+        f"Retomar {label} no material estudado.",
+        f"Comparar {label} com os demais pontos do bloco.",
+    ]
+
+
+def _multiple_choice_alternatives(labels: list[str], option_count: int = 5) -> list[dict[str, str]]:
+    if not labels:
+        return []
+    option_ids = list("ABCDE")[:option_count]
+    alternatives: list[dict[str, str]] = []
+    for index, option_id in enumerate(option_ids):
+        label = labels[index % len(labels)]
+        text_options = _objective_alternative_texts(label)
+        text = _bounded_study_summary_title(text_options[index % len(text_options)], fallback="")
+        if not text:
+            return []
+        alternatives.append({"id": option_id, "text": text})
+    return alternatives
+
+
+def _true_false_alternatives() -> list[dict[str, str]]:
+    return [
+        {"id": "C", "text": "Certo"},
+        {"id": "E", "text": "Errado"},
+    ]
+
+
+def _objective_prompt(
+    *,
+    profile: str,
+    label: str,
+    topic_label: str | None,
+    subtopic_label: str | None,
+) -> str:
+    prompt_label = subtopic_label or topic_label or label
+    if profile == "cebraspe_true_false":
+        return f"Considere o ponto {prompt_label} como foco de revisão deste bloco."
+    if topic_label:
+        return f"Considerando o tema {topic_label}, escolha uma alternativa para orientar sua revisão de {label}."
+    return f"Com base nos pontos principais deste bloco, escolha uma alternativa relacionada a {label}."
+
+
 def _append_fixation_candidate(
     candidates: list[dict[str, object]],
     seen_prompts: set[str],
@@ -1554,6 +1639,8 @@ def _append_fixation_candidate(
     topic_label: str | None,
     subtopic_label: str | None,
     status: str,
+    question_type: str = "short_answer",
+    alternatives: list[dict[str, str]] | None = None,
 ) -> None:
     safe_prompt = _bounded_study_summary_title(prompt, fallback="")
     if not safe_prompt:
@@ -1565,9 +1652,9 @@ def _append_fixation_candidate(
     candidates.append(
         {
             "question_id": f"question:{block_id}:{len(candidates)}",
-            "type": "short_answer",
+            "type": question_type,
             "prompt": safe_prompt,
-            "alternatives": [],
+            "alternatives": alternatives or [],
             "topic_label": topic_label,
             "subtopic_label": subtopic_label,
             "difficulty": "basic",
@@ -1597,12 +1684,53 @@ def _bounded_fixation_questions_response(
     subtopic_label = detail["subtopic_label"] if isinstance(detail["subtopic_label"], str) else None
     candidates: list[dict[str, object]] = []
     seen_prompts: set[str] = set()
+    profile = _resolve_fixation_question_profile(detail)
+    labels = _fixation_labels_from_detail(detail)
 
-    for section in detail["sections"]:
-        for key_point in section["key_points"]:
-            label = _safe_fixation_question_label(key_point)
-            if label is None:
-                continue
+    if profile in {"multiple_choice_ae", "multiple_choice_ad"} and labels:
+        option_count = 4 if profile == "multiple_choice_ad" else 5
+        alternatives = _multiple_choice_alternatives(labels, option_count=option_count)
+        if alternatives:
+            for label in labels:
+                _append_fixation_candidate(
+                    candidates,
+                    seen_prompts,
+                    block_id=str(detail["block_id"]),
+                    prompt=_objective_prompt(
+                        profile=profile,
+                        label=label,
+                        topic_label=topic_label,
+                        subtopic_label=subtopic_label,
+                    ),
+                    topic_label=topic_label,
+                    subtopic_label=subtopic_label,
+                    status=item_status,
+                    question_type="multiple_choice",
+                    alternatives=alternatives,
+                )
+
+    if profile == "cebraspe_true_false" and labels:
+        alternatives = _true_false_alternatives()
+        for label in labels:
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=_objective_prompt(
+                    profile=profile,
+                    label=label,
+                    topic_label=topic_label,
+                    subtopic_label=subtopic_label,
+                ),
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
+                question_type="true_false",
+                alternatives=alternatives,
+            )
+
+    if not candidates:
+        for label in labels:
             _append_fixation_candidate(
                 candidates,
                 seen_prompts,
@@ -1612,41 +1740,6 @@ def _bounded_fixation_questions_response(
                 subtopic_label=subtopic_label,
                 status=item_status,
             )
-        section_title = _safe_fixation_question_label(section["title"])
-        if section_title is not None:
-            _append_fixation_candidate(
-                candidates,
-                seen_prompts,
-                block_id=str(detail["block_id"]),
-                prompt=f"Quais ideias centrais você deve revisar em {section_title}?",
-                topic_label=topic_label,
-                subtopic_label=subtopic_label,
-                status=item_status,
-            )
-
-    topic_prompt_label = subtopic_label or topic_label
-    if topic_prompt_label:
-        _append_fixation_candidate(
-            candidates,
-            seen_prompts,
-            block_id=str(detail["block_id"]),
-            prompt=f"Como este bloco se relaciona com o tópico {topic_prompt_label}?",
-            topic_label=topic_label,
-            subtopic_label=subtopic_label,
-            status=item_status,
-        )
-
-    block_title = _safe_fixation_question_label(detail["title"])
-    if block_title is not None:
-        _append_fixation_candidate(
-            candidates,
-            seen_prompts,
-            block_id=str(detail["block_id"]),
-            prompt=f"Quais pontos você deve lembrar ao revisar {block_title}?",
-            topic_label=topic_label,
-            subtopic_label=subtopic_label,
-            status=item_status,
-        )
 
     if not candidates:
         question_status = "not_ready"

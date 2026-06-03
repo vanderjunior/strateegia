@@ -4,7 +4,7 @@
 
 Define the first safe contract for fixation questions after a user studies a bounded study block.
 
-This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. FixationQuestions-C added the frontend same-origin proxy/API helper. FixationQuestions-D added a minimal review-only questions card on block detail. It does not add answer input, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. FixationQuestions-B2 aligned candidates toward objective selectable formats: PSCPP/default objective review now prefers `multiple_choice` A-E when bounded labels are available, CEBRASPE-style review can use `true_false` C/E, and `short_answer` remains fallback only. FixationQuestions-C added the frontend same-origin proxy/API helper. FixationQuestions-D added a minimal review-only questions card on block detail. It does not add answer input, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -109,9 +109,15 @@ Do not make `GET /api/study/blocks/{block_id}` responsible for question generati
   "items": [
     {
       "question_id": "question:study-block:topic-1:doc-123:0:0",
-      "type": "short_answer",
-      "prompt": "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
-      "alternatives": [],
+      "type": "multiple_choice",
+      "prompt": "Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisao de Atos administrativos.",
+      "alternatives": [
+        { "id": "A", "text": "Revisar Atos administrativos." },
+        { "id": "B", "text": "Relacionar Direito Administrativo ao resumo do bloco." },
+        { "id": "C", "text": "Identificar pontos principais de Atos administrativos." },
+        { "id": "D", "text": "Retomar Direito Administrativo no material estudado." },
+        { "id": "E", "text": "Comparar Atos administrativos com os demais pontos do bloco." }
+      ],
       "topic_label": "Direito Administrativo",
       "subtopic_label": "Atos administrativos",
       "difficulty": "basic",
@@ -162,7 +168,7 @@ Implemented and reserved status values:
 
 - `question_status`: `ready`, `needs_review`, `not_ready`, `unsupported`
 - `mode`: `review_only`
-- `type`: `short_answer`; `true_false` and `multiple_choice` are reserved for later phases
+- `type`: `multiple_choice`, `true_false`, `short_answer`
 - `difficulty`: `basic`, `medium`, `hard`
 - item `status`: `candidate`, `needs_review`
 
@@ -232,20 +238,26 @@ The backend should own derivation. The frontend should render bounded question c
 
 ## Question Type Strategy
 
-Start simple.
+The current interaction model is objective/selectable when safe.
 
-Implemented first option:
+Implemented first objective option:
 
-- `short_answer` prompt-only review candidates
+- PSCPP/default objective profile prefers `multiple_choice` with alternatives `A`, `B`, `C`, `D`, `E`
+- alternatives are display-only review options derived from bounded labels such as key points, section titles, and topic/subtopic labels
+- no alternative is marked correct
+- no answer key, gabarito, correct option, solution, score, or correction payload is returned
 
-Recommended future options:
+Supported future path:
 
-- `true_false` for future CEBRASPE-style review
-- `multiple_choice` for future FGV-style review
+- CEBRASPE-style profile can use `true_false` with alternatives `Certo` and `Errado`
+- future exam-profile configuration may choose A-D or A-E multiple-choice formats
 
-The current endpoint intentionally returns empty `alternatives` and no answer key.
+Fallback:
 
-The first implementation should likely choose one type or return a generic review-only model before attempting board-specific question behavior.
+- `short_answer` remains available only when no safe objective alternatives can be formed or no objective profile is available
+- fallback candidates keep `alternatives=[]`
+
+All formats remain `mode=review_only`. They are study-support candidates, not official exam items.
 
 ## Relationship With Study Block
 
@@ -349,7 +361,7 @@ They should not be surfaced as fixation-question UI or reused directly for block
 
 ## Non-goals
 
-- No answer input.
+- No visible answer input.
 - No answer execution flow.
 - No generated questions.
 - No official/final questions.

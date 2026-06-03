@@ -170,11 +170,32 @@ def assert_bounded_questions_payload(payload: dict[str, object]) -> None:
         assert isinstance(item["alternatives"], list)
         if item["type"] == "short_answer":
             assert item["alternatives"] == []
+        if item["type"] == "multiple_choice":
+            alternative_ids = [alternative["id"] for alternative in item["alternatives"]]
+            assert alternative_ids in (["A", "B", "C", "D"], ["A", "B", "C", "D", "E"])
+            for alternative in item["alternatives"]:
+                assert set(alternative.keys()) == {"id", "text"}
+                assert isinstance(alternative["text"], str)
+                assert alternative["text"]
+        if item["type"] == "true_false":
+            assert item["alternatives"] == [
+                {"id": "C", "text": "Certo"},
+                {"id": "E", "text": "Errado"},
+            ]
         assert item["topic_label"] is None or isinstance(item["topic_label"], str)
         assert item["subtopic_label"] is None or isinstance(item["subtopic_label"], str)
         assert item["difficulty"] in {"basic", "medium", "hard"}
         assert item["status"] in {"candidate", "needs_review"}
     assert_no_forbidden_terms(payload)
+
+
+def assert_multiple_choice_ae(payload: dict[str, object]) -> None:
+    assert payload["items"]
+    assert all(item["type"] == "multiple_choice" for item in payload["items"])
+    assert all(
+        [alternative["id"] for alternative in item["alternatives"]] == list("ABCDE")
+        for item in payload["items"]
+    )
 
 
 def test_fixation_questions_require_auth(tmp_path):
@@ -217,8 +238,7 @@ def test_fixation_questions_return_ready_material_only_candidates(tmp_path):
     assert payload["question_status"] == "ready"
     assert payload["mode"] == "review_only"
     assert payload["items"]
-    assert all(item["type"] == "short_answer" for item in payload["items"])
-    assert all(item["alternatives"] == [] for item in payload["items"])
+    assert_multiple_choice_ae(payload)
     assert any("Atos administrativos" in item["prompt"] for item in payload["items"])
     assert all(item["status"] == "candidate" for item in payload["items"])
     assert_bounded_questions_payload(payload)
@@ -244,7 +264,83 @@ def test_fixation_questions_include_connected_edital_labels(tmp_path):
     assert payload["items"]
     assert all(item["topic_label"] == "Direito Administrativo" for item in payload["items"])
     assert all(item["subtopic_label"] == "Atos administrativos" for item in payload["items"])
-    assert any("tópico Atos administrativos" in item["prompt"] for item in payload["items"])
+    assert_multiple_choice_ae(payload)
+    assert any("Direito Administrativo" in item["prompt"] for item in payload["items"])
+    assert_bounded_questions_payload(payload)
+
+
+def test_fixation_questions_support_true_false_for_cebraspe_profile(tmp_path, monkeypatch):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    uploaded = upload_material(
+        owner,
+        filename="cebraspe.md",
+        content=b"# Atos administrativos\n\nConteudo seguro.",
+    )
+    prepare_study_material(owner, uploaded)
+    block = first_block(owner)
+    monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "cebraspe_true_false")
+
+    response = owner.get(encoded_questions_path(str(block["block_id"])))
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["question_status"] == "ready"
+    assert payload["items"]
+    assert all(item["type"] == "true_false" for item in payload["items"])
+    assert all(
+        item["alternatives"] == [{"id": "C", "text": "Certo"}, {"id": "E", "text": "Errado"}]
+        for item in payload["items"]
+    )
+    assert_bounded_questions_payload(payload)
+
+
+def test_fixation_questions_support_multiple_choice_ad_profile(tmp_path, monkeypatch):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    uploaded = upload_material(
+        owner,
+        filename="objetiva-ad.md",
+        content=b"# Atos administrativos\n\nConteudo seguro.",
+    )
+    prepare_study_material(owner, uploaded)
+    block = first_block(owner)
+    monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "multiple_choice_ad")
+
+    response = owner.get(encoded_questions_path(str(block["block_id"])))
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["question_status"] == "ready"
+    assert payload["items"]
+    assert all(item["type"] == "multiple_choice" for item in payload["items"])
+    assert all(
+        [alternative["id"] for alternative in item["alternatives"]] == list("ABCD")
+        for item in payload["items"]
+    )
+    assert_bounded_questions_payload(payload)
+
+
+def test_fixation_questions_keep_short_answer_as_fallback(tmp_path, monkeypatch):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    uploaded = upload_material(
+        owner,
+        filename="fallback.md",
+        content=b"# Atos administrativos\n\nConteudo seguro.",
+    )
+    prepare_study_material(owner, uploaded)
+    block = first_block(owner)
+    monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "unsupported_objective_profile")
+
+    response = owner.get(encoded_questions_path(str(block["block_id"])))
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["question_status"] == "ready"
+    assert payload["items"]
+    assert all(item["type"] == "short_answer" for item in payload["items"])
+    assert all(item["alternatives"] == [] for item in payload["items"])
     assert_bounded_questions_payload(payload)
 
 
@@ -368,6 +464,7 @@ def test_fixation_questions_limit_and_deduplicate_candidates(tmp_path, monkeypat
     assert payload["question_status"] == "needs_review"
     assert len(payload["items"]) == 5
     assert len({item["prompt"] for item in payload["items"]}) == 5
+    assert all(item["type"] == "multiple_choice" for item in payload["items"])
     assert all(item["status"] == "needs_review" for item in payload["items"])
     assert_bounded_questions_payload(payload)
 

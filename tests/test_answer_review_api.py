@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 from fastapi.testclient import TestClient
 
+import app.api.routes as routes
 from app.main import create_app
 from app.repositories.json_store import JsonStudyRepository
 
@@ -266,9 +267,10 @@ def test_answer_review_rejects_invalid_body(tmp_path):
         assert response.status_code == 422
 
 
-def test_answer_review_returns_conservative_short_answer_feedback(tmp_path):
+def test_answer_review_returns_conservative_short_answer_feedback(tmp_path, monkeypatch):
     owner, _, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
+    monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "short_answer")
     block_id, question = prepare_ready_question(owner)
 
     response = post_review(owner, block_id, str(question["question_id"]))
@@ -281,6 +283,51 @@ def test_answer_review_returns_conservative_short_answer_feedback(tmp_path):
     assert payload["result"] == "ungraded"
     assert "Compare sua resposta" in payload["feedback"]
     assert payload["reinforcement"]["suggested_action"] == "review_summary"
+    assert_bounded_answer_review_payload(payload)
+
+
+def test_answer_review_accepts_choice_without_grading_objective_candidates(tmp_path):
+    owner, _, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    block_id, question = prepare_ready_question(owner)
+
+    assert question["type"] == "multiple_choice"
+    response = post_review(
+        owner,
+        block_id,
+        str(question["question_id"]),
+        answer="A",
+        answer_format="choice",
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["review_status"] == "needs_review"
+    assert payload["result"] == "needs_review"
+    assert "regra segura" in payload["feedback"]
+    assert_bounded_answer_review_payload(payload)
+
+
+def test_answer_review_accepts_true_false_without_grading(tmp_path, monkeypatch):
+    owner, _, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "owner")
+    monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "cebraspe_true_false")
+    block_id, question = prepare_ready_question(owner)
+
+    assert question["type"] == "true_false"
+    response = post_review(
+        owner,
+        block_id,
+        str(question["question_id"]),
+        answer="C",
+        answer_format="true_false",
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["review_status"] == "needs_review"
+    assert payload["result"] == "needs_review"
+    assert "regra segura" in payload["feedback"]
     assert_bounded_answer_review_payload(payload)
 
 

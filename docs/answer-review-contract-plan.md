@@ -34,7 +34,10 @@ Current boundaries:
 - questions are candidates/review-only
 - no frontend answer input exists
 - no gabarito or answer key is shown
-- short-answer review is conservative and ungraded
+- PSCPP/default objective candidates prefer display-only multiple-choice A-E
+- CEBRASPE-style candidates can use display-only true/false C/E
+- short-answer candidates are fallback only
+- answer review accepts `text`, `choice`, and `true_false` formats but remains conservative and ungraded unless a later answer-key policy is approved
 - no score is created
 - no answer attempt is persisted
 - no progress is mutated
@@ -64,7 +67,7 @@ Backend portion implemented in AnswerReview-B:
 
 - add a scoped answer-review endpoint
 - validate that the question belongs to the block
-- accept a bounded text/choice answer
+- accept a bounded text, choice, or true/false answer
 - return bounded feedback
 - do not persist scores
 - do not mutate progress
@@ -229,6 +232,7 @@ Conservative future policy:
 
 - answer review may return feedback without revealing an official answer
 - short-answer questions may return `ungraded` or `needs_review` until reliable correction exists
+- multiple-choice A-E/A-D and true/false answers remain selectable input formats, not official correction formats
 - multiple-choice and true/false gabarito reveal must be deliberate and bounded
 - no answer key should be included in frontend payloads unless the endpoint explicitly returns reviewed feedback under a later answer-key reveal contract
 - answer-key values must never be accepted from the client as correction evidence
