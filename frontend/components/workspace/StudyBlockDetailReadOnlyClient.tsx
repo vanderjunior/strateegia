@@ -9,13 +9,22 @@ import {
   WorkspaceLink,
   WorkspaceSourcePanel
 } from "@/components/workspace/WorkspaceShared";
-import { fetchStudyBlockDetail } from "@/lib/api/study";
-import type { BackendStudyBlockDetail } from "@/lib/api/types";
+import { fetchStudyBlockDetail, fetchStudyBlockQuestions } from "@/lib/api/study";
+import type { BackendStudyBlockDetail, BackendStudyBlockQuestions } from "@/lib/api/types";
 
 type BlockDetailState =
   | { status: "loading" }
   | { status: "ready"; detail: BackendStudyBlockDetail }
   | { status: "needs_review"; detail: BackendStudyBlockDetail }
+  | { status: "not_ready"; message: string }
+  | { status: "auth_required"; message: string }
+  | { status: "not_found"; message: string }
+  | { status: "unavailable"; message: string };
+
+type QuestionsState =
+  | { status: "loading" }
+  | { status: "ready"; questions: BackendStudyBlockQuestions }
+  | { status: "needs_review"; questions: BackendStudyBlockQuestions }
   | { status: "not_ready"; message: string }
   | { status: "auth_required"; message: string }
   | { status: "not_found"; message: string }
@@ -35,6 +44,30 @@ function sectionStatusLabel(status: BackendStudyBlockDetail["sections"][number][
   return status === "ready" ? "Pronto para estudo" : "Precisa de conferência";
 }
 
+function questionTypeLabel(type: BackendStudyBlockQuestions["items"][number]["type"]): string {
+  if (type === "true_false") {
+    return "Certo ou errado";
+  }
+  if (type === "multiple_choice") {
+    return "Múltipla escolha";
+  }
+  return "Resposta curta";
+}
+
+function questionDifficultyLabel(difficulty: BackendStudyBlockQuestions["items"][number]["difficulty"]): string {
+  if (difficulty === "medium") {
+    return "Média";
+  }
+  if (difficulty === "hard") {
+    return "Difícil";
+  }
+  return "Básica";
+}
+
+function questionItemStatusLabel(status: BackendStudyBlockQuestions["items"][number]["status"]): string {
+  return status === "candidate" ? "Questão candidata" : "Precisa de conferência";
+}
+
 function failureState(code: string | undefined): BlockDetailState {
   if (code === "auth_required" || code === "unauthorized") {
     return { status: "auth_required", message: "Entre para ver este bloco de estudo." };
@@ -48,12 +81,115 @@ function failureState(code: string | undefined): BlockDetailState {
   return { status: "unavailable", message: "Não foi possível carregar este bloco agora." };
 }
 
+function questionsFailureState(code: string | undefined): QuestionsState {
+  if (code === "auth_required" || code === "unauthorized") {
+    return { status: "auth_required", message: "Entre para ver as questões deste bloco." };
+  }
+  if (code === "not_found") {
+    return { status: "not_found", message: "Bloco de estudo não encontrado." };
+  }
+  if (code === "not_ready") {
+    return { status: "not_ready", message: "As questões ainda não estão prontas para este bloco." };
+  }
+  return { status: "unavailable", message: "Não foi possível carregar as questões agora." };
+}
+
+function QuestionsCard({ state }: { state: QuestionsState }) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <div className="section-kicker">revisão</div>
+        <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">Questões de fixação</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-silver">
+          Use estas questões como revisão inicial do bloco. Elas ainda não exibem respostas oficiais nem avaliam respostas.
+        </p>
+      </div>
+
+      {state.status === "loading" ? (
+        <Card className="border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)]">
+          <CardTitle className="text-[1.35rem]">Carregando questões de fixação.</CardTitle>
+        </Card>
+      ) : null}
+
+      {state.status === "not_ready" ? (
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+          <CardTitle className="text-[1.35rem]">{state.message}</CardTitle>
+          <p className="mt-3 text-sm leading-7 text-silver">Estude o resumo do bloco primeiro.</p>
+        </Card>
+      ) : null}
+
+      {state.status === "auth_required" || state.status === "not_found" || state.status === "unavailable" ? (
+        <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+          <CardTitle className="text-[1.35rem]">{state.message}</CardTitle>
+        </Card>
+      ) : null}
+
+      {state.status === "ready" || state.status === "needs_review" ? (
+        <div className="grid gap-4">
+          {state.status === "needs_review" ? (
+            <p className="rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.07)] px-4 py-3 text-sm leading-7 text-silver">
+              Estas questões precisam de conferência.
+            </p>
+          ) : null}
+          {state.questions.items.length ? (
+            state.questions.items.map((item, index) => {
+              const itemStatusLabel = questionItemStatusLabel(item.status);
+              return (
+                <Card key={item.question_id} className="min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted">
+                        {questionTypeLabel(item.type)} · {questionDifficultyLabel(item.difficulty)}
+                      </p>
+                      <CardTitle className="mt-3 break-words text-[1.25rem] leading-[1.15]">
+                        {index + 1}. {item.prompt}
+                      </CardTitle>
+                    </div>
+                    <Badge className={productStatusClass(itemStatusLabel)}>{itemStatusLabel}</Badge>
+                  </div>
+
+                  {item.topic_label || item.subtopic_label ? (
+                    <p className="mt-4 text-sm leading-7 text-silver">
+                      {[item.topic_label, item.subtopic_label].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
+
+                  {item.alternatives.length ? (
+                    <ul className="mt-5 space-y-2 text-sm leading-7 text-silver">
+                      {item.alternatives.map((alternative) => (
+                        <li key={`${item.question_id}-${alternative.id}`}>
+                          {alternative.id}. {alternative.text}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted">
+                    Sem respostas oficiais nesta etapa
+                  </p>
+                </Card>
+              );
+            })
+          ) : (
+            <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
+              <CardTitle className="text-[1.35rem]">As questões ainda não estão prontas para este bloco.</CardTitle>
+              <p className="mt-3 text-sm leading-7 text-silver">Estude o resumo do bloco primeiro.</p>
+            </Card>
+          )}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string }) {
   const [state, setState] = useState<BlockDetailState>({ status: "loading" });
+  const [questionsState, setQuestionsState] = useState<QuestionsState>({ status: "loading" });
 
   useEffect(() => {
     let active = true;
     setState({ status: "loading" });
+    setQuestionsState({ status: "loading" });
 
     void fetchStudyBlockDetail(blockId).then((result) => {
       if (!active) {
@@ -67,6 +203,20 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
         return;
       }
       setState(failureState(result.error.code));
+    });
+
+    void fetchStudyBlockQuestions(blockId).then((result) => {
+      if (!active) {
+        return;
+      }
+      if (result.ok) {
+        setQuestionsState({
+          status: result.data.question_status === "ready" ? "ready" : "needs_review",
+          questions: result.data
+        });
+        return;
+      }
+      setQuestionsState(questionsFailureState(result.error.code));
     });
 
     return () => {
@@ -253,6 +403,8 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
           })}
         </div>
       </section>
+
+      <QuestionsCard state={questionsState} />
     </div>
   );
 }

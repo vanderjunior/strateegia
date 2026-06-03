@@ -4,7 +4,7 @@
 
 Define the future read-only contract for studying one block from the `/study` path.
 
-This began as a planning document. StudyBlockDetail-A implemented the backend read-only endpoint, StudyBlockDetail-B added the frontend same-origin proxy/API wrapper, and StudyBlockDetail-C added the minimal read-only `/study/blocks/[blockId]` page. It does not add progress mutation, generated questions, simulados, generated summaries, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. StudyBlockDetail-A implemented the backend read-only endpoint, StudyBlockDetail-B added the frontend same-origin proxy/API wrapper, and StudyBlockDetail-C added the minimal read-only `/study/blocks/[blockId]` page. FixationQuestions-D added a review-only question candidate card to the page. It does not add answer input, correction, progress mutation, generated questions, simulados, generated summaries, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -27,6 +27,7 @@ Implemented today:
 - `GET /api/study/blocks` returns a bounded list/overview sequence of study blocks.
 - `GET /api/study/blocks/{block_id}` resolves one current user block and returns bounded detail data.
 - Frontend same-origin `GET /api/study/blocks/[blockId]`, `fetchStudyBlockDetail(blockId)`, and `/study/blocks/[blockId]` exist.
+- Frontend same-origin `GET /api/study/blocks/[blockId]/questions`, `fetchStudyBlockQuestions(blockId)`, and a minimal review-only `Questões de fixação` card exist.
 - `/study` renders those blocks first when available.
 - Block list items may include actions pointing to `/study/blocks/{block_id}` URLs.
 - `GET /api/materials/{document_id}/study/summary` returns bounded prepared-material section summaries.
@@ -34,8 +35,8 @@ Implemented today:
 
 Current limitation:
 
-- Browser/API QA for `/study/blocks/[blockId]` is still pending.
-- The list item remains intentionally compact and should not become the source of truth for richer detail.
+- Browser/API QA for the questions card is still pending.
+- The list item remains intentionally compact and should not become the source of truth for richer detail or question behavior.
 
 ## Implemented Backend Endpoint
 

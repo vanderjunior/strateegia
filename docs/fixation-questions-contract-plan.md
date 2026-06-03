@@ -4,7 +4,7 @@
 
 Define the first safe contract for fixation questions after a user studies a bounded study block.
 
-This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. FixationQuestions-C added the frontend same-origin proxy/API helper. It does not add visible frontend UI, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. FixationQuestions-C added the frontend same-origin proxy/API helper. FixationQuestions-D added a minimal review-only questions card on block detail. It does not add answer input, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -93,7 +93,7 @@ The staged approach is:
 1. Planning completed.
 2. Backend read-only candidate contract implemented.
 3. Frontend same-origin proxy/API helper implemented.
-4. Frontend review-only display pending.
+4. Minimal frontend review-only display implemented.
 5. Answer/correction contract later.
 6. Progress mutation much later.
 
@@ -130,7 +130,8 @@ Frontend proxy/API status:
 - proxy forwards cookies server-side and uses the server/internal backend URL strategy
 - proxy whitelists top-level, item, and alternative fields
 - wrapper maps `question_status=not_ready` to a safe `not_ready` result
-- visible question UI remains pending
+- `/study/blocks/[blockId]` renders a minimal review-only `Questões de fixação` card
+- the card shows candidates and optional alternatives only; it does not show answer inputs, answer keys, correction, score, or progress actions
 
 Allowed top-level fields:
 
@@ -348,7 +349,8 @@ They should not be surfaced as fixation-question UI or reused directly for block
 
 ## Non-goals
 
-- No frontend UI in this phase.
+- No answer input.
+- No answer execution flow.
 - No generated questions.
 - No official/final questions.
 - No final answer keys.
@@ -369,11 +371,10 @@ They should not be surfaced as fixation-question UI or reused directly for block
 
 ## Recommended Future Phases
 
-1. `FixationQuestions-D`: minimal review-only questions UI on block detail.
-2. `FixationQuestions-QA-A`: browser/API QA and no-leakage validation.
-3. `AnswerReview-Planning-A`: answer submission, correction, and answer-key reveal boundaries.
-4. `ErrorReinforcement-Planning-A`: wrong-answer classification and reinforcement contract.
-5. `ReviewBlock-Planning-A`: cumulative review after every 3 studied/prepared materials.
+1. `FixationQuestions-QA-A`: browser/API QA and no-leakage validation.
+2. `AnswerReview-Planning-A`: answer submission, correction, and answer-key reveal boundaries.
+3. `ErrorReinforcement-Planning-A`: wrong-answer classification and reinforcement contract.
+4. `ReviewBlock-Planning-A`: cumulative review after every 3 studied/prepared materials.
 
 ## Open Questions
 
