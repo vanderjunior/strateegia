@@ -442,6 +442,26 @@ Read-only `/study/blocks/[blockId]` QA passed after rebuilding the Compose front
 
 Known limitations: this QA observed the `material_only` / `needs_review` detail path. Connected edital topic/subtopic detail and explicit `not_ready` page rendering remain covered by automated tests until a suitable browser dataset is available. Key points appear when the backend returns them; the seeded QA detail did not include key points.
 
+### FixationQuestions-QA-A Compose Browser/API QA
+
+Review-only fixation questions QA passed after rebuilding the Compose frontend and backend images:
+
+- Frontend `GET /` and backend `GET /api/exam-profiles` returned `200`.
+- Login through `/login` worked with the local `compose-qa-seed` user after the backend restart; sessions remain in-memory, so re-login was required.
+- The existing seeded study block rendered the new `Questões de fixação` card but returned the safe `not_ready` message because its section title was generic (`Document`) and no safe prompt candidates were available.
+- A new local QA material, `fixation-qa-material.md`, was uploaded as `study_material` and prepared through the existing no-OCR study preparation flow; preparation returned `ready_for_study=true`.
+- `/study` then showed two blocks and placed the new `Atos administrativos` block first with `Pronto para estudo`, `fixation-qa-material.md`, and a safe `Estudar bloco` link using a `:`-separated encoded block id.
+- Opening `/study/blocks/study-block:material:{document_id}:0` rendered `Estudar bloco`, `Resumo do bloco`, and `Questões de fixação`.
+- The questions card displayed three review-only `Resposta curta` candidates with `Básica`, `Questão candidata`, and `Sem respostas oficiais nesta etapa`.
+- Frontend API checks confirmed:
+  - authenticated ready questions returned `200`, `question_status=ready`, `mode=review_only`, and three `short_answer` candidates
+  - unauthenticated questions returned `401`
+  - missing block questions returned `404`
+  - the generic seeded block returned `200`, `question_status=not_ready`, and an empty `items` list
+- Browser visible-text inspection found no answer input, responder/correction button, gabarito, resposta correta, correction, score, acertos/erros, concluir estudo, marcar progresso, gerar questões, gerar simulado, raw text, chunk body, section body, storage path, token, password hash, internal trace, or progress language.
+
+Known limitations: questions are display-only candidates. There is still no answer submission, correction, answer-key reveal, scoring, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior. The QA material was added to the local Compose volume; rerunning similar QA creates additional materials unless the volume is reset.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
