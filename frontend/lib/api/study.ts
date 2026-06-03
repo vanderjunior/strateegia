@@ -6,8 +6,13 @@ import type {
   BackendStudyBlockItem,
   BackendStudyBlockDetail,
   BackendStudyBlocks,
+  BackendStudyBlockQuestions,
   BackendStudyMaterialSummaryItem,
   BackendStudyBlockDetailStatus,
+  StudyBlockQuestionDifficulty,
+  StudyBlockQuestionItemStatus,
+  StudyBlockQuestionStatus,
+  StudyBlockQuestionType,
   StudyBlockItemStatus,
   StudyBlocksScopeStatus,
   StudyBlocksStatus,
@@ -37,6 +42,30 @@ const BLOCK_DETAIL_STATUSES = new Set<BackendStudyBlockDetailStatus>([
   "ready",
   "needs_review",
   "not_ready"
+]);
+
+const QUESTION_STATUSES = new Set<StudyBlockQuestionStatus>([
+  "ready",
+  "needs_review",
+  "not_ready",
+  "unsupported"
+]);
+
+const QUESTION_TYPES = new Set<StudyBlockQuestionType>([
+  "short_answer",
+  "true_false",
+  "multiple_choice"
+]);
+
+const QUESTION_DIFFICULTIES = new Set<StudyBlockQuestionDifficulty>([
+  "basic",
+  "medium",
+  "hard"
+]);
+
+const QUESTION_ITEM_STATUSES = new Set<StudyBlockQuestionItemStatus>([
+  "candidate",
+  "needs_review"
 ]);
 
 const SUMMARY_STATUSES = new Set([
@@ -126,6 +155,49 @@ function isStudyBlockDetail(value: unknown): value is BackendStudyBlockDetail {
   );
 }
 
+function isQuestionAlternative(value: unknown): value is BackendStudyBlockQuestions["items"][number]["alternatives"][number] {
+  const alternative = value as Partial<BackendStudyBlockQuestions["items"][number]["alternatives"][number]>;
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    typeof alternative.id === "string" &&
+    typeof alternative.text === "string"
+  );
+}
+
+function isStudyBlockQuestionItem(value: unknown): value is BackendStudyBlockQuestions["items"][number] {
+  const item = value as Partial<BackendStudyBlockQuestions["items"][number]>;
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    typeof item.question_id === "string" &&
+    Boolean(item.type && QUESTION_TYPES.has(item.type)) &&
+    typeof item.prompt === "string" &&
+    Array.isArray(item.alternatives) &&
+    item.alternatives.every(isQuestionAlternative) &&
+    (item.topic_label === null || typeof item.topic_label === "string") &&
+    (item.subtopic_label === null || typeof item.subtopic_label === "string") &&
+    Boolean(item.difficulty && QUESTION_DIFFICULTIES.has(item.difficulty)) &&
+    Boolean(item.status && QUESTION_ITEM_STATUSES.has(item.status))
+  );
+}
+
+function isStudyBlockQuestionsPayload(value: unknown): value is BackendStudyBlockQuestions {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<BackendStudyBlockQuestions>;
+  return (
+    typeof data.block_id === "string" &&
+    Boolean(data.question_status && QUESTION_STATUSES.has(data.question_status)) &&
+    data.mode === "review_only" &&
+    Array.isArray(data.items) &&
+    data.items.every(isStudyBlockQuestionItem) &&
+    typeof data.warnings_count === "number" &&
+    data.source === "user_scope"
+  );
+}
+
 function isStudyBlocksPayload(value: unknown): value is BackendStudyBlocks {
   if (!value || typeof value !== "object") {
     return false;
@@ -172,6 +244,92 @@ function isNextStudySessionPayload(value: unknown): value is BackendNextStudySes
     typeof data.message === "string" &&
     data.source === "user_scope"
   );
+}
+
+export async function fetchStudyBlockQuestions(blockId: string): Promise<ApiResult<BackendStudyBlockQuestions>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: as questões reais não foram consultadas.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "As questões deste bloco não estão configuradas neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch(`/api/study/blocks/${encodeURIComponent(blockId)}/questions`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar as questões agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "As questões deste bloco não estão configuradas neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para ver as questões deste bloco.", response.status);
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Bloco de estudo não encontrado.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível carregar as questões agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendStudyBlockQuestions;
+      if (!isStudyBlockQuestionsPayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível carregar as questões agora.", response.status);
+      }
+      if (data.question_status === "not_ready") {
+        return makeApiFailure(
+          "backend",
+          "not_ready",
+          "As questões ainda não estão prontas para este bloco.",
+          response.status
+        );
+      }
+      if (data.question_status === "unsupported") {
+        return makeApiFailure(
+          "unsupported",
+          "missing_base_url",
+          "As questões deste bloco não estão configuradas neste ambiente.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data,
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível carregar as questões agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível carregar as questões agora.");
+  }
 }
 
 export async function fetchStudyBlockDetail(blockId: string): Promise<ApiResult<BackendStudyBlockDetail>> {

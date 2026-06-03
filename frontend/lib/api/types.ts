@@ -456,6 +456,39 @@ export interface BackendStudyBlockDetail {
   source: "user_scope";
 }
 
+export type StudyBlockQuestionStatus = "ready" | "needs_review" | "not_ready" | "unsupported";
+
+export type StudyBlockQuestionType = "short_answer" | "true_false" | "multiple_choice";
+
+export type StudyBlockQuestionDifficulty = "basic" | "medium" | "hard";
+
+export type StudyBlockQuestionItemStatus = "candidate" | "needs_review";
+
+export interface BackendStudyBlockQuestionAlternative {
+  id: string;
+  text: string;
+}
+
+export interface BackendStudyBlockQuestionItem {
+  question_id: string;
+  type: StudyBlockQuestionType;
+  prompt: string;
+  alternatives: BackendStudyBlockQuestionAlternative[];
+  topic_label: string | null;
+  subtopic_label: string | null;
+  difficulty: StudyBlockQuestionDifficulty;
+  status: StudyBlockQuestionItemStatus;
+}
+
+export interface BackendStudyBlockQuestions {
+  block_id: string;
+  question_status: StudyBlockQuestionStatus;
+  mode: "review_only";
+  items: BackendStudyBlockQuestionItem[];
+  warnings_count: number;
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;

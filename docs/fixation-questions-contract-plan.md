@@ -4,7 +4,7 @@
 
 Define the first safe contract for fixation questions after a user studies a bounded study block.
 
-This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. It does not add frontend UI, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. FixationQuestions-B implemented the backend read-only endpoint `GET /api/study/blocks/{block_id}/questions` for deterministic review-only question candidates. FixationQuestions-C added the frontend same-origin proxy/API helper. It does not add visible frontend UI, question generation, answer correction, answer-key exposure, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -92,7 +92,7 @@ The staged approach is:
 
 1. Planning completed.
 2. Backend read-only candidate contract implemented.
-3. Frontend same-origin proxy/API helper pending.
+3. Frontend same-origin proxy/API helper implemented.
 4. Frontend review-only display pending.
 5. Answer/correction contract later.
 6. Progress mutation much later.
@@ -122,6 +122,15 @@ Do not make `GET /api/study/blocks/{block_id}` responsible for question generati
   "source": "user_scope"
 }
 ```
+
+Frontend proxy/API status:
+
+- same-origin proxy path: `GET /api/study/blocks/[blockId]/questions`
+- frontend helper: `fetchStudyBlockQuestions(blockId)`
+- proxy forwards cookies server-side and uses the server/internal backend URL strategy
+- proxy whitelists top-level, item, and alternative fields
+- wrapper maps `question_status=not_ready` to a safe `not_ready` result
+- visible question UI remains pending
 
 Allowed top-level fields:
 
@@ -360,12 +369,11 @@ They should not be surfaced as fixation-question UI or reused directly for block
 
 ## Recommended Future Phases
 
-1. `FixationQuestions-C`: frontend same-origin proxy/API helper.
-2. `FixationQuestions-D`: minimal review-only questions UI on block detail.
-3. `FixationQuestions-QA-A`: browser/API QA and no-leakage validation.
-4. `AnswerReview-Planning-A`: answer submission, correction, and answer-key reveal boundaries.
-5. `ErrorReinforcement-Planning-A`: wrong-answer classification and reinforcement contract.
-6. `ReviewBlock-Planning-A`: cumulative review after every 3 studied/prepared materials.
+1. `FixationQuestions-D`: minimal review-only questions UI on block detail.
+2. `FixationQuestions-QA-A`: browser/API QA and no-leakage validation.
+3. `AnswerReview-Planning-A`: answer submission, correction, and answer-key reveal boundaries.
+4. `ErrorReinforcement-Planning-A`: wrong-answer classification and reinforcement contract.
+5. `ReviewBlock-Planning-A`: cumulative review after every 3 studied/prepared materials.
 
 ## Open Questions
 

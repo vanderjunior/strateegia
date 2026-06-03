@@ -20,7 +20,7 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/editais/{edital_id}/coverage` now provides a read-only bounded edital x materials coverage contract; frontend proxy/UI migration is pending.
 - Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper and minimal `/study` UI exist.
 - Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
-- Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend proxy/UI migration is pending.
+- Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper exist, and visible UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -519,6 +519,8 @@ Rules:
 - repeated `GET` is idempotent and does not create attempts, mark completion, mutate progress, generate official questions, generate simulados, call OCR, or call an LLM
 - candidates are limited and deduplicated deterministically
 - first implementation returns `short_answer` review prompts with empty `alternatives`
+- frontend proxy path is `GET /api/study/blocks/[blockId]/questions`
+- frontend API helper is `fetchStudyBlockQuestions(blockId)`
 - answer keys and gabarito are not returned
 - response must not expose raw text, chunks, section bodies, OCR output, storage paths, evidence snippets, answer keys, gabarito, correctness flags, correction fields, progress payloads, or internal traces
 
