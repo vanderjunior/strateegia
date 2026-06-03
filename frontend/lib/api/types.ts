@@ -489,6 +489,29 @@ export interface BackendStudyBlockQuestions {
   source: "user_scope";
 }
 
+export type StudyBlockAnswerFormat = "text" | "choice" | "true_false";
+
+export type StudyBlockAnswerReviewStatus = "reviewed" | "needs_review" | "not_ready" | "unsupported";
+
+export type StudyBlockAnswerReviewResult = "correct" | "incorrect" | "partial" | "ungraded" | "needs_review";
+
+export type StudyBlockAnswerReviewSuggestedAction = "review_summary" | "retry_question" | "revisit_block";
+
+export interface BackendStudyBlockAnswerReview {
+  block_id: string;
+  question_id: string;
+  review_status: StudyBlockAnswerReviewStatus;
+  result: StudyBlockAnswerReviewResult;
+  feedback: string;
+  reinforcement: {
+    topic_label: string | null;
+    subtopic_label: string | null;
+    message: string;
+    suggested_action: StudyBlockAnswerReviewSuggestedAction;
+  };
+  source: "user_scope";
+}
+
 export interface BackendProtectedEditaisListItem {
   edital_id: string;
   title: string;

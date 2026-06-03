@@ -26,6 +26,7 @@
 - `/api/study/session/next`
 - `/api/study/blocks`
 - `/api/study/blocks/[blockId]/questions`
+- `/api/study/blocks/[blockId]/questions/[questionId]/answer/review`
 - `/api/editais/[editalId]/summary`
 - `/api/materials/[materialId]/edital/analyze`
 
@@ -54,6 +55,7 @@
 - Fixation questions QA is closed through Compose/browser/API: after rebuilding frontend and backend containers, a prepared `fixation-qa-material.md` study block rendered `Questões de fixação`, candidate prompts, `Resposta curta`, `Básica`, `Questão candidata`, and `Sem respostas oficiais nesta etapa`; API checks covered `ready`, `not_ready`, `401`, and `404`.
 - Answer review planning is documented in `docs/answer-review-contract-plan.md`: future answer submission should be block-scoped, review-only at first, conservative for short answers, and explicitly separate from answer-key exposure, scoring, progress mutation, simulado execution, OCR, and LLM grading.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now exists as a stateless bounded answer-review endpoint. It returns conservative ungraded feedback for current short-answer candidates, does not persist attempts, does not mutate progress, and does not expose answer keys or gabarito; frontend proxy/UI remain pending.
+- Frontend same-origin `POST /api/study/blocks/[blockId]/questions/[questionId]/answer/review` and `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)` now exist with request/response whitelisting; visible answer UI remains pending.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -80,7 +82,7 @@
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
-- Study blocks have a minimal `/study` list UI, a minimal `/study/blocks/[blockId]` detail UI, and a review-only fixation-question card. Backend stateless answer review exists, but there is still no frontend answer input, answer correction UI, review-after-3 behavior, progress mutation, generated questions, simulado, OCR, or LLM behavior.
+- Study blocks have a minimal `/study` list UI, a minimal `/study/blocks/[blockId]` detail UI, and a review-only fixation-question card. Backend stateless answer review plus frontend proxy/API helper exist, but there is still no visible answer input, answer correction UI, review-after-3 behavior, progress mutation, generated questions, simulado, OCR, or LLM behavior.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
@@ -94,7 +96,7 @@
 - Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders and minimal material-detail UI now exist, and future generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
 - Study block detail planning is documented in `docs/study-block-detail-contract-plan.md`: backend-owned `GET /api/study/blocks/{block_id}` resolution, frontend proxy/API helper, and minimal detail rendering now exist and must stay bounded without progress, questions, simulado, generation, OCR, LLM, or frontend-only matching.
 - Fixation question planning is documented in `docs/fixation-questions-contract-plan.md`: the backend read-only candidate endpoint, frontend proxy/API helper, and minimal review-only card now exist, while any answer/correction flow remains pending with no answer-key/gabarito exposure, correction result, progress mutation, simulado execution, OCR, or LLM behavior.
-- Answer review planning is documented in `docs/answer-review-contract-plan.md`: the backend stateless `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` endpoint exists with bounded feedback and no progress mutation; frontend proxy/UI remain pending.
+- Answer review planning is documented in `docs/answer-review-contract-plan.md`: the backend stateless endpoint and frontend same-origin proxy/API helper exist with bounded feedback and no progress mutation; visible answer UI remains pending.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, Execução, progress mutation, and multi-material study cycles are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 

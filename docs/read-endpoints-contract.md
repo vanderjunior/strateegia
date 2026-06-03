@@ -21,7 +21,7 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper and minimal `/study` UI exist.
 - Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
 - Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper and visible review-only card exist.
-- Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend proxy/UI migration is pending.
+- Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend same-origin proxy/API helper exist and visible UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -535,7 +535,8 @@ Purpose:
 - validate that `question_id` belongs to the current bounded candidates for `block_id`
 - return conservative review feedback and a reinforcement suggestion
 - remain stateless: no answer persistence, score record, correction record, or progress mutation
-- implemented in AnswerReview-B as a backend-only contract; frontend proxy/UI remain pending
+- implemented in AnswerReview-B as a backend contract
+- frontend same-origin proxy/API helper implemented in AnswerReview-C; visible UI remains pending
 
 Implemented request shape:
 
@@ -583,6 +584,9 @@ Rules:
 - answer strings are trimmed, required, and length-bounded
 - repeated `POST` with the same input is idempotent because no state is written
 - short-answer candidates are not graded for correctness in this phase
+- frontend proxy path is `POST /api/study/blocks/[blockId]/questions/[questionId]/answer/review`
+- frontend API helper is `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)`
+- frontend proxy forwards cookies server-side, strips request fields outside `answer` and `answer_format`, and whitelists response fields
 - answer keys, gabarito, correct answers, correct alternatives, authoritative correctness flags, solutions, hidden rationale, scores, correction records, progress payloads, raw content, storage paths, tokens, and internal traces are forbidden
 
 ### `GET /api/editais`

@@ -4,11 +4,16 @@ import type {
   ApiResult,
   BackendNextStudySession,
   BackendStudyBlockItem,
+  BackendStudyBlockAnswerReview,
   BackendStudyBlockDetail,
   BackendStudyBlocks,
   BackendStudyBlockQuestions,
   BackendStudyMaterialSummaryItem,
   BackendStudyBlockDetailStatus,
+  StudyBlockAnswerFormat,
+  StudyBlockAnswerReviewResult,
+  StudyBlockAnswerReviewStatus,
+  StudyBlockAnswerReviewSuggestedAction,
   StudyBlockQuestionDifficulty,
   StudyBlockQuestionItemStatus,
   StudyBlockQuestionStatus,
@@ -66,6 +71,33 @@ const QUESTION_DIFFICULTIES = new Set<StudyBlockQuestionDifficulty>([
 const QUESTION_ITEM_STATUSES = new Set<StudyBlockQuestionItemStatus>([
   "candidate",
   "needs_review"
+]);
+
+const ANSWER_FORMATS = new Set<StudyBlockAnswerFormat>([
+  "text",
+  "choice",
+  "true_false"
+]);
+
+const ANSWER_REVIEW_STATUSES = new Set<StudyBlockAnswerReviewStatus>([
+  "reviewed",
+  "needs_review",
+  "not_ready",
+  "unsupported"
+]);
+
+const ANSWER_REVIEW_RESULTS = new Set<StudyBlockAnswerReviewResult>([
+  "correct",
+  "incorrect",
+  "partial",
+  "ungraded",
+  "needs_review"
+]);
+
+const ANSWER_REVIEW_ACTIONS = new Set<StudyBlockAnswerReviewSuggestedAction>([
+  "review_summary",
+  "retry_question",
+  "revisit_block"
 ]);
 
 const SUMMARY_STATUSES = new Set([
@@ -198,6 +230,45 @@ function isStudyBlockQuestionsPayload(value: unknown): value is BackendStudyBloc
   );
 }
 
+function isStudyBlockAnswerReviewPayload(value: unknown): value is BackendStudyBlockAnswerReview {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<BackendStudyBlockAnswerReview>;
+  const reinforcement = data.reinforcement as Partial<BackendStudyBlockAnswerReview["reinforcement"]> | undefined;
+  return (
+    typeof data.block_id === "string" &&
+    typeof data.question_id === "string" &&
+    Boolean(data.review_status && ANSWER_REVIEW_STATUSES.has(data.review_status)) &&
+    Boolean(data.result && ANSWER_REVIEW_RESULTS.has(data.result)) &&
+    typeof data.feedback === "string" &&
+    Boolean(reinforcement) &&
+    typeof reinforcement === "object" &&
+    (reinforcement.topic_label === null || typeof reinforcement.topic_label === "string") &&
+    (reinforcement.subtopic_label === null || typeof reinforcement.subtopic_label === "string") &&
+    typeof reinforcement.message === "string" &&
+    Boolean(reinforcement.suggested_action && ANSWER_REVIEW_ACTIONS.has(reinforcement.suggested_action)) &&
+    data.source === "user_scope"
+  );
+}
+
+function normalizeStudyBlockAnswerReviewPayload(data: BackendStudyBlockAnswerReview): BackendStudyBlockAnswerReview {
+  return {
+    block_id: data.block_id,
+    question_id: data.question_id,
+    review_status: data.review_status,
+    result: data.result,
+    feedback: data.feedback,
+    reinforcement: {
+      topic_label: data.reinforcement.topic_label,
+      subtopic_label: data.reinforcement.subtopic_label,
+      message: data.reinforcement.message,
+      suggested_action: data.reinforcement.suggested_action
+    },
+    source: "user_scope"
+  };
+}
+
 function isStudyBlocksPayload(value: unknown): value is BackendStudyBlocks {
   if (!value || typeof value !== "object") {
     return false;
@@ -244,6 +315,109 @@ function isNextStudySessionPayload(value: unknown): value is BackendNextStudySes
     typeof data.message === "string" &&
     data.source === "user_scope"
   );
+}
+
+export async function reviewStudyBlockQuestionAnswer(
+  blockId: string,
+  questionId: string,
+  payload: {
+    answer: string;
+    answer_format: StudyBlockAnswerFormat;
+  }
+): Promise<ApiResult<BackendStudyBlockAnswerReview>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: a resposta real não foi revisada.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "A revisão da resposta não está configurada neste ambiente."
+    );
+  }
+
+  if (!ANSWER_FORMATS.has(payload.answer_format)) {
+    return makeApiFailure("backend", "validation_error", "Revise sua resposta antes de enviar.", 422);
+  }
+
+  try {
+    const response = await fetch(
+      `/api/study/blocks/${encodeURIComponent(blockId)}/questions/${encodeURIComponent(questionId)}/answer/review`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({
+          answer: payload.answer,
+          answer_format: payload.answer_format
+        })
+      }
+    );
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível revisar sua resposta agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "A revisão da resposta não está configurada neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para revisar sua resposta.", response.status);
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Questão ou bloco de estudo não encontrado.", response.status);
+    }
+    if (response.status === 422) {
+      return makeApiFailure("backend", "validation_error", "Revise sua resposta antes de enviar.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível revisar sua resposta agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendStudyBlockAnswerReview;
+      if (!isStudyBlockAnswerReviewPayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível revisar sua resposta agora.", response.status);
+      }
+      if (data.review_status === "not_ready") {
+        return makeApiFailure("backend", "not_ready", "Não foi possível revisar sua resposta agora.", response.status);
+      }
+      if (data.review_status === "unsupported") {
+        return makeApiFailure(
+          "unsupported",
+          "missing_base_url",
+          "A revisão da resposta não está configurada neste ambiente.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data: normalizeStudyBlockAnswerReviewPayload(data),
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível revisar sua resposta agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível revisar sua resposta agora.");
+  }
 }
 
 export async function fetchStudyBlockQuestions(blockId: string): Promise<ApiResult<BackendStudyBlockQuestions>> {

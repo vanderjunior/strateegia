@@ -4,7 +4,7 @@
 
 Define the contract for answering fixation questions and receiving safe review feedback after studying one block.
 
-This began as a planning document. AnswerReview-B implemented the backend stateless endpoint `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`. It does not add frontend proxy/UI behavior, answer-key exposure, scoring, persistence, progress mutation, error reinforcement, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. AnswerReview-B implemented the backend stateless endpoint `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`. AnswerReview-C added the frontend same-origin proxy/API helper. It does not add visible answer UI behavior, answer-key exposure, scoring, persistence, progress mutation, error reinforcement, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -27,6 +27,7 @@ Implemented today:
 - `GET /api/study/blocks/{block_id}/questions` returns deterministic review-only fixation question candidates.
 - Frontend same-origin `GET /api/study/blocks/[blockId]/questions` and `fetchStudyBlockQuestions(blockId)` render the `Questões de fixação` card.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` returns conservative bounded feedback for one submitted answer.
+- Frontend same-origin `POST /api/study/blocks/[blockId]/questions/[questionId]/answer/review` and `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)` exist.
 
 Current boundaries:
 
@@ -69,7 +70,7 @@ Backend portion implemented in AnswerReview-B:
 - do not mutate progress
 - do not reveal answer keys by default
 
-Frontend proxy/API and UI remain pending.
+Visible answer UI remains pending.
 
 ### Stage 3: Error Classification and Reinforcement Suggestion
 
@@ -345,6 +346,9 @@ Purpose:
 - optionally suggest reinforcement
 - stateless and idempotent for the same input
 - no progress mutation in the first implementation
+- frontend proxy path is `POST /api/study/blocks/[blockId]/questions/[questionId]/answer/review`
+- frontend API helper is `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)`
+- frontend proxy/API sanitize request and response fields by whitelist
 
 ### Existing legacy answer endpoints
 
@@ -377,11 +381,10 @@ No:
 
 ## Recommended Future Phases
 
-1. `AnswerReview-C`: frontend same-origin proxy/API helper.
-2. `AnswerReview-D`: minimal answer/review UI on block detail.
-3. `AnswerReview-QA-A`: browser/API QA for answer review boundaries.
-4. `ErrorReinforcement-Planning-A`: define weak-topic reinforcement contract.
-5. `ReviewBlock-Planning-A`: define cumulative review after every 3 materials.
+1. `AnswerReview-D`: minimal answer/review UI on block detail.
+2. `AnswerReview-QA-A`: browser/API QA for answer review boundaries.
+3. `ErrorReinforcement-Planning-A`: define weak-topic reinforcement contract.
+4. `ReviewBlock-Planning-A`: define cumulative review after every 3 materials.
 
 ## Safety Checklist For Implementation
 
