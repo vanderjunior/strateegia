@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { StudySessionWorkspaceViewModel } from "@/lib/api/types";
-import type { BackendNextStudySession, BackendStudyBlocks } from "@/lib/api/types";
-import { fetchNextStudySession, fetchStudyBlocks } from "@/lib/api/study";
+import type { BackendNextReviewBlock, BackendNextStudySession, BackendStudyBlocks } from "@/lib/api/types";
+import { fetchNextReviewBlock, fetchNextStudySession, fetchStudyBlocks } from "@/lib/api/study";
 import {
   buildMockStudySessionWorkspaceViewModel,
   loadStudySessionWorkspaceViewModel
@@ -25,6 +25,204 @@ import {
 import { StudySessionMetaRow } from "@/components/workspace/StudySessionShared";
 import Link from "next/link";
 
+type ReviewCandidateState =
+  | "loading"
+  | "ready"
+  | "needs_review"
+  | "partial"
+  | "not_ready"
+  | "auth_required"
+  | "unavailable";
+
+function reviewBasisLabel(basis: BackendNextReviewBlock["basis"]) {
+  return basis === "study_blocks" ? "Baseada em blocos disponíveis" : "Baseada em materiais preparados";
+}
+
+function questionsReadinessLabel(status: BackendNextReviewBlock["questions"]["status"]) {
+  if (status === "ready") {
+    return "Questões de revisão disponíveis";
+  }
+  if (status === "needs_review") {
+    return "Questões de revisão em conferência";
+  }
+  return "Questões de revisão ainda não disponíveis";
+}
+
+function ReviewCandidateCard({
+  review,
+  state,
+  compact = false
+}: {
+  review: BackendNextReviewBlock | null;
+  state: ReviewCandidateState;
+  compact?: boolean;
+}) {
+  if (state === "loading") {
+    return null;
+  }
+
+  const safeMessage =
+    state === "auth_required"
+      ? "Entre para ver sua revisão acumulada."
+      : state === "unavailable"
+        ? "Não foi possível carregar a revisão agora."
+        : "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.";
+
+  if (!review || state === "not_ready" || state === "auth_required" || state === "unavailable") {
+    if (compact && state === "not_ready") {
+      return null;
+    }
+    return (
+      <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+        <div className="section-kicker">revisão acumulada</div>
+        <CardTitle className="mt-4 break-words text-[1.55rem] leading-[1.05]">
+          Revisão acumulada sugerida
+        </CardTitle>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-silver">{safeMessage}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
+          <WorkspaceLink href="/study">Continuar estudando</WorkspaceLink>
+        </div>
+      </Card>
+    );
+  }
+
+  if (state === "partial") {
+    return (
+      <Card className="border-[rgba(201,169,110,0.14)] bg-[rgba(255,255,255,0.02)]">
+        <div className="section-kicker">revisão acumulada</div>
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 max-w-3xl">
+            <CardTitle className="break-words text-[1.65rem] leading-[1.05]">
+              Revisão acumulada em preparação.
+            </CardTitle>
+            <p className="mt-3 text-sm leading-7 text-silver">
+              Prepare mais materiais para uma revisão mais completa.
+            </p>
+          </div>
+          <Badge className={productStatusClass("Conferir")}>Em preparação</Badge>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted">materiais preparados</p>
+            <p className="mt-2 text-2xl text-ink">{review.materials_count}</p>
+          </div>
+          <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted">blocos disponíveis</p>
+            <p className="mt-2 text-2xl text-ink">{review.blocks_count}</p>
+          </div>
+          <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted">tempo estimado</p>
+            <p className="mt-2 text-2xl text-ink">{review.estimated_minutes} min</p>
+          </div>
+        </div>
+        <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+          Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-[rgba(201,169,110,0.14)] bg-[rgba(255,255,255,0.02)]">
+      <div className="section-kicker">revisão acumulada</div>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 max-w-3xl">
+          <CardTitle className="break-words text-[1.65rem] leading-[1.05]">
+            Revisão acumulada sugerida
+          </CardTitle>
+          <p className="mt-3 text-sm leading-7 text-silver">
+            Use esta revisão para retomar pontos dos materiais preparados.
+          </p>
+        </div>
+        <Badge className={productStatusClass(state === "ready" ? "Pronto" : "Conferir")}>
+          {state === "ready" ? "Disponível para consulta" : "Precisa de conferência"}
+        </Badge>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+        <p className="break-words text-sm text-ink">{review.title || "Revisão acumulada"}</p>
+        <p className="mt-2 text-sm leading-7 text-silver">{reviewBasisLabel(review.basis)}</p>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">materiais preparados</p>
+          <p className="mt-2 text-2xl text-ink">{review.materials_count}</p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">blocos disponíveis</p>
+          <p className="mt-2 text-2xl text-ink">{review.blocks_count}</p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">tempo estimado</p>
+          <p className="mt-2 text-2xl text-ink">{review.estimated_minutes} min</p>
+        </div>
+      </div>
+
+      {review.summary.items.length ? (
+        <div className="mt-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">pontos para revisar</p>
+          <div className="mt-3 grid gap-3">
+            {review.summary.items.slice(0, 3).map((item) => (
+              <div
+                key={`${item.title}-${item.message}`}
+                className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4"
+              >
+                <p className="break-words text-sm text-ink">{item.title}</p>
+                {item.topic_label || item.subtopic_label ? (
+                  <p className="mt-2 text-xs uppercase tracking-[0.16em] text-muted">
+                    {[item.topic_label, item.subtopic_label].filter(Boolean).join(" · ")}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-sm leading-7 text-silver">{item.message}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">questões de revisão</p>
+          <p className="mt-2 text-sm leading-7 text-silver">
+            {questionsReadinessLabel(review.questions.status)}
+            {review.questions.items_count > 0 ? ` · ${review.questions.items_count} itens` : ""}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">reforço sugerido</p>
+          <p className="mt-2 text-sm leading-7 text-silver">
+            {review.reinforcement.weak_topics_count} pontos para revisar
+          </p>
+          {review.reinforcement.items.length ? (
+            <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
+              {review.reinforcement.items.slice(0, 2).map((item) => (
+                <li key={`${item.topic_label ?? "tema"}-${item.message}`}>
+                  {item.topic_label || item.subtopic_label ? (
+                    <span className="text-ink">
+                      {[item.topic_label, item.subtopic_label].filter(Boolean).join(" · ")}:{" "}
+                    </span>
+                  ) : null}
+                  {item.message}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
+
+      <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+        Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
+        <WorkspaceLink href="/study">Continuar estudando</WorkspaceLink>
+      </div>
+    </Card>
+  );
+}
+
 export function StudySessionWorkspaceClient() {
   const [viewModel, setViewModel] = useState<StudySessionWorkspaceViewModel>(
     buildMockStudySessionWorkspaceViewModel()
@@ -38,6 +236,8 @@ export function StudySessionWorkspaceClient() {
   const [nextStudySessionState, setNextStudySessionState] = useState<
     "loading" | "ready" | "not_ready" | "auth_required" | "offline" | "unsupported"
   >("loading");
+  const [nextReviewBlock, setNextReviewBlock] = useState<BackendNextReviewBlock | null>(null);
+  const [nextReviewBlockState, setNextReviewBlockState] = useState<ReviewCandidateState>("loading");
 
   useEffect(() => {
     let active = true;
@@ -45,9 +245,10 @@ export function StudySessionWorkspaceClient() {
       loadStudySessionWorkspaceViewModel(),
       loadRealUserStudyReadiness(),
       fetchStudyBlocks(),
-      fetchNextStudySession()
+      fetchNextStudySession(),
+      fetchNextReviewBlock()
     ]).then(
-      ([nextViewModel, nextReadiness, blocksResult, nextSessionResult]) => {
+      ([nextViewModel, nextReadiness, blocksResult, nextSessionResult, nextReviewResult]) => {
         if (active) {
           setViewModel(nextViewModel);
           setReadiness(nextReadiness);
@@ -81,6 +282,22 @@ export function StudySessionWorkspaceClient() {
           } else {
             setNextStudySession(null);
             setNextStudySessionState("not_ready");
+          }
+          if (nextReviewResult.ok) {
+            setNextReviewBlock(nextReviewResult.data);
+            setNextReviewBlockState(nextReviewResult.data.review_status);
+          } else if (nextReviewResult.error.code === "not_ready") {
+            setNextReviewBlock(null);
+            setNextReviewBlockState("not_ready");
+          } else if (
+            nextReviewResult.error.code === "auth_required" ||
+            nextReviewResult.error.code === "unauthorized"
+          ) {
+            setNextReviewBlock(null);
+            setNextReviewBlockState("auth_required");
+          } else {
+            setNextReviewBlock(null);
+            setNextReviewBlockState("unavailable");
           }
         }
       }
@@ -145,6 +362,8 @@ export function StudySessionWorkspaceClient() {
             Use estes blocos como orientação de leitura. Nenhuma ação adicional é necessária nesta tela.
           </p>
         </Card>
+
+        <ReviewCandidateCard review={nextReviewBlock} state={nextReviewBlockState} compact />
 
         <section className="space-y-4">
           <div>
@@ -302,6 +521,8 @@ export function StudySessionWorkspaceClient() {
             ))}
           </div>
         </section>
+
+        <ReviewCandidateCard review={nextReviewBlock} state={nextReviewBlockState} compact />
       </div>
     );
   }
@@ -351,6 +572,8 @@ export function StudySessionWorkspaceClient() {
             <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
           </div>
         </Card>
+
+        <ReviewCandidateCard review={nextReviewBlock} state={nextReviewBlockState} />
       </div>
     );
   }

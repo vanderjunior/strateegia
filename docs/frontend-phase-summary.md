@@ -25,6 +25,7 @@
 - `/api/materials/[materialId]/study/summary`
 - `/api/study/session/next`
 - `/api/study/blocks`
+- `/api/study/review/next`
 - `/api/study/blocks/[blockId]/questions`
 - `/api/study/blocks/[blockId]/questions/[questionId]/answer/review`
 - `/api/editais/[editalId]/summary`
@@ -61,7 +62,7 @@
 - Weak point reinforcement planning is documented in `docs/error-reinforcement-contract-plan.md`: future reinforcement should build from the existing answer-review `reinforcement` field first, stay conservative and stateless initially, avoid official error judgment, and keep progress mutation, scoring, gabarito, answer-key reveal, review-after-3 behavior, simulado, OCR, and LLM work out of scope.
 - Block detail now renders existing answer-review reinforcement more clearly after `Revisar escolha`: `Feedback`, `Reforço sugerido`, topic/subtopic labels when available, safe suggested-action labels, and no-official-correction/no-progress cautions. This uses only the current stateless answer-review response and adds no endpoint, persistence, progress mutation, gabarito, scoring, simulado, OCR, or LLM behavior.
 - Refined reinforcement QA is closed through Compose/API with browser-auth limitation recorded: authenticated answer review returned conservative feedback plus `Reforço sugerido`, API error states remained bounded, and no gabarito, score, progress, raw content, or internal trace fields were exposed.
-- Backend `GET /api/study/review/next`, frontend same-origin `/api/study/review/next`, and `fetchNextReviewBlock()` now provide a read-only cumulative-review candidate based on prepared materials or available study blocks; visible review UI is pending, and `studied`, `completed`, attempts, scoring, and progress mutation remain reserved for a future Progress phase.
+- Backend `GET /api/study/review/next`, frontend same-origin `/api/study/review/next`, and `fetchNextReviewBlock()` now provide a read-only cumulative-review candidate based on prepared materials or available study blocks; `/study` shows a compact `Revisão acumulada sugerida` card for ready, needs-review, partial, and safe not-ready states. There is no review detail page yet, and `studied`, `completed`, attempts, scoring, and progress mutation remain reserved for a future Progress phase.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -88,7 +89,7 @@
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
-- Study blocks have a minimal `/study` list UI, a minimal `/study/blocks/[blockId]` detail UI, a review-only fixation-question card, and minimal selectable answer review for objective candidates. There is still no official correction UI, answer-key reveal, review-after-3 behavior, progress mutation, generated questions, simulado, OCR, or LLM behavior.
+- Study blocks have a minimal `/study` list UI, a compact read-only cumulative review card, a minimal `/study/blocks/[blockId]` detail UI, a review-only fixation-question card, and minimal selectable answer review for objective candidates. There is still no review detail page, official correction UI, answer-key reveal, progress-aware review completion, progress mutation, generated questions, simulado, OCR, or LLM behavior.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.

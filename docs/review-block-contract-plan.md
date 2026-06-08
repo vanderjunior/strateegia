@@ -4,7 +4,7 @@
 
 Define the future contract for cumulative review blocks after small batches of study materials.
 
-This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. It does not add visible review UI, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. ReviewBlock-D added a compact read-only cumulative review card on `/study`. It does not add a review detail page, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -44,7 +44,7 @@ Not available today:
 - no official correction
 - no score
 - no answer key or gabarito
-- no frontend cumulative review UI
+- no review detail page
 
 ## Prepared, Studied, And Completed Are Different
 
@@ -101,13 +101,13 @@ Current frontend contract:
 - proxy uses the server/internal backend URL strategy
 - proxy whitelists top-level, summary, questions, reinforcement, and action fields
 - wrapper maps `review_status=not_ready` to a safe `not_ready` result
-- visible review UI remains pending
+- the `/study` card can consume the bounded result without exposing backend action links to future routes
 
 The frontend should not decide when a cumulative review is due, compute weakness history, or infer material completion.
 
 ### Stage 4: Minimal Review UI
 
-Render a simple read-only review card or page.
+Implemented in ReviewBlock-D as a compact `/study` card.
 
 Initial copy should use:
 
@@ -115,6 +115,14 @@ Initial copy should use:
 - `Revise estes pontos`
 - `Questões de revisão`
 - `Reforço sugerido`
+
+Current UI rules:
+
+- show ready, needs-review, partial, and not-ready states with product-safe copy
+- speak about `Materiais preparados` and `Blocos disponíveis`
+- do not render backend action hrefs such as `/study/review/<review_id>` until a detail page exists
+- do not claim materials were studied or completed
+- do not expose gabarito, answer keys, score, official correction, simulado, or progress actions
 
 ### Stage 5: Progress-aware Review
 
@@ -397,7 +405,7 @@ No:
 
 ## Recommended Future Phases
 
-1. `ReviewBlock-D`: minimal review UI.
-2. `ReviewBlock-QA-A`: browser/API QA.
-3. `Progress-Planning-A`: define studied/completed/progress semantics.
+1. `ReviewBlock-QA-A`: browser/API QA.
+2. `Progress-Planning-A`: define studied/completed/progress semantics.
+3. `ReviewBlockDetail-Planning-B` or equivalent if a cumulative review detail page becomes necessary.
 4. `Simulado-Planning-A`: define how cumulative review informs later simulation readiness.

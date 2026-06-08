@@ -69,6 +69,15 @@ vi.mock("@/lib/api/study", () => ({
       next_actions: [{ label: "Enviar material", href: "/materials/upload" }],
       source: "user_scope"
     }
+  })),
+  fetchNextReviewBlock: vi.fn(async () => ({
+    ok: false,
+    status: 200,
+    source: "backend",
+    error: {
+      code: "not_ready",
+      message: "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada."
+    }
   }))
 }));
 

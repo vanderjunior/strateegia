@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const nextStudySessionMock = vi.hoisted(() => ({
   fetchStudyBlocks: vi.fn(),
-  fetchNextStudySession: vi.fn()
+  fetchNextStudySession: vi.fn(),
+  fetchNextReviewBlock: vi.fn()
 }));
 
 vi.mock("@/lib/api/study", () => ({
   fetchStudyBlocks: nextStudySessionMock.fetchStudyBlocks,
-  fetchNextStudySession: nextStudySessionMock.fetchNextStudySession
+  fetchNextStudySession: nextStudySessionMock.fetchNextStudySession,
+  fetchNextReviewBlock: nextStudySessionMock.fetchNextReviewBlock
 }));
 
 vi.mock("@/lib/adapters/study-sessions", async () => {
@@ -49,10 +51,61 @@ vi.mock("@/lib/adapters/real-user-state", async () => {
 
 import { StudySessionWorkspaceClient } from "@/components/workspace/StudySessionWorkspaceClient";
 
+function buildReadyReview(overrides: Record<string, unknown> = {}) {
+  return {
+    review_status: "ready",
+    review_id: "review:prepared-materials:1",
+    basis: "prepared_materials",
+    materials_count: 3,
+    blocks_count: 3,
+    estimated_minutes: 18,
+    title: "Revisão de atos administrativos",
+    summary: {
+      status: "ready",
+      items: [
+        {
+          title: "Atos administrativos",
+          message: "Revise os conceitos centrais dos blocos preparados.",
+          topic_label: "Direito Administrativo",
+          subtopic_label: "Atos administrativos"
+        }
+      ]
+    },
+    questions: {
+      status: "ready",
+      items_count: 5
+    },
+    reinforcement: {
+      status: "needs_review",
+      weak_topics_count: 1,
+      items: [
+        {
+          topic_label: "Direito Administrativo",
+          subtopic_label: "Atos administrativos",
+          message: "Retome os pontos principais antes das questões de revisão."
+        }
+      ]
+    },
+    actions: [{ label: "Abrir revisão", href: "/study/review/review:prepared-materials:1" }],
+    source: "user_scope",
+    ...overrides
+  };
+}
+
 describe("StudySessionWorkspaceClient next prepared material session", () => {
   beforeEach(() => {
     nextStudySessionMock.fetchStudyBlocks.mockReset();
     nextStudySessionMock.fetchNextStudySession.mockReset();
+    nextStudySessionMock.fetchNextReviewBlock.mockReset();
+    nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
+      ok: false,
+      status: 200,
+      source: "backend",
+      error: {
+        code: "not_ready",
+        message: "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada."
+      }
+    });
   });
 
   it("renders connected edital study blocks before the one-material fallback", async () => {
@@ -218,6 +271,224 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
     expect(screen.queryByText("Aplicar progresso")).not.toBeInTheDocument();
+  });
+
+  it("renders a ready cumulative review card without exposing a future review-detail route", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        blocks_status: "ready",
+        scope_status: "material_only",
+        blocks_count: 1,
+        estimated_minutes: 7,
+        items: [
+          {
+            block_id: "block-review-1",
+            title: "Leitura base",
+            topic_id: null,
+            topic_label: null,
+            subtopic_id: null,
+            subtopic_label: null,
+            material_id: "doc-3",
+            material_title: "Material preparado",
+            sections_count: 2,
+            summary_status: "ready",
+            estimated_minutes: 7,
+            status: "ready",
+            actions: [{ label: "Estudar bloco", href: "/study/blocks/block-review-1" }]
+          }
+        ],
+        source: "user_scope"
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: { code: "backend_offline", message: "Não foi possível carregar a sessão agora." }
+    });
+    nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildReadyReview()
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Revisão acumulada sugerida")).toBeInTheDocument();
+    expect(screen.getByText("Use esta revisão para retomar pontos dos materiais preparados.")).toBeInTheDocument();
+    expect(screen.getByText("Revisão de atos administrativos")).toBeInTheDocument();
+    expect(screen.getByText("Baseada em materiais preparados")).toBeInTheDocument();
+    expect(screen.getByText("Revise os conceitos centrais dos blocos preparados.")).toBeInTheDocument();
+    expect(screen.getByText("Direito Administrativo · Atos administrativos")).toBeInTheDocument();
+    expect(screen.getByText(/Questões de revisão disponíveis · 5 itens/)).toBeInTheDocument();
+    expect(screen.getByText("Retome os pontos principais antes das questões de revisão.")).toBeInTheDocument();
+    expect(screen.getByText("Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.")).toBeInTheDocument();
+    expect(screen.getByText("Ver materiais")).toHaveAttribute("href", "/materials");
+    expect(screen.queryByText("Abrir revisão")).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("/study/review/");
+    expect(document.body.textContent).not.toContain("gabarito");
+    expect(document.body.textContent).not.toContain("answer_key");
+    expect(document.body.textContent).not.toContain("score");
+    expect(document.body.textContent).not.toContain("simulado");
+  });
+
+  it("renders a needs-review cumulative review card with safe question and reinforcement copy", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        blocks_status: "needs_review",
+        scope_status: "material_only",
+        blocks_count: 1,
+        estimated_minutes: 8,
+        items: [
+          {
+            block_id: "block-review-2",
+            title: "Revisão de leitura",
+            topic_id: "topic-2",
+            topic_label: "Português",
+            subtopic_id: null,
+            subtopic_label: null,
+            material_id: "doc-4",
+            material_title: "Material de Português",
+            sections_count: 1,
+            summary_status: "needs_review",
+            estimated_minutes: 8,
+            status: "needs_review",
+            actions: []
+          }
+        ],
+        source: "user_scope"
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: { code: "backend_offline", message: "Não foi possível carregar a sessão agora." }
+    });
+    nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildReadyReview({
+        review_status: "needs_review",
+        basis: "study_blocks",
+        questions: { status: "needs_review", items_count: 2 },
+        reinforcement: {
+          status: "needs_review",
+          weak_topics_count: 0,
+          items: [
+            {
+              topic_label: null,
+              subtopic_label: null,
+              message: "Ainda não há histórico suficiente para destacar pontos fracos reais."
+            }
+          ]
+        }
+      })
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Revisão acumulada sugerida")).toBeInTheDocument();
+    expect(screen.getByText("Baseada em blocos disponíveis")).toBeInTheDocument();
+    expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Questões de revisão em conferência · 2 itens/)).toBeInTheDocument();
+    expect(screen.getByText("Ainda não há histórico suficiente para destacar pontos fracos reais.")).toBeInTheDocument();
+    expect(screen.queryByText("Pontuação")).not.toBeInTheDocument();
+  });
+
+  it("renders a partial cumulative review state without studied or completed claims", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: false,
+      status: 200,
+      source: "backend",
+      error: {
+        code: "not_ready",
+        message: "Envie e prepare um material de estudo para montar seus blocos."
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 200,
+      source: "backend",
+      error: {
+        code: "not_ready",
+        message: "Envie e prepare um material de estudo para começar."
+      }
+    });
+    nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildReadyReview({
+        review_status: "partial",
+        materials_count: 2,
+        blocks_count: 2,
+        estimated_minutes: 11,
+        summary: { status: "needs_review", items: [] },
+        questions: { status: "not_ready", items_count: 0 },
+        reinforcement: { status: "not_ready", weak_topics_count: 0, items: [] }
+      })
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Revisão acumulada em preparação.")).toBeInTheDocument();
+    expect(screen.getByText("Prepare mais materiais para uma revisão mais completa.")).toBeInTheDocument();
+    expect(screen.getByText("Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("materiais estudados");
+    expect(document.body.textContent).not.toContain("materiais concluídos");
+    expect(document.body.textContent).not.toContain("progresso atualizado");
+  });
+
+  it("keeps the not-ready cumulative review state compact when study blocks already exist", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        blocks_status: "ready",
+        scope_status: "material_only",
+        blocks_count: 1,
+        estimated_minutes: 6,
+        items: [
+          {
+            block_id: "block-compact",
+            title: "Bloco disponível",
+            topic_id: null,
+            topic_label: null,
+            subtopic_id: null,
+            subtopic_label: null,
+            material_id: "doc-compact",
+            material_title: "Material compacto",
+            sections_count: 1,
+            summary_status: "ready",
+            estimated_minutes: 6,
+            status: "ready",
+            actions: []
+          }
+        ],
+        source: "user_scope"
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: { code: "backend_offline", message: "Não foi possível carregar a sessão agora." }
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Bloco disponível")).toBeInTheDocument();
+    expect(screen.queryByText("Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.")).not.toBeInTheDocument();
   });
 
   it("renders a friendly not-ready state when no prepared study material exists", async () => {
