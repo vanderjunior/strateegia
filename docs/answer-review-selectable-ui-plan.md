@@ -215,14 +215,20 @@ Do not expose:
 - tokens, cookies, session values, or password hashes
 - hidden rationale or internal traces
 
-## Recommended Next Phase
+## QA Closeout And Recommended Next Phase
 
-`AnswerReview-QA-A`: browser/API QA for selectable answer review on block detail.
+`AnswerReview-QA-A` is closed for the available Compose/browser/API path.
 
-QA scope:
+Observed QA scope:
 
 - login and open a prepared study block
-- select A-E or C/E when available
+- select an A-E multiple-choice option
 - click `Revisar escolha`
 - confirm conservative feedback and reinforcement render
 - confirm no gabarito, correct alternative, score, official correction, persistence, or progress mutation appears
+
+The current persisted browser dataset did not include a CEBRASPE-style `true_false` fixture, so C/E behavior remains covered by focused contract/UI tests.
+
+Recommended next phase:
+
+`ErrorReinforcement-Planning-A`: define how needs-review or missed choices should reinforce the related topic without exposing answer keys, scoring, official correction, persistence, or progress mutation.

@@ -463,6 +463,25 @@ Objective review-only fixation questions QA passed after rebuilding the Compose 
 
 Known limitations: questions are display-only candidates. There is still no answer submission, correction, answer-key reveal, scoring, progress mutation, review-after-3 behavior, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior. The QA material was added to the local Compose volume; rerunning similar QA creates additional materials unless the volume is reset.
 
+### AnswerReview-QA-A Selectable Review Smoke
+
+Compose/browser/API QA closed the first selectable answer-review flow:
+
+- `docker compose up -d --build frontend` rebuilt the frontend and recreated the local Compose services.
+- Backend `GET /api/exam-profiles` returned `200`.
+- Frontend `GET /` returned `200`.
+- Browser login with the existing QA user succeeded and the session notice returned to `Sair`.
+- `/study` rendered the persisted prepared material block and linked to `/study/blocks/study-block:material:8c25ac33-14d2-4498-963e-339f521a7410:0`.
+- The block detail rendered `Estudar bloco`, `Resumo do bloco`, `Questões de fixação`, `Múltipla escolha`, and A-E radio options.
+- Clicking `Revisar escolha` without an option showed `Selecione uma alternativa antes de revisar.`
+- Selecting `A` and reviewing showed conservative `Feedback`, reinforcement copy, `Esta escolha precisa de conferência`, `Este feedback é uma orientação de estudo, não uma correção oficial.`, and `Seu progresso ainda não é alterado nesta etapa.`
+- Frontend proxy/API checks returned authenticated review `200`, unauthenticated review `401`, missing block/question `404`, and invalid payload `422`.
+- Visible block-detail safety inspection found no gabarito, answer key, correct alternative, score, progress action, simulado action, raw text, storage path, chunk, metadata, or internal trace terms.
+
+True/false selectable review remains covered by focused contract/UI tests in this QA pass because the current persisted browser dataset did not include a CEBRASPE-style fixture.
+
+Known limitations remain unchanged: feedback is conservative and stateless; there is no answer key, official correction, score, attempt persistence, progress mutation, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:

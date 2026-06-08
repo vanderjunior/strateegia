@@ -57,6 +57,7 @@
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now exists as a stateless bounded answer-review endpoint. It accepts `text`, `choice`, and `true_false` answer formats, returns conservative ungraded or needs-review feedback, does not persist attempts, does not mutate progress, and does not expose answer keys or gabarito.
 - Frontend same-origin `POST /api/study/blocks/[blockId]/questions/[questionId]/answer/review` and `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)` now exist with request/response whitelisting.
 - `/study/blocks/[blockId]` now supports minimal selectable answer review for `multiple_choice` and `true_false` candidates: the user can select an alternative, click `Revisar escolha`, and see conservative feedback/reinforcement. `short_answer` remains non-interactive, and the UI does not expose gabarito, correct alternatives, scoring, persistence, progress mutation, simulado, OCR, or LLM behavior.
+- Selectable answer review QA is closed through Compose/browser/API: after rebuilding the frontend, a prepared material-only block rendered `Múltipla escolha`, A-E radio options, no-selection validation, conservative `Feedback`, reinforcement copy, `Esta escolha precisa de conferência`, and the explicit no-official-correction/no-progress cautions. API checks covered authenticated review `200`, unauthenticated `401`, missing block/question `404`, and invalid payload `422`; true/false remains covered by focused contract tests because no CEBRASPE-style browser fixture was present in the current persisted dataset.
 - Dashboard, study, PSCPP, and editais now distinguish uploaded edital metadata from an analyzed edital; concrete study guidance is gated until real edital analysis exists.
 - The frontend has an explicit read-only edital analysis state model: `no_edital_uploaded`, `edital_uploaded_not_analyzed`, `edital_analyzed`, `analysis_needs_review`, and `analysis_unavailable`.
 - The state model prefers explicit bounded `analysis_status` if present and otherwise safely maps existing edital `review_state`, `coverage_status`, and `alignment_status`; it does not execute analysis.
@@ -83,7 +84,7 @@
 
 - Guidance-first UI: no progress mutation, scheduling, question generation, or simulado execution.
 - Study material preparation and the minimal next study session do not generate summaries, questions, simulados, study cycles, or progress updates.
-- Study blocks have a minimal `/study` list UI, a minimal `/study/blocks/[blockId]` detail UI, and a review-only fixation-question card. Backend stateless answer review plus frontend proxy/API helper exist, but there is still no visible answer input, answer correction UI, review-after-3 behavior, progress mutation, generated questions, simulado, OCR, or LLM behavior.
+- Study blocks have a minimal `/study` list UI, a minimal `/study/blocks/[blockId]` detail UI, a review-only fixation-question card, and minimal selectable answer review for objective candidates. There is still no official correction UI, answer-key reveal, review-after-3 behavior, progress mutation, generated questions, simulado, OCR, or LLM behavior.
 - Upload remains the only existing write path and still depends on backend/session availability.
 - OCR is still presented as validation/review-oriented, not production-ready for every scanned PDF.
 - Recent pipeline overview is not implemented yet; pipeline detail uses a bounded per-material summary.
@@ -97,7 +98,7 @@
 - Prepared material summary planning is documented in `docs/study-summary-contract-plan.md`: backend read-only placeholders and minimal material-detail UI now exist, and future generated summary work must remain bounded, user-scoped, and reviewable with no raw chunks, storage paths, progress mutation, questions, or simulado behavior.
 - Study block detail planning is documented in `docs/study-block-detail-contract-plan.md`: backend-owned `GET /api/study/blocks/{block_id}` resolution, frontend proxy/API helper, and minimal detail rendering now exist and must stay bounded without progress, questions, simulado, generation, OCR, LLM, or frontend-only matching.
 - Fixation question planning is documented in `docs/fixation-questions-contract-plan.md`: the backend read-only candidate endpoint, frontend proxy/API helper, and minimal review-only card now exist, while any answer/correction flow remains pending with no answer-key/gabarito exposure, correction result, progress mutation, simulado execution, OCR, or LLM behavior.
-- Answer review planning is documented in `docs/answer-review-contract-plan.md`: the backend stateless endpoint and frontend same-origin proxy/API helper exist with bounded feedback and no progress mutation; visible answer UI remains pending.
+- Answer review planning is documented in `docs/answer-review-contract-plan.md`: the backend stateless endpoint, frontend same-origin proxy/API helper, and minimal selectable objective UI exist with bounded feedback and no official correction, score, persistence, or progress mutation.
 - Textual PDF preparation inside controlled analysis is deterministic embedded-text extraction only; scanned/OCR-required PDFs still require a later explicit OCR-capable contract.
 - Ciclo, Questões, Simulados, Execução, progress mutation, and multi-material study cycles are not real user capabilities yet; they remain gated or future placeholders until later contracts exist.
 
@@ -130,5 +131,5 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 1. EditalTaxonomy-A: refine bounded edital taxonomy around area/topic/subtopic before more coverage work.
 2. StudySession-QA-A: browser/API QA for the minimal read-only next study session.
 3. Coverage-QA: validate browser, API, no-leakage, and conservative gating for the edital coverage card.
-4. AnswerReview-Planning-A: define answer submission, correction, and answer-key reveal boundaries before any interactive question flow.
+4. ErrorReinforcement-Planning-A: define how missed or needs-review choices should reinforce specific themes without revealing gabarito, scoring, or mutating progress.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
