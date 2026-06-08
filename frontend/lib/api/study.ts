@@ -3,6 +3,7 @@ import { makeApiFailure } from "@/lib/api/errors";
 import type {
   ApiResult,
   BackendNextStudySession,
+  BackendNextReviewBlock,
   BackendStudyBlockItem,
   BackendStudyBlockAnswerReview,
   BackendStudyBlockDetail,
@@ -19,6 +20,9 @@ import type {
   StudyBlockQuestionStatus,
   StudyBlockQuestionType,
   StudyBlockItemStatus,
+  ReviewBlockBasis,
+  ReviewBlockSectionStatus,
+  ReviewBlockStatus,
   StudyBlocksScopeStatus,
   StudyBlocksStatus,
   StudyMaterialSummaryItemStatus
@@ -29,6 +33,24 @@ const BLOCK_STATUSES = new Set<StudyBlocksStatus>([
   "partial",
   "not_ready",
   "needs_review"
+]);
+
+const REVIEW_STATUSES = new Set<ReviewBlockStatus>([
+  "ready",
+  "partial",
+  "not_ready",
+  "needs_review"
+]);
+
+const REVIEW_BASES = new Set<ReviewBlockBasis>([
+  "prepared_materials",
+  "study_blocks"
+]);
+
+const REVIEW_SECTION_STATUSES = new Set<ReviewBlockSectionStatus>([
+  "ready",
+  "needs_review",
+  "not_ready"
 ]);
 
 const SCOPE_STATUSES = new Set<StudyBlocksScopeStatus>([
@@ -119,6 +141,35 @@ function isAction(value: unknown): value is { label: string; href: string } {
     typeof (value as { label?: unknown }).label === "string" &&
     typeof (value as { href?: unknown }).href === "string"
   );
+}
+
+function isReviewSummaryItem(value: unknown): value is BackendNextReviewBlock["summary"]["items"][number] {
+  const item = value as Partial<BackendNextReviewBlock["summary"]["items"][number]>;
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    typeof item.title === "string" &&
+    typeof item.message === "string" &&
+    (item.topic_label === null || typeof item.topic_label === "string") &&
+    (item.subtopic_label === null || typeof item.subtopic_label === "string")
+  );
+}
+
+function isReviewReinforcementItem(
+  value: unknown
+): value is BackendNextReviewBlock["reinforcement"]["items"][number] {
+  const item = value as Partial<BackendNextReviewBlock["reinforcement"]["items"][number]>;
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    (item.topic_label === null || typeof item.topic_label === "string") &&
+    (item.subtopic_label === null || typeof item.subtopic_label === "string") &&
+    typeof item.message === "string"
+  );
+}
+
+function isReviewSectionStatus(value: unknown): value is ReviewBlockSectionStatus {
+  return typeof value === "string" && REVIEW_SECTION_STATUSES.has(value as ReviewBlockSectionStatus);
 }
 
 function isSummaryItem(value: unknown): value is BackendStudyMaterialSummaryItem {
@@ -315,6 +366,119 @@ function isNextStudySessionPayload(value: unknown): value is BackendNextStudySes
     typeof data.message === "string" &&
     data.source === "user_scope"
   );
+}
+
+function isNextReviewBlockPayload(value: unknown): value is BackendNextReviewBlock {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<BackendNextReviewBlock>;
+  const summary = data.summary as Partial<BackendNextReviewBlock["summary"]> | undefined;
+  const questions = data.questions as Partial<BackendNextReviewBlock["questions"]> | undefined;
+  const reinforcement = data.reinforcement as Partial<BackendNextReviewBlock["reinforcement"]> | undefined;
+  return (
+    Boolean(data.review_status && REVIEW_STATUSES.has(data.review_status)) &&
+    (data.review_id === null || typeof data.review_id === "string") &&
+    Boolean(data.basis && REVIEW_BASES.has(data.basis)) &&
+    typeof data.materials_count === "number" &&
+    typeof data.blocks_count === "number" &&
+    typeof data.estimated_minutes === "number" &&
+    typeof data.title === "string" &&
+    Boolean(summary) &&
+    typeof summary === "object" &&
+    isReviewSectionStatus(summary.status) &&
+    Array.isArray(summary.items) &&
+    summary.items.every(isReviewSummaryItem) &&
+    Boolean(questions) &&
+    typeof questions === "object" &&
+    isReviewSectionStatus(questions.status) &&
+    typeof questions.items_count === "number" &&
+    Boolean(reinforcement) &&
+    typeof reinforcement === "object" &&
+    isReviewSectionStatus(reinforcement.status) &&
+    typeof reinforcement.weak_topics_count === "number" &&
+    Array.isArray(reinforcement.items) &&
+    reinforcement.items.every(isReviewReinforcementItem) &&
+    Array.isArray(data.actions) &&
+    data.actions.every(isAction) &&
+    (data.message === undefined || typeof data.message === "string") &&
+    data.source === "user_scope"
+  );
+}
+
+export async function fetchNextReviewBlock(): Promise<ApiResult<BackendNextReviewBlock>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: a revisão real não foi consultada.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "A revisão acumulada não está configurada neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch("/api/study/review/next", {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar a revisão agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "A revisão acumulada não está configurada neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para ver sua revisão acumulada.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível carregar a revisão agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendNextReviewBlock;
+      if (!isNextReviewBlockPayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível carregar a revisão agora.", response.status);
+      }
+      if (data.review_status === "not_ready") {
+        return makeApiFailure(
+          "backend",
+          "not_ready",
+          data.message || "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data,
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível carregar a revisão agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível carregar a revisão agora.");
+  }
 }
 
 export async function reviewStudyBlockQuestionAnswer(

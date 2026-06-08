@@ -22,7 +22,7 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
 - Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper and visible review-only card exist.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend same-origin proxy/API helper and selectable review UI exist.
-- Backend `GET /api/study/review/next` now provides the first read-only bounded cumulative-review candidate based on prepared materials/study blocks; frontend proxy/UI migration is pending.
+- Backend `GET /api/study/review/next` now provides the first read-only bounded cumulative-review candidate based on prepared materials/study blocks; frontend same-origin proxy/API helper exist and visible review UI is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -606,7 +606,7 @@ Purpose:
 - return the next bounded cumulative-review candidate from prepared study materials or available study blocks
 - keep the first review-after-3 contract read-only until progress semantics exist
 - not claim materials were studied, completed, or recorded as progress
-- implemented in ReviewBlock-B as a backend-only contract; frontend proxy/UI are pending
+- implemented in ReviewBlock-B as a backend contract; frontend same-origin proxy/API helper implemented in ReviewBlock-C and visible review UI remains pending
 
 Implemented ready/needs-review shape:
 
@@ -694,6 +694,10 @@ Rules:
 - `basis=studied_materials` is reserved for a future Progress phase and is not used now
 - repeated `GET` is idempotent and does not create review records, persist attempts, mark completion, mutate progress, generate simulados, call OCR, or call an LLM
 - answer keys, gabarito, correct answers, correct alternatives, official correction fields, scores, progress payloads, attempt payloads, raw content, chunks, section bodies, storage paths, tokens, and internal traces are forbidden
+- frontend proxy path is `GET /api/study/review/next`
+- frontend API helper is `fetchNextReviewBlock()`
+- frontend proxy forwards cookies server-side, uses the internal backend URL strategy, and whitelists response fields before returning data to the browser
+- frontend wrapper treats `ready`, `needs_review`, and `partial` as successful bounded review candidates and maps `not_ready` to product-safe guidance
 
 ### `GET /api/editais`
 

@@ -428,6 +428,51 @@ export interface BackendStudyBlocks {
   source: "user_scope";
 }
 
+export type ReviewBlockStatus = "ready" | "partial" | "not_ready" | "needs_review";
+
+export type ReviewBlockBasis = "prepared_materials" | "study_blocks";
+
+export type ReviewBlockSectionStatus = "ready" | "needs_review" | "not_ready";
+
+export interface BackendReviewBlockSummaryItem {
+  title: string;
+  message: string;
+  topic_label: string | null;
+  subtopic_label: string | null;
+}
+
+export interface BackendReviewBlockReinforcementItem {
+  topic_label: string | null;
+  subtopic_label: string | null;
+  message: string;
+}
+
+export interface BackendNextReviewBlock {
+  review_status: ReviewBlockStatus;
+  review_id: string | null;
+  basis: ReviewBlockBasis;
+  materials_count: number;
+  blocks_count: number;
+  estimated_minutes: number;
+  title: string;
+  summary: {
+    status: ReviewBlockSectionStatus;
+    items: BackendReviewBlockSummaryItem[];
+  };
+  questions: {
+    status: ReviewBlockSectionStatus;
+    items_count: number;
+  };
+  reinforcement: {
+    status: ReviewBlockSectionStatus;
+    weak_topics_count: number;
+    items: BackendReviewBlockReinforcementItem[];
+  };
+  actions: BackendStudyBlockAction[];
+  message?: string;
+  source: "user_scope";
+}
+
 export type BackendStudyBlockDetailStatus = "ready" | "needs_review" | "not_ready";
 
 export interface BackendStudyBlockDetailSection {

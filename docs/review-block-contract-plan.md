@@ -4,7 +4,7 @@
 
 Define the future contract for cumulative review blocks after small batches of study materials.
 
-This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. It does not add frontend UI, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. It does not add visible review UI, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -91,7 +91,17 @@ Rules:
 
 ### Stage 3: Frontend Proxy And API Helper
 
-Add a same-origin frontend proxy and API helper that render only the bounded backend output.
+Implemented in ReviewBlock-C.
+
+Current frontend contract:
+
+- same-origin proxy path: `GET /api/study/review/next`
+- API helper: `fetchNextReviewBlock()`
+- proxy forwards cookies server-side
+- proxy uses the server/internal backend URL strategy
+- proxy whitelists top-level, summary, questions, reinforcement, and action fields
+- wrapper maps `review_status=not_ready` to a safe `not_ready` result
+- visible review UI remains pending
 
 The frontend should not decide when a cumulative review is due, compute weakness history, or infer material completion.
 
@@ -387,8 +397,7 @@ No:
 
 ## Recommended Future Phases
 
-1. `ReviewBlock-C`: frontend same-origin proxy/API helper.
-2. `ReviewBlock-D`: minimal review UI.
-3. `ReviewBlock-QA-A`: browser/API QA.
-4. `Progress-Planning-A`: define studied/completed/progress semantics.
-5. `Simulado-Planning-A`: define how cumulative review informs later simulation readiness.
+1. `ReviewBlock-D`: minimal review UI.
+2. `ReviewBlock-QA-A`: browser/API QA.
+3. `Progress-Planning-A`: define studied/completed/progress semantics.
+4. `Simulado-Planning-A`: define how cumulative review informs later simulation readiness.
