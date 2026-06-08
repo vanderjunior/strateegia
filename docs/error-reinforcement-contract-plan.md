@@ -4,7 +4,7 @@
 
 Define the future contract for reinforcing weak points after a student reviews an answer on a study block.
 
-This is a planning document only. It does not add endpoints, UI behavior, error classification, attempt persistence, progress mutation, answer-key exposure, scoring, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. ErrorReinforcement-D refined the existing block-detail answer-review UI to render the current answer-review `reinforcement` object more clearly as `Reforço sugerido`. It does not add endpoints, error classification, attempt persistence, progress mutation, answer-key exposure, scoring, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -37,6 +37,7 @@ Available today:
 - The user can select an objective alternative and click `Revisar escolha`.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` returns bounded stateless feedback.
 - Frontend same-origin answer-review proxy/API helper and minimal selectable UI exist.
+- Block detail now separates the post-review hierarchy into `Feedback`, `Reforço sugerido`, and caution copy.
 - Answer review may return `review_status=reviewed` or `needs_review`.
 - Answer review may return `result=ungraded` or `needs_review`.
 - Answer review may return a minimal `reinforcement` object:
@@ -72,7 +73,7 @@ Behavior:
 - do not classify real errors
 - do not mutate progress
 
-This stage is already partially represented by the current block-detail feedback panel.
+This stage is represented by the current block-detail feedback panel. The UI renders the reinforcement message, topic/subtopic labels when present, a safe suggested-action label, and fallback guidance if the reinforcement message is empty.
 
 ### Stage 2: Optional Read-only Reinforcement Draft Contract
 
@@ -368,4 +369,3 @@ Alternative if the current answer-review reinforcement field remains sufficient:
 1. `ErrorReinforcement-D`: UI-only refinement using the existing answer-review response.
 2. `ErrorReinforcement-QA-A`.
 3. `ReviewBlock-Planning-A`.
-

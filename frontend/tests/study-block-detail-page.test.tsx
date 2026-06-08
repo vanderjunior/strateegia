@@ -405,6 +405,8 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(await screen.findByText("Feedback")).toBeInTheDocument();
     expect(screen.getByText("Escolha revisada sem pontuação.")).toBeInTheDocument();
     expect(screen.getByText("Compare sua escolha com o resumo do bloco.")).toBeInTheDocument();
+    expect(screen.getByText("Reforço sugerido")).toBeInTheDocument();
+    expect(screen.getAllByText("Direito Administrativo · Atos administrativos").length).toBeGreaterThan(0);
     expect(screen.getByText("Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.")).toBeInTheDocument();
     expect(screen.getByText("Revisar resumo")).toBeInTheDocument();
     expect(screen.getByText("Este feedback é uma orientação de estudo, não uma correção oficial.")).toBeInTheDocument();
@@ -449,6 +451,81 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(await screen.findByText("Esta escolha precisa de conferência.")).toBeInTheDocument();
     expect(screen.getByText("Revisitar bloco")).toBeInTheDocument();
     expect(screen.getByText("Este feedback é uma orientação de estudo, não uma correção oficial.")).toBeInTheDocument();
+  });
+
+  it("maps retry reinforcement action safely", async () => {
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: reviewedAnswer({
+        reinforcement: {
+          topic_label: "Direito Administrativo",
+          subtopic_label: "Atos administrativos",
+          message: "Tente a questão novamente depois de revisar os pontos principais.",
+          suggested_action: "retry_question"
+        }
+      })
+    });
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByText("Reforço sugerido")).toBeInTheDocument();
+    expect(screen.getByText("Tentar novamente")).toBeInTheDocument();
+    expect(screen.getByText("Tente a questão novamente depois de revisar os pontos principais.")).toBeInTheDocument();
+  });
+
+  it("shows a safe reinforcement fallback when the message is empty", async () => {
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: reviewedAnswer({
+        reinforcement: {
+          topic_label: null,
+          subtopic_label: null,
+          message: "   ",
+          suggested_action: "review_summary"
+        }
+      })
+    });
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByText("Reforço sugerido")).toBeInTheDocument();
+    expect(
+      screen.getByText("Revise o resumo do bloco e os pontos principais antes de tentar novamente.")
+    ).toBeInTheDocument();
   });
 
   it.each([
@@ -629,6 +706,9 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(serialized).not.toContain("resposta correta");
     expect(serialized).not.toContain("correction");
     expect(serialized).not.toContain("score");
+    expect(serialized).not.toContain("Você errou");
+    expect(serialized).not.toContain("Você acertou");
+    expect(serialized).not.toContain("pontuação");
     expect(serialized).not.toContain("Concluir estudo");
     expect(serialized).not.toContain("Gerar questões");
     expect(serialized).not.toContain("Gerar simulado");

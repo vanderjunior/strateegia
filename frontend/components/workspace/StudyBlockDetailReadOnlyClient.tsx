@@ -145,6 +145,13 @@ function reviewResultMessage(review: BackendStudyBlockAnswerReview): string {
   return "Orientação de estudo registrada sem pontuação.";
 }
 
+function reinforcementMessage(review: BackendStudyBlockAnswerReview): string {
+  return (
+    review.reinforcement.message.trim() ||
+    "Revise o resumo do bloco e os pontos principais antes de tentar novamente."
+  );
+}
+
 function QuestionsCard({
   blockId,
   state
@@ -337,17 +344,24 @@ function QuestionsCard({
                       <CardTitle className="mt-3 text-[1.25rem]">Feedback</CardTitle>
                       <p className="mt-3 text-sm leading-7 text-silver">{reviewResultMessage(review.review)}</p>
                       <p className="mt-3 text-sm leading-7 text-silver">{review.review.feedback}</p>
-                      {review.review.reinforcement.topic_label || review.review.reinforcement.subtopic_label ? (
-                        <p className="mt-3 text-sm leading-7 text-silver">
-                          {[review.review.reinforcement.topic_label, review.review.reinforcement.subtopic_label]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
-                      ) : null}
-                      <p className="mt-3 text-sm leading-7 text-silver">{review.review.reinforcement.message}</p>
-                      <Badge className={productStatusClass(suggestedActionLabel(review.review.reinforcement.suggested_action))}>
-                        {suggestedActionLabel(review.review.reinforcement.suggested_action)}
-                      </Badge>
+                      <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.18)] bg-[rgba(201,169,110,0.07)] p-4">
+                        <div className="text-xs uppercase tracking-[0.18em] text-gold2">Reforço sugerido</div>
+                        {review.review.reinforcement.topic_label || review.review.reinforcement.subtopic_label ? (
+                          <p className="mt-3 text-sm leading-7 text-silver">
+                            {[review.review.reinforcement.topic_label, review.review.reinforcement.subtopic_label]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        ) : null}
+                        <p className="mt-3 text-sm leading-7 text-silver">{reinforcementMessage(review.review)}</p>
+                        <Badge
+                          className={productStatusClass(
+                            suggestedActionLabel(review.review.reinforcement.suggested_action)
+                          )}
+                        >
+                          {suggestedActionLabel(review.review.reinforcement.suggested_action)}
+                        </Badge>
+                      </div>
                       <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted">
                         Este feedback é uma orientação de estudo, não uma correção oficial.
                       </p>
