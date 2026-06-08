@@ -21,7 +21,8 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/study/blocks` now provides the first read-only bounded study-block sequence contract; frontend same-origin proxy/API wrapper and minimal `/study` UI exist.
 - Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
 - Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper and visible review-only card exist.
-- Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend same-origin proxy/API helper exist and visible UI migration is pending.
+- Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend same-origin proxy/API helper and selectable review UI exist.
+- Backend `GET /api/study/review/next` now provides the first read-only bounded cumulative-review candidate based on prepared materials/study blocks; frontend proxy/UI migration is pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -57,6 +58,7 @@ This document records the bounded read contracts that are implemented or planned
 - `GET /api/study/blocks/{block_id}`
 - `GET /api/study/blocks/{block_id}/questions`
 - `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
+- `GET /api/study/review/next`
 
 ## Recommended Implementation Order
 
@@ -72,6 +74,7 @@ This document records the bounded read contracts that are implemented or planned
 10. `GET /api/study/blocks/{block_id}`
 11. `GET /api/study/blocks/{block_id}/questions`
 12. `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
+13. `GET /api/study/review/next`
 
 ## Proposed Response Shapes
 
@@ -544,7 +547,7 @@ Purpose:
 - return conservative review feedback and a reinforcement suggestion
 - remain stateless: no answer persistence, score record, correction record, or progress mutation
 - implemented in AnswerReview-B as a backend contract
-- frontend same-origin proxy/API helper implemented in AnswerReview-C; visible UI remains pending
+- frontend same-origin proxy/API helper implemented in AnswerReview-C; selectable review UI implemented in AnswerReview-D
 
 Implemented request shape:
 
@@ -596,6 +599,101 @@ Rules:
 - frontend API helper is `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)`
 - frontend proxy forwards cookies server-side, strips request fields outside `answer` and `answer_format`, and whitelists response fields
 - answer keys, gabarito, correct answers, correct alternatives, authoritative correctness flags, solutions, hidden rationale, scores, correction records, progress payloads, raw content, storage paths, tokens, and internal traces are forbidden
+
+### `GET /api/study/review/next`
+
+Purpose:
+- return the next bounded cumulative-review candidate from prepared study materials or available study blocks
+- keep the first review-after-3 contract read-only until progress semantics exist
+- not claim materials were studied, completed, or recorded as progress
+- implemented in ReviewBlock-B as a backend-only contract; frontend proxy/UI are pending
+
+Implemented ready/needs-review shape:
+
+```json
+{
+  "review_status": "ready",
+  "review_id": "review:prepared_materials:3:3",
+  "basis": "prepared_materials",
+  "materials_count": 3,
+  "blocks_count": 3,
+  "estimated_minutes": 15,
+  "title": "Revisão acumulada",
+  "summary": {
+    "status": "ready",
+    "items": [
+      {
+        "title": "Atos administrativos",
+        "message": "Revise Atos administrativos no material aula.md.",
+        "topic_label": "Direito Administrativo",
+        "subtopic_label": "Atos administrativos"
+      }
+    ]
+  },
+  "questions": {
+    "status": "ready",
+    "items_count": 3
+  },
+  "reinforcement": {
+    "status": "needs_review",
+    "weak_topics_count": 0,
+    "items": [
+      {
+        "topic_label": null,
+        "subtopic_label": null,
+        "message": "Ainda não há histórico de respostas para apontar pontos fracos reais."
+      }
+    ]
+  },
+  "actions": [
+    {
+      "label": "Abrir revisão",
+      "href": "/study/review/review:prepared_materials:3:3"
+    }
+  ],
+  "source": "user_scope"
+}
+```
+
+Implemented not-ready shape:
+
+```json
+{
+  "review_status": "not_ready",
+  "review_id": null,
+  "basis": "prepared_materials",
+  "materials_count": 0,
+  "blocks_count": 0,
+  "estimated_minutes": 0,
+  "title": "Revisão acumulada",
+  "summary": {
+    "status": "not_ready",
+    "items": []
+  },
+  "questions": {
+    "status": "not_ready",
+    "items_count": 0
+  },
+  "reinforcement": {
+    "status": "not_ready",
+    "weak_topics_count": 0,
+    "items": []
+  },
+  "actions": [],
+  "message": "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.",
+  "source": "user_scope"
+}
+```
+
+Rules:
+- unauthenticated returns `401`
+- only prepared `material_type=study_material` items count as primary review materials
+- `edital`, `bibliography`, `previous_exam`, `note`, `other`, and `unknown` do not count by default
+- fewer than 3 prepared study materials and fewer than 3 available study blocks return `not_ready`
+- 3 or more prepared study materials or study blocks can return `ready` or `needs_review`
+- `basis=studied_materials` is reserved for a future Progress phase and is not used now
+- repeated `GET` is idempotent and does not create review records, persist attempts, mark completion, mutate progress, generate simulados, call OCR, or call an LLM
+- answer keys, gabarito, correct answers, correct alternatives, official correction fields, scores, progress payloads, attempt payloads, raw content, chunks, section bodies, storage paths, tokens, and internal traces are forbidden
 
 ### `GET /api/editais`
 

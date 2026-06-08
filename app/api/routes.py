@@ -1460,6 +1460,132 @@ def _bounded_study_blocks_response(repository: JsonStudyRepository, user_id: str
     }
 
 
+def _prepared_review_material_summaries(
+    repository: JsonStudyRepository,
+    user_id: str,
+) -> list[tuple[object, dict[str, object]]]:
+    prepared_summaries: list[tuple[object, dict[str, object]]] = []
+    for material in repository.list_uploaded_materials(user_id=user_id):
+        if _uploaded_material_type(material) != "study_material":
+            continue
+        summary = _bounded_study_material_summary_response(material, repository, user_id)
+        if summary["summary_status"] not in {"ready", "needs_review"} or not summary["items"]:
+            continue
+        prepared_summaries.append((material, summary))
+    return prepared_summaries
+
+
+def _not_ready_review_block_response(materials_count: int = 0, blocks_count: int = 0) -> dict[str, object]:
+    return {
+        "review_status": "not_ready",
+        "review_id": None,
+        "basis": "prepared_materials",
+        "materials_count": materials_count,
+        "blocks_count": blocks_count,
+        "estimated_minutes": 0,
+        "title": "Revisão acumulada",
+        "summary": {
+            "status": "not_ready",
+            "items": [],
+        },
+        "questions": {
+            "status": "not_ready",
+            "items_count": 0,
+        },
+        "reinforcement": {
+            "status": "not_ready",
+            "weak_topics_count": 0,
+            "items": [],
+        },
+        "actions": [],
+        "message": "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.",
+        "source": "user_scope",
+    }
+
+
+def _bounded_review_summary_item(block: dict[str, object]) -> dict[str, object]:
+    title = _bounded_study_summary_title(block.get("title"), fallback="Ponto para revisar")
+    material_title = _bounded_study_summary_title(block.get("material_title"), fallback="material preparado")
+    topic_label = block["topic_label"] if isinstance(block.get("topic_label"), str) else None
+    subtopic_label = block["subtopic_label"] if isinstance(block.get("subtopic_label"), str) else None
+    return {
+        "title": title,
+        "message": f"Revise {title} no material {material_title}.",
+        "topic_label": topic_label,
+        "subtopic_label": subtopic_label,
+    }
+
+
+def _bounded_review_reinforcement_item(block: dict[str, object]) -> dict[str, object]:
+    topic_label = block["topic_label"] if isinstance(block.get("topic_label"), str) else None
+    subtopic_label = block["subtopic_label"] if isinstance(block.get("subtopic_label"), str) else None
+    focus_label = subtopic_label or topic_label or _bounded_study_summary_title(
+        block.get("title"),
+        fallback="os pontos principais",
+    )
+    return {
+        "topic_label": topic_label,
+        "subtopic_label": subtopic_label,
+        "message": f"Revise {focus_label} com calma. Ainda não há histórico de respostas para apontar pontos fracos reais.",
+    }
+
+
+def _bounded_next_review_block_response(repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    prepared_summaries = _prepared_review_material_summaries(repository, user_id)
+    materials_count = len(prepared_summaries)
+    blocks = _bounded_study_blocks_response(repository, user_id)
+    block_items = [item for item in blocks.get("items", []) if isinstance(item, dict)]
+    blocks_count = len(block_items)
+
+    if materials_count < 3 and blocks_count < 3:
+        return _not_ready_review_block_response(materials_count, blocks_count)
+
+    selected_blocks = block_items[: min(5, len(block_items))]
+    estimated_minutes = sum(int(block.get("estimated_minutes", 0) or 0) for block in selected_blocks)
+    if estimated_minutes <= 0:
+        estimated_minutes = max(5, min(30, blocks_count * 5))
+
+    questions_count = 0
+    for block in selected_blocks[:3]:
+        questions = _bounded_fixation_questions_response(repository, user_id, str(block["block_id"]))
+        questions_count += len([item for item in questions.get("items", []) if isinstance(item, dict)])
+
+    all_blocks_ready = all(str(block.get("status")) == "ready" for block in selected_blocks)
+    all_summaries_ready = all(str(block.get("summary_status")) == "ready" for block in selected_blocks)
+    review_status = "ready" if all_blocks_ready and all_summaries_ready and questions_count > 0 else "needs_review"
+    basis = "prepared_materials" if materials_count >= 3 else "study_blocks"
+    review_id = f"review:{basis}:{materials_count}:{blocks_count}"
+    summary_status = "ready" if all_summaries_ready else "needs_review"
+    questions_status = "ready" if questions_count > 0 and review_status == "ready" else "needs_review"
+
+    return {
+        "review_status": review_status,
+        "review_id": review_id,
+        "basis": basis,
+        "materials_count": materials_count,
+        "blocks_count": blocks_count,
+        "estimated_minutes": estimated_minutes,
+        "title": "Revisão acumulada",
+        "summary": {
+            "status": summary_status,
+            "items": [_bounded_review_summary_item(block) for block in selected_blocks],
+        },
+        "questions": {
+            "status": questions_status,
+            "items_count": questions_count,
+        },
+        "reinforcement": {
+            "status": "needs_review",
+            "weak_topics_count": 0,
+            "items": [_bounded_review_reinforcement_item(block) for block in selected_blocks[:3]],
+        },
+        "actions": [
+            _bounded_study_session_action("Abrir revisão", f"/study/review/{review_id}"),
+        ],
+        "source": "user_scope",
+    }
+
+
 def _study_block_section_index(block_id: str) -> int | None:
     try:
         return int(block_id.rsplit(":", 1)[1])
@@ -1835,6 +1961,13 @@ def get_study_blocks(request: Request):
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_study_blocks_response(repository, user_id)
+
+
+@router.get("/study/review/next")
+def get_next_study_review(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_next_review_block_response(repository, user_id)
 
 
 @router.get("/study/blocks/{block_id}/questions")

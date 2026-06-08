@@ -4,7 +4,7 @@
 
 Define the future contract for cumulative review blocks after small batches of study materials.
 
-This is a planning document only. It does not add backend endpoints, frontend UI, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. It does not add frontend UI, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -44,7 +44,7 @@ Not available today:
 - no official correction
 - no score
 - no answer key or gabarito
-- no cumulative review-after-3 flow
+- no frontend cumulative review UI
 
 ## Prepared, Studied, And Completed Are Different
 
@@ -74,7 +74,9 @@ Define review-block eligibility, response shape, safety boundaries, and future s
 
 ### Stage 2: Backend Read-only Review Candidate
 
-Add a backend-owned read endpoint that returns the next cumulative review candidate from prepared materials or available study blocks.
+Implemented in ReviewBlock-B as `GET /api/study/review/next`.
+
+The endpoint returns the next cumulative review candidate from prepared materials or available study blocks.
 
 Rules:
 
@@ -112,9 +114,9 @@ Only after a Progress phase exists, update eligibility from prepared-material co
 
 Later, cumulative review signals may contribute to simulado readiness, but not before the review and progress contracts are stable.
 
-## Proposed Future Endpoint
+## Implemented Backend Endpoint
 
-Preferred endpoint:
+Implemented endpoint:
 
 ```http
 GET /api/study/review/next
@@ -128,7 +130,7 @@ Why this is preferred:
 - it keeps review sequencing backend-owned
 - it is shorter and clearer than `/api/study/review/blocks/next`
 
-The endpoint should:
+The endpoint:
 
 - require authentication
 - use the current user's repository scope
@@ -140,7 +142,9 @@ The endpoint should:
 - not mark blocks as completed
 - not persist attempts or review history
 
-## Proposed Bounded Response Shape
+Frontend same-origin proxy/API and visible UI remain pending.
+
+## Implemented Bounded Response Shape
 
 ```json
 {
@@ -215,7 +219,7 @@ Allowed `basis` values:
 - `study_blocks`
 - `studied_materials`
 
-`studied_materials` is reserved for a future Progress phase and should not be used in the first implementation.
+`studied_materials` is reserved for a future Progress phase and is not used by the first implementation.
 
 Forbidden fields:
 
@@ -383,9 +387,8 @@ No:
 
 ## Recommended Future Phases
 
-1. `ReviewBlock-B`: backend read-only next review candidate.
-2. `ReviewBlock-C`: frontend same-origin proxy/API helper.
-3. `ReviewBlock-D`: minimal review UI.
-4. `ReviewBlock-QA-A`: browser/API QA.
-5. `Progress-Planning-A`: define studied/completed/progress semantics.
-6. `Simulado-Planning-A`: define how cumulative review informs later simulation readiness.
+1. `ReviewBlock-C`: frontend same-origin proxy/API helper.
+2. `ReviewBlock-D`: minimal review UI.
+3. `ReviewBlock-QA-A`: browser/API QA.
+4. `Progress-Planning-A`: define studied/completed/progress semantics.
+5. `Simulado-Planning-A`: define how cumulative review informs later simulation readiness.
