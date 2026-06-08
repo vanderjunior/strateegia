@@ -4,7 +4,7 @@
 
 Define the contract for answering fixation questions and receiving safe review feedback after studying one block.
 
-This began as a planning document. AnswerReview-B implemented the backend stateless endpoint `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`. AnswerReview-C added the frontend same-origin proxy/API helper. It does not add visible answer UI behavior, answer-key exposure, scoring, persistence, progress mutation, error reinforcement, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. AnswerReview-B implemented the backend stateless endpoint `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`. AnswerReview-C added the frontend same-origin proxy/API helper. AnswerReview-D added minimal selectable answer review UI for `multiple_choice` and `true_false` candidates on block detail. It does not add answer-key exposure, scoring, persistence, progress mutation, error reinforcement, review-after-3 behavior, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -28,11 +28,13 @@ Implemented today:
 - Frontend same-origin `GET /api/study/blocks/[blockId]/questions` and `fetchStudyBlockQuestions(blockId)` render the `Questões de fixação` card.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` returns conservative bounded feedback for one submitted answer.
 - Frontend same-origin `POST /api/study/blocks/[blockId]/questions/[questionId]/answer/review` and `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)` exist.
+- `/study/blocks/[blockId]` can call the helper from radio selections for objective candidates and render conservative feedback.
 
 Current boundaries:
 
 - questions are candidates/review-only
-- no frontend answer input exists
+- frontend selectable answer review exists for `multiple_choice` and `true_false` candidates
+- `short_answer` remains non-interactive in the current UI
 - no gabarito or answer key is shown
 - PSCPP/default objective candidates prefer display-only multiple-choice A-E
 - CEBRASPE-style candidates can use display-only true/false C/E

@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Plan the first visible answer-review UI for objective fixation-question candidates.
+Document the first visible answer-review UI for objective fixation-question candidates.
 
-This is a planning document only. It does not add answer controls, endpoints, correction, score, persistence, progress mutation, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. AnswerReview-D implemented the minimal selectable UI on `/study/blocks/[blockId]` for objective candidates. It does not add answer keys, gabarito, official correction, score, persistence, progress mutation, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -27,13 +27,15 @@ Implemented today:
 - A-D multiple choice is supported through the future profile hook.
 - CEBRASPE-style candidates can use `true_false` C/E.
 - `short_answer` remains fallback only.
-- `/study/blocks/[blockId]` displays questions and alternatives as read-only.
+- `/study/blocks/[blockId]` displays questions and alternatives.
+- `multiple_choice` and `true_false` questions now support local radio selection and `Revisar escolha`.
+- `short_answer` remains non-interactive in this UI phase.
 - `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` exists as a stateless backend review endpoint.
 - Frontend same-origin answer-review proxy and `reviewStudyBlockQuestionAnswer(blockId, questionId, payload)` exist.
 
 Current boundaries:
 
-- no visible answer UI exists
+- visible answer review exists only for objective candidates
 - no answer attempt is persisted
 - no score is created
 - no progress is mutated
@@ -215,14 +217,12 @@ Do not expose:
 
 ## Recommended Next Phase
 
-`AnswerReview-D`: implement the selectable answer UI on block detail.
+`AnswerReview-QA-A`: browser/API QA for selectable answer review on block detail.
 
-Scope for `AnswerReview-D`:
+QA scope:
 
-- use the existing `reviewStudyBlockQuestionAnswer` helper
-- support `multiple_choice` and `true_false`
-- keep `short_answer` non-interactive or explicitly unavailable
-- show conservative feedback and reinforcement
-- do not expose gabarito, correct alternative, score, official correction, or progress
-- do not persist attempts
-
+- login and open a prepared study block
+- select A-E or C/E when available
+- click `Revisar escolha`
+- confirm conservative feedback and reinforcement render
+- confirm no gabarito, correct alternative, score, official correction, persistence, or progress mutation appears

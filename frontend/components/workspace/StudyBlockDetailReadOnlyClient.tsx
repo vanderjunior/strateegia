@@ -9,8 +9,17 @@ import {
   WorkspaceLink,
   WorkspaceSourcePanel
 } from "@/components/workspace/WorkspaceShared";
-import { fetchStudyBlockDetail, fetchStudyBlockQuestions } from "@/lib/api/study";
-import type { BackendStudyBlockDetail, BackendStudyBlockQuestions } from "@/lib/api/types";
+import {
+  fetchStudyBlockDetail,
+  fetchStudyBlockQuestions,
+  reviewStudyBlockQuestionAnswer
+} from "@/lib/api/study";
+import type {
+  BackendStudyBlockAnswerReview,
+  BackendStudyBlockDetail,
+  BackendStudyBlockQuestions,
+  StudyBlockAnswerFormat
+} from "@/lib/api/types";
 
 type BlockDetailState =
   | { status: "loading" }
@@ -29,6 +38,15 @@ type QuestionsState =
   | { status: "auth_required"; message: string }
   | { status: "not_found"; message: string }
   | { status: "unavailable"; message: string };
+
+type QuestionReviewState = {
+  selectedAlternative?: string;
+  status?: "submitting" | "success" | "error";
+  message?: string;
+  review?: BackendStudyBlockAnswerReview;
+};
+
+type QuestionReviewStateMap = Record<string, QuestionReviewState>;
 
 function statusLabel(status: BackendStudyBlockDetail["detail_status"]): string {
   if (status === "ready") {
@@ -94,7 +112,97 @@ function questionsFailureState(code: string | undefined): QuestionsState {
   return { status: "unavailable", message: "Não foi possível carregar as questões agora." };
 }
 
-function QuestionsCard({ state }: { state: QuestionsState }) {
+function answerReviewFailureMessage(code: string | undefined): string {
+  if (code === "auth_required" || code === "unauthorized") {
+    return "Entre para revisar sua escolha.";
+  }
+  if (code === "not_found") {
+    return "Questão ou bloco de estudo não encontrado.";
+  }
+  if (code === "validation_error") {
+    return "Revise sua escolha antes de enviar.";
+  }
+  return "Não foi possível revisar sua escolha agora.";
+}
+
+function suggestedActionLabel(action: BackendStudyBlockAnswerReview["reinforcement"]["suggested_action"]): string {
+  if (action === "retry_question") {
+    return "Tentar novamente";
+  }
+  if (action === "revisit_block") {
+    return "Revisitar bloco";
+  }
+  return "Revisar resumo";
+}
+
+function reviewResultMessage(review: BackendStudyBlockAnswerReview): string {
+  if (review.result === "ungraded") {
+    return "Escolha revisada sem pontuação.";
+  }
+  if (review.result === "needs_review" || review.review_status === "needs_review") {
+    return "Esta escolha precisa de conferência.";
+  }
+  return "Orientação de estudo registrada sem pontuação.";
+}
+
+function QuestionsCard({
+  blockId,
+  state
+}: {
+  blockId: string;
+  state: QuestionsState;
+}) {
+  const [reviews, setReviews] = useState<QuestionReviewStateMap>({});
+
+  function updateQuestionReview(questionId: string, nextState: QuestionReviewState) {
+    setReviews((current) => ({
+      ...current,
+      [questionId]: {
+        ...current[questionId],
+        ...nextState
+      }
+    }));
+  }
+
+  async function handleReviewChoice(item: BackendStudyBlockQuestions["items"][number]) {
+    const current = reviews[item.question_id];
+    const selectedAlternative = current?.selectedAlternative;
+    if (!selectedAlternative) {
+      updateQuestionReview(item.question_id, {
+        status: "error",
+        message: "Selecione uma alternativa antes de revisar."
+      });
+      return;
+    }
+
+    const answerFormat: StudyBlockAnswerFormat = item.type === "true_false" ? "true_false" : "choice";
+    updateQuestionReview(item.question_id, {
+      status: "submitting",
+      message: undefined,
+      review: undefined
+    });
+
+    const result = await reviewStudyBlockQuestionAnswer(blockId, item.question_id, {
+      answer: selectedAlternative,
+      answer_format: answerFormat
+    });
+
+    if (result.ok) {
+      updateQuestionReview(item.question_id, {
+        status: "success",
+        message: undefined,
+        review: result.data
+      });
+      return;
+    }
+
+    updateQuestionReview(item.question_id, {
+      status: "error",
+      message: answerReviewFailureMessage(result.error.code),
+      review: undefined
+    });
+  }
+
   return (
     <section className="space-y-4">
       <div>
@@ -134,6 +242,8 @@ function QuestionsCard({ state }: { state: QuestionsState }) {
           {state.questions.items.length ? (
             state.questions.items.map((item, index) => {
               const itemStatusLabel = questionItemStatusLabel(item.status);
+              const review = reviews[item.question_id];
+              const isObjectiveQuestion = item.type === "multiple_choice" || item.type === "true_false";
               return (
                 <Card key={item.question_id} className="min-w-0">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -162,6 +272,89 @@ function QuestionsCard({ state }: { state: QuestionsState }) {
                         </li>
                       ))}
                     </ul>
+                  ) : null}
+
+                  {isObjectiveQuestion && item.alternatives.length ? (
+                    <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.025)] p-4">
+                      <fieldset className="space-y-3">
+                        <legend className="text-xs uppercase tracking-[0.18em] text-muted">
+                          Escolha uma alternativa
+                        </legend>
+                        <div className="mt-3 grid gap-2">
+                          {item.alternatives.map((alternative) => (
+                            <label
+                              key={`${item.question_id}-choice-${alternative.id}`}
+                              className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm leading-6 text-silver transition hover:border-[rgba(201,169,110,0.30)]"
+                            >
+                              <input
+                                className="mt-1 accent-[var(--accent)]"
+                                name={`answer-${item.question_id}`}
+                                type="radio"
+                                value={alternative.id}
+                                checked={review?.selectedAlternative === alternative.id}
+                                onChange={() =>
+                                  updateQuestionReview(item.question_id, {
+                                    selectedAlternative: alternative.id,
+                                    status: undefined,
+                                    message: undefined,
+                                    review: undefined
+                                  })
+                                }
+                              />
+                              <span>
+                                <span className="font-semibold text-ink">{alternative.id}.</span> {alternative.text}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <button
+                          className="rounded-full border border-[rgba(201,169,110,0.45)] bg-[rgba(201,169,110,0.12)] px-4 py-2 text-sm font-semibold text-ink transition hover:bg-[rgba(201,169,110,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                          type="button"
+                          disabled={review?.status === "submitting"}
+                          onClick={() => void handleReviewChoice(item)}
+                        >
+                          {review?.status === "submitting" ? "Revisando escolha..." : "Revisar escolha"}
+                        </button>
+                        {review?.status === "error" && review.message ? (
+                          <p className="text-sm leading-7 text-silver">{review.message}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {item.type === "short_answer" ? (
+                    <p className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.07)] px-4 py-3 text-sm leading-7 text-silver">
+                      Revisão interativa ainda não disponível para este tipo de questão.
+                    </p>
+                  ) : null}
+
+                  {review?.status === "success" && review.review ? (
+                    <div className="mt-5 rounded-2xl border border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.03)] p-4">
+                      <div className="section-kicker">Orientação de estudo</div>
+                      <CardTitle className="mt-3 text-[1.25rem]">Feedback</CardTitle>
+                      <p className="mt-3 text-sm leading-7 text-silver">{reviewResultMessage(review.review)}</p>
+                      <p className="mt-3 text-sm leading-7 text-silver">{review.review.feedback}</p>
+                      {review.review.reinforcement.topic_label || review.review.reinforcement.subtopic_label ? (
+                        <p className="mt-3 text-sm leading-7 text-silver">
+                          {[review.review.reinforcement.topic_label, review.review.reinforcement.subtopic_label]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      ) : null}
+                      <p className="mt-3 text-sm leading-7 text-silver">{review.review.reinforcement.message}</p>
+                      <Badge className={productStatusClass(suggestedActionLabel(review.review.reinforcement.suggested_action))}>
+                        {suggestedActionLabel(review.review.reinforcement.suggested_action)}
+                      </Badge>
+                      <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted">
+                        Este feedback é uma orientação de estudo, não uma correção oficial.
+                      </p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-muted">
+                        Seu progresso ainda não é alterado nesta etapa.
+                      </p>
+                    </div>
                   ) : null}
 
                   <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted">
@@ -404,7 +597,7 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
         </div>
       </section>
 
-      <QuestionsCard state={questionsState} />
+      <QuestionsCard blockId={blockId} state={questionsState} />
     </div>
   );
 }

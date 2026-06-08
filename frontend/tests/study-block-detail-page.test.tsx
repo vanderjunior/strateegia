@@ -1,14 +1,16 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const studyBlockDetailMock = vi.hoisted(() => ({
   fetchStudyBlockDetail: vi.fn(),
-  fetchStudyBlockQuestions: vi.fn()
+  fetchStudyBlockQuestions: vi.fn(),
+  reviewStudyBlockQuestionAnswer: vi.fn()
 }));
 
 vi.mock("@/lib/api/study", () => ({
   fetchStudyBlockDetail: studyBlockDetailMock.fetchStudyBlockDetail,
-  fetchStudyBlockQuestions: studyBlockDetailMock.fetchStudyBlockQuestions
+  fetchStudyBlockQuestions: studyBlockDetailMock.fetchStudyBlockQuestions,
+  reviewStudyBlockQuestionAnswer: studyBlockDetailMock.reviewStudyBlockQuestionAnswer
 }));
 
 import StudyBlockDetailPage from "@/app/(app)/study/blocks/[blockId]/page";
@@ -75,10 +77,29 @@ function readyQuestions(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function reviewedAnswer(overrides: Record<string, unknown> = {}) {
+  return {
+    block_id: "study-block:topic-1:doc-1:0",
+    question_id: "question:study-block:topic-1:doc-1:0:0",
+    review_status: "reviewed",
+    result: "ungraded",
+    feedback: "Compare sua escolha com o resumo do bloco.",
+    reinforcement: {
+      topic_label: "Direito Administrativo",
+      subtopic_label: "Atos administrativos",
+      message: "Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.",
+      suggested_action: "review_summary"
+    },
+    source: "user_scope",
+    ...overrides
+  };
+}
+
 describe("StudyBlockDetailReadOnlyClient", () => {
   beforeEach(() => {
     studyBlockDetailMock.fetchStudyBlockDetail.mockReset();
     studyBlockDetailMock.fetchStudyBlockQuestions.mockReset();
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockReset();
     studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
       ok: false,
       status: 200,
@@ -87,6 +108,12 @@ describe("StudyBlockDetailReadOnlyClient", () => {
         code: "not_ready",
         message: "As questões ainda não estão prontas para este bloco."
       }
+    });
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: reviewedAnswer()
     });
   });
 
@@ -127,8 +154,45 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("1. Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisão de Atos administrativos.")).toBeInTheDocument();
     expect(screen.getByText("A. Revisar Atos administrativos.")).toBeInTheDocument();
     expect(screen.getByText("E. Comparar Atos administrativos com os demais pontos do bloco.")).toBeInTheDocument();
+    expect(screen.getByText("Escolha uma alternativa")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "A. Revisar Atos administrativos." })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "E. Comparar Atos administrativos com os demais pontos do bloco." })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Revisar escolha" })).toBeInTheDocument();
     expect(screen.getByText("Questão candidata")).toBeInTheDocument();
     expect(screen.getByText("Sem respostas oficiais nesta etapa")).toBeInTheDocument();
+  });
+
+  it("renders multiple-choice A-D when only four alternatives are returned", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions({
+        items: [
+          {
+            ...readyQuestions().items[0],
+            alternatives: [
+              { id: "A", text: "Revisar Atos administrativos." },
+              { id: "B", text: "Relacionar Atos administrativos ao resumo do bloco." },
+              { id: "C", text: "Identificar pontos principais de Atos administrativos." },
+              { id: "D", text: "Retomar Atos administrativos no material estudado." }
+            ]
+          }
+        ]
+      })
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    expect(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "D. Retomar Atos administrativos no material estudado." })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: /E\./ })).not.toBeInTheDocument();
   });
 
   it("renders needs-review block and question candidates safely", async () => {
@@ -189,6 +253,268 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Certo ou errado · Média")).toBeInTheDocument();
     expect(screen.getByText("C. Certo")).toBeInTheDocument();
     expect(screen.getByText("E. Errado")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "C. Certo" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "E. Errado" })).toBeInTheDocument();
+  });
+
+  it("shows a validation message when reviewing without a selected option", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Revisar escolha" }));
+
+    expect(screen.getByText("Selecione uma alternativa antes de revisar.")).toBeInTheDocument();
+    expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).not.toHaveBeenCalled();
+  });
+
+  it("submits a multiple-choice selection as a choice review", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    await waitFor(() => {
+      expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledWith(
+        "study-block:topic-1:doc-1:0",
+        "question:study-block:topic-1:doc-1:0:0",
+        { answer: "A", answer_format: "choice" }
+      );
+    });
+  });
+
+  it("submits a true/false selection with true_false answer format", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions({
+        items: [
+          {
+            ...readyQuestions().items[0],
+            type: "true_false",
+            prompt: "Considere o ponto Atos administrativos como foco de revisão deste bloco.",
+            alternatives: [
+              { id: "C", text: "Certo" },
+              { id: "E", text: "Errado" }
+            ]
+          }
+        ]
+      })
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "C. Certo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    await waitFor(() => {
+      expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledWith(
+        "study-block:topic-1:doc-1:0",
+        "question:study-block:topic-1:doc-1:0:0",
+        { answer: "C", answer_format: "true_false" }
+      );
+    });
+  });
+
+  it("renders loading state while reviewing a selected option", async () => {
+    let resolveReview: (value: unknown) => void = () => undefined;
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockReturnValue(
+      new Promise((resolve) => {
+        resolveReview = resolve;
+      })
+    );
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByRole("button", { name: "Revisando escolha..." })).toBeDisabled();
+    await act(async () => {
+      resolveReview({
+        ok: true,
+        status: 200,
+        source: "backend",
+        data: reviewedAnswer()
+      });
+    });
+  });
+
+  it("renders conservative feedback and reinforcement after successful review", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByText("Feedback")).toBeInTheDocument();
+    expect(screen.getByText("Escolha revisada sem pontuação.")).toBeInTheDocument();
+    expect(screen.getByText("Compare sua escolha com o resumo do bloco.")).toBeInTheDocument();
+    expect(screen.getByText("Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.")).toBeInTheDocument();
+    expect(screen.getByText("Revisar resumo")).toBeInTheDocument();
+    expect(screen.getByText("Este feedback é uma orientação de estudo, não uma correção oficial.")).toBeInTheDocument();
+    expect(screen.getByText("Seu progresso ainda não é alterado nesta etapa.")).toBeInTheDocument();
+  });
+
+  it("renders needs-review feedback safely", async () => {
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: reviewedAnswer({
+        review_status: "needs_review",
+        result: "needs_review",
+        feedback: "Esta questão ainda não tem uma regra segura de revisão automática.",
+        reinforcement: {
+          topic_label: null,
+          subtopic_label: null,
+          message: "Revise o resumo do bloco antes de avançar.",
+          suggested_action: "revisit_block"
+        }
+      })
+    });
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByText("Esta escolha precisa de conferência.")).toBeInTheDocument();
+    expect(screen.getByText("Revisitar bloco")).toBeInTheDocument();
+    expect(screen.getByText("Este feedback é uma orientação de estudo, não uma correção oficial.")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["auth_required", "Entre para revisar sua escolha."],
+    ["not_found", "Questão ou bloco de estudo não encontrado."],
+    ["validation_error", "Revise sua escolha antes de enviar."],
+    ["backend_offline", "Não foi possível revisar sua escolha agora."],
+    ["missing_base_url", "Não foi possível revisar sua escolha agora."]
+  ])("renders %s answer review state safely", async (code, message) => {
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockResolvedValue({
+      ok: false,
+      status: code === "not_found" ? 404 : 502,
+      source: code === "backend_offline" ? "offline" : "backend",
+      error: { code, message: "Mensagem técnica que não deve aparecer." }
+    });
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.queryByText("Mensagem técnica que não deve aparecer.")).not.toBeInTheDocument();
+  });
+
+  it("keeps short-answer fallback non-interactive", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions({
+        items: [
+          {
+            ...readyQuestions().items[0],
+            type: "short_answer",
+            prompt: "Explique, com suas palavras, o ponto principal relacionado a Atos administrativos.",
+            alternatives: []
+          }
+        ]
+      })
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    expect(await screen.findByText("Resposta curta · Básica")).toBeInTheDocument();
+    expect(screen.getByText("Revisão interativa ainda não disponível para este tipo de questão.")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Revisar escolha" })).not.toBeInTheDocument();
   });
 
   it("renders not-ready state safely", async () => {
@@ -309,7 +635,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(serialized).not.toContain("Aplicar progresso");
     expect(serialized).not.toContain("Marcar progresso");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /responder|corrigir|concluir|progresso/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /responder|corrigir|concluir|progresso|simulado/i })).not.toBeInTheDocument();
   });
 });
 
