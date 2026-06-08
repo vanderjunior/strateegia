@@ -38,6 +38,7 @@ Available today:
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` returns bounded stateless feedback.
 - Frontend same-origin answer-review proxy/API helper and minimal selectable UI exist.
 - Block detail now separates the post-review hierarchy into `Feedback`, `Reforço sugerido`, and caution copy.
+- ErrorReinforcement-QA-A closed this refined UI through Compose/API QA: authenticated answer review returned bounded conservative feedback plus reinforcement, browser unauthenticated access showed the expected auth-required state, and no answer key, gabarito, score, progress, raw content, or internal trace was exposed.
 - Answer review may return `review_status=reviewed` or `needs_review`.
 - Answer review may return `result=ungraded` or `needs_review`.
 - Answer review may return a minimal `reinforcement` object:

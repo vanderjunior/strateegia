@@ -482,6 +482,24 @@ True/false selectable review remains covered by focused contract/UI tests in thi
 
 Known limitations remain unchanged: feedback is conservative and stateless; there is no answer key, official correction, score, attempt persistence, progress mutation, simulado execution, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior.
 
+### ErrorReinforcement-QA-A Refined Reinforcement Smoke
+
+Compose/API QA closed the refined reinforcement panel after answer review:
+
+- Docker Compose services were running with backend on port `8000` and frontend on port `3000`.
+- Backend `GET /api/exam-profiles` returned `200`.
+- Frontend `GET /` returned `200`.
+- In-app browser automation reached `/login`, but text-entry failed because the Browser Use virtual clipboard was unavailable; this is recorded as an automation limitation, not an app failure.
+- Browser access to the block-detail URL without a session showed the expected auth-required state.
+- Frontend proxy login with the existing QA user returned `200` and `authenticated=true`.
+- Authenticated `GET /api/study/blocks` returned one prepared material-only block: `study-block:material:8c25ac33-14d2-4498-963e-339f521a7410:0`.
+- Authenticated `GET /api/study/blocks/{block_id}/questions` returned `question_status=ready`, `mode=review_only`, and one `multiple_choice` candidate with A-E alternatives.
+- Authenticated answer review for option `A` returned `200`, `review_status=needs_review`, conservative feedback, and bounded reinforcement with `suggested_action=revisit_block`.
+- Error-state checks returned unauthenticated review `401`, missing block/question `404`, and invalid payload `422`.
+- The API response exposed no gabarito, answer key, correct answer, correct alternative, score, progress payload, raw text, storage path, token, password hash, hidden rationale, or internal trace.
+
+The UI contract remains unchanged: block detail separates `Feedback`, `Reforço sugerido`, and caution copy, using only the existing stateless answer-review response. No backend endpoint, persistence, progress mutation, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
