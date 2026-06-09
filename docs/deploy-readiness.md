@@ -500,6 +500,33 @@ Compose/API QA closed the refined reinforcement panel after answer review:
 
 The UI contract remains unchanged: block detail separates `Feedback`, `Reforço sugerido`, and caution copy, using only the existing stateless answer-review response. No backend endpoint, persistence, progress mutation, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
+### Cumulative Review Card QA Closeout
+
+ReviewBlock-QA-A validated the minimal read-only cumulative review card path in the Compose stack.
+
+Observed:
+
+- `docker compose ps` showed backend and frontend running.
+- The running frontend image was initially stale; rebuilding/recreating the frontend exposed `/api/study/review/next`.
+- The running backend image was also stale; rebuilding/recreating the backend exposed backend `GET /api/study/review/next`.
+- Backend `GET /api/exam-profiles` returned `200`.
+- Frontend `/` returned `200`.
+- Login through frontend `/api/auth/login` with the existing local `compose-qa-seed` user returned `200`.
+- Authenticated `/api/auth/me` returned `authenticated=true`.
+- Before adding another prepared material, authenticated `/api/study/review/next` returned `review_status=not_ready`, `materials_count=2`, `blocks_count=2`, and the safe message `Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.`
+- One small local `.md` QA material was uploaded as `study_material` and prepared through existing frontend proxies; preparation returned `ready_for_study=true`.
+- After that, authenticated `/api/study/review/next` returned `200`, `review_status=needs_review`, `basis=prepared_materials`, `materials_count=3`, `blocks_count=3`, `estimated_minutes=15`, bounded summary items, question readiness, and bounded reinforcement messages.
+- The backend/proxy payload includes a bounded future action href for `/study/review/<review_id>`, but the current `/study` card intentionally does not render that route because no review detail page exists.
+- Automated UI tests cover the hydrated `/study` card rendering and confirm no `/study/review/<id>` link appears in the UI.
+
+Safety observations:
+
+- The review endpoint response did not expose raw text, chunk bodies, section bodies, storage paths, tokens, password hashes, gabarito, answer keys, correct answers, score, progress payloads, attempts, or internal traces.
+- The UI contract remains prepared-material based: it uses `materiais preparados`, `blocos disponíveis`, and `revisão acumulada sugerida`, not studied/completed/progress wording.
+- Browser automation was not available in this tool session; hydrated UI behavior was validated through existing React tests plus API/Compose smoke. Plain `curl` of `/study` only captures server HTML before client-side session/review hydration.
+
+No review detail page, progress mutation, persisted review state, attempts, official correction, score, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
