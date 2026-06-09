@@ -11,6 +11,7 @@ from app.api.schemas import (
     AnswerSubmission as FeedbackAnswerSubmission,
     SessionAnswerRequest,
     StudyBlockAnswerReviewRequest,
+    StudyProgressEventRequest,
     UserLoginRequest,
     UserRegisterRequest,
     SessionStartRequest,
@@ -129,6 +130,21 @@ from app.services.user_service import LocalUserService
 
 router = APIRouter(prefix="/api")
 SESSION_COOKIE_NAME = "studyflow_session"
+STUDY_PROGRESS_EVENT_TYPES = {
+    "block_opened",
+    "block_marked_studied",
+    "question_reviewed",
+    "review_opened",
+    "review_completed",
+}
+STUDY_PROGRESS_TARGET_TYPES = {"block", "question", "review", "material"}
+STUDY_PROGRESS_EVENT_TARGETS = {
+    "block_opened": {"block"},
+    "block_marked_studied": {"block"},
+    "question_reviewed": {"question"},
+    "review_opened": {"review"},
+    "review_completed": {"review"},
+}
 
 
 def get_repository(request: Request) -> JsonStudyRepository:
@@ -1586,6 +1602,69 @@ def _bounded_next_review_block_response(repository: JsonStudyRepository, user_id
     }
 
 
+def _validate_study_progress_event_request(payload: StudyProgressEventRequest) -> None:
+    if payload.event_type not in STUDY_PROGRESS_EVENT_TYPES:
+        raise HTTPException(status_code=422, detail="Unsupported progress event type.")
+    if payload.target_type not in STUDY_PROGRESS_TARGET_TYPES:
+        raise HTTPException(status_code=422, detail="Unsupported progress target type.")
+    if payload.target_type not in STUDY_PROGRESS_EVENT_TARGETS[payload.event_type]:
+        raise HTTPException(status_code=422, detail="Unsupported progress event target.")
+    if not payload.target_id.strip() or len(payload.target_id) > 240:
+        raise HTTPException(status_code=422, detail="Invalid progress target id.")
+    if payload.idempotency_key is not None and (
+        not payload.idempotency_key.strip() or len(payload.idempotency_key) > 160
+    ):
+        raise HTTPException(status_code=422, detail="Invalid progress idempotency key.")
+
+
+def _bounded_study_progress_event_response(event: dict[str, object]) -> dict[str, object]:
+    return {
+        "event_id": str(event["event_id"]),
+        "event_type": str(event["event_type"]),
+        "target_type": str(event["target_type"]),
+        "target_id": str(event["target_id"]),
+        "created_at": str(event["created_at"]),
+        "source": "user_scope",
+    }
+
+
+def _bounded_study_progress_summary_response(repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
+    events = repository.list_study_progress_events(user_id=user_id)
+    opened_blocks = {
+        str(event.get("target_id"))
+        for event in events
+        if event.get("event_type") == "block_opened" and event.get("target_type") == "block"
+    }
+    studied_blocks = {
+        str(event.get("target_id"))
+        for event in events
+        if event.get("event_type") == "block_marked_studied" and event.get("target_type") == "block"
+    }
+    reviewed_questions_count = len(
+        [
+            event
+            for event in events
+            if event.get("event_type") == "question_reviewed" and event.get("target_type") == "question"
+        ]
+    )
+    prepared_materials_count = len(_prepared_review_material_summaries(repository, user_id))
+    review_due = prepared_materials_count >= 3
+    progress_status = "ready" if events or prepared_materials_count else "not_ready"
+
+    return {
+        "progress_status": progress_status,
+        "opened_blocks_count": len(opened_blocks),
+        "studied_blocks_count": len(studied_blocks),
+        "prepared_materials_count": prepared_materials_count,
+        "studied_materials_count": 0,
+        "review_due": review_due,
+        "review_basis": "prepared_materials" if review_due else "none",
+        "reviewed_questions_count": reviewed_questions_count,
+        "weak_topics_count": 0,
+        "source": "user_scope",
+    }
+
+
 def _study_block_section_index(block_id: str) -> int | None:
     try:
         return int(block_id.rsplit(":", 1)[1])
@@ -1968,6 +2047,28 @@ def get_next_study_review(request: Request):
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_next_review_block_response(repository, user_id)
+
+
+@router.post("/study/progress/events")
+def create_study_progress_event(payload: StudyProgressEventRequest, request: Request):
+    user_id = _require_authenticated_user_id(request)
+    _validate_study_progress_event_request(payload)
+    repository = get_repository(request)
+    event = repository.record_study_progress_event(
+        user_id=user_id,
+        event_type=payload.event_type,
+        target_type=payload.target_type,
+        target_id=payload.target_id.strip(),
+        idempotency_key=payload.idempotency_key.strip() if payload.idempotency_key else None,
+    )
+    return _bounded_study_progress_event_response(event)
+
+
+@router.get("/study/progress/summary")
+def get_study_progress_summary(request: Request):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_study_progress_summary_response(repository, user_id)
 
 
 @router.get("/study/blocks/{block_id}/questions")

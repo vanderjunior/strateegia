@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from uuid import uuid4
 
 from app.domain.models import (
     AssemblyWarning,
@@ -1308,11 +1309,18 @@ class JsonStudyRepository:
             "pedagogical_memory": {},
         }
 
+    def _default_study_progress_events_payload(self) -> dict[str, object]:
+        return {
+            "events": {},
+            "idempotency": {},
+        }
+
     def _default_user_payload(self) -> dict[str, object]:
         return {
             "documents": [],
             "answers": [],
             "progress": self._default_progress_payload(),
+            "study_progress_events": self._default_study_progress_events_payload(),
             "materials": [],
             "document_pipeline": {
                 "states": {},
@@ -1477,6 +1485,9 @@ class JsonStudyRepository:
             user_state["answers"] = list(user_state.get("answers", []) or [])
             user_state["materials"] = list(user_state.get("materials", []) or [])
             user_state["progress"] = self._normalize_progress_payload(user_state.get("progress"))
+            user_state["study_progress_events"] = self._normalize_study_progress_events_payload(
+                user_state.get("study_progress_events")
+            )
             user_state["document_pipeline"] = self._normalize_document_pipeline_payload(
                 user_state.get("document_pipeline")
             )
@@ -1635,6 +1646,16 @@ class JsonStudyRepository:
         normalized = self._default_progress_payload()
         if isinstance(payload, dict):
             normalized.update(payload)
+        return normalized
+
+    def _normalize_study_progress_events_payload(self, payload: object) -> dict[str, object]:
+        normalized = self._default_study_progress_events_payload()
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        if not isinstance(normalized.get("events"), dict):
+            normalized["events"] = {}
+        if not isinstance(normalized.get("idempotency"), dict):
+            normalized["idempotency"] = {}
         return normalized
 
     def _normalize_document_pipeline_payload(self, payload: object) -> dict[str, object]:
@@ -2102,6 +2123,12 @@ class JsonStudyRepository:
             user_state["progress"] = progress
         return progress
 
+    def _study_progress_events_container(self, payload: dict[str, object], user_id: str) -> dict[str, object]:
+        user_state = self._ensure_user_state(payload, user_id)
+        events = self._normalize_study_progress_events_payload(user_state.get("study_progress_events"))
+        user_state["study_progress_events"] = events
+        return events
+
     def _documents_container(self, payload: dict[str, object], user_id: str | None) -> list[dict[str, object]]:
         if user_id is None:
             documents = payload.get("documents")
@@ -2149,6 +2176,9 @@ class JsonStudyRepository:
             user_data[user_id] = state
         if "progress" not in state or not isinstance(state.get("progress"), dict):
             state["progress"] = self._default_progress_payload()
+        state["study_progress_events"] = self._normalize_study_progress_events_payload(
+            state.get("study_progress_events")
+        )
         if "documents" not in state or not isinstance(state.get("documents"), list):
             state["documents"] = []
         if "answers" not in state or not isinstance(state.get("answers"), list):
@@ -5346,6 +5376,53 @@ class JsonStudyRepository:
             microtopic_performance=microtopic_performance,
             pedagogical_memory=pedagogical_memory,
         )
+
+    def record_study_progress_event(
+        self,
+        *,
+        user_id: str,
+        event_type: str,
+        target_type: str,
+        target_id: str,
+        idempotency_key: str | None = None,
+    ) -> dict[str, object]:
+        payload = self._read()
+        container = self._study_progress_events_container(payload, user_id)
+        events = container["events"]
+        idempotency = container["idempotency"]
+
+        if idempotency_key:
+            existing_event_id = idempotency.get(idempotency_key)
+            if isinstance(existing_event_id, str):
+                existing = events.get(existing_event_id)
+                if isinstance(existing, dict):
+                    return dict(existing)
+
+        event_id = f"study-progress-event:{uuid4()}"
+        event = {
+            "event_id": event_id,
+            "event_type": event_type,
+            "target_type": target_type,
+            "target_id": target_id,
+            "idempotency_key": idempotency_key,
+            "created_at": utc_now().isoformat(),
+        }
+        events[event_id] = event
+        if idempotency_key:
+            idempotency[idempotency_key] = event_id
+        self._write(payload)
+        return dict(event)
+
+    def list_study_progress_events(self, *, user_id: str) -> list[dict[str, object]]:
+        payload = self._read()
+        container = self._study_progress_events_container(payload, user_id)
+        events = [
+            dict(event)
+            for event in container["events"].values()
+            if isinstance(event, dict)
+        ]
+        events.sort(key=lambda event: str(event.get("created_at", "")))
+        return events
 
     def _update_pedagogical_memory(
         self,

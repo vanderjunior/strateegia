@@ -22,7 +22,8 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/study/blocks/{block_id}` now provides the first read-only bounded study-block detail contract; frontend same-origin proxy/API wrapper and minimal visible UI exist.
 - Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper and visible review-only card exist.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend same-origin proxy/API helper and selectable review UI exist.
-- Backend `GET /api/study/review/next` now provides the first read-only bounded cumulative-review candidate based on prepared materials/study blocks; frontend same-origin proxy/API helper exist and visible review UI is pending.
+- Backend `GET /api/study/review/next` now provides the first read-only bounded cumulative-review candidate based on prepared materials/study blocks; frontend same-origin proxy/API helper and compact `/study` card exist.
+- Backend `POST /api/study/progress/events` and `GET /api/study/progress/summary` now provide the first explicit backend-only study progress event contract; frontend proxy/UI remain pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -59,6 +60,8 @@ This document records the bounded read contracts that are implemented or planned
 - `GET /api/study/blocks/{block_id}/questions`
 - `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
 - `GET /api/study/review/next`
+- `POST /api/study/progress/events`
+- `GET /api/study/progress/summary`
 
 ## Recommended Implementation Order
 
@@ -75,6 +78,8 @@ This document records the bounded read contracts that are implemented or planned
 11. `GET /api/study/blocks/{block_id}/questions`
 12. `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review`
 13. `GET /api/study/review/next`
+14. `POST /api/study/progress/events`
+15. `GET /api/study/progress/summary`
 
 ## Proposed Response Shapes
 
@@ -698,6 +703,88 @@ Rules:
 - frontend API helper is `fetchNextReviewBlock()`
 - frontend proxy forwards cookies server-side, uses the internal backend URL strategy, and whitelists response fields before returning data to the browser
 - frontend wrapper treats `ready`, `needs_review`, and `partial` as successful bounded review candidates and maps `not_ready` to product-safe guidance
+
+### `POST /api/study/progress/events`
+
+Purpose:
+- record explicit user-scoped study progress events
+- keep progress mutation explicit and never automatic from page views
+- persist only bounded event metadata
+- not persist answer attempts as correction records
+- not create studied/completed material state
+- not expose answer keys, gabarito, scores, correction payloads, raw content, storage paths, or internal traces
+- implemented in Progress-B as a backend-only contract; frontend proxy/UI remain pending
+
+Request shape:
+
+```json
+{
+  "event_type": "block_marked_studied",
+  "target_type": "block",
+  "target_id": "study-block:material:doc-1:0",
+  "idempotency_key": "optional-stable-key"
+}
+```
+
+Implemented response shape:
+
+```json
+{
+  "event_id": "study-progress-event:...",
+  "event_type": "block_marked_studied",
+  "target_type": "block",
+  "target_id": "study-block:material:doc-1:0",
+  "created_at": "2026-06-09T12:00:00+00:00",
+  "source": "user_scope"
+}
+```
+
+Rules:
+- unauthenticated returns `401`
+- accepted event types are `block_opened`, `block_marked_studied`, `question_reviewed`, `review_opened`, and `review_completed`
+- accepted target types are `block`, `question`, `review`, and `material`, but unsafe event/target combinations are rejected
+- currently supported safe combinations are block events for `block`, question review events for `question`, and review events for `review`
+- `block_opened` records low-confidence engagement and does not count as studied
+- `block_marked_studied` increments studied block count only
+- `question_reviewed` records review activity only; it does not store an answer, correctness, score, gabarito, or correction result
+- `review_opened` and `review_completed` are explicit review events; they do not create score or official completion semantics
+- repeated requests with the same `idempotency_key` for the same user return the original event and do not duplicate counts
+- extra fields such as answer payloads, score, answer keys, or gabarito are rejected
+
+### `GET /api/study/progress/summary`
+
+Purpose:
+- return a bounded user-scoped progress summary from explicit progress events plus existing prepared-material state
+- keep material completion conservative until a future contract defines it
+- keep review-after-3 prepared-material based until a frontend/progress phase explicitly moves it to studied materials
+
+Implemented shape:
+
+```json
+{
+  "progress_status": "ready",
+  "opened_blocks_count": 1,
+  "studied_blocks_count": 1,
+  "prepared_materials_count": 3,
+  "studied_materials_count": 0,
+  "review_due": true,
+  "review_basis": "prepared_materials",
+  "reviewed_questions_count": 1,
+  "weak_topics_count": 0,
+  "source": "user_scope"
+}
+```
+
+Rules:
+- unauthenticated returns `401`
+- `opened_blocks_count` comes only from explicit `block_opened` events
+- `studied_blocks_count` comes only from explicit `block_marked_studied` events
+- `reviewed_questions_count` comes only from explicit `question_reviewed` events
+- `prepared_materials_count` is derived from owned prepared `material_type=study_material` files
+- `studied_materials_count` remains `0` until material completion derivation is explicitly approved
+- `review_due` may be based on prepared materials while studied-material semantics are still pending
+- `weak_topics_count` remains `0` until persisted review/reinforcement signals are approved
+- responses must not claim `progresso atualizado`, `você concluiu`, official `acertos/erros`, score, gabarito, or correction
 
 ### `GET /api/editais`
 

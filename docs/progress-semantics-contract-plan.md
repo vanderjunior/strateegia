@@ -4,7 +4,7 @@
 
 Define future study progress semantics before adding buttons such as `Concluir`, `Marcar como estudado`, `Revisado`, or `Progresso`.
 
-This is a planning contract only. It does not add endpoints, UI behavior, progress mutation, studied/completed state, persisted attempts, scores, answer keys, gabarito, official correction, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning contract. Progress-B implemented the first backend-only explicit progress event endpoints: `POST /api/study/progress/events` and `GET /api/study/progress/summary`. It does not add frontend proxy/UI behavior, automatic page-view progress, material completion derivation, persisted answer attempts as correction records, scores, answer keys, gabarito, official correction, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -34,13 +34,23 @@ Available today:
 - answer review can show advisory reinforcement
 - `/study` shows a read-only cumulative review candidate after 3 prepared materials or available blocks
 
+Available in backend only:
+
+- explicit user-scoped progress events can be recorded through `POST /api/study/progress/events`
+- bounded progress summary can be read through `GET /api/study/progress/summary`
+- `block_marked_studied` can increment studied block count
+- `block_opened` is recordable only when explicitly posted and does not count as studied
+- `question_reviewed` can increment reviewed question count without storing answers, scoring, or correction
+
 Not available today:
 
-- no progress mutation
-- no persisted answer attempts
+- no frontend progress proxy or UI
+- no automatic progress mutation from page views
+- no persisted answer attempts as correction records
 - no studied state
 - no completed state
 - no reviewed state
+- no material completion derivation
 - no official correction
 - no score
 - no exposed answer key or gabarito
@@ -185,7 +195,7 @@ Candidate event types:
 
 ### Stage 3: Backend Progress Endpoint
 
-Add backend progress write endpoint(s) only after the event contract is approved.
+Implemented in Progress-B.
 
 Requirements:
 
@@ -197,9 +207,14 @@ Requirements:
 - no automatic completion
 - bounded response only
 
-### Stage 4: Frontend Progress UI
+Implemented endpoints:
 
-Add minimal explicit actions only after backend semantics exist.
+- `POST /api/study/progress/events`
+- `GET /api/study/progress/summary`
+
+### Stage 4: Frontend Progress Proxy And UI
+
+Pending. Add frontend same-origin proxy/API first, then minimal explicit actions only after the frontend contract is approved.
 
 Possible UI:
 
@@ -271,7 +286,7 @@ Reasons:
 
 ## Proposed Read Endpoint
 
-Future endpoint:
+Implemented backend endpoint:
 
 ```http
 GET /api/study/progress/summary
@@ -311,6 +326,8 @@ Rules:
 - no raw attempts payload
 - no storage paths
 - no internal traces
+- `studied_materials_count` remains `0` until material completion derivation is explicitly approved
+- `review_basis=prepared_materials` can be used while review-after-3 is still based on prepared materials
 
 ## Event Semantics
 
@@ -508,10 +525,9 @@ No:
 
 ## Recommended Future Phases
 
-1. `Progress-B`: backend event write contract.
-2. `Progress-C`: frontend same-origin proxy/API wrapper.
-3. `Progress-D`: minimal explicit `Marcar bloco como estudado` UI.
-4. `Progress-QA-A`: browser/API QA for explicit progress events.
-5. `ReviewBlock-Progress-A`: make review-after-3 use studied materials.
-6. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
-7. `Simulado-Planning-A`: plan simulation readiness and execution later.
+1. `Progress-C`: frontend same-origin proxy/API wrapper.
+2. `Progress-D`: minimal explicit `Marcar bloco como estudado` UI.
+3. `Progress-QA-A`: browser/API QA for explicit progress events.
+4. `ReviewBlock-Progress-A`: make review-after-3 use studied materials.
+5. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
+6. `Simulado-Planning-A`: plan simulation readiness and execution later.
