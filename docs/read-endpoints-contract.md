@@ -606,7 +606,7 @@ Purpose:
 - return the next bounded cumulative-review candidate from prepared study materials or available study blocks
 - keep the first review-after-3 contract read-only until progress semantics exist
 - not claim materials were studied, completed, or recorded as progress
-- implemented in ReviewBlock-B as a backend contract; frontend same-origin proxy/API helper implemented in ReviewBlock-C and visible review UI remains pending
+- implemented in ReviewBlock-B as a backend contract; frontend same-origin proxy/API helper implemented in ReviewBlock-C; a compact read-only `/study` review card was added in ReviewBlock-D
 
 Implemented ready/needs-review shape:
 
