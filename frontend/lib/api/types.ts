@@ -45,6 +45,7 @@ export interface ApiErrorDetails {
     | "payload_too_large"
     | "unsupported_media"
     | "validation_error"
+    | "invalid_request"
     | "http_error"
     | "invalid_json"
     | "invalid_response";
@@ -472,6 +473,52 @@ export interface BackendNextReviewBlock {
   message?: string;
   source: "user_scope";
 }
+
+export type StudyProgressEventType =
+  | "block_opened"
+  | "block_marked_studied"
+  | "question_reviewed"
+  | "review_opened"
+  | "review_completed";
+
+export type StudyProgressTargetType = "block" | "question" | "review" | "material";
+
+export interface StudyProgressEventRequest {
+  event_type: StudyProgressEventType;
+  target_type: StudyProgressTargetType;
+  target_id: string;
+  idempotency_key?: string | null;
+}
+
+export interface StudyProgressEventResponse {
+  event_id: string;
+  event_type: StudyProgressEventType;
+  target_type: StudyProgressTargetType;
+  target_id: string;
+  created_at: string;
+  source: "user_scope";
+}
+
+export type StudyProgressStatus = "ready" | "not_ready";
+
+export type StudyProgressReviewBasis = "prepared_materials" | "studied_materials" | "none";
+
+export interface StudyProgressSummary {
+  progress_status: StudyProgressStatus;
+  opened_blocks_count: number;
+  studied_blocks_count: number;
+  prepared_materials_count: number;
+  studied_materials_count: number;
+  review_due: boolean;
+  review_basis: StudyProgressReviewBasis;
+  reviewed_questions_count: number;
+  weak_topics_count: number;
+  source: "user_scope";
+}
+
+export type StudyProgressEventResult = ApiResult<StudyProgressEventResponse>;
+
+export type StudyProgressSummaryResult = ApiResult<StudyProgressSummary>;
 
 export type BackendStudyBlockDetailStatus = "ready" | "needs_review" | "not_ready";
 

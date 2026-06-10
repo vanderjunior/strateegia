@@ -2,12 +2,14 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const studyBlockDetailMock = vi.hoisted(() => ({
+  createStudyProgressEvent: vi.fn(),
   fetchStudyBlockDetail: vi.fn(),
   fetchStudyBlockQuestions: vi.fn(),
   reviewStudyBlockQuestionAnswer: vi.fn()
 }));
 
 vi.mock("@/lib/api/study", () => ({
+  createStudyProgressEvent: studyBlockDetailMock.createStudyProgressEvent,
   fetchStudyBlockDetail: studyBlockDetailMock.fetchStudyBlockDetail,
   fetchStudyBlockQuestions: studyBlockDetailMock.fetchStudyBlockQuestions,
   reviewStudyBlockQuestionAnswer: studyBlockDetailMock.reviewStudyBlockQuestionAnswer
@@ -95,11 +97,30 @@ function reviewedAnswer(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function progressEventResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    event_id: "progress-event-1",
+    event_type: "block_marked_studied",
+    target_type: "block",
+    target_id: "study-block:topic-1:doc-1:0",
+    created_at: "2026-06-10T12:00:00Z",
+    source: "user_scope",
+    ...overrides
+  };
+}
+
 describe("StudyBlockDetailReadOnlyClient", () => {
   beforeEach(() => {
+    studyBlockDetailMock.createStudyProgressEvent.mockReset();
     studyBlockDetailMock.fetchStudyBlockDetail.mockReset();
     studyBlockDetailMock.fetchStudyBlockQuestions.mockReset();
     studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockReset();
+    studyBlockDetailMock.createStudyProgressEvent.mockResolvedValue({
+      ok: true,
+      status: 201,
+      source: "backend",
+      data: progressEventResponse()
+    });
     studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
       ok: false,
       status: 200,
@@ -148,6 +169,8 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Voltar ao caminho de estudo")).toHaveAttribute("href", "/study");
     expect(screen.getByText("Use este bloco como guia inicial de leitura.")).toBeInTheDocument();
     expect(screen.getByText("Esta tela mostra apenas uma orientação de leitura para este bloco.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Marcar bloco como estudado" })).toBeInTheDocument();
+    expect(screen.getByText("Esta ação registra apenas este bloco. Ela não conclui o material.")).toBeInTheDocument();
     expect(await screen.findByText("Questões de fixação")).toBeInTheDocument();
     expect(screen.getByText("Use estas questões como revisão inicial do bloco. Elas ainda não exibem respostas oficiais nem avaliam respostas.")).toBeInTheDocument();
     expect(screen.getByText("Múltipla escolha · Básica")).toBeInTheDocument();
@@ -160,6 +183,103 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByRole("button", { name: "Revisar escolha" })).toBeInTheDocument();
     expect(screen.getByText("Questão candidata")).toBeInTheDocument();
     expect(screen.getByText("Sem respostas oficiais nesta etapa")).toBeInTheDocument();
+  });
+
+  it("does not record progress on render", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    expect(await screen.findByRole("button", { name: "Marcar bloco como estudado" })).toBeInTheDocument();
+    expect(studyBlockDetailMock.createStudyProgressEvent).not.toHaveBeenCalled();
+  });
+
+  it("records explicit block_marked_studied progress only when the button is clicked", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar bloco como estudado" }));
+
+    await waitFor(() => {
+      expect(studyBlockDetailMock.createStudyProgressEvent).toHaveBeenCalledTimes(1);
+      expect(studyBlockDetailMock.createStudyProgressEvent).toHaveBeenCalledWith({
+        event_type: "block_marked_studied",
+        target_type: "block",
+        target_id: "study-block:topic-1:doc-1:0",
+        idempotency_key: "block_marked_studied:study-block:topic-1:doc-1:0"
+      });
+    });
+    expect(await screen.findByText("Bloco marcado como estudado.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Estudo registrado" })).toBeDisabled();
+  });
+
+  it("renders loading state while registering explicit block progress", async () => {
+    let resolveProgress: (value: unknown) => void = () => undefined;
+    studyBlockDetailMock.createStudyProgressEvent.mockReturnValue(
+      new Promise((resolve) => {
+        resolveProgress = resolve;
+      })
+    );
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar bloco como estudado" }));
+
+    expect(await screen.findByRole("button", { name: "Registrando estudo..." })).toBeDisabled();
+    await act(async () => {
+      resolveProgress({
+        ok: true,
+        status: 201,
+        source: "backend",
+        data: progressEventResponse()
+      });
+    });
+  });
+
+  it.each([
+    ["auth_required", "Entre para registrar seu estudo."],
+    ["invalid_request", "Não foi possível registrar este bloco."],
+    ["backend_offline", "Não foi possível registrar esta ação agora."],
+    ["missing_base_url", "Não foi possível registrar esta ação agora."],
+    ["invalid_response", "Não foi possível registrar esta ação agora."]
+  ])("renders %s progress registration state safely", async (code, message) => {
+    studyBlockDetailMock.createStudyProgressEvent.mockResolvedValue({
+      ok: false,
+      status: code === "auth_required" ? 401 : 502,
+      source: code === "backend_offline" ? "offline" : "backend",
+      error: { code, message: "Mensagem técnica que não deve aparecer." }
+    });
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar bloco como estudado" }));
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.queryByText("Mensagem técnica que não deve aparecer.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Marcar bloco como estudado" })).toBeEnabled();
   });
 
   it("renders multiple-choice A-D when only four alternatives are returned", async () => {
@@ -710,17 +830,26 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(serialized).not.toContain("Você acertou");
     expect(serialized).not.toContain("pontuação");
     expect(serialized).not.toContain("Concluir estudo");
+    expect(serialized).not.toContain("Concluir material");
+    expect(serialized).not.toContain("Marcar material como concluído");
+    expect(serialized).not.toContain("material concluído");
+    expect(serialized).not.toContain("você concluiu");
+    expect(serialized).not.toContain("progresso atualizado");
+    expect(serialized).not.toContain("100%");
     expect(serialized).not.toContain("Gerar questões");
     expect(serialized).not.toContain("Gerar simulado");
     expect(serialized).not.toContain("Aplicar progresso");
     expect(serialized).not.toContain("Marcar progresso");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /responder|corrigir|concluir|progresso|simulado/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /responder|corrigir|concluir|progresso|simulado|material/i })
+    ).not.toBeInTheDocument();
   });
 });
 
 describe("StudyBlockDetailPage", () => {
   beforeEach(() => {
+    studyBlockDetailMock.createStudyProgressEvent.mockReset();
     studyBlockDetailMock.fetchStudyBlockDetail.mockReset();
     studyBlockDetailMock.fetchStudyBlockQuestions.mockReset();
     studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({

@@ -23,7 +23,7 @@ This document records the bounded read contracts that are implemented or planned
 - Backend `GET /api/study/blocks/{block_id}/questions` now provides the first read-only bounded fixation-question candidate contract; frontend same-origin proxy/API helper and visible review-only card exist.
 - Backend `POST /api/study/blocks/{block_id}/questions/{question_id}/answer/review` now provides a stateless bounded answer-review contract; frontend same-origin proxy/API helper and selectable review UI exist.
 - Backend `GET /api/study/review/next` now provides the first read-only bounded cumulative-review candidate based on prepared materials/study blocks; frontend same-origin proxy/API helper and compact `/study` card exist.
-- Backend `POST /api/study/progress/events` and `GET /api/study/progress/summary` now provide the first explicit backend-only study progress event contract; frontend proxy/UI remain pending.
+- Backend `POST /api/study/progress/events` and `GET /api/study/progress/summary` now provide the first explicit study progress event contract; frontend same-origin proxies and API helpers exist, while visible UI remains pending.
 
 ## Why Dedicated Endpoints Are Needed
 
@@ -713,7 +713,7 @@ Purpose:
 - not persist answer attempts as correction records
 - not create studied/completed material state
 - not expose answer keys, gabarito, scores, correction payloads, raw content, storage paths, or internal traces
-- implemented in Progress-B as a backend-only contract; frontend proxy/UI remain pending
+- implemented in Progress-B as a backend contract; frontend same-origin proxy/API helper implemented in Progress-C and visible UI remains pending
 
 Request shape:
 
@@ -750,6 +750,9 @@ Rules:
 - `review_opened` and `review_completed` are explicit review events; they do not create score or official completion semantics
 - repeated requests with the same `idempotency_key` for the same user return the original event and do not duplicate counts
 - extra fields such as answer payloads, score, answer keys, or gabarito are rejected
+- frontend proxy path is `POST /api/study/progress/events`
+- frontend API helper is `createStudyProgressEvent(input)`
+- frontend proxy forwards cookies server-side, strips request fields outside `event_type`, `target_type`, `target_id`, and `idempotency_key`, and whitelists response fields
 
 ### `GET /api/study/progress/summary`
 
@@ -785,6 +788,9 @@ Rules:
 - `review_due` may be based on prepared materials while studied-material semantics are still pending
 - `weak_topics_count` remains `0` until persisted review/reinforcement signals are approved
 - responses must not claim `progresso atualizado`, `você concluiu`, official `acertos/erros`, score, gabarito, or correction
+- frontend proxy path is `GET /api/study/progress/summary`
+- frontend API helper is `fetchStudyProgressSummary()`
+- frontend proxy forwards cookies server-side and whitelists summary fields before returning data to the browser
 
 ### `GET /api/editais`
 

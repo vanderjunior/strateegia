@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Define future study progress semantics before adding buttons such as `Concluir`, `Marcar como estudado`, `Revisado`, or `Progresso`.
+Define current and future study progress semantics before expanding controls such as material completion, review completion, scores, or progress-aware review scheduling.
 
-This began as a planning contract. Progress-B implemented the first backend-only explicit progress event endpoints: `POST /api/study/progress/events` and `GET /api/study/progress/summary`. It does not add frontend proxy/UI behavior, automatic page-view progress, material completion derivation, persisted answer attempts as correction records, scores, answer keys, gabarito, official correction, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning contract. Progress-B implemented the first backend-only explicit progress event endpoints: `POST /api/study/progress/events` and `GET /api/study/progress/summary`. Progress-C added frontend same-origin proxies plus `createStudyProgressEvent()` and `fetchStudyProgressSummary()` API helpers. Progress-D added one explicit block-detail control, `Marcar bloco como estudado`, which posts `block_marked_studied` only after a user click. It does not add automatic page-view progress, material completion derivation, persisted answer attempts as correction records, scores, answer keys, gabarito, official correction, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -42,12 +42,25 @@ Available in backend only:
 - `block_opened` is recordable only when explicitly posted and does not count as studied
 - `question_reviewed` can increment reviewed question count without storing answers, scoring, or correction
 
+Available in frontend API layer only:
+
+- same-origin proxy `POST /api/study/progress/events`
+- same-origin proxy `GET /api/study/progress/summary`
+- `createStudyProgressEvent(input)`
+- `fetchStudyProgressSummary()`
+- request/response whitelisting for progress event and summary payloads
+
+Available in frontend UI:
+
+- `/study/blocks/[blockId]` shows `Marcar bloco como estudado`
+- the button sends `block_marked_studied` only after an explicit click
+- the idempotency key is derived from the block id
+- success copy is block-scoped and does not claim material completion
+
 Not available today:
 
-- no frontend progress proxy or UI
 - no automatic progress mutation from page views
 - no persisted answer attempts as correction records
-- no studied state
 - no completed state
 - no reviewed state
 - no material completion derivation
@@ -212,13 +225,30 @@ Implemented endpoints:
 - `POST /api/study/progress/events`
 - `GET /api/study/progress/summary`
 
-### Stage 4: Frontend Progress Proxy And UI
+### Stage 4: Frontend Progress Proxy And Minimal UI
 
-Pending. Add frontend same-origin proxy/API first, then minimal explicit actions only after the frontend contract is approved.
+Frontend same-origin proxy/API wrappers were implemented in Progress-C.
 
-Possible UI:
+Implemented frontend contract:
 
-- `Marcar bloco como estudado`
+- proxy `POST /api/study/progress/events`
+- proxy `GET /api/study/progress/summary`
+- helper `createStudyProgressEvent(input)`
+- helper `fetchStudyProgressSummary()`
+- no automatic calls
+- no page-view tracking
+- request body forwarding is limited to `event_type`, `target_type`, `target_id`, and `idempotency_key`
+- browser-facing responses are whitelisted
+
+Minimal UI implemented in Progress-D:
+
+- `Marcar bloco como estudado` on `/study/blocks/[blockId]`
+- no automatic call on render or page load
+- stable idempotency key: `block_marked_studied:<block_id>`
+- caution copy says the action registers only the block and does not complete the material
+
+Possible future UI:
+
 - `Continuar depois`
 - `Ver pendências`
 
@@ -487,9 +517,9 @@ Storage considerations:
 
 ## UI Principles
 
-Future UI should show:
+Current and future UI should show:
 
-- `Marcar como estudado`
+- `Marcar bloco como estudado`
 - `Continuar depois`
 - `Pendente`
 - `Revisão sugerida`
@@ -510,9 +540,9 @@ Progress actions must be explicit, understandable, and reversible or idempotent 
 
 No:
 
-- progress mutation now
+- automatic progress mutation
 - automatic completion
-- studied/completed state now
+- material studied/completed state now
 - persisted attempts now
 - official correction
 - score
@@ -525,9 +555,7 @@ No:
 
 ## Recommended Future Phases
 
-1. `Progress-C`: frontend same-origin proxy/API wrapper.
-2. `Progress-D`: minimal explicit `Marcar bloco como estudado` UI.
-3. `Progress-QA-A`: browser/API QA for explicit progress events.
-4. `ReviewBlock-Progress-A`: make review-after-3 use studied materials.
-5. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
-6. `Simulado-Planning-A`: plan simulation readiness and execution later.
+1. `Progress-QA-A`: browser/API QA for explicit block-level progress registration.
+2. `ReviewBlock-Progress-A`: make review-after-3 use studied materials after material completion semantics are explicit.
+3. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
+4. `Simulado-Planning-A`: plan simulation readiness and execution later.

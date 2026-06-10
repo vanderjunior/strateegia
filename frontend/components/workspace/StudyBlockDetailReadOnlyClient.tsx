@@ -10,6 +10,7 @@ import {
   WorkspaceSourcePanel
 } from "@/components/workspace/WorkspaceShared";
 import {
+  createStudyProgressEvent,
   fetchStudyBlockDetail,
   fetchStudyBlockQuestions,
   reviewStudyBlockQuestionAnswer
@@ -47,6 +48,12 @@ type QuestionReviewState = {
 };
 
 type QuestionReviewStateMap = Record<string, QuestionReviewState>;
+
+type StudyProgressActionState =
+  | { status: "idle" }
+  | { status: "submitting" }
+  | { status: "success"; message: string }
+  | { status: "error"; message: string };
 
 function statusLabel(status: BackendStudyBlockDetail["detail_status"]): string {
   if (status === "ready") {
@@ -123,6 +130,16 @@ function answerReviewFailureMessage(code: string | undefined): string {
     return "Revise sua escolha antes de enviar.";
   }
   return "Não foi possível revisar sua escolha agora.";
+}
+
+function progressEventFailureMessage(code: string | undefined): string {
+  if (code === "auth_required" || code === "unauthorized") {
+    return "Entre para registrar seu estudo.";
+  }
+  if (code === "invalid_request" || code === "validation_error") {
+    return "Não foi possível registrar este bloco.";
+  }
+  return "Não foi possível registrar esta ação agora.";
 }
 
 function suggestedActionLabel(action: BackendStudyBlockAnswerReview["reinforcement"]["suggested_action"]): string {
@@ -392,6 +409,7 @@ function QuestionsCard({
 export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string }) {
   const [state, setState] = useState<BlockDetailState>({ status: "loading" });
   const [questionsState, setQuestionsState] = useState<QuestionsState>({ status: "loading" });
+  const [progressActionState, setProgressActionState] = useState<StudyProgressActionState>({ status: "idle" });
 
   useEffect(() => {
     let active = true;
@@ -430,6 +448,31 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
       active = false;
     };
   }, [blockId]);
+
+  async function handleMarkBlockStudied() {
+    if (progressActionState.status === "submitting" || progressActionState.status === "success") {
+      return;
+    }
+
+    setProgressActionState({ status: "submitting" });
+
+    const result = await createStudyProgressEvent({
+      event_type: "block_marked_studied",
+      target_type: "block",
+      target_id: blockId,
+      idempotency_key: `block_marked_studied:${blockId}`
+    });
+
+    if (result.ok) {
+      setProgressActionState({ status: "success", message: "Bloco marcado como estudado." });
+      return;
+    }
+
+    setProgressActionState({
+      status: "error",
+      message: progressEventFailureMessage(result.error.code)
+    });
+  }
 
   if (state.status === "loading") {
     return (
@@ -572,6 +615,29 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
               {action.label}
             </WorkspaceLink>
           ))}
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.025)] p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              className="rounded-full border border-[rgba(201,169,110,0.45)] bg-[rgba(201,169,110,0.12)] px-4 py-2 text-sm font-semibold text-ink transition hover:bg-[rgba(201,169,110,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              disabled={progressActionState.status === "submitting" || progressActionState.status === "success"}
+              onClick={() => void handleMarkBlockStudied()}
+            >
+              {progressActionState.status === "submitting"
+                ? "Registrando estudo..."
+                : progressActionState.status === "success"
+                  ? "Estudo registrado"
+                  : "Marcar bloco como estudado"}
+            </button>
+            {progressActionState.status === "success" || progressActionState.status === "error" ? (
+              <p className="text-sm leading-7 text-silver">{progressActionState.message}</p>
+            ) : null}
+          </div>
+          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted">
+            Esta ação registra apenas este bloco. Ela não conclui o material.
+          </p>
         </div>
       </Card>
 

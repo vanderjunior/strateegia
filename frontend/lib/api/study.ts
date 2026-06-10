@@ -9,6 +9,15 @@ import type {
   BackendStudyBlockDetail,
   BackendStudyBlocks,
   BackendStudyBlockQuestions,
+  StudyProgressEventRequest,
+  StudyProgressEventResponse,
+  StudyProgressEventResult,
+  StudyProgressEventType,
+  StudyProgressReviewBasis,
+  StudyProgressStatus,
+  StudyProgressSummary,
+  StudyProgressSummaryResult,
+  StudyProgressTargetType,
   BackendStudyMaterialSummaryItem,
   BackendStudyBlockDetailStatus,
   StudyBlockAnswerFormat,
@@ -51,6 +60,32 @@ const REVIEW_SECTION_STATUSES = new Set<ReviewBlockSectionStatus>([
   "ready",
   "needs_review",
   "not_ready"
+]);
+
+const PROGRESS_EVENT_TYPES = new Set<StudyProgressEventType>([
+  "block_opened",
+  "block_marked_studied",
+  "question_reviewed",
+  "review_opened",
+  "review_completed"
+]);
+
+const PROGRESS_TARGET_TYPES = new Set<StudyProgressTargetType>([
+  "block",
+  "question",
+  "review",
+  "material"
+]);
+
+const PROGRESS_STATUSES = new Set<StudyProgressStatus>([
+  "ready",
+  "not_ready"
+]);
+
+const PROGRESS_REVIEW_BASES = new Set<StudyProgressReviewBasis>([
+  "prepared_materials",
+  "studied_materials",
+  "none"
 ]);
 
 const SCOPE_STATUSES = new Set<StudyBlocksScopeStatus>([
@@ -404,6 +439,242 @@ function isNextReviewBlockPayload(value: unknown): value is BackendNextReviewBlo
     (data.message === undefined || typeof data.message === "string") &&
     data.source === "user_scope"
   );
+}
+
+function isStudyProgressEventPayload(value: unknown): value is StudyProgressEventResponse {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<StudyProgressEventResponse>;
+  return (
+    typeof data.event_id === "string" &&
+    Boolean(data.event_type && PROGRESS_EVENT_TYPES.has(data.event_type)) &&
+    Boolean(data.target_type && PROGRESS_TARGET_TYPES.has(data.target_type)) &&
+    typeof data.target_id === "string" &&
+    typeof data.created_at === "string" &&
+    data.source === "user_scope"
+  );
+}
+
+function normalizeStudyProgressEventPayload(data: StudyProgressEventResponse): StudyProgressEventResponse {
+  return {
+    event_id: data.event_id,
+    event_type: data.event_type,
+    target_type: data.target_type,
+    target_id: data.target_id,
+    created_at: data.created_at,
+    source: "user_scope"
+  };
+}
+
+function isStudyProgressSummaryPayload(value: unknown): value is StudyProgressSummary {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<StudyProgressSummary>;
+  return (
+    Boolean(data.progress_status && PROGRESS_STATUSES.has(data.progress_status)) &&
+    typeof data.opened_blocks_count === "number" &&
+    typeof data.studied_blocks_count === "number" &&
+    typeof data.prepared_materials_count === "number" &&
+    typeof data.studied_materials_count === "number" &&
+    typeof data.review_due === "boolean" &&
+    Boolean(data.review_basis && PROGRESS_REVIEW_BASES.has(data.review_basis)) &&
+    typeof data.reviewed_questions_count === "number" &&
+    typeof data.weak_topics_count === "number" &&
+    data.source === "user_scope"
+  );
+}
+
+function normalizeStudyProgressSummaryPayload(data: StudyProgressSummary): StudyProgressSummary {
+  return {
+    progress_status: data.progress_status,
+    opened_blocks_count: data.opened_blocks_count,
+    studied_blocks_count: data.studied_blocks_count,
+    prepared_materials_count: data.prepared_materials_count,
+    studied_materials_count: data.studied_materials_count,
+    review_due: data.review_due,
+    review_basis: data.review_basis,
+    reviewed_questions_count: data.reviewed_questions_count,
+    weak_topics_count: data.weak_topics_count,
+    source: "user_scope"
+  };
+}
+
+export async function createStudyProgressEvent(
+  input: StudyProgressEventRequest
+): Promise<StudyProgressEventResult> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: o progresso real não foi registrado.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "O registro de progresso não está configurado neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch("/api/study/progress/events", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      cache: "no-store",
+      body: JSON.stringify({
+        event_type: input.event_type,
+        target_type: input.target_type,
+        target_id: input.target_id,
+        idempotency_key: input.idempotency_key ?? null
+      })
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível registrar esta ação agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "O registro de progresso não está configurado neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para acompanhar seu progresso.", response.status);
+    }
+    if (response.status === 422) {
+      return makeApiFailure(
+        "backend",
+        "invalid_request",
+        "Não foi possível registrar esta ação agora.",
+        response.status
+      );
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível registrar esta ação agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as StudyProgressEventResponse;
+      if (!isStudyProgressEventPayload(data)) {
+        return makeApiFailure(
+          "backend",
+          "invalid_response",
+          "Não foi possível registrar esta ação agora.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data: normalizeStudyProgressEventPayload(data),
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure(
+        "backend",
+        "invalid_response",
+        "Não foi possível registrar esta ação agora.",
+        response.status
+      );
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível registrar esta ação agora.");
+  }
+}
+
+export async function fetchStudyProgressSummary(): Promise<StudyProgressSummaryResult> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: o progresso real não foi consultado.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "O resumo de progresso não está configurado neste ambiente."
+    );
+  }
+
+  try {
+    const response = await fetch("/api/study/progress/summary", {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (response.status === 502) {
+      return makeApiFailure(
+        "offline",
+        "backend_offline",
+        "Não foi possível carregar seu resumo de progresso agora.",
+        502
+      );
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "O resumo de progresso não está configurado neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para acompanhar seu progresso.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível carregar seu resumo de progresso agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as StudyProgressSummary;
+      if (!isStudyProgressSummaryPayload(data)) {
+        return makeApiFailure(
+          "backend",
+          "invalid_response",
+          "Não foi possível carregar seu resumo de progresso agora.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data: normalizeStudyProgressSummaryPayload(data),
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure(
+        "backend",
+        "invalid_response",
+        "Não foi possível carregar seu resumo de progresso agora.",
+        response.status
+      );
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível carregar seu resumo de progresso agora.");
+  }
 }
 
 export async function fetchNextReviewBlock(): Promise<ApiResult<BackendNextReviewBlock>> {
