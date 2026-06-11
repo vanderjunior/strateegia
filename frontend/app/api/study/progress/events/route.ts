@@ -73,24 +73,39 @@ function toSafeNullableString(value: unknown): string | null {
   return safe || null;
 }
 
-function toSafeEventType(value: unknown): StudyProgressEventType {
+function toSafeEventType(value: unknown): StudyProgressEventType | null {
   return typeof value === "string" && EVENT_TYPES.has(value as StudyProgressEventType)
     ? (value as StudyProgressEventType)
-    : "block_opened";
+    : null;
 }
 
-function toSafeTargetType(value: unknown): StudyProgressTargetType {
+function toSafeTargetType(value: unknown): StudyProgressTargetType | null {
   return typeof value === "string" && TARGET_TYPES.has(value as StudyProgressTargetType)
     ? (value as StudyProgressTargetType)
-    : "block";
+    : null;
 }
 
-function sanitizeProgressEventRequest(payload: unknown): StudyProgressEventRequest {
+function invalidProgressEventRequest() {
+  return NextResponse.json(
+    { detail: "Não foi possível registrar este bloco." },
+    { status: 422 }
+  );
+}
+
+function sanitizeProgressEventRequest(payload: unknown): StudyProgressEventRequest | null {
   const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const eventType = toSafeEventType(raw.event_type);
+  const targetType = toSafeTargetType(raw.target_type);
+  const targetId = toSafeString(raw.target_id);
+
+  if (!eventType || !targetType || !targetId) {
+    return null;
+  }
+
   return {
-    event_type: toSafeEventType(raw.event_type),
-    target_type: toSafeTargetType(raw.target_type),
-    target_id: toSafeString(raw.target_id),
+    event_type: eventType,
+    target_type: targetType,
+    target_id: targetId,
     idempotency_key: toSafeNullableString(raw.idempotency_key)
   };
 }
@@ -99,8 +114,8 @@ function sanitizeProgressEventResponse(payload: unknown): StudyProgressEventResp
   const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
   return {
     event_id: toSafeString(raw.event_id),
-    event_type: toSafeEventType(raw.event_type),
-    target_type: toSafeTargetType(raw.target_type),
+    event_type: toSafeEventType(raw.event_type) ?? "block_opened",
+    target_type: toSafeTargetType(raw.target_type) ?? "block",
     target_id: toSafeString(raw.target_id),
     created_at: toSafeString(raw.created_at),
     source: "user_scope"
@@ -123,6 +138,11 @@ export async function POST(request: Request) {
   } catch {
     body = {};
   }
+  const sanitizedBody = sanitizeProgressEventRequest(body);
+
+  if (!sanitizedBody) {
+    return invalidProgressEventRequest();
+  }
 
   try {
     const backendResponse = await fetch(`${baseUrl}/api/study/progress/events`, {
@@ -136,7 +156,7 @@ export async function POST(request: Request) {
         "Content-Type": "application/json"
       },
       cache: "no-store",
-      body: JSON.stringify(sanitizeProgressEventRequest(body))
+      body: JSON.stringify(sanitizedBody)
     });
 
     if (!backendResponse.ok) {

@@ -82,7 +82,7 @@ describe("study progress API wrappers", () => {
   it.each([
     [401, "auth_required", "Entre para acompanhar seu progresso."],
     [403, "auth_required", "Entre para acompanhar seu progresso."],
-    [422, "invalid_request", "Não foi possível registrar esta ação agora."],
+    [422, "invalid_request", "Não foi possível registrar este bloco."],
     [502, "backend_offline", "Não foi possível registrar esta ação agora."],
     [503, "missing_base_url", "O registro de progresso não está configurado neste ambiente."]
   ])("createStudyProgressEvent maps HTTP %i to %s", async (status, code, message) => {

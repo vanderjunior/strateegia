@@ -555,9 +555,9 @@ Safety observations:
 - Progress summary and event responses did not expose raw extracted text, chunk bodies, section bodies, storage paths, tokens, password hashes, selected answers, answer payloads, gabarito, answer keys, correct answers, score, correction, progress payload internals, or internal traces.
 - The UI copy remained block-scoped: `Bloco marcado como estudado.` / `Estudo registrado`; it did not claim material completion, score, official correction, simulado execution, or progress-aware review scheduling.
 
-Follow-up needed:
+Progress-C-Fix-A resolution:
 
-- Direct backend invalid progress payload with extra unsafe fields returned `422`, but the frontend progress-events proxy currently sanitizes an unknown `event_type` into `block_opened` and returns `200`. Tighten the frontend proxy to preserve invalid-request behavior before expanding progress UI beyond this explicit block-level button.
+- Direct backend invalid progress payload with extra unsafe fields returned `422`; the frontend progress-events proxy now also rejects unknown or missing `event_type`, `target_type`, or `target_id` with `422` instead of coercing invalid input into `block_opened`.
 
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 

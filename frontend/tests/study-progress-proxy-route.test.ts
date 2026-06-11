@@ -89,6 +89,89 @@ describe("study progress same-origin proxy routes", () => {
     });
   });
 
+  it.each([
+    [
+      "unknown event_type",
+      {
+        event_type: "invalid_event",
+        target_type: "block",
+        target_id: "study-block:material:doc-1:0"
+      }
+    ],
+    [
+      "unknown target_type",
+      {
+        event_type: "block_marked_studied",
+        target_type: "invalid_target",
+        target_id: "study-block:material:doc-1:0"
+      }
+    ],
+    [
+      "missing event_type",
+      {
+        target_type: "block",
+        target_id: "study-block:material:doc-1:0"
+      }
+    ],
+    [
+      "missing target_type",
+      {
+        event_type: "block_marked_studied",
+        target_id: "study-block:material:doc-1:0"
+      }
+    ],
+    [
+      "missing target_id",
+      {
+        event_type: "block_marked_studied",
+        target_type: "block"
+      }
+    ],
+    [
+      "unsafe fields with invalid event_type",
+      {
+        event_type: "invalid_event",
+        target_type: "block",
+        target_id: "study-block:material:doc-1:0",
+        answer: "A",
+        answer_key: "A",
+        gabarito: "A",
+        correct_answer: "A",
+        score: 10,
+        correction: "official",
+        raw_text: "RAW-SHOULD-NOT-LEAK",
+        storage_path: "/Users/private/file.md",
+        token: "TOKEN-SHOULD-NOT-LEAK",
+        internal_trace: "TRACE-SHOULD-NOT-LEAK"
+      }
+    ]
+  ])("returns 422 locally for %s and does not call backend", async (_caseName, body) => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const response = await POST(
+      new Request("http://localhost/api/study/progress/events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      })
+    );
+    const dumped = await response.text();
+
+    expect(response.status).toBe(422);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(dumped).not.toContain("block_opened");
+    expect(dumped).not.toContain("answer_key");
+    expect(dumped).not.toContain("gabarito");
+    expect(dumped).not.toContain("correct_answer");
+    expect(dumped).not.toContain("score");
+    expect(dumped).not.toContain("correction");
+    expect(dumped).not.toContain("RAW-SHOULD-NOT-LEAK");
+    expect(dumped).not.toContain("storage_path");
+    expect(dumped).not.toContain("TOKEN-SHOULD-NOT-LEAK");
+    expect(dumped).not.toContain("TRACE-SHOULD-NOT-LEAK");
+  });
+
   it("GET targets backend progress summary endpoint and forwards cookies", async () => {
     const fetchSpy = vi.fn(async () =>
       new Response(
@@ -254,24 +337,33 @@ describe("study progress same-origin proxy routes", () => {
       )
     );
 
-    expect((await POST(new Request("http://localhost/api/study/progress/events", { method: "POST" }))).status).toBe(status);
+    expect(
+      (
+        await POST(
+          new Request("http://localhost/api/study/progress/events", {
+            method: "POST",
+            body: JSON.stringify({
+              event_type: "block_marked_studied",
+              target_type: "block",
+              target_id: "study-block:material:doc-1:0"
+            })
+          })
+        )
+      ).status
+    ).toBe(status);
     expect((await GET(new Request("http://localhost/api/study/progress/summary", { method: "GET" }))).status).toBe(status);
   });
 
-  it("passes through backend validation status 422 for invalid event posts", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(JSON.stringify({ detail: "Invalid request." }), {
-          status: 422,
-          headers: { "content-type": "application/json" }
-        })
-      )
-    );
+  it("returns 422 for an empty event post without creating defaults", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
 
     const response = await POST(new Request("http://localhost/api/study/progress/events", { method: "POST" }));
+    const dumped = await response.text();
 
     expect(response.status).toBe(422);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(dumped).not.toContain("block_opened");
   });
 
   it("returns 503 when backend base URL is missing", async () => {
@@ -290,7 +382,20 @@ describe("study progress same-origin proxy routes", () => {
       })
     );
 
-    expect((await POST(new Request("http://localhost/api/study/progress/events", { method: "POST" }))).status).toBe(502);
+    expect(
+      (
+        await POST(
+          new Request("http://localhost/api/study/progress/events", {
+            method: "POST",
+            body: JSON.stringify({
+              event_type: "block_marked_studied",
+              target_type: "block",
+              target_id: "study-block:material:doc-1:0"
+            })
+          })
+        )
+      ).status
+    ).toBe(502);
     expect((await GET(new Request("http://localhost/api/study/progress/summary", { method: "GET" }))).status).toBe(502);
   });
 });

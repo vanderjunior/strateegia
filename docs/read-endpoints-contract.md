@@ -713,7 +713,7 @@ Purpose:
 - not persist answer attempts as correction records
 - not create studied/completed material state
 - not expose answer keys, gabarito, scores, correction payloads, raw content, storage paths, or internal traces
-- implemented in Progress-B as a backend contract; frontend same-origin proxy/API helper implemented in Progress-C and visible UI remains pending
+- implemented in Progress-B as a backend contract; frontend same-origin proxy/API helper implemented in Progress-C; minimal explicit `Marcar bloco como estudado` UI implemented in Progress-D
 
 Request shape:
 
@@ -752,7 +752,7 @@ Rules:
 - extra fields such as answer payloads, score, answer keys, or gabarito are rejected
 - frontend proxy path is `POST /api/study/progress/events`
 - frontend API helper is `createStudyProgressEvent(input)`
-- frontend proxy forwards cookies server-side, strips request fields outside `event_type`, `target_type`, `target_id`, and `idempotency_key`, and whitelists response fields
+- frontend proxy forwards cookies server-side, strips request fields outside `event_type`, `target_type`, `target_id`, and `idempotency_key`, rejects unknown or missing required enum/id fields with `422`, and whitelists response fields
 
 ### `GET /api/study/progress/summary`
 

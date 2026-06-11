@@ -553,7 +553,7 @@ export async function createStudyProgressEvent(
       return makeApiFailure(
         "backend",
         "invalid_request",
-        "Não foi possível registrar esta ação agora.",
+        "Não foi possível registrar este bloco.",
         response.status
       );
     }
