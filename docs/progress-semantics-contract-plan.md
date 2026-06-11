@@ -247,6 +247,11 @@ Minimal UI implemented in Progress-D:
 - stable idempotency key: `block_marked_studied:<block_id>`
 - caution copy says the action registers only the block and does not complete the material
 
+Progress-QA-A observation:
+
+- Compose/browser/API QA confirmed no automatic page-load progress event, explicit click registration, `studied_blocks_count` increment, `studied_materials_count=0`, and idempotent repeat behavior.
+- Follow-up: backend invalid payloads return `422`, but the frontend proxy currently sanitizes an unknown `event_type` into `block_opened`; the proxy should preserve invalid-request behavior before broader progress UI is added.
+
 Possible future UI:
 
 - `Continuar depois`

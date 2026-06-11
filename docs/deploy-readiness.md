@@ -527,6 +527,40 @@ Safety observations:
 
 No review detail page, progress mutation, persisted review state, attempts, official correction, score, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
+### Explicit Block Progress QA Closeout
+
+Progress-QA-A validated the minimal explicit block study progress path in the Compose stack.
+
+Observed:
+
+- `docker compose ps` showed backend and frontend running.
+- The running frontend image was stale and initially returned `404` for `/api/study/progress/summary`; rebuilding/recreating the frontend exposed the proxy route.
+- The running backend image was stale and initially returned backend `404` through the proxy; rebuilding/recreating the backend exposed `POST /api/study/progress/events` and `GET /api/study/progress/summary`.
+- Backend `GET /api/exam-profiles` returned `200`.
+- Frontend `/` returned `200`.
+- Login through frontend `/api/auth/login` with the existing local `compose-qa-seed` user returned `200`.
+- Authenticated `/api/auth/me` returned `authenticated=true`.
+- Authenticated `/api/study/blocks` returned three available study blocks for the seeded user.
+- Before opening the block detail page, authenticated `/api/study/progress/summary` returned `studied_blocks_count=0`, `opened_blocks_count=0`, `prepared_materials_count=3`, `studied_materials_count=0`, and `review_basis=prepared_materials`.
+- Opening `/study/blocks/study-block%3Amaterial%3Acb9d0e82-0098-41be-bac1-36757be581fc%3A0` in the browser showed `Marcar bloco como estudado` and the caution `Esta ação registra apenas este bloco. Ela não conclui o material.`
+- After opening the block detail page but before clicking, authenticated `/api/study/progress/summary` still returned `studied_blocks_count=0` and `opened_blocks_count=0`, confirming no automatic page-load progress event.
+- Clicking `Marcar bloco como estudado` showed `Bloco marcado como estudado.` and `Estudo registrado`.
+- After the click, authenticated `/api/study/progress/summary` returned `studied_blocks_count=1`, `opened_blocks_count=0`, `prepared_materials_count=3`, and `studied_materials_count=0`.
+- Repeating the same event through the frontend proxy with idempotency key `block_marked_studied:study-block:material:cb9d0e82-0098-41be-bac1-36757be581fc:0` returned the stable event and did not increase `studied_blocks_count`.
+- Unauthenticated `POST /api/study/progress/events` returned `401`.
+
+Safety observations:
+
+- The browser UI did not show `Concluir material` or `Marcar material como concluído`.
+- Progress summary and event responses did not expose raw extracted text, chunk bodies, section bodies, storage paths, tokens, password hashes, selected answers, answer payloads, gabarito, answer keys, correct answers, score, correction, progress payload internals, or internal traces.
+- The UI copy remained block-scoped: `Bloco marcado como estudado.` / `Estudo registrado`; it did not claim material completion, score, official correction, simulado execution, or progress-aware review scheduling.
+
+Follow-up needed:
+
+- Direct backend invalid progress payload with extra unsafe fields returned `422`, but the frontend progress-events proxy currently sanitizes an unknown `event_type` into `block_opened` and returns `200`. Tighten the frontend proxy to preserve invalid-request behavior before expanding progress UI beyond this explicit block-level button.
+
+No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
+
 ### Representative QA Seed
 
 Use the local seed script when the Compose volume needs representative browser QA data:
