@@ -16,7 +16,7 @@ const navigationItems = [
   { label: "Estudo", href: "/study", status: "Depende de edital" },
   { label: "Ciclo", href: "/pscpp/ciclo", status: "Aguardando edital analisado" },
   { label: "Questões", status: "Em preparação" },
-  { label: "Simulados", status: "Em preparação" },
+  { label: "Avaliações", status: "Em preparação" },
   { label: "PSCPP", href: "/pscpp", status: "Referência" },
   { label: "Execução", status: "Ainda não disponível" }
 ] as const;

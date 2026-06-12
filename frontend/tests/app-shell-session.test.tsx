@@ -168,7 +168,7 @@ describe("session status notice", () => {
     );
     expect(screen.getByText("Questões").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getAllByText("Em preparação").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("Simulados").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Avaliações").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText("Execução").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText("Ainda não disponível")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Execução/i })).not.toBeInTheDocument();

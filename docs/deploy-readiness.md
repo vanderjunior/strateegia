@@ -571,6 +571,14 @@ Progress-Summary-D note:
 - `/study` now includes a compact read-only `Acompanhamento do estudo` card backed by `GET /api/study/progress/summary`.
 - The card displays explicit bounded counts only and does not send progress events, mark materials completed, change cumulative-review eligibility, expose scoring/correction, or add simulado behavior.
 
+Progress-Summary-QA-A follow-up:
+
+- After rebuilding/recreating the frontend container, browser/API QA confirmed backend `/api/exam-profiles` and frontend `/` returned `200`, frontend login with the existing `compose-qa-seed` user returned `200`, and `/api/auth/me` returned `authenticated=true`.
+- Baseline progress summary was `prepared_materials_count=3`, `studied_blocks_count=2`, `reviewed_questions_count=0`, `opened_blocks_count=1`, `studied_materials_count=0`, and `review_basis=prepared_materials`.
+- Opening and refreshing `/study` showed `Acompanhamento do estudo`, the explicit counts, and `Revisão sugerida com base em materiais preparados.` without changing summary counts.
+- Clicking `Marcar bloco como estudado` on a block detail showed `Bloco marcado como estudado.` / `Estudo registrado`, kept the copy that the action does not complete the material, and moved `studied_blocks_count` from `2` to `3`.
+- Returning to `/study` showed the updated `Blocos marcados como estudados` count while `studied_materials_count` stayed `0`; the disabled sidebar label was renamed from `Simulados` to `Avaliações` to keep the study surface from implying an executable future flow.
+
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
 ### Representative QA Seed
