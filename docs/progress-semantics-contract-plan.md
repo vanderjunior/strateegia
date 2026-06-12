@@ -251,6 +251,7 @@ Progress-QA-A observation:
 
 - Compose/browser/API QA confirmed no automatic page-load progress event, explicit click registration, `studied_blocks_count` increment, `studied_materials_count=0`, and idempotent repeat behavior.
 - Progress-C-Fix-A resolved the invalid-request follow-up: backend invalid payloads return `422`, and the frontend proxy now also rejects unknown or missing `event_type`, `target_type`, or `target_id` with `422` instead of coercing invalid input into a valid progress event.
+- Progress-QA-B confirmed the fixed frontend proxy path in Compose: invalid enum and missing-field requests returned `422` without creating events or changing progress counts, while a valid `block_marked_studied` request with unsafe extra fields was sanitized, incremented `studied_blocks_count` once, and remained idempotent on repeat.
 
 Possible future UI:
 

@@ -559,6 +559,13 @@ Progress-C-Fix-A resolution:
 
 - Direct backend invalid progress payload with extra unsafe fields returned `422`; the frontend progress-events proxy now also rejects unknown or missing `event_type`, `target_type`, or `target_id` with `422` instead of coercing invalid input into `block_opened`.
 
+Progress-QA-B follow-up:
+
+- After rebuilding/recreating the frontend container, Compose/API smoke confirmed backend `/api/exam-profiles` and frontend `/` returned `200`, frontend login with the existing `compose-qa-seed` user returned `200`, and `/api/auth/me` returned `authenticated=true`.
+- Baseline progress summary was `opened_blocks_count=1`, `studied_blocks_count=1`, `reviewed_questions_count=0`, `prepared_materials_count=3`, and `studied_materials_count=0`.
+- Frontend `POST /api/study/progress/events` returned `422` for invalid `event_type`, invalid `target_type`, missing `event_type`, missing `target_type`, and missing `target_id`; each response avoided `event_id`, default event values, and unsafe payload fields, and summary counts stayed unchanged.
+- A valid `block_marked_studied` request with extra unsafe fields returned only bounded event metadata, moved `studied_blocks_count` from `1` to `2`, and a repeat with the same idempotency key returned the same event without increasing the count again.
+
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
 ### Representative QA Seed
