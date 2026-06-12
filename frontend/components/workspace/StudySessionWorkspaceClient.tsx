@@ -5,8 +5,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { StudySessionWorkspaceViewModel } from "@/lib/api/types";
-import type { BackendNextReviewBlock, BackendNextStudySession, BackendStudyBlocks } from "@/lib/api/types";
-import { fetchNextReviewBlock, fetchNextStudySession, fetchStudyBlocks } from "@/lib/api/study";
+import type {
+  BackendNextReviewBlock,
+  BackendNextStudySession,
+  BackendStudyBlocks,
+  StudyProgressSummary
+} from "@/lib/api/types";
+import {
+  fetchNextReviewBlock,
+  fetchNextStudySession,
+  fetchStudyBlocks,
+  fetchStudyProgressSummary
+} from "@/lib/api/study";
 import {
   buildMockStudySessionWorkspaceViewModel,
   loadStudySessionWorkspaceViewModel
@@ -33,6 +43,8 @@ type ReviewCandidateState =
   | "not_ready"
   | "auth_required"
   | "unavailable";
+
+type ProgressSummaryState = "loading" | "ready" | "not_ready" | "auth_required" | "unavailable";
 
 function reviewBasisLabel(basis: BackendNextReviewBlock["basis"]) {
   return basis === "study_blocks" ? "Baseada em blocos disponíveis" : "Baseada em materiais preparados";
@@ -223,6 +235,96 @@ function ReviewCandidateCard({
   );
 }
 
+function progressReviewBasisMessage(basis: StudyProgressSummary["review_basis"]) {
+  if (basis === "prepared_materials") {
+    return "Revisão sugerida com base em materiais preparados.";
+  }
+  if (basis === "studied_materials") {
+    return "Revisão sugerida com base nas ações registradas.";
+  }
+  return null;
+}
+
+function ProgressSummaryCard({
+  summary,
+  state
+}: {
+  summary: StudyProgressSummary | null;
+  state: ProgressSummaryState;
+}) {
+  if (state === "loading") {
+    return null;
+  }
+
+  if (!summary || state === "auth_required" || state === "unavailable" || state === "not_ready") {
+    const message =
+      state === "auth_required"
+        ? "Entre para acompanhar seu estudo."
+        : state === "unavailable"
+          ? "Não foi possível carregar seu acompanhamento agora."
+          : "Seu acompanhamento aparecerá quando houver ações registradas.";
+
+    return (
+      <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+        <div className="section-kicker">acompanhamento</div>
+        <CardTitle className="mt-4 break-words text-[1.45rem] leading-[1.05]">
+          Acompanhamento do estudo
+        </CardTitle>
+        <p className="mt-3 text-sm leading-7 text-silver">{message}</p>
+      </Card>
+    );
+  }
+
+  const basisMessage = progressReviewBasisMessage(summary.review_basis);
+
+  return (
+    <Card className="border-[rgba(168,184,196,0.12)] bg-[rgba(255,255,255,0.02)]">
+      <div className="section-kicker">acompanhamento</div>
+      <CardTitle className="mt-4 break-words text-[1.45rem] leading-[1.05]">
+        Acompanhamento do estudo
+      </CardTitle>
+      <p className="mt-3 text-sm leading-7 text-silver">Resumo das ações registradas por você.</p>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Materiais preparados</p>
+          <p className="mt-2 text-2xl text-ink">{summary.prepared_materials_count}</p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Blocos marcados como estudados</p>
+          <p className="mt-2 text-2xl text-ink">{summary.studied_blocks_count}</p>
+        </div>
+        <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Questões revisadas sem pontuação</p>
+          <p className="mt-2 text-2xl text-ink">{summary.reviewed_questions_count}</p>
+        </div>
+      </div>
+
+      {summary.opened_blocks_count > 0 || summary.weak_topics_count > 0 ? (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {summary.opened_blocks_count > 0 ? (
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted">Blocos abertos</p>
+              <p className="mt-2 text-2xl text-ink">{summary.opened_blocks_count}</p>
+            </div>
+          ) : null}
+          {summary.weak_topics_count > 0 ? (
+            <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted">Pontos para reforço</p>
+              <p className="mt-2 text-2xl text-ink">{summary.weak_topics_count}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {basisMessage ? <p className="mt-5 text-sm leading-7 text-silver">{basisMessage}</p> : null}
+      <p className="mt-4 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
+        Este resumo não conclui materiais automaticamente. Respostas oficiais e notas não fazem parte desta etapa.
+      </p>
+    </Card>
+  );
+}
+
 export function StudySessionWorkspaceClient() {
   const [viewModel, setViewModel] = useState<StudySessionWorkspaceViewModel>(
     buildMockStudySessionWorkspaceViewModel()
@@ -238,6 +340,8 @@ export function StudySessionWorkspaceClient() {
   >("loading");
   const [nextReviewBlock, setNextReviewBlock] = useState<BackendNextReviewBlock | null>(null);
   const [nextReviewBlockState, setNextReviewBlockState] = useState<ReviewCandidateState>("loading");
+  const [progressSummary, setProgressSummary] = useState<StudyProgressSummary | null>(null);
+  const [progressSummaryState, setProgressSummaryState] = useState<ProgressSummaryState>("loading");
 
   useEffect(() => {
     let active = true;
@@ -246,9 +350,10 @@ export function StudySessionWorkspaceClient() {
       loadRealUserStudyReadiness(),
       fetchStudyBlocks(),
       fetchNextStudySession(),
-      fetchNextReviewBlock()
+      fetchNextReviewBlock(),
+      fetchStudyProgressSummary()
     ]).then(
-      ([nextViewModel, nextReadiness, blocksResult, nextSessionResult, nextReviewResult]) => {
+      ([nextViewModel, nextReadiness, blocksResult, nextSessionResult, nextReviewResult, progressResult]) => {
         if (active) {
           setViewModel(nextViewModel);
           setReadiness(nextReadiness);
@@ -298,6 +403,22 @@ export function StudySessionWorkspaceClient() {
           } else {
             setNextReviewBlock(null);
             setNextReviewBlockState("unavailable");
+          }
+          if (progressResult.ok) {
+            setProgressSummary(progressResult.data);
+            setProgressSummaryState(progressResult.data.progress_status === "not_ready" ? "not_ready" : "ready");
+          } else if (
+            progressResult.error.code === "auth_required" ||
+            progressResult.error.code === "unauthorized"
+          ) {
+            setProgressSummary(null);
+            setProgressSummaryState("auth_required");
+          } else if (progressResult.error.code === "not_ready") {
+            setProgressSummary(null);
+            setProgressSummaryState("not_ready");
+          } else {
+            setProgressSummary(null);
+            setProgressSummaryState("unavailable");
           }
         }
       }
@@ -364,6 +485,8 @@ export function StudySessionWorkspaceClient() {
         </Card>
 
         <ReviewCandidateCard review={nextReviewBlock} state={nextReviewBlockState} compact />
+
+        <ProgressSummaryCard summary={progressSummary} state={progressSummaryState} />
 
         <section className="space-y-4">
           <div>
@@ -523,6 +646,8 @@ export function StudySessionWorkspaceClient() {
         </section>
 
         <ReviewCandidateCard review={nextReviewBlock} state={nextReviewBlockState} compact />
+
+        <ProgressSummaryCard summary={progressSummary} state={progressSummaryState} />
       </div>
     );
   }
@@ -574,6 +699,8 @@ export function StudySessionWorkspaceClient() {
         </Card>
 
         <ReviewCandidateCard review={nextReviewBlock} state={nextReviewBlockState} />
+
+        <ProgressSummaryCard summary={progressSummary} state={progressSummaryState} />
       </div>
     );
   }

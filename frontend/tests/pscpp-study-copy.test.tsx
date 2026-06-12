@@ -78,6 +78,15 @@ vi.mock("@/lib/api/study", () => ({
       code: "not_ready",
       message: "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada."
     }
+  })),
+  fetchStudyProgressSummary: vi.fn(async () => ({
+    ok: false,
+    status: 200,
+    source: "backend",
+    error: {
+      code: "not_ready",
+      message: "Seu acompanhamento aparecerá quando houver ações registradas."
+    }
   }))
 }));
 

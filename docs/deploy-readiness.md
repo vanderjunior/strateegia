@@ -566,6 +566,11 @@ Progress-QA-B follow-up:
 - Frontend `POST /api/study/progress/events` returned `422` for invalid `event_type`, invalid `target_type`, missing `event_type`, missing `target_type`, and missing `target_id`; each response avoided `event_id`, default event values, and unsafe payload fields, and summary counts stayed unchanged.
 - A valid `block_marked_studied` request with extra unsafe fields returned only bounded event metadata, moved `studied_blocks_count` from `1` to `2`, and a repeat with the same idempotency key returned the same event without increasing the count again.
 
+Progress-Summary-D note:
+
+- `/study` now includes a compact read-only `Acompanhamento do estudo` card backed by `GET /api/study/progress/summary`.
+- The card displays explicit bounded counts only and does not send progress events, mark materials completed, change cumulative-review eligibility, expose scoring/correction, or add simulado behavior.
+
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
 ### Representative QA Seed

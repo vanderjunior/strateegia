@@ -247,6 +247,15 @@ Minimal UI implemented in Progress-D:
 - stable idempotency key: `block_marked_studied:<block_id>`
 - caution copy says the action registers only the block and does not complete the material
 
+Read-only summary UI implemented in Progress-Summary-D:
+
+- `/study` shows `Acompanhamento do estudo` from `fetchStudyProgressSummary()`
+- displays explicit counts only: prepared materials, blocks marked as studied, reviewed questions without scoring, optional opened blocks, and optional reinforcement count
+- no automatic progress write events
+- no material completion derivation
+- no progress-aware review-after-3 eligibility
+- no scoring, official correction, answer-key handling, or simulado behavior
+
 Progress-QA-A observation:
 
 - Compose/browser/API QA confirmed no automatic page-load progress event, explicit click registration, `studied_blocks_count` increment, `studied_materials_count=0`, and idempotent repeat behavior.

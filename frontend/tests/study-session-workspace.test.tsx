@@ -4,13 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const nextStudySessionMock = vi.hoisted(() => ({
   fetchStudyBlocks: vi.fn(),
   fetchNextStudySession: vi.fn(),
-  fetchNextReviewBlock: vi.fn()
+  fetchNextReviewBlock: vi.fn(),
+  fetchStudyProgressSummary: vi.fn(),
+  createStudyProgressEvent: vi.fn()
 }));
 
 vi.mock("@/lib/api/study", () => ({
   fetchStudyBlocks: nextStudySessionMock.fetchStudyBlocks,
   fetchNextStudySession: nextStudySessionMock.fetchNextStudySession,
-  fetchNextReviewBlock: nextStudySessionMock.fetchNextReviewBlock
+  fetchNextReviewBlock: nextStudySessionMock.fetchNextReviewBlock,
+  fetchStudyProgressSummary: nextStudySessionMock.fetchStudyProgressSummary,
+  createStudyProgressEvent: nextStudySessionMock.createStudyProgressEvent
 }));
 
 vi.mock("@/lib/adapters/study-sessions", async () => {
@@ -92,11 +96,29 @@ function buildReadyReview(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function buildProgressSummary(overrides: Record<string, unknown> = {}) {
+  return {
+    progress_status: "ready",
+    opened_blocks_count: 1,
+    studied_blocks_count: 2,
+    prepared_materials_count: 3,
+    studied_materials_count: 0,
+    review_due: true,
+    review_basis: "prepared_materials",
+    reviewed_questions_count: 4,
+    weak_topics_count: 1,
+    source: "user_scope",
+    ...overrides
+  };
+}
+
 describe("StudySessionWorkspaceClient next prepared material session", () => {
   beforeEach(() => {
     nextStudySessionMock.fetchStudyBlocks.mockReset();
     nextStudySessionMock.fetchNextStudySession.mockReset();
     nextStudySessionMock.fetchNextReviewBlock.mockReset();
+    nextStudySessionMock.fetchStudyProgressSummary.mockReset();
+    nextStudySessionMock.createStudyProgressEvent.mockReset();
     nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
       ok: false,
       status: 200,
@@ -105,6 +127,12 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
         code: "not_ready",
         message: "Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada."
       }
+    });
+    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildProgressSummary()
     });
   });
 
@@ -171,6 +199,121 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
     expect(screen.queryByText("Concluir estudo")).not.toBeInTheDocument();
+    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
+  });
+
+  it("renders a read-only progress summary card from explicit counts", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        blocks_status: "ready",
+        scope_status: "material_only",
+        blocks_count: 1,
+        estimated_minutes: 6,
+        items: [
+          {
+            block_id: "block-progress",
+            title: "Bloco com acompanhamento",
+            topic_id: null,
+            topic_label: null,
+            subtopic_id: null,
+            subtopic_label: null,
+            material_id: "doc-progress",
+            material_title: "Material preparado",
+            sections_count: 1,
+            summary_status: "ready",
+            estimated_minutes: 6,
+            status: "ready",
+            actions: []
+          }
+        ],
+        source: "user_scope"
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: { code: "backend_offline", message: "Não foi possível carregar a sessão agora." }
+    });
+    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildProgressSummary()
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Acompanhamento do estudo")).toBeInTheDocument();
+    expect(screen.getByText("Resumo das ações registradas por você.")).toBeInTheDocument();
+    expect(screen.getByText("Materiais preparados")).toBeInTheDocument();
+    expect(screen.getByText("Blocos marcados como estudados")).toBeInTheDocument();
+    expect(screen.getByText("Questões revisadas sem pontuação")).toBeInTheDocument();
+    expect(screen.getByText("Blocos abertos")).toBeInTheDocument();
+    expect(screen.getByText("Pontos para reforço")).toBeInTheDocument();
+    expect(screen.getByText("Revisão sugerida com base em materiais preparados.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Este resumo não conclui materiais automaticamente. Respostas oficiais e notas não fazem parte desta etapa.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(nextStudySessionMock.fetchStudyProgressSummary).toHaveBeenCalledTimes(1);
+    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
+  });
+
+  it("handles auth-required and unavailable progress summary states safely", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: false,
+      status: 401,
+      source: "backend",
+      error: {
+        code: "auth_required",
+        message: "Entre para ver seus blocos de estudo."
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 401,
+      source: "backend",
+      error: {
+        code: "auth_required",
+        message: "Entre para ver sua sessão de estudo."
+      }
+    });
+    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      source: "backend",
+      error: {
+        code: "auth_required",
+        message: "Entre para acompanhar seu progresso."
+      }
+    });
+
+    const { unmount } = render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Entre para acompanhar seu estudo.")).toBeInTheDocument();
+    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
+
+    unmount();
+    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: {
+        code: "backend_offline",
+        message: "Não foi possível carregar seu resumo de progresso agora."
+      }
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Não foi possível carregar seu acompanhamento agora.")).toBeInTheDocument();
+    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
   });
 
   it("renders material-only study blocks when edital scope is not connected", async () => {
