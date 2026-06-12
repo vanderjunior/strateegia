@@ -1491,6 +1491,45 @@ def _prepared_review_material_summaries(
     return prepared_summaries
 
 
+def _explicitly_studied_block_ids(repository: JsonStudyRepository, user_id: str) -> set[str]:
+    return {
+        str(event.get("target_id"))
+        for event in repository.list_study_progress_events(user_id=user_id)
+        if event.get("event_type") == "block_marked_studied" and event.get("target_type") == "block"
+    }
+
+
+def _studied_material_ids_from_blocks(
+    prepared_summaries: list[tuple[object, dict[str, object]]],
+    block_items: list[dict[str, object]],
+    studied_block_ids: set[str],
+) -> set[str]:
+    prepared_material_ids = {
+        str(summary["document_id"])
+        for _, summary in prepared_summaries
+        if isinstance(summary.get("document_id"), str)
+    }
+    block_ids_by_material: dict[str, set[str]] = {
+        document_id: set()
+        for document_id in prepared_material_ids
+    }
+
+    for block in block_items:
+        material_id = block.get("material_id")
+        block_id = block.get("block_id")
+        if not isinstance(material_id, str) or not isinstance(block_id, str):
+            continue
+        if material_id not in block_ids_by_material:
+            continue
+        block_ids_by_material[material_id].add(block_id)
+
+    return {
+        material_id
+        for material_id, block_ids in block_ids_by_material.items()
+        if block_ids and block_ids.issubset(studied_block_ids)
+    }
+
+
 def _not_ready_review_block_response(materials_count: int = 0, blocks_count: int = 0) -> dict[str, object]:
     return {
         "review_status": "not_ready",
@@ -1548,15 +1587,36 @@ def _bounded_review_reinforcement_item(block: dict[str, object]) -> dict[str, ob
 
 def _bounded_next_review_block_response(repository: JsonStudyRepository, user_id: str) -> dict[str, object]:
     prepared_summaries = _prepared_review_material_summaries(repository, user_id)
-    materials_count = len(prepared_summaries)
+    prepared_materials_count = len(prepared_summaries)
     blocks = _bounded_study_blocks_response(repository, user_id)
     block_items = [item for item in blocks.get("items", []) if isinstance(item, dict)]
-    blocks_count = len(block_items)
+    all_blocks_count = len(block_items)
+    studied_material_ids = _studied_material_ids_from_blocks(
+        prepared_summaries,
+        block_items,
+        _explicitly_studied_block_ids(repository, user_id),
+    )
+    studied_materials_count = len(studied_material_ids)
+
+    if studied_materials_count >= 3:
+        basis = "studied_materials"
+        review_blocks = [
+            block
+            for block in block_items
+            if isinstance(block.get("material_id"), str) and str(block["material_id"]) in studied_material_ids
+        ]
+        materials_count = studied_materials_count
+        blocks_count = len(review_blocks)
+    else:
+        basis = "prepared_materials" if prepared_materials_count >= 3 else "study_blocks"
+        review_blocks = block_items
+        materials_count = prepared_materials_count
+        blocks_count = all_blocks_count
 
     if materials_count < 3 and blocks_count < 3:
         return _not_ready_review_block_response(materials_count, blocks_count)
 
-    selected_blocks = block_items[: min(5, len(block_items))]
+    selected_blocks = review_blocks[: min(5, len(review_blocks))]
     estimated_minutes = sum(int(block.get("estimated_minutes", 0) or 0) for block in selected_blocks)
     if estimated_minutes <= 0:
         estimated_minutes = max(5, min(30, blocks_count * 5))
@@ -1569,7 +1629,6 @@ def _bounded_next_review_block_response(repository: JsonStudyRepository, user_id
     all_blocks_ready = all(str(block.get("status")) == "ready" for block in selected_blocks)
     all_summaries_ready = all(str(block.get("summary_status")) == "ready" for block in selected_blocks)
     review_status = "ready" if all_blocks_ready and all_summaries_ready and questions_count > 0 else "needs_review"
-    basis = "prepared_materials" if materials_count >= 3 else "study_blocks"
     review_id = f"review:{basis}:{materials_count}:{blocks_count}"
     summary_status = "ready" if all_summaries_ready else "needs_review"
     questions_status = "ready" if questions_count > 0 and review_status == "ready" else "needs_review"
@@ -1647,8 +1706,21 @@ def _bounded_study_progress_summary_response(repository: JsonStudyRepository, us
             if event.get("event_type") == "question_reviewed" and event.get("target_type") == "question"
         ]
     )
-    prepared_materials_count = len(_prepared_review_material_summaries(repository, user_id))
-    review_due = prepared_materials_count >= 3
+    prepared_summaries = _prepared_review_material_summaries(repository, user_id)
+    prepared_materials_count = len(prepared_summaries)
+    blocks = _bounded_study_blocks_response(repository, user_id)
+    block_items = [item for item in blocks.get("items", []) if isinstance(item, dict)]
+    studied_materials_count = len(
+        _studied_material_ids_from_blocks(prepared_summaries, block_items, studied_blocks)
+    )
+    review_due = studied_materials_count >= 3 or prepared_materials_count >= 3
+    review_basis = (
+        "studied_materials"
+        if studied_materials_count >= 3
+        else "prepared_materials"
+        if prepared_materials_count >= 3
+        else "none"
+    )
     progress_status = "ready" if events or prepared_materials_count else "not_ready"
 
     return {
@@ -1656,9 +1728,9 @@ def _bounded_study_progress_summary_response(repository: JsonStudyRepository, us
         "opened_blocks_count": len(opened_blocks),
         "studied_blocks_count": len(studied_blocks),
         "prepared_materials_count": prepared_materials_count,
-        "studied_materials_count": 0,
+        "studied_materials_count": studied_materials_count,
         "review_due": review_due,
-        "review_basis": "prepared_materials" if review_due else "none",
+        "review_basis": review_basis,
         "reviewed_questions_count": reviewed_questions_count,
         "weak_topics_count": 0,
         "source": "user_scope",

@@ -4,7 +4,7 @@
 
 Define current and future study progress semantics before expanding controls such as material completion, review completion, scores, or progress-aware review scheduling.
 
-This began as a planning contract. Progress-B implemented the first backend-only explicit progress event endpoints: `POST /api/study/progress/events` and `GET /api/study/progress/summary`. Progress-C added frontend same-origin proxies plus `createStudyProgressEvent()` and `fetchStudyProgressSummary()` API helpers. Progress-D added one explicit block-detail control, `Marcar bloco como estudado`, which posts `block_marked_studied` only after a user click. It does not add automatic page-view progress, material completion derivation, persisted answer attempts as correction records, scores, answer keys, gabarito, official correction, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning contract. Progress-B implemented the first backend-only explicit progress event endpoints: `POST /api/study/progress/events` and `GET /api/study/progress/summary`. Progress-C added frontend same-origin proxies plus `createStudyProgressEvent()` and `fetchStudyProgressSummary()` API helpers. Progress-D added one explicit block-detail control, `Marcar bloco como estudado`, which posts `block_marked_studied` only after a user click. ReviewBlock-Progress-B added conservative backend derivation of `studied_materials_count` from explicit studied-block events. It does not add automatic page-view progress, material completion events, persisted answer attempts as correction records, scores, answer keys, gabarito, official correction, simulado execution, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -39,6 +39,7 @@ Available in backend only:
 - explicit user-scoped progress events can be recorded through `POST /api/study/progress/events`
 - bounded progress summary can be read through `GET /api/study/progress/summary`
 - `block_marked_studied` can increment studied block count
+- `studied_materials_count` is derived only when all backend-derived blocks for a prepared `study_material` are marked studied
 - `block_opened` is recordable only when explicitly posted and does not count as studied
 - `question_reviewed` can increment reviewed question count without storing answers, scoring, or correction
 
@@ -63,7 +64,7 @@ Not available today:
 - no persisted answer attempts as correction records
 - no completed state
 - no reviewed state
-- no material completion derivation
+- no material completion event or completed-material state
 - no official correction
 - no score
 - no exposed answer key or gabarito
@@ -154,6 +155,8 @@ Future-only rules:
 - requires progress semantics for required blocks
 - requires explicit completion criteria
 - should not be inferred from upload, preparation, opening, or answer review alone
+
+Current studied-material derivation does not create completed materials. It only counts materials whose existing study blocks have all been explicitly marked studied.
 
 ### `reviewed_material`
 
@@ -262,6 +265,7 @@ Progress-QA-A observation:
 - Progress-C-Fix-A resolved the invalid-request follow-up: backend invalid payloads return `422`, and the frontend proxy now also rejects unknown or missing `event_type`, `target_type`, or `target_id` with `422` instead of coercing invalid input into a valid progress event.
 - Progress-QA-B confirmed the fixed frontend proxy path in Compose: invalid enum and missing-field requests returned `422` without creating events or changing progress counts, while a valid `block_marked_studied` request with unsafe extra fields was sanitized, incremented `studied_blocks_count` once, and remained idempotent on repeat.
 - Progress-Summary-QA-A confirmed `/study` reads the summary without creating events, reflects a later explicit `block_marked_studied` click after returning to the page, and keeps material completion and progress-aware review-after-3 out of scope.
+- ReviewBlock-Progress-B added backend-only conservative studied-material derivation: all backend-derived blocks for a prepared `study_material` must have explicit `block_marked_studied` events. `review_basis=studied_materials` is returned only when at least 3 materials satisfy that rule; otherwise prepared-material review remains the fallback.
 
 Possible future UI:
 
@@ -372,8 +376,9 @@ Rules:
 - no raw attempts payload
 - no storage paths
 - no internal traces
-- `studied_materials_count` remains `0` until material completion derivation is explicitly approved
-- `review_basis=prepared_materials` can be used while review-after-3 is still based on prepared materials
+- `studied_materials_count` is conservatively derived from prepared `study_material` files whose backend-derived blocks all have explicit `block_marked_studied` events
+- `review_basis=studied_materials` is used only when at least 3 materials satisfy that rule
+- `review_basis=prepared_materials` remains the fallback when fewer than 3 studied materials exist but at least 3 prepared materials exist
 
 ## Event Semantics
 
@@ -572,6 +577,7 @@ No:
 ## Recommended Future Phases
 
 1. `Progress-QA-A`: browser/API QA for explicit block-level progress registration.
-2. `ReviewBlock-Progress-A`: make review-after-3 use studied materials after material completion semantics are explicit.
-3. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
-4. `Simulado-Planning-A`: plan simulation readiness and execution later.
+2. `ReviewBlock-Progress-C`: align frontend API/types if needed for `basis=studied_materials`.
+3. `ReviewBlock-Progress-QA-A`: browser/API QA for conservative studied-material review eligibility.
+4. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
+5. `Simulado-Planning-A`: plan simulation readiness and execution later.

@@ -4,7 +4,7 @@
 
 Define the future contract for cumulative review blocks after small batches of study materials.
 
-This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. ReviewBlock-D added a compact read-only cumulative review card on `/study`. It does not add a review detail page, progress mutation, studied/completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. ReviewBlock-D added a compact read-only cumulative review card on `/study`. ReviewBlock-Progress-B added backend-only conservative support for `basis=studied_materials` when at least 3 prepared `study_material` files have all of their backend-derived blocks explicitly marked studied. It does not add a review detail page, progress mutation from review reads, completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -36,7 +36,6 @@ Available today:
 
 Not available today:
 
-- no `material studied` event
 - no `material completed` state
 - no persisted answer attempts
 - no formal weakness history
@@ -64,7 +63,7 @@ Current product must not claim:
 - `progresso atualizado`
 - `revisão concluída`
 
-Future product may use `3 materiais estudados` only after an explicit Progress phase defines study activity, completion semantics, idempotency, persistence, and user-visible progress rules.
+Backend responses may use the internal `studied_materials` basis after the conservative all-blocks rule is satisfied. User-facing `3 materiais estudados` copy still requires a frontend copy phase and must not imply material completion.
 
 ## Proposed Staged Approach
 
@@ -126,7 +125,7 @@ Current UI rules:
 
 ### Stage 5: Progress-aware Review
 
-Only after a Progress phase exists, update eligibility from prepared-material counts to actual studied/completed activity.
+Implemented in ReviewBlock-Progress-B for backend eligibility only: `basis=studied_materials` is used when at least 3 prepared `study_material` files have all backend-derived blocks marked studied. Frontend copy and detail UI remain unchanged.
 
 ### Stage 6: Simulado Readiness
 
@@ -160,7 +159,7 @@ The endpoint:
 - not mark blocks as completed
 - not persist attempts or review history
 
-Frontend same-origin proxy/API and visible UI remain pending.
+Frontend same-origin proxy/API helper and the compact `/study` card already exist. A dedicated review detail page remains pending.
 
 ## Implemented Bounded Response Shape
 
@@ -237,7 +236,7 @@ Allowed `basis` values:
 - `study_blocks`
 - `studied_materials`
 
-`studied_materials` is reserved for a future Progress phase and is not used by the first implementation.
+`studied_materials` is used only when the backend conservative all-blocks rule derives at least 3 studied materials.
 
 Forbidden fields:
 

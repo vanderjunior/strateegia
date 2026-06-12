@@ -4,7 +4,7 @@
 
 Define how future cumulative review eligibility should move from prepared-material counts to studied-material counts without inventing completion semantics too early.
 
-This is a planning contract only. It does not change `GET /api/study/review/next`, `GET /api/study/progress/summary`, frontend behavior, progress mutation, review eligibility, material completion, scoring, correction, gabarito handling, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
+This began as a planning contract. ReviewBlock-Progress-B implemented the first backend-only conservative derivation: a `study_material` counts as studied only when every backend-derived study block for that material has an explicit user-scoped `block_marked_studied` event. This did not add frontend behavior, progress mutation from review reads, material completion events, scoring, correction, gabarito handling, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
 
 ## Product Objective
 
@@ -14,10 +14,10 @@ Future target rule:
 
 - after every 3 studied materials, offer a cumulative review
 
-Current safe rule:
+Current implemented safe rule:
 
-- cumulative review remains based on prepared materials or available study blocks
-- progress-aware eligibility is not implemented yet
+- cumulative review remains based on prepared materials or available study blocks until at least 3 conservatively studied materials exist
+- `review_basis=studied_materials` is backend-derived only when at least 3 materials satisfy the all-blocks rule
 - `material_type=study_material` plus preparation means a material is ready for study, not that it has been studied
 
 ## Current State
@@ -36,9 +36,9 @@ Available today:
 
 Important current limits:
 
-- `GET /api/study/review/next` still uses prepared materials or study blocks
+- `GET /api/study/review/next` uses `studied_materials` only when at least 3 materials satisfy the all-blocks rule; otherwise it falls back to prepared materials or study blocks
 - `review_basis` can be `prepared_materials`
-- `studied_materials_count` remains `0`
+- `studied_materials_count` is conservatively derived in the backend
 - no material completion semantics exist
 - no automatic progress writes exist
 - no score, gabarito, official correction, persisted attempts, or simulado execution exists
@@ -69,13 +69,14 @@ Rules:
 
 ### `studied_material`
 
-A future derived state indicating that a material has met approved study criteria.
+A backend-derived state indicating that a material has met the first approved study criteria.
 
 Rules:
 
-- must depend on a safe block-to-material relationship
+- depends on a safe block-to-material relationship
+- requires every backend-derived block for the material to have an explicit `block_marked_studied` event
 - must not be derived from upload, preparation, page open, or answer review alone
-- should remain `0` until the backend owns the derivation
+- does not mean the material is completed or mastered
 
 ### `review_eligible_material`
 
@@ -154,27 +155,27 @@ Cons:
 - needs clear conflict and idempotency rules
 - requires careful copy so explicit material action does not imply mastery
 
-Recommendation: start with Option A or Option D, but do not implement either until a dedicated backend phase defines the exact derivation and QA proves it safe.
+Implemented starting point: Option A. Option D remains a possible future extension if an explicit material-level action is later approved.
 
 ## Recommended Initial Rule
 
-For now:
+Current implemented rule:
 
-- `studied_materials_count` should remain `0`
-- `GET /api/study/review/next` should continue using prepared materials or study blocks
+- `studied_materials_count` counts only prepared `study_material` files whose backend-derived blocks are all marked studied
+- `GET /api/study/review/next` uses `basis=studied_materials` only when `studied_materials_count >= 3`
+- `GET /api/study/review/next` continues using prepared materials or study blocks when fewer than 3 studied materials exist
 - `/study` should continue saying `Baseada em materiais preparados` when `review_basis=prepared_materials`
 - the frontend must not infer `studied_materials` from `studied_blocks_count`
 - answer review and reinforcement must not count as proof that a material was studied
 
-When implemented later:
+Future refinements:
 
-- the backend may derive `studied_materials_count` only after it can map blocks to source material and determine that approved required blocks are studied
-- `review_basis` may become `studied_materials` only when at least 3 studied materials exist
 - if fewer than 3 studied materials exist but 3 prepared materials exist, the product may still show a prepared-material review as `revisão sugerida`, not as progress-aware review
+- material completion, explicit material action, percentages, and review completion remain separate future contracts
 
 ## Future Backend Strategy
 
-Recommended future phase: `ReviewBlock-Progress-B`.
+Implemented in `ReviewBlock-Progress-B`.
 
 Scope:
 
@@ -185,7 +186,7 @@ Scope:
 - do not create material completion records from review reads
 - do not use frontend-only derivation
 
-Potential backend rules:
+Backend rules:
 
 - list prepared `study_material` documents owned by the user
 - build or read backend-owned study blocks for each material
@@ -216,7 +217,7 @@ Potential backend rules:
 }
 ```
 
-These fields should change only after the backend implements the derivation. The frontend should render the backend-provided basis and counts, not compute eligibility.
+The backend now implements these fields when the all-blocks rule is satisfied. The frontend should render the backend-provided basis and counts, not compute eligibility.
 
 ## Relationship With Review Card
 
@@ -227,7 +228,7 @@ Current `/study` review card should:
 - avoid broken review-detail routes until a review detail page exists
 - avoid claiming studied or completed material
 
-Future `/study` review card may say:
+`/study` review card may say:
 
 - `Baseada em materiais estudados`
 
@@ -245,7 +246,7 @@ Current `/study` progress summary card should:
 - not show material completion
 - not show percentages or progress bars
 
-Future progress card may show studied materials only after backend derivation exists and copy is approved.
+Future progress card may show studied materials only when backend derivation returns a positive count and copy is approved.
 
 ## Relationship With Answer Review And Reinforcement
 
@@ -317,8 +318,7 @@ No:
 
 ## Recommended Future Phases
 
-1. `ReviewBlock-Progress-B`: backend conservative studied-material derivation planning/implementation.
-2. `ReviewBlock-Progress-C`: frontend API/type adjustments if backend response shape changes.
-3. `ReviewBlock-Progress-D`: UI copy update only if backend basis becomes `studied_materials`.
-4. `ReviewBlock-Progress-QA-A`: browser/API QA for studied-material review eligibility.
-5. `MaterialProgress-Planning-A`: plan explicit material-level action only if Option C or D is chosen.
+1. `ReviewBlock-Progress-C`: frontend API/type adjustments if the current frontend wrapper needs explicit `studied_materials` support.
+2. `ReviewBlock-Progress-D`: UI copy update only when backend basis is safely rendered as studied-material based.
+3. `ReviewBlock-Progress-QA-A`: browser/API QA for studied-material review eligibility.
+4. `MaterialProgress-Planning-A`: plan explicit material-level action only if Option C or D is chosen.

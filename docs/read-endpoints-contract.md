@@ -608,9 +608,9 @@ Rules:
 ### `GET /api/study/review/next`
 
 Purpose:
-- return the next bounded cumulative-review candidate from prepared study materials or available study blocks
-- keep the first review-after-3 contract read-only until progress semantics exist
-- not claim materials were studied, completed, or recorded as progress
+- return the next bounded cumulative-review candidate from conservatively studied materials when available, otherwise prepared study materials or available study blocks
+- keep the review-after-3 contract read-only
+- not claim materials were completed or mutate progress from review reads
 - implemented in ReviewBlock-B as a backend contract; frontend same-origin proxy/API helper implemented in ReviewBlock-C; a compact read-only `/study` review card was added in ReviewBlock-D
 
 Implemented ready/needs-review shape:
@@ -694,9 +694,9 @@ Rules:
 - unauthenticated returns `401`
 - only prepared `material_type=study_material` items count as primary review materials
 - `edital`, `bibliography`, `previous_exam`, `note`, `other`, and `unknown` do not count by default
-- fewer than 3 prepared study materials and fewer than 3 available study blocks return `not_ready`
-- 3 or more prepared study materials or study blocks can return `ready` or `needs_review`
-- `basis=studied_materials` is reserved for a future Progress phase and is not used now
+- fewer than 3 studied/prepared study materials and fewer than 3 available study blocks return `not_ready`
+- `basis=studied_materials` is returned only when at least 3 prepared `study_material` files have all backend-derived blocks explicitly marked studied
+- if fewer than 3 studied materials exist, 3 or more prepared study materials or study blocks can still return `ready` or `needs_review` with `basis=prepared_materials` or `basis=study_blocks`
 - repeated `GET` is idempotent and does not create review records, persist attempts, mark completion, mutate progress, generate simulados, call OCR, or call an LLM
 - answer keys, gabarito, correct answers, correct alternatives, official correction fields, scores, progress payloads, attempt payloads, raw content, chunks, section bodies, storage paths, tokens, and internal traces are forbidden
 - frontend proxy path is `GET /api/study/review/next`
@@ -758,8 +758,8 @@ Rules:
 
 Purpose:
 - return a bounded user-scoped progress summary from explicit progress events plus existing prepared-material state
-- keep material completion conservative until a future contract defines it
-- keep review-after-3 prepared-material based until a frontend/progress phase explicitly moves it to studied materials
+- derive studied-material count conservatively without creating material completion state
+- expose whether review basis is currently prepared-material or studied-material based
 
 Implemented shape:
 
@@ -784,8 +784,10 @@ Rules:
 - `studied_blocks_count` comes only from explicit `block_marked_studied` events
 - `reviewed_questions_count` comes only from explicit `question_reviewed` events
 - `prepared_materials_count` is derived from owned prepared `material_type=study_material` files
-- `studied_materials_count` remains `0` until material completion derivation is explicitly approved
-- `review_due` may be based on prepared materials while studied-material semantics are still pending
+- `studied_materials_count` is derived from owned prepared `study_material` files whose backend-derived blocks all have explicit `block_marked_studied` events
+- `review_basis=studied_materials` only when `studied_materials_count >= 3`
+- `review_basis=prepared_materials` when fewer than 3 studied materials exist but at least 3 prepared materials exist
+- `review_basis=none` otherwise
 - `weak_topics_count` remains `0` until persisted review/reinforcement signals are approved
 - responses must not claim `progresso atualizado`, `você concluiu`, official `acertos/erros`, score, gabarito, or correction
 - frontend proxy path is `GET /api/study/progress/summary`
