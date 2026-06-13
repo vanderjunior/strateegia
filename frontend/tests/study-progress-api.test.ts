@@ -213,6 +213,31 @@ describe("study progress API wrappers", () => {
     }
   );
 
+  it("preserves backend-provided studied material counts", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            ...summaryPayload(),
+            studied_materials_count: 3,
+            review_basis: "studied_materials"
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const result = await fetchStudyProgressSummary();
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected success");
+    }
+    expect(result.data.studied_materials_count).toBe(3);
+    expect(result.data.review_basis).toBe("studied_materials");
+  });
+
   it.each([
     [401, "auth_required", "Entre para acompanhar seu progresso."],
     [403, "auth_required", "Entre para acompanhar seu progresso."],

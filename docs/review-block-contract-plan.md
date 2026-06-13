@@ -4,7 +4,7 @@
 
 Define the future contract for cumulative review blocks after small batches of study materials.
 
-This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. ReviewBlock-D added a compact read-only cumulative review card on `/study`. ReviewBlock-Progress-B added backend-only conservative support for `basis=studied_materials` when at least 3 prepared `study_material` files have all of their backend-derived blocks explicitly marked studied. It does not add a review detail page, progress mutation from review reads, completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
+This began as a planning document. ReviewBlock-B implemented the first backend read-only endpoint, `GET /api/study/review/next`, as a bounded cumulative-review candidate based on prepared materials or available study blocks. ReviewBlock-C added the frontend same-origin proxy and `fetchNextReviewBlock()` API helper. ReviewBlock-D added a compact read-only cumulative review card on `/study`. ReviewBlock-Progress-B added backend-only conservative support for `basis=studied_materials` when at least 3 prepared `study_material` files have all of their backend-derived blocks explicitly marked studied. ReviewBlock-Progress-C aligned the frontend to accept and render that backend-provided basis without deriving it locally. It does not add a review detail page, progress mutation from review reads, completed state, persisted answer attempts, answer-key exposure, scoring, official correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, auth provider work, or signup.
 
 ## Product Objective
 
@@ -103,6 +103,7 @@ Current frontend contract:
 - the `/study` card can consume the bounded result without exposing backend action links to future routes
 
 The frontend should not decide when a cumulative review is due, compute weakness history, or infer material completion.
+It should also not infer `studied_materials`; it only renders that basis when the backend returns it.
 
 ### Stage 4: Minimal Review UI
 

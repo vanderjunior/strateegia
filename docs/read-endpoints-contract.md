@@ -701,6 +701,7 @@ Rules:
 - answer keys, gabarito, correct answers, correct alternatives, official correction fields, scores, progress payloads, attempt payloads, raw content, chunks, section bodies, storage paths, tokens, and internal traces are forbidden
 - frontend proxy path is `GET /api/study/review/next`
 - frontend API helper is `fetchNextReviewBlock()`
+- frontend proxy/API accepts and preserves backend-provided `basis=studied_materials`
 - frontend proxy forwards cookies server-side, uses the internal backend URL strategy, and whitelists response fields before returning data to the browser
 - frontend wrapper treats `ready`, `needs_review`, and `partial` as successful bounded review candidates and maps `not_ready` to product-safe guidance
 
@@ -792,6 +793,7 @@ Rules:
 - responses must not claim `progresso atualizado`, `você concluiu`, official `acertos/erros`, score, gabarito, or correction
 - frontend proxy path is `GET /api/study/progress/summary`
 - frontend API helper is `fetchStudyProgressSummary()`
+- frontend proxy/API accepts and preserves backend-provided `review_basis=studied_materials` and `studied_materials_count`
 - frontend proxy forwards cookies server-side and whitelists summary fields before returning data to the browser
 
 ### `GET /api/editais`

@@ -265,6 +265,142 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
   });
 
+  it("renders backend-provided studied-material review and progress basis without inferring it", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        blocks_status: "ready",
+        scope_status: "material_only",
+        blocks_count: 1,
+        estimated_minutes: 6,
+        items: [
+          {
+            block_id: "block-studied-review",
+            title: "Bloco estudado",
+            topic_id: null,
+            topic_label: null,
+            subtopic_id: null,
+            subtopic_label: null,
+            material_id: "doc-studied",
+            material_title: "Material estudado",
+            sections_count: 1,
+            summary_status: "ready",
+            estimated_minutes: 6,
+            status: "ready",
+            actions: []
+          }
+        ],
+        source: "user_scope"
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: { code: "backend_offline", message: "Não foi possível carregar a sessão agora." }
+    });
+    nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildReadyReview({
+        review_id: "review:studied_materials:3:3",
+        basis: "studied_materials",
+        materials_count: 3
+      })
+    });
+    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildProgressSummary({
+        studied_blocks_count: 8,
+        studied_materials_count: 3,
+        review_basis: "studied_materials"
+      })
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Baseada em materiais estudados")).toBeInTheDocument();
+    expect(screen.getByText("Materiais estudados")).toBeInTheDocument();
+    expect(screen.getByText("Revisão sugerida com base em materiais estudados.")).toBeInTheDocument();
+    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("material concluído");
+    expect(document.body.textContent).not.toContain("progresso atualizado");
+    expect(document.body.textContent).not.toContain("100%");
+    expect(document.body.textContent).not.toContain("percentual");
+    expect(document.body.textContent).not.toContain("gabarito");
+    expect(document.body.textContent).not.toContain("resposta correta");
+    expect(document.body.textContent).not.toContain("simulado");
+  });
+
+  it("does not infer studied materials from studied block counts", async () => {
+    nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: {
+        blocks_status: "ready",
+        scope_status: "material_only",
+        blocks_count: 1,
+        estimated_minutes: 6,
+        items: [
+          {
+            block_id: "block-no-inference",
+            title: "Bloco sem inferência",
+            topic_id: null,
+            topic_label: null,
+            subtopic_id: null,
+            subtopic_label: null,
+            material_id: "doc-no-inference",
+            material_title: "Material preparado",
+            sections_count: 1,
+            summary_status: "ready",
+            estimated_minutes: 6,
+            status: "ready",
+            actions: []
+          }
+        ],
+        source: "user_scope"
+      }
+    });
+    nextStudySessionMock.fetchNextStudySession.mockResolvedValue({
+      ok: false,
+      status: 502,
+      source: "offline",
+      error: { code: "backend_offline", message: "Não foi possível carregar a sessão agora." }
+    });
+    nextStudySessionMock.fetchNextReviewBlock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildReadyReview({
+        basis: "prepared_materials"
+      })
+    });
+    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: buildProgressSummary({
+        studied_blocks_count: 12,
+        studied_materials_count: 0,
+        review_basis: "prepared_materials"
+      })
+    });
+
+    render(<StudySessionWorkspaceClient />);
+
+    expect(await screen.findByText("Baseada em materiais preparados")).toBeInTheDocument();
+    expect(screen.getByText("Revisão sugerida com base em materiais preparados.")).toBeInTheDocument();
+    expect(screen.queryByText("Materiais estudados")).not.toBeInTheDocument();
+    expect(screen.queryByText("Revisão sugerida com base em materiais estudados.")).not.toBeInTheDocument();
+    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
+  });
+
   it("handles auth-required and unavailable progress summary states safely", async () => {
     nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
       ok: false,

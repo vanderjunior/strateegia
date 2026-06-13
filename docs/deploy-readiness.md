@@ -579,6 +579,15 @@ Progress-Summary-QA-A follow-up:
 - Clicking `Marcar bloco como estudado` on a block detail showed `Bloco marcado como estudado.` / `Estudo registrado`, kept the copy that the action does not complete the material, and moved `studied_blocks_count` from `2` to `3`.
 - Returning to `/study` showed the updated `Blocos marcados como estudados` count while `studied_materials_count` stayed `0`; the disabled sidebar label was renamed from `Simulados` to `Avaliações` to keep the study surface from implying an executable future flow.
 
+ReviewBlock-Progress-QA-A follow-up:
+
+- After rebuilding/recreating frontend and backend containers, backend `/api/exam-profiles` and frontend `/` returned `200`, frontend login with the existing `compose-qa-seed` user returned `200`, and `/api/auth/me` returned `authenticated=true`.
+- Refreshed baseline through frontend proxies returned `prepared_materials_count=3`, `studied_blocks_count=3`, `studied_materials_count=2`, `review_basis=prepared_materials`, and review candidate `basis=prepared_materials`.
+- Posting explicit `block_marked_studied` events through the frontend proxy for all three visible study blocks moved the summary to `studied_materials_count=3`, `studied_blocks_count=4`, and `review_basis=studied_materials`.
+- `GET /api/study/review/next` then returned `basis=studied_materials`, `materials_count=3`, and `blocks_count=3`; repeated summary/review reads were stable and did not create review records or progress events.
+- Browser `/study` remained behind the current edital-analysis gate for the seeded dataset, so the studied-material review card copy was not visible in that browser session. Existing frontend tests cover the hydrated copy path when the backend returns `studied_materials`.
+- API responses did not expose raw extracted text, chunk or section bodies, storage paths, tokens, password hashes, selected answers, answer payloads, gabarito, answer keys, correct answers, score, correction, progress internals, or internal traces.
+
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
 ### Representative QA Seed

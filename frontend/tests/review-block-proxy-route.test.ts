@@ -58,6 +58,38 @@ describe("next review block same-origin proxy route", () => {
     );
   });
 
+  it("preserves backend-provided studied_materials basis", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            review_status: "ready",
+            review_id: "review:studied_materials:3:3",
+            basis: "studied_materials",
+            materials_count: 3,
+            blocks_count: 3,
+            estimated_minutes: 15,
+            title: "Revisão acumulada",
+            summary: { status: "ready", items: [] },
+            questions: { status: "ready", items_count: 3 },
+            reinforcement: { status: "needs_review", weak_topics_count: 0, items: [] },
+            actions: [],
+            source: "user_scope"
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const response = await GET(new Request("http://localhost/api/study/review/next", { method: "GET" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.basis).toBe("studied_materials");
+    expect(payload.review_id).toBe("review:studied_materials:3:3");
+  });
+
   it("sanitizes malicious top-level, nested, and action fields", async () => {
     vi.stubGlobal(
       "fetch",

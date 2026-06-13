@@ -103,6 +103,32 @@ describe("next review block API wrapper", () => {
     expect(result.data.basis).toBe("study_blocks");
   });
 
+  it("accepts backend-provided studied_materials review basis", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            ...readyReviewPayload(),
+            review_id: "review:studied_materials:3:3",
+            basis: "studied_materials",
+            materials_count: 3
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const result = await fetchNextReviewBlock();
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected success");
+    }
+    expect(result.data.basis).toBe("studied_materials");
+    expect(result.data.review_id).toBe("review:studied_materials:3:3");
+  });
+
   it("maps not-ready review response to a not_ready result", async () => {
     vi.stubGlobal(
       "fetch",

@@ -210,6 +210,36 @@ describe("study progress same-origin proxy routes", () => {
     );
   });
 
+  it("preserves studied_materials review basis and count in summary responses", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            progress_status: "ready",
+            opened_blocks_count: 1,
+            studied_blocks_count: 3,
+            prepared_materials_count: 3,
+            studied_materials_count: 3,
+            review_due: true,
+            review_basis: "studied_materials",
+            reviewed_questions_count: 1,
+            weak_topics_count: 0,
+            source: "user_scope"
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    const response = await GET(new Request("http://localhost/api/study/progress/summary", { method: "GET" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.review_basis).toBe("studied_materials");
+    expect(payload.studied_materials_count).toBe(3);
+  });
+
   it("sanitizes malicious event response fields by whitelist", async () => {
     vi.stubGlobal(
       "fetch",

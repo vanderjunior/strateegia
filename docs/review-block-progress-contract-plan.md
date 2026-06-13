@@ -4,7 +4,7 @@
 
 Define how future cumulative review eligibility should move from prepared-material counts to studied-material counts without inventing completion semantics too early.
 
-This began as a planning contract. ReviewBlock-Progress-B implemented the first backend-only conservative derivation: a `study_material` counts as studied only when every backend-derived study block for that material has an explicit user-scoped `block_marked_studied` event. This did not add frontend behavior, progress mutation from review reads, material completion events, scoring, correction, gabarito handling, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
+This began as a planning contract. ReviewBlock-Progress-B implemented the first backend-only conservative derivation: a `study_material` counts as studied only when every backend-derived study block for that material has an explicit user-scoped `block_marked_studied` event. ReviewBlock-Progress-C aligned frontend proxy/API/types and existing `/study` copy so backend-provided `studied_materials` basis values are accepted and rendered safely. This did not add progress mutation from review reads, material completion events, scoring, correction, gabarito handling, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
 
 ## Product Objective
 
@@ -219,6 +219,15 @@ Backend rules:
 
 The backend now implements these fields when the all-blocks rule is satisfied. The frontend should render the backend-provided basis and counts, not compute eligibility.
 
+ReviewBlock-Progress-C frontend alignment:
+
+- accepts `basis=studied_materials` from `GET /api/study/review/next`
+- accepts `review_basis=studied_materials` from `GET /api/study/progress/summary`
+- preserves `studied_materials_count`
+- renders `Baseada em materiais estudados` only when the review candidate basis is backend-provided as `studied_materials`
+- renders `Revisão sugerida com base em materiais estudados.` only when progress summary `review_basis` is backend-provided as `studied_materials`
+- does not derive studied materials from `studied_blocks_count`
+
 ## Relationship With Review Card
 
 Current `/study` review card should:
@@ -318,7 +327,5 @@ No:
 
 ## Recommended Future Phases
 
-1. `ReviewBlock-Progress-C`: frontend API/type adjustments if the current frontend wrapper needs explicit `studied_materials` support.
-2. `ReviewBlock-Progress-D`: UI copy update only when backend basis is safely rendered as studied-material based.
-3. `ReviewBlock-Progress-QA-A`: browser/API QA for studied-material review eligibility.
-4. `MaterialProgress-Planning-A`: plan explicit material-level action only if Option C or D is chosen.
+1. `ReviewBlock-Progress-QA-A`: browser/API QA for studied-material review eligibility and `/study` copy.
+2. `MaterialProgress-Planning-A`: plan explicit material-level action only if Option C or D is chosen.

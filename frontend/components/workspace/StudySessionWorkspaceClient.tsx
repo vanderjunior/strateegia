@@ -47,7 +47,13 @@ type ReviewCandidateState =
 type ProgressSummaryState = "loading" | "ready" | "not_ready" | "auth_required" | "unavailable";
 
 function reviewBasisLabel(basis: BackendNextReviewBlock["basis"]) {
-  return basis === "study_blocks" ? "Baseada em blocos disponíveis" : "Baseada em materiais preparados";
+  if (basis === "study_blocks") {
+    return "Baseada em blocos disponíveis";
+  }
+  if (basis === "studied_materials") {
+    return "Baseada em materiais estudados";
+  }
+  return "Baseada em materiais preparados";
 }
 
 function questionsReadinessLabel(status: BackendNextReviewBlock["questions"]["status"]) {
@@ -240,7 +246,7 @@ function progressReviewBasisMessage(basis: StudyProgressSummary["review_basis"])
     return "Revisão sugerida com base em materiais preparados.";
   }
   if (basis === "studied_materials") {
-    return "Revisão sugerida com base nas ações registradas.";
+    return "Revisão sugerida com base em materiais estudados.";
   }
   return null;
 }
@@ -314,6 +320,13 @@ function ProgressSummaryCard({
               <p className="mt-2 text-2xl text-ink">{summary.weak_topics_count}</p>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {summary.studied_materials_count > 0 ? (
+        <div className="mt-3 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Materiais estudados</p>
+          <p className="mt-2 text-2xl text-ink">{summary.studied_materials_count}</p>
         </div>
       ) : null}
 

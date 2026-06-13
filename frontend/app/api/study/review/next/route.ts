@@ -21,7 +21,8 @@ const ALLOWED_REVIEW_STATUSES = new Set<ReviewBlockStatus>([
 
 const ALLOWED_BASES = new Set<ReviewBlockBasis>([
   "prepared_materials",
-  "study_blocks"
+  "study_blocks",
+  "studied_materials"
 ]);
 
 const ALLOWED_SECTION_STATUSES = new Set<ReviewBlockSectionStatus>([

@@ -53,7 +53,8 @@ const REVIEW_STATUSES = new Set<ReviewBlockStatus>([
 
 const REVIEW_BASES = new Set<ReviewBlockBasis>([
   "prepared_materials",
-  "study_blocks"
+  "study_blocks",
+  "studied_materials"
 ]);
 
 const REVIEW_SECTION_STATUSES = new Set<ReviewBlockSectionStatus>([

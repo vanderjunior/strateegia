@@ -266,6 +266,7 @@ Progress-QA-A observation:
 - Progress-QA-B confirmed the fixed frontend proxy path in Compose: invalid enum and missing-field requests returned `422` without creating events or changing progress counts, while a valid `block_marked_studied` request with unsafe extra fields was sanitized, incremented `studied_blocks_count` once, and remained idempotent on repeat.
 - Progress-Summary-QA-A confirmed `/study` reads the summary without creating events, reflects a later explicit `block_marked_studied` click after returning to the page, and keeps material completion and progress-aware review-after-3 out of scope.
 - ReviewBlock-Progress-B added backend-only conservative studied-material derivation: all backend-derived blocks for a prepared `study_material` must have explicit `block_marked_studied` events. `review_basis=studied_materials` is returned only when at least 3 materials satisfy that rule; otherwise prepared-material review remains the fallback.
+- ReviewBlock-Progress-C aligned the frontend with that backend contract: `studied_materials` is accepted by the review and progress API layers, `/study` renders studied-material copy only when the backend returns it, and the frontend still does not infer material study from block counts.
 
 Possible future UI:
 
@@ -577,7 +578,6 @@ No:
 ## Recommended Future Phases
 
 1. `Progress-QA-A`: browser/API QA for explicit block-level progress registration.
-2. `ReviewBlock-Progress-C`: align frontend API/types if needed for `basis=studied_materials`.
-3. `ReviewBlock-Progress-QA-A`: browser/API QA for conservative studied-material review eligibility.
-4. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
-5. `Simulado-Planning-A`: plan simulation readiness and execution later.
+2. `ReviewBlock-Progress-QA-A`: browser/API QA for conservative studied-material review eligibility.
+3. `Correction/Scoring-Planning-A`: plan official correction only after answer-key boundaries are approved.
+4. `Simulado-Planning-A`: plan simulation readiness and execution later.

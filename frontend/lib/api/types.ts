@@ -431,7 +431,7 @@ export interface BackendStudyBlocks {
 
 export type ReviewBlockStatus = "ready" | "partial" | "not_ready" | "needs_review";
 
-export type ReviewBlockBasis = "prepared_materials" | "study_blocks";
+export type ReviewBlockBasis = "prepared_materials" | "study_blocks" | "studied_materials";
 
 export type ReviewBlockSectionStatus = "ready" | "needs_review" | "not_ready";
 
