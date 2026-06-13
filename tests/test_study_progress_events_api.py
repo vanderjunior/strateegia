@@ -167,7 +167,6 @@ def assert_bounded_summary_payload(payload: dict[str, object]) -> None:
     assert isinstance(payload["studied_blocks_count"], int)
     assert isinstance(payload["prepared_materials_count"], int)
     assert isinstance(payload["studied_materials_count"], int)
-    assert payload["studied_materials_count"] == 0
     assert isinstance(payload["review_due"], bool)
     assert payload["review_basis"] in {"prepared_materials", "studied_materials", "none"}
     assert isinstance(payload["reviewed_questions_count"], int)

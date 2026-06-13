@@ -4,7 +4,7 @@
 
 Define how future cumulative review eligibility should move from prepared-material counts to studied-material counts without inventing completion semantics too early.
 
-This began as a planning contract. ReviewBlock-Progress-B implemented the first backend-only conservative derivation: a `study_material` counts as studied only when every backend-derived study block for that material has an explicit user-scoped `block_marked_studied` event. ReviewBlock-Progress-C aligned frontend proxy/API/types and existing `/study` copy so backend-provided `studied_materials` basis values are accepted and rendered safely. This did not add progress mutation from review reads, material completion events, scoring, correction, gabarito handling, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
+This began as a planning contract. ReviewBlock-Progress-B implemented the first backend-only conservative derivation: a `study_material` counts as studied only when every backend-derived study block for that material has an explicit user-scoped `block_marked_studied` event. ReviewBlock-Progress-C aligned frontend proxy/API/types and existing `/study` copy so backend-provided `studied_materials` basis values are accepted and rendered safely. ReviewBlock-Progress-Fixture-A adds a deterministic development/test-only browser QA fixture that seeds analyzed edital access, three prepared study materials, and explicit studied-block events for the dedicated Compose QA user. This did not add progress mutation from review reads, material completion events, scoring, correction, gabarito handling, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
 
 ## Product Objective
 
@@ -39,6 +39,7 @@ Important current limits:
 - `GET /api/study/review/next` uses `studied_materials` only when at least 3 materials satisfy the all-blocks rule; otherwise it falls back to prepared materials or study blocks
 - `review_basis` can be `prepared_materials`
 - `studied_materials_count` is conservatively derived in the backend
+- the deterministic browser QA fixture is explicit development/test infrastructure and is not run by app startup
 - no material completion semantics exist
 - no automatic progress writes exist
 - no score, gabarito, official correction, persisted attempts, or simulado execution exists
@@ -218,6 +219,38 @@ Backend rules:
 ```
 
 The backend now implements these fields when the all-blocks rule is satisfied. The frontend should render the backend-provided basis and counts, not compute eligibility.
+
+## Deterministic Browser QA Fixture
+
+ReviewBlock-Progress-Fixture-A provides a repeatable development/test seed for visual QA of the studied-material basis:
+
+```bash
+docker compose exec backend python -m app.services.review_progress_qa_fixture
+```
+
+Local non-Compose use can call:
+
+```bash
+python scripts/seed_review_progress_browser_qa.py
+```
+
+Fixture behavior:
+
+- creates or reuses the dedicated Compose QA user
+- upserts one bounded analyzed edital with `analysis_status=analyzed` and `review_state=ready_for_review`
+- upserts three prepared `study_material` records with deterministic UUID-shaped ids and one backend-derived block each
+- records explicit `block_marked_studied` events with stable idempotency keys
+- converges on repeated runs without duplicating fixture materials or progress counts
+- removes older records carrying this fixture tag for the dedicated QA user when they used a previous unsafe id format, without clearing unrelated user data
+- refuses to run when `APP_ENV=production`
+
+Expected QA state:
+
+- `GET /api/study/progress/summary` returns `studied_materials_count>=3` and `review_basis=studied_materials`
+- `GET /api/study/review/next` returns `basis=studied_materials`
+- `/study` can render the existing studied-material review/progress copy because the fixture also satisfies the analyzed-edital gate
+
+The fixture does not change production defaults, review eligibility rules, frontend UI, material completion semantics, percentages, scoring, gabarito, correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
 
 ReviewBlock-Progress-C frontend alignment:
 

@@ -63,7 +63,6 @@ FORBIDDEN_RESPONSE_TERMS = (
 )
 
 FORBIDDEN_WORDING = (
-    "studied",
     "completed",
     "progresso atualizado",
     "concluído",
@@ -148,7 +147,7 @@ def assert_bounded_review_payload(payload: dict[str, object]) -> None:
     assert set(payload.keys()) == allowed_keys
     assert payload["review_status"] in {"ready", "partial", "not_ready", "needs_review"}
     assert payload["review_id"] is None or isinstance(payload["review_id"], str)
-    assert payload["basis"] in {"prepared_materials", "study_blocks"}
+    assert payload["basis"] in {"prepared_materials", "study_blocks", "studied_materials"}
     assert isinstance(payload["materials_count"], int)
     assert isinstance(payload["blocks_count"], int)
     assert isinstance(payload["estimated_minutes"], int)

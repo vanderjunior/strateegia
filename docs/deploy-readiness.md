@@ -588,6 +588,31 @@ ReviewBlock-Progress-QA-A follow-up:
 - Browser `/study` remained behind the current edital-analysis gate for the seeded dataset, so the studied-material review card copy was not visible in that browser session. Existing frontend tests cover the hydrated copy path when the backend returns `studied_materials`.
 - API responses did not expose raw extracted text, chunk or section bodies, storage paths, tokens, password hashes, selected answers, answer payloads, gabarito, answer keys, correct answers, score, correction, progress internals, or internal traces.
 
+ReviewBlock-Progress-Fixture-A follow-up:
+
+- A deterministic development/test-only studied-material browser QA fixture is available for the dedicated Compose QA user.
+- Compose command:
+
+```bash
+docker compose exec backend python -m app.services.review_progress_qa_fixture
+```
+
+- Local non-Compose command:
+
+```bash
+python scripts/seed_review_progress_browser_qa.py
+```
+
+- The fixture is explicit and idempotent. Repeated runs upsert one analyzed edital, three prepared `study_material` records, bounded extraction/section/chunk artifacts, and stable `block_marked_studied` events keyed as `qa-fixture:block_marked_studied:<block_id>`.
+- Fixture document ids are stable UUID-shaped values so existing frontend proxy sanitizers preserve the study block links during browser QA. Running the fixture also removes older fixture-tagged records for this dedicated QA user when they came from an earlier fixture id format; unrelated user data is not cleared.
+- Expected authenticated results after the seed:
+  - `GET /api/editais`: at least one item with `analysis_status=analyzed`, `review_state=ready_for_review`, and bounded topic/subtopic counts.
+  - `GET /api/study/progress/summary`: `prepared_materials_count>=3`, `studied_materials_count>=3`, and `review_basis=studied_materials`.
+  - `GET /api/study/review/next`: `basis=studied_materials`, `materials_count>=3`, and bounded review metadata.
+  - `/study`: no longer blocked by the edital-analysis gate for this fixture and can visually verify `Baseada em materiais estudados`, `Revisão sugerida com base em materiais estudados.`, and `Materiais estudados`.
+- The fixture refuses to run when `APP_ENV=production`; it is not invoked by normal app startup, Compose startup, or frontend code.
+- It does not add material completion, percentages, score, gabarito, correction, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior.
+
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
 ### Representative QA Seed
