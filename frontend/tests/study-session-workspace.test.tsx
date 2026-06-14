@@ -251,7 +251,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(screen.getByText("Resumo das ações registradas por você.")).toBeInTheDocument();
     expect(screen.getByText("Materiais preparados")).toBeInTheDocument();
     expect(screen.getByText("Blocos marcados como estudados")).toBeInTheDocument();
-    expect(screen.getByText("Questões revisadas sem pontuação")).toBeInTheDocument();
+    expect(screen.getByText("Questões revisadas nesta etapa")).toBeInTheDocument();
     expect(screen.getByText("Blocos abertos")).toBeInTheDocument();
     expect(screen.getByText("Pontos para reforço")).toBeInTheDocument();
     expect(screen.getByText("Revisão sugerida com base em materiais preparados.")).toBeInTheDocument();

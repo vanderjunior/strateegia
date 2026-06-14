@@ -250,6 +250,8 @@ Expected QA state:
 - `GET /api/study/review/next` returns `basis=studied_materials`
 - `/study` can render the existing studied-material review/progress copy because the fixture also satisfies the analyzed-edital gate
 
+ReviewBlock-Progress-QA-B confirmed this visually in Compose: `/study` rendered the studied-material review and progress copy only after the frontend proxy returned `review_basis=studied_materials` and review `basis=studied_materials`.
+
 The fixture does not change production defaults, review eligibility rules, frontend UI, material completion semantics, percentages, scoring, gabarito, correction, simulado behavior, OCR, LLM calls, scheduler behavior, PostgreSQL, provider work, or signup.
 
 ReviewBlock-Progress-C frontend alignment:

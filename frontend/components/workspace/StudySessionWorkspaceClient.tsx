@@ -301,7 +301,7 @@ function ProgressSummaryCard({
           <p className="mt-2 text-2xl text-ink">{summary.studied_blocks_count}</p>
         </div>
         <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Questões revisadas sem pontuação</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Questões revisadas nesta etapa</p>
           <p className="mt-2 text-2xl text-ink">{summary.reviewed_questions_count}</p>
         </div>
       </div>

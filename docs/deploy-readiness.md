@@ -613,6 +613,24 @@ python scripts/seed_review_progress_browser_qa.py
 - The fixture refuses to run when `APP_ENV=production`; it is not invoked by normal app startup, Compose startup, or frontend code.
 - It does not add material completion, percentages, score, gabarito, correction, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior.
 
+ReviewBlock-Progress-QA-B follow-up:
+
+- Rebuilt/recreated Compose frontend and backend services, confirmed backend `/api/exam-profiles` and frontend `/` returned `200`, and ran the explicit fixture command twice:
+
+```bash
+docker compose exec backend python -m app.services.review_progress_qa_fixture
+```
+
+- The two fixture runs returned the same deterministic material ids, block ids, and `block_marked_studied` event ids, confirming idempotency in the local Compose volume.
+- Authenticated through the frontend proxy as the dedicated QA user; `/api/auth/me` returned `authenticated=true`.
+- Frontend proxy API baseline after the fixture: progress summary returned `prepared_materials_count=6`, `studied_blocks_count=7`, `studied_materials_count=5`, and `review_basis=studied_materials`; review candidate returned `review_status=needs_review`, `basis=studied_materials`, `materials_count=5`, and bounded review metadata. Counts exceeded 3 because unrelated older QA data was preserved.
+- Browser `/study` visual QA passed after the fixture: the analyzed-edital gate did not block the workspace, study blocks remained primary, the review card showed `Baseada em materiais estudados`, and the progress card showed `Materiais estudados` plus `Revisão sugerida com base em materiais estudados.`
+- The page did not expose `/study/review/<review_id>` or a broken `Abrir revisão` action.
+- Browser-visible copy and proxy payloads did not expose raw extracted text, chunk or section bodies, storage paths, local filesystem paths, token/cookie values, password hashes, selected-answer payloads, answer keys, gabarito, correct-answer fields, score/correction, hidden rationale, internal traces, or backend/pipeline/chunk/metadata/protected-read/audit terminology.
+- Screenshot captured for the QA run: `/tmp/review-block-progress-qa-b-study-final.png`.
+- Browser typing was blocked by the in-app browser virtual clipboard, so visual QA used the existing authenticated proxy session plus a temporary localhost-only cookie redirect; no application code or production auth behavior changed.
+- Tiny copy follow-up: `/study` now labels the progress-card reviewed-question count as `Questões revisadas nesta etapa` to avoid visible `pontuação` wording on this page.
+
 No material completion, automatic page-view tracking, persisted answer attempts, official correction, score, gabarito, simulado, OCR, LLM, scheduler, PostgreSQL, provider, or signup behavior was added.
 
 ### Representative QA Seed
