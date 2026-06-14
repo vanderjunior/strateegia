@@ -156,6 +156,17 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 
 ## Staging Options
 
+## UX Surface Readiness
+
+UX-Polish-A created `docs/ux-polish-product-surface-plan.md` as a docs-only inventory of the current product surfaces. The audit confirms that the minimum study path is functional, but staging readiness should account for behavior-preserving polish before wider review:
+
+- `/study` needs clearer hierarchy around the next study action before review/progress cards.
+- Block detail needs lower visual density around questions, feedback, reinforcement, and explicit study registration.
+- Materials/editais screens should keep the edital-vs-study-material distinction clearer than their current classification/status density.
+- App shell and mobile navigation should reduce future-route/status noise before the main task.
+
+No runtime behavior, backend contract, progress semantics, gabarito/correction/scoring, simulado behavior, OCR/LLM, provider, PostgreSQL, or scheduler work was added by this audit.
+
 ### Local-only
 
 - Lowest risk and already available.
