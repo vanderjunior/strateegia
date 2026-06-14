@@ -764,3 +764,12 @@ Do not migrate persistence before staging proves the product flow and storage re
 - No deployment provider configuration.
 - No upload/process/OCR/generation/simulado/progress/scheduler behavior changes.
 - No pricing, plans, checkout, or public SaaS packaging.
+
+## Release-Capability-Audit-A Deployment Finding
+
+- Current architecture is suitable for local/private alpha only when `/app/data` is persistent and backed up.
+- Primary private staging recommendation is local Docker plus Tailscale because it preserves the current single-host JSON/upload assumptions.
+- Railway Hobby or Render paid persistent disk can be considered for 1-2 trusted testers only with one backend replica, explicit `/app/data` volume/disk, secure inspection settings, and backup/restore validation.
+- Free/ephemeral hosting is not sufficient for realistic study data because uploads, extracted text, chunks, analyses, and progress events are filesystem/JSON-backed.
+- Heroku-style ephemeral dynos are not a fit until Mentorium moves mutable state to PostgreSQL/object storage.
+- Public production remains `NO_GO` until transactional persistence, object storage, production auth/session handling, concurrency controls, observability, and a security review exist.

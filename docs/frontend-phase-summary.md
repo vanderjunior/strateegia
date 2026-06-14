@@ -164,3 +164,12 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 - `/study` keeps the same layout and behavior, but review/progress supporting copy is shorter and avoids repeated warnings.
 - Block detail keeps summary, key points, fixation questions, selectable answer review, reinforcement, and explicit mark-studied behavior; duplicate objective alternatives were removed from the visual question card.
 - Behavior remains unchanged: no backend changes, no new routes, no automatic progress, no material completion, no review detail page, no score/gabarito/correction, no simulado, no OCR/LLM, no scheduler, no PostgreSQL, and no provider/signup.
+
+## Release-Capability-Audit-A Closeout
+
+- `docs/release-capability-audit.md`, `docs/local-runtime-guide.md`, and `docs/private-staging-deploy-guide.md` now define the verified alpha capability boundary.
+- README is now the canonical product overview instead of an older implementation-phase summary.
+- Runtime smoke verified the local textual path: register/login, upload/analyze edital, upload/prepare 3 study materials, inspect study blocks, inspect placeholder summaries, inspect candidate questions, submit answer review, mark blocks studied, receive `review_basis=studied_materials`, and preserve JSON state after backend restart.
+- Critical product limits are explicit: summaries are placeholders, questions are candidates without answer keys, answer review is stateless/conservative, selected answers are not persisted as adaptive attempts, reinforcement does not affect scheduling, and the study path is an ordered block list rather than a true scheduler.
+- Deployment guidance now recommends local Docker plus Tailscale for private alpha, with Railway/Render persistent disks only as conditional fallback; public production remains no-go.
+- `.env.example` now documents optional OCR variables while keeping OCR disabled by default.
