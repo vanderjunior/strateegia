@@ -149,9 +149,7 @@ function ReviewCandidateCard({
           <CardTitle className="break-words text-[1.65rem] leading-[1.05]">
             Revisão acumulada sugerida
           </CardTitle>
-          <p className="mt-3 text-sm leading-7 text-silver">
-            Use esta revisão para retomar pontos dos materiais preparados.
-          </p>
+          <p className="mt-3 text-sm leading-7 text-silver">Retome pontos importantes antes de avançar.</p>
         </div>
         <Badge className={productStatusClass(state === "ready" ? "Pronto" : "Conferir")}>
           {state === "ready" ? "Disponível para consulta" : "Precisa de conferência"}
@@ -231,7 +229,7 @@ function ReviewCandidateCard({
       </div>
 
       <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-        Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.
+        Revisão de apoio; continue estudando pelos blocos.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
         <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
@@ -289,7 +287,7 @@ function ProgressSummaryCard({
       <CardTitle className="mt-4 break-words text-[1.45rem] leading-[1.05]">
         Acompanhamento do estudo
       </CardTitle>
-      <p className="mt-3 text-sm leading-7 text-silver">Resumo das ações registradas por você.</p>
+      <p className="mt-3 text-sm leading-7 text-silver">Ações registradas por você.</p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
@@ -332,7 +330,7 @@ function ProgressSummaryCard({
 
       {basisMessage ? <p className="mt-5 text-sm leading-7 text-silver">{basisMessage}</p> : null}
       <p className="mt-4 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-        Este resumo não conclui materiais automaticamente. Respostas oficiais e notas não fazem parte desta etapa.
+        Sem conclusão automática de materiais.
       </p>
     </Card>
   );
@@ -451,7 +449,7 @@ export function StudySessionWorkspaceClient() {
     const connectedToEdital = studyBlocks.scope_status === "connected_to_edital";
     const scopeCopy = connectedToEdital
       ? "Conectado ao edital."
-      : "Baseado nos materiais preparados. Ainda não conectado completamente ao edital.";
+      : "Baseado nos materiais preparados.";
 
     return (
       <div className="space-y-8">
@@ -462,7 +460,7 @@ export function StudySessionWorkspaceClient() {
           connection={{
             state: "connected",
             source: "backend",
-            title: "Dados reais",
+            title: "Caminho disponível",
             detail: scopeCopy
           }}
         />
@@ -493,7 +491,7 @@ export function StudySessionWorkspaceClient() {
           </div>
 
           <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-            Use estes blocos como orientação de leitura. Nenhuma ação adicional é necessária nesta tela.
+            Abra um bloco para continuar estudando.
           </p>
         </Card>
 
@@ -576,8 +574,8 @@ export function StudySessionWorkspaceClient() {
           connection={{
             state: "connected",
             source: "backend",
-            title: "Dados reais",
-            detail: "Sessão de estudo montada a partir de um material preparado."
+            title: "Estudo disponível",
+            detail: "Orientação montada a partir de um material preparado."
           }}
         />
 
@@ -688,7 +686,7 @@ export function StudySessionWorkspaceClient() {
               ? {
                   state: "offline",
                   source: "offline",
-                  title: "Dados reais não carregados agora",
+                  title: "Não foi possível carregar agora",
                   detail
                 }
               : readiness.connection
@@ -737,10 +735,10 @@ export function StudySessionWorkspaceClient() {
             {readiness.editalAnalysisState === "analysis_needs_review"
               ? "Edital analisado, mas precisa de conferência antes de orientar o estudo."
               : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
-                ? "Edital recebido. A análise ainda não foi executada nesta versão. Depois, envie materiais de estudo para comparar cobertura quando essa análise estiver disponível."
+                ? "Edital recebido. Analise o edital e depois envie materiais de estudo."
                 : readiness.editalAnalysisState === "analysis_unavailable"
-                  ? "Análise indisponível agora. Quando os dados reais estiverem disponíveis, o estudo poderá seguir o estado do edital."
-                  : "Envie um edital para orientar o caminho. Depois, envie materiais de estudo para comparar cobertura quando essa análise estiver disponível."}
+                  ? "Não foi possível carregar a análise agora. Tente novamente em instantes."
+                  : "Envie um edital para orientar o caminho. Depois, envie materiais de estudo."}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
@@ -777,7 +775,7 @@ export function StudySessionWorkspaceClient() {
       <WorkspaceSourcePanel
         eyebrow="estudo"
         title="Orientação de estudo"
-        subtitle="Sessões sugeridas a partir do perfil PSCPP, materiais e gaps identificados."
+        subtitle="Orientações sugeridas a partir do perfil PSCPP, materiais e pontos a revisar."
         connection={viewModel.connection}
       />
 
@@ -866,8 +864,8 @@ export function StudySessionWorkspaceClient() {
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="h-full min-w-0">
-          <div className="section-kicker">gaps que orientam o estudo</div>
-          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Gaps conectados</CardTitle>
+          <div className="section-kicker">pontos a revisar</div>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Pontos conectados</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.highlightedGaps.map((gap) => (
               <div

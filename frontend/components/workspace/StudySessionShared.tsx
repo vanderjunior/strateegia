@@ -24,7 +24,7 @@ export function StudySessionMetaRow({
         {relatedMaterialsCount} materiais
       </Badge>
       <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
-        {relatedGapsCount} gaps
+        {relatedGapsCount} pontos a revisar
       </Badge>
     </div>
   );

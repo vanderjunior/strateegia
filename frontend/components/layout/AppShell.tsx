@@ -13,78 +13,78 @@ const navigationItems = [
   { label: "Começar", href: "/onboarding" },
   { label: "Materiais", href: "/materials" },
   { label: "Editais", href: "/editais" },
-  { label: "Estudo", href: "/study", status: "Depende de edital" },
-  { label: "Ciclo", href: "/pscpp/ciclo", status: "Aguardando edital analisado" },
-  { label: "Questões", status: "Em preparação" },
-  { label: "Avaliações", status: "Em preparação" },
+  { label: "Estudo", href: "/study", status: "Caminho de estudo" },
+  { label: "Ciclo", href: "/pscpp/ciclo", status: "Depois do edital" },
+  { label: "Questões", status: "Mais tarde" },
+  { label: "Avaliações", status: "Mais tarde" },
   { label: "PSCPP", href: "/pscpp", status: "Referência" },
-  { label: "Execução", status: "Ainda não disponível" }
+  { label: "Execução", status: "Mais tarde" }
 ] as const;
 
 function headerCopy(pathname: string) {
   if (pathname.startsWith("/login")) {
     return {
-      eyebrow: "mentorium / acesso",
-      title: "Entrar"
+      eyebrow: "Acesso",
+      title: "Entre para continuar"
     };
   }
   if (pathname.startsWith("/onboarding")) {
     return {
-      eyebrow: "mentorium / onboarding",
+      eyebrow: "Preparação",
       title: "Comece sua preparação"
     };
   }
   if (pathname.startsWith("/materials") || pathname.startsWith("/pipeline")) {
     return {
-      eyebrow: pathname.startsWith("/pipeline") ? "mentorium / pipeline" : "mentorium / materiais",
+      eyebrow: "Materiais",
       title: pathname.startsWith("/pipeline") ? "Acompanhamento do material" : "Materiais"
     };
   }
   if (pathname.startsWith("/editais")) {
     return {
-      eyebrow: "mentorium / editais",
-      title: "Editais em análise preliminar"
+      eyebrow: "Editais",
+      title: "Editais"
     };
   }
   if (pathname.startsWith("/study/session")) {
     return {
-      eyebrow: "mentorium / estudo / sessão",
-      title: "Orientação de exemplo"
+      eyebrow: "Estudo",
+      title: "Orientação de estudo"
     };
   }
   if (pathname.startsWith("/study")) {
     return {
-      eyebrow: "mentorium / estudo",
-      title: "Estudo guiado"
+      eyebrow: "Estudo",
+      title: "Seu caminho de estudo"
     };
   }
   if (pathname.startsWith("/pscpp/ciclo")) {
     return {
-      eyebrow: "mentorium / pscpp / ciclo",
+      eyebrow: "PSCPP",
       title: "Ciclo aguardando edital analisado"
     };
   }
   if (pathname.startsWith("/pscpp/questoes")) {
     return {
-      eyebrow: "mentorium / pscpp / questoes",
+      eyebrow: "PSCPP",
       title: "Questões ainda não disponíveis"
     };
   }
   if (pathname.startsWith("/pscpp/mapa")) {
     return {
-      eyebrow: "mentorium / pscpp / mapa",
+      eyebrow: "PSCPP",
       title: "Mapa PSCPP de referência"
     };
   }
   if (pathname.startsWith("/pscpp")) {
     return {
-      eyebrow: "mentorium / pscpp",
+      eyebrow: "PSCPP",
       title: "Visão geral PSCPP / Praticagem"
     };
   }
   return {
-    eyebrow: "mentorium / dashboard",
-    title: "Painel de preparação em revisão"
+    eyebrow: "Preparação",
+    title: "Painel de preparação"
   };
 }
 
@@ -98,9 +98,9 @@ export function AppShell({ children }: PropsWithChildren) {
         <aside className="border-r border-[rgba(168,184,196,0.10)] bg-[rgba(10,21,32,0.9)] px-6 py-8">
           <MentoriumLogo compact />
           <div className="mt-6 space-y-3">
-            <Badge>acesso antecipado</Badge>
+            <Badge>preparação guiada</Badge>
             <p className="max-w-[220px] text-sm leading-6 text-silver">
-              Painel de produto em modo experimental, refletindo apenas o que já foi validado na plataforma.
+              Materiais, edital e estudo organizados no mesmo lugar.
             </p>
             <SessionStatusNotice />
           </div>
@@ -155,7 +155,7 @@ export function AppShell({ children }: PropsWithChildren) {
               </div>
               <h1 className="mt-2 font-serif text-3xl text-ink">{header.title}</h1>
             </div>
-            <Badge>beta fechado</Badge>
+            <Badge>em revisão</Badge>
           </header>
           <main className="px-6 py-8 lg:px-10">{children}</main>
         </div>

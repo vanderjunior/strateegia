@@ -14,8 +14,7 @@ export function PipelineSection() {
           De materiais e edital ao estudo guiado
         </h2>
         <p className="mt-4 text-base leading-8 text-silver">
-          A plataforma já mostra um fluxo real de entrada, revisão e preparação, sem prometer execução
-          automática do que ainda exige validação.
+          Siga uma sequência simples: envie materiais, analise o edital, prepare o conteúdo e estude por blocos.
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -42,10 +41,10 @@ export function PipelineSection() {
                   <CardTitle className="mt-4 text-[1.6rem]">{step}</CardTitle>
                   <p className="mt-3 text-sm leading-7 text-silver">
                     {index < 4
-                      ? "Etapa de leitura e conferência antes de avançar para o próximo bloco."
+                      ? "Leitura e conferência antes de avançar para o próximo bloco."
                       : index < 6
-                        ? "Camada guiada por perfil PSCPP, gaps encontrados e revisão necessária."
-                        : "Superfície ainda em preparação, sem alteração automática nem execução final."}
+                        ? "Organização por perfil, edital e pontos que merecem revisão."
+                        : "Etapa futura sem alteração automática neste momento."}
                   </p>
                 </div>
               </div>

@@ -22,7 +22,7 @@ export function Hero() {
           <MentoriumLogo compact />
         </div>
         <div className="mt-5">
-          <Badge>beta fechado para preparação guiada</Badge>
+          <Badge>preparação guiada</Badge>
         </div>
         <h1 className="mt-5 max-w-4xl font-serif text-5xl font-light leading-[0.9] tracking-[-0.04em] text-ink md:text-6xl xl:text-[6.4rem]">
           Comece pela <br />
@@ -30,12 +30,10 @@ export function Hero() {
           <span className="ghost-stroke mt-1 block font-light">Sem pular revisão.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-[rgba(232,238,242,0.84)] md:text-[1.05rem]">
-          Mentorium conecta materiais, edital, mapa PSCPP e estudo de hoje em um uso experimental, com
-          preparação auditável e leitura cautelosa do que já está pronto.
+          Mentorium organiza edital, materiais de estudo e o próximo bloco de leitura em um caminho claro.
         </p>
         <p className="mt-4 max-w-2xl text-[0.96rem] leading-7 text-[rgba(232,238,242,0.76)]">
-          PDFs textuais já entram em leitura controlada. OCR permanece em validação para arquivos
-          escaneados, e o simulado completo segue em preparação com revisão necessária.
+          Comece pelo edital, prepare seus materiais e avance com revisão antes das próximas etapas.
         </p>
         <div className="mt-7 flex flex-wrap gap-4">
           <Link href="/onboarding">
@@ -94,9 +92,9 @@ export function Hero() {
           <div className="min-w-0 space-y-4 bg-[rgba(26,47,63,0.78)] p-4 lg:p-5">
             <div className="grid grid-cols-1 gap-3.5 min-[980px]:grid-cols-[repeat(3,minmax(0,1fr))]">
               {[
-                { label: "MATERIAIS", value: "PDF textual", note: "Leitura controlada" },
-                { label: "OCR", value: "Em validação", note: "Revisão necessária" },
-                { label: "ESTUDO", value: "Guia flexível", note: "Hoje" }
+                { label: "MATERIAIS", value: "PDF e texto", note: "Preparar" },
+                { label: "EDITAL", value: "Escopo", note: "Analisar" },
+                { label: "ESTUDO", value: "Blocos", note: "Continuar" }
               ].map((item) => (
                 <div key={item.label} className="min-w-0 rounded-2xl border border-[rgba(168,184,196,0.1)] bg-[rgba(21,39,56,0.76)] px-3.5 py-3.5 lg:px-4 lg:py-4">
                   <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[rgba(168,184,196,0.54)]">
@@ -118,7 +116,7 @@ export function Hero() {
                   { label: "Enviar material", fill: "88%", tone: "ok" },
                   { label: "Revisar edital", fill: "76%", tone: "ok" },
                   { label: "Mapa PSCPP", fill: "82%", tone: "ok" },
-                  { label: "Simulado em preparação", fill: "38%", tone: "warn" }
+                  { label: "Revisão acumulada", fill: "38%", tone: "warn" }
                 ].map((item) => (
                   <div key={item.label} className="flex min-w-0 items-center gap-3 border-b border-[rgba(168,184,196,0.08)] pb-3 last:border-b-0 last:pb-0">
                     <span className="flex-1 text-sm leading-6 text-silver">{item.label}</span>

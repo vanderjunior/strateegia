@@ -161,6 +161,42 @@ function studySummaryStateFromResult(result: ApiResult<BackendStudyMaterialSumma
   }
 }
 
+function materialProcessingLabel(detail: MaterialDetail): string {
+  if (detail.processingStatus === "Material processado") {
+    if (detail.materialType === "study_material") {
+      return "Material preparado";
+    }
+    if (detail.materialType === "edital") {
+      return "Edital enviado";
+    }
+    return "Material preparado";
+  }
+  if (detail.processingStatus === "Recebido para validação") {
+    return detail.materialType === "edital" ? "Edital enviado" : "Material enviado";
+  }
+  return detail.processingStatus;
+}
+
+function materialReviewLabel(reviewState: string): string {
+  if (reviewState === "Pronto para revisão") {
+    return "Pronto para conferência";
+  }
+  if (reviewState === "Revisão necessária") {
+    return "Precisa de conferência";
+  }
+  return reviewState;
+}
+
+function materialReadingLabel(extractionStatus: string): string {
+  if (extractionStatus === "Texto extraído") {
+    return "Leitura disponível";
+  }
+  if (extractionStatus === "Leitura em validação") {
+    return "Pode exigir conferência";
+  }
+  return extractionStatus;
+}
+
 function StudySummaryCard({
   materialId,
   detail,
@@ -358,7 +394,7 @@ function StudyPreparationAction({
         Prepare este material para organizar a leitura.
       </p>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-        Esta etapa não gera resumos, questões, simulados nem altera seu progresso.
+        Não cria questões nem registra estudo.
       </p>
 
       {showSessionRequired ? (
@@ -384,7 +420,7 @@ function StudyPreparationAction({
         <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-7 text-emerald-100">
           <p className="font-medium">Material pronto para estudo.</p>
           <p>
-            {preparationState.data.section_count} seções · {preparationState.data.chunk_count} trechos
+            {preparationState.data.section_count} seções
           </p>
           <p className="mt-2">Próximo passo: estudar este material.</p>
         </div>
@@ -394,14 +430,14 @@ function StudyPreparationAction({
         <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
           <p className="font-medium">Material preparado, mas precisa de conferência.</p>
           <p>
-            {preparationState.data.section_count} seções · {preparationState.data.chunk_count} trechos
+            {preparationState.data.section_count} seções
           </p>
         </div>
       ) : null}
 
       {preparationState.status === "not_ready" ? (
         <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
-          Este material ainda não está pronto para estudo. Confira se o arquivo tem texto extraível ou envie uma versão textual.
+          Este material ainda não está pronto para estudo. Envie uma versão textual se a leitura não avançar.
         </p>
       ) : null}
 
@@ -465,7 +501,7 @@ function EditalAnalysisAction({
         Este arquivo foi marcado como edital. A análise identifica tópicos e referências para orientar o estudo.
       </p>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-        Esta etapa não gera questões, simulados nem altera seu progresso.
+        Não cria questões nem registra estudo.
       </p>
 
       {showSessionRequired ? (
@@ -492,7 +528,7 @@ function EditalAnalysisAction({
           <p className="font-medium">Edital analisado.</p>
           <p>
             {analysisState.data.topics_count} tópicos · {analysisState.data.bibliography_count} bibliografia ·{" "}
-            {analysisState.data.gaps_count} gaps
+            {analysisState.data.gaps_count} pontos a cobrir
           </p>
           <div className="mt-3">
             <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
@@ -505,7 +541,7 @@ function EditalAnalysisAction({
           <p className="font-medium">Edital analisado, mas precisa de conferência.</p>
           <p>
             {analysisState.data.topics_count} tópicos · {analysisState.data.bibliography_count} bibliografia ·{" "}
-            {analysisState.data.gaps_count} gaps
+            {analysisState.data.gaps_count} pontos a cobrir
           </p>
           <div className="mt-3">
             <WorkspaceLink href="/editais">Ver editais</WorkspaceLink>
@@ -515,7 +551,7 @@ function EditalAnalysisAction({
 
       {analysisState.status === "not_ready" ? (
         <p className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
-          Este edital ainda não está pronto para análise. Confira se o arquivo tem texto extraível ou envie uma versão textual.
+          Este edital ainda não está pronto para análise. Envie uma versão textual se a análise não avançar.
         </p>
       ) : null}
 
@@ -607,7 +643,7 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
         <Card className="min-w-0">
           <div className="flex flex-wrap gap-2">
             <Badge className={sourceBadgeClass(detail.source)}>{sourceLabel(detail.source)}</Badge>
-            <Badge className={productStatusClass(detail.processingStatus)}>{detail.processingStatus}</Badge>
+            <Badge className={productStatusClass(materialProcessingLabel(detail))}>{materialProcessingLabel(detail)}</Badge>
             <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
               {detail.typeLabel}
             </Badge>
@@ -616,14 +652,16 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
                 {detail.materialTypeLabel}
               </Badge>
             ) : null}
-            <Badge className={productStatusClass(detail.reviewState)}>{detail.reviewState}</Badge>
+            <Badge className={productStatusClass(materialReviewLabel(detail.reviewState))}>
+              {materialReviewLabel(detail.reviewState)}
+            </Badge>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div>
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                extração
+                leitura
               </div>
-              <p className="mt-2 text-sm text-ink">{detail.extractionStatus}</p>
+              <p className="mt-2 text-sm text-ink">{materialReadingLabel(detail.extractionStatus)}</p>
             </div>
             <div>
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
@@ -633,7 +671,7 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
             </div>
             <div>
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                trechos
+                partes
               </div>
               <p className="mt-2 text-sm text-ink">{detail.chunksCount ?? 0}</p>
             </div>
@@ -656,7 +694,7 @@ export function MaterialDetailReadOnlyClient({ materialId }: { materialId: strin
             <p className="mt-5 text-sm leading-7 text-silver">Nenhum aviso adicional por enquanto.</p>
           )}
           <div className="mt-6">
-            <WorkspaceLink href={`/pipeline/${materialId}`}>Ver pipeline</WorkspaceLink>
+            <WorkspaceLink href={`/pipeline/${materialId}`}>Ver acompanhamento</WorkspaceLink>
           </div>
         </Card>
       </section>

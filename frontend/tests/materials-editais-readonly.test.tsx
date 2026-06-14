@@ -306,8 +306,8 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     render(<MaterialsReadOnlyClient />);
 
-    expect(await screen.findByText(/Alguns arquivos foram enviados antes da classificação por tipo/i)).toBeInTheDocument();
-    expect(screen.getByText(/Novos envios podem ser classificados como edital/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Alguns arquivos antigos não têm tipo definido/i)).toBeInTheDocument();
+    expect(screen.getByText(/Novos envios podem ser classificados ao enviar/i)).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.queryByText("Editais 0")).not.toBeInTheDocument();
     expect(screen.queryByText("Materiais de estudo 0")).not.toBeInTheDocument();
@@ -324,9 +324,9 @@ describe("materials, editais, and upload read-only invariants", () => {
     expect(await screen.findByText("Nenhum edital analisado ainda.")).toBeInTheDocument();
     expect(screen.getByText(/Entre para ver seus editais analisados/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Enviar edital" })).toHaveAttribute("href", "/materials/upload");
-    expect(screen.getAllByText("Análise candidata").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Edital analisado").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Gaps encontrados").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Pontos a cobrir").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Cobertura parcial").length).toBeGreaterThan(0);
     expect(screen.getByText(/Entre para ver seus editais analisados/i)).toBeInTheDocument();
 
@@ -452,13 +452,13 @@ describe("materials, editais, and upload read-only invariants", () => {
     render(<EditaisReadOnlyClient />);
 
     expect((await screen.findAllByText("Edital recebido")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Análise ainda não concluída")).toBeInTheDocument();
+    expect(screen.getByText("Edital enviado")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver edital" })).toHaveAttribute(
       "href",
       "/editais/edital%3Adoc-1"
     );
-    expect(screen.getByText(/Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos/i)).toBeInTheDocument();
-    expect(screen.getByText(/Confira se o arquivo tem texto extraível/i)).toBeInTheDocument();
+    expect(screen.getByText(/Analise o edital para organizar tópicos e bibliografia/i)).toBeInTheDocument();
+    expect(screen.getByText(/Se a análise não avançar, envie uma versão textual/i)).toBeInTheDocument();
     expect(screen.queryByText("Edital analisado")).not.toBeInTheDocument();
     expect(screen.queryByText("Edital analisado da sessão")).not.toBeInTheDocument();
     expect(screen.queryByText("Análise candidata")).not.toBeInTheDocument();
@@ -520,7 +520,7 @@ describe("materials, editais, and upload read-only invariants", () => {
           source: "backend",
           error: { code: "not_ready", message: "A cobertura ainda não está pronta para este edital." }
         },
-        message: "A cobertura ainda não está pronta. Ela depende de um edital analisado e de materiais de estudo enviados."
+        message: "A cobertura aparecerá depois da análise do edital e do envio de materiais de estudo."
       },
       {
         result: {
@@ -619,7 +619,7 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     expect(await screen.findByText("Preparação para estudo")).toBeInTheDocument();
     expect(screen.getByText("Prepare este material para organizar a leitura.")).toBeInTheDocument();
-    expect(screen.getByText("Esta etapa não gera resumos, questões, simulados nem altera seu progresso.")).toBeInTheDocument();
+    expect(screen.getByText("Não cria questões nem registra estudo.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preparar para estudo" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Analisar edital" })).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
@@ -870,7 +870,7 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     expect(screen.getByRole("button", { name: "Preparando material..." })).toBeDisabled();
     await waitFor(() => expect(screen.getByText("Material pronto para estudo.")).toBeInTheDocument());
-    expect(screen.getByText("3 seções · 9 trechos")).toBeInTheDocument();
+    expect(screen.getByText("3 seções")).toBeInTheDocument();
     expect(screen.getByText("Próximo passo: estudar este material.")).toBeInTheDocument();
     expect(studyPreparationMock.prepareStudyMaterial).toHaveBeenCalledWith("doc-study");
     expect(document.body.textContent).not.toContain("storage_path");
@@ -1063,7 +1063,7 @@ describe("materials, editais, and upload read-only invariants", () => {
             source: "user_scope"
           }
         },
-        message: "Este material ainda não está pronto para estudo. Confira se o arquivo tem texto extraível ou envie uma versão textual."
+        message: "Este material ainda não está pronto para estudo. Envie uma versão textual se a leitura não avançar."
       },
       {
         result: {
@@ -1126,7 +1126,7 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     expect(await screen.findByText("Análise do edital")).toBeInTheDocument();
     expect(screen.getByText(/Este arquivo foi marcado como edital/i)).toBeInTheDocument();
-    expect(screen.getByText("Esta etapa não gera questões, simulados nem altera seu progresso.")).toBeInTheDocument();
+    expect(screen.getByText("Não cria questões nem registra estudo.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Analisar edital" })).toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
@@ -1165,7 +1165,7 @@ describe("materials, editais, and upload read-only invariants", () => {
 
     expect(screen.getByRole("button", { name: "Analisando edital..." })).toBeDisabled();
     await waitFor(() => expect(screen.getByText("Edital analisado.")).toBeInTheDocument());
-    expect(screen.getByText("4 tópicos · 2 bibliografia · 0 gaps")).toBeInTheDocument();
+    expect(screen.getByText("4 tópicos · 2 bibliografia · 0 pontos a cobrir")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver editais" })).toHaveAttribute("href", "/editais");
     expect(editalAnalysisMock.analyzeMaterialAsEdital).toHaveBeenCalledWith("doc-edital");
   });
@@ -1208,7 +1208,7 @@ describe("materials, editais, and upload read-only invariants", () => {
           source: "backend",
           error: { code: "not_ready", message: "O edital ainda não está pronto para análise." }
         },
-        message: "Este edital ainda não está pronto para análise. Confira se o arquivo tem texto extraível ou envie uma versão textual."
+        message: "Este edital ainda não está pronto para análise. Envie uma versão textual se a análise não avançar."
       },
       {
         result: {

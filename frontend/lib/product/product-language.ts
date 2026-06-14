@@ -15,7 +15,7 @@ export interface UserFacingCapability {
 
 const termReplacements = [
   ["controlled propagation", "atualizacao controlada"],
-  ["runtime chain", "fluxo de simulado"],
+  ["runtime chain", "fluxo de avaliações"],
   ["final pedagogical update event", "atualizacao pedagogica proposta"],
   ["commit transaction", "etapa de atualizacao controlada"],
   ["mutation transaction", "atualizacao controlada"],

@@ -60,8 +60,7 @@ export function EditaisReadOnlyClient() {
           Editais
         </CardTitle>
         <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
-          Acompanhe quando houver edital analisado. Um arquivo classificado como edital aparece primeiro como enviado;
-          a análise vem depois.
+          O edital define o conteúdo da preparação. Envie e analise o arquivo para liberar um caminho mais direcionado.
         </p>
       </Card>
 
@@ -83,16 +82,17 @@ export function EditaisReadOnlyClient() {
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Badge className={productStatusClass(item.statusLabel)}>{item.statusLabel}</Badge>
-              <Badge className={productStatusClass(item.reviewState)}>{item.reviewState}</Badge>
+              <Badge className={productStatusClass(notReady ? "Edital enviado" : "Edital analisado")}>
+                {notReady ? "Edital enviado" : "Edital analisado"}
+              </Badge>
             </div>
             {notReady ? (
               <div className="mt-5 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)] p-4">
                 <p className="text-sm leading-7 text-silver">
-                  Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos para orientar o estudo.
+                  Analise o edital para organizar tópicos e bibliografia.
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-                  Confira se o arquivo tem texto extraível ou envie uma versão textual.
+                  Se a análise não avançar, envie uma versão textual.
                 </p>
               </div>
             ) : (
@@ -112,19 +112,19 @@ export function EditaisReadOnlyClient() {
                   </div>
                   <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
                     <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                      gaps
+                      pontos a cobrir
                     </div>
                     <p className="mt-2 text-sm text-ink">{item.gapsCount}</p>
                   </div>
                 </div>
                 <p className="mt-5 text-sm leading-7 text-silver">
-                  O edital analisado ajuda a organizar tópicos, bibliografia e lacunas para conferência.
+                  O edital analisado organiza tópicos, bibliografia e pontos que precisam de material.
                 </p>
               </>
             )}
             <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <span className="max-w-[18rem] text-xs uppercase tracking-[0.18em] text-[rgba(232,238,242,0.42)]">
-                {notReady ? "Análise ainda não concluída." : "Análise sujeita a revisão."}
+                {notReady ? "Aguardando análise" : "Confira a análise"}
               </span>
               <WorkspaceLink href={item.detailHref ?? `/editais/${encodeURIComponent(item.id)}`}>
                 Ver edital
@@ -140,9 +140,9 @@ export function EditaisReadOnlyClient() {
           <CardTitle className="mt-5 text-[1.8rem]">{emptyStateTitle}</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
             {readiness.editalAnalysisState === "analysis_unavailable"
-              ? "Não foi possível carregar o estado do edital agora. Você pode tentar novamente ou voltar para materiais."
+              ? "Não foi possível carregar seus editais agora. Tente novamente em instantes."
               : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
-                ? "A análise do edital ainda não foi executada nesta versão."
+                ? "Analise o edital para organizar o conteúdo da preparação."
               : readiness.isAuthenticated
                 ? "Envie um arquivo classificado como edital para iniciar esse fluxo."
                 : "Entre para ver seus editais analisados."}

@@ -88,7 +88,7 @@ export function PscppQuestionsClient() {
           </CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
             As questões serão preparadas depois que houver edital analisado e materiais relacionados. Esta tela não
-            gera questões, não mostra respostas finais e não inicia simulado.
+            mostra o funcionamento previsto, sem respostas finais ou avaliação completa.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials/upload">Enviar edital</WorkspaceLink>
@@ -102,7 +102,7 @@ export function PscppQuestionsClient() {
           <ul className="mt-4 space-y-3 text-sm leading-7 text-silver">
             <li>• O edital analisado define o escopo.</li>
             <li>• Materiais relacionados ajudam a validar cobertura.</li>
-            <li>• Questões revisadas poderão apoiar simulados quando essa etapa existir.</li>
+            <li>• Questões revisadas poderão apoiar avaliações quando essa etapa existir.</li>
           </ul>
         </Card>
       </div>
@@ -113,7 +113,7 @@ export function PscppQuestionsClient() {
     <div className="space-y-8">
       <WorkspaceSourcePanel
         eyebrow="pscpp / questões"
-        title="Questões candidatas como referência"
+        title="Questões de fixação como referência"
         subtitle="Referência de formato e cautelas. Questões reais dependem de edital analisado e revisão."
         connection={viewModel.connection}
       />
@@ -126,7 +126,7 @@ export function PscppQuestionsClient() {
           Exemplos de orientação. Ainda não baseados no seu edital.
         </CardTitle>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
-          Esta tela não gera questões nem simulado. Ela apenas mostra regras de ancoragem para uma etapa futura.
+          Esta tela mostra regras de ancoragem para uma etapa futura, sem criar avaliação completa.
         </p>
       </Card>
 
@@ -136,7 +136,7 @@ export function PscppQuestionsClient() {
         <GuidanceList title="Arquétipos de questão" eyebrow="formatos" items={viewModel.archetypes} />
         <Card className="h-full min-w-0">
           <div className="section-kicker">estado atual</div>
-          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Relação com simulado</CardTitle>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Relação com avaliações</CardTitle>
           <div className="mt-5 flex flex-wrap gap-2">
             {viewModel.relationToSimulado.map((item) => (
               <Badge key={item} className={productStatusClass(item)}>
@@ -145,9 +145,9 @@ export function PscppQuestionsClient() {
             ))}
           </div>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-            <li>• Questões candidatas precisam de revisão antes de qualquer uso avaliativo.</li>
-            <li>• O simulado completo ainda exige preparação e conferência humana.</li>
-            <li>• Esta tela não gera questões, não gera simulados e não mostra respostas finais.</li>
+            <li>• Questões de fixação precisam de revisão antes de qualquer uso avaliativo.</li>
+            <li>• Avaliações completas ficam para uma etapa posterior.</li>
+            <li>• Esta tela não cria avaliações nem mostra respostas finais.</li>
           </ul>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>

@@ -18,7 +18,7 @@ export function PublicNav() {
           <a href="#acesso-antecipado" className="transition hover:text-ink">Acesso antecipado</a>
         </nav>
         <div className="flex items-center gap-3">
-          <Badge>beta fechado</Badge>
+          <Badge>preparação guiada</Badge>
           <Link href="/onboarding">
             <Button variant="ghost">Comece sua preparação</Button>
           </Link>

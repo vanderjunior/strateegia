@@ -8,7 +8,7 @@ export function HowItWorksSection() {
       <div className="mb-8">
         <div className="section-kicker">como funciona</div>
         <h2 className="mt-3 font-serif text-4xl text-ink">
-          Produto orientado por evidências, não por slogans
+          Do edital ao bloco de estudo
         </h2>
       </div>
       <Card className="overflow-hidden p-0">
@@ -26,7 +26,7 @@ export function HowItWorksSection() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   {[
                     index === 0 ? "materiais e edital" : index === 1 ? "mapa PSCPP" : "estudo guiado",
-                    index === 0 ? "revisão inicial" : index === 1 ? "gaps encontrados" : "revisão necessária"
+                    index === 0 ? "revisão inicial" : index === 1 ? "pontos a cobrir" : "revisão necessária"
                   ].map((chip) => (
                     <span
                       key={chip}

@@ -70,9 +70,9 @@ function buildMockResult(file: File, materialType: MaterialType): UploadMaterial
     materialType,
     materialTypeLabel: materialTypeLabel(materialType),
     sizeBytes: file.size,
-    processingStatus: "Material recebido para validação",
-    extractionStatus: scanned ? "OCR necessário" : "Texto extraído",
-    reviewState: scanned ? "OCR em validação" : "Pronto para revisão",
+    processingStatus: "Material enviado",
+    extractionStatus: scanned ? "Conferência necessária" : "Texto identificado",
+    reviewState: scanned ? "Precisa de conferência" : "Pronto para revisão",
     source: "mock",
     demoOnly: true
   };
@@ -137,12 +137,12 @@ export function MaterialUploadEntryClient() {
     }
     if (!confirmationChecked) {
       setValidationState("missing_confirmation");
-      setValidationMessage("Confirmação necessária.");
+    setValidationMessage("Confirme o envio.");
       return;
     }
     if (!selectedIntentId) {
       setValidationState("missing_confirmation");
-      setValidationMessage("Classificação necessária.");
+      setValidationMessage("Escolha o tipo do material.");
       return;
     }
 
@@ -151,35 +151,35 @@ export function MaterialUploadEntryClient() {
       setResult(buildMockResult(selectedFile, selectedIntentId));
       setValidationMessage(
         connection.source === "mock"
-          ? "Modo de demonstração: nenhum arquivo foi enviado."
-          : "Envio real indisponível neste ambiente."
+          ? "Demonstração: nenhum arquivo foi enviado."
+          : "Envio indisponível agora."
       );
       return;
     }
 
     setEntryState("sending");
-    setValidationMessage("Enviando arquivo.");
+    setValidationMessage("Enviando arquivo...");
     const uploadResult = await uploadMaterialFile(selectedFile, selectedIntentId);
 
     if (!uploadResult.ok) {
       if (uploadResult.error.code === "endpoint_unavailable") {
         setEntryState("endpoint_unavailable");
-        setValidationMessage("Envio real indisponível neste ambiente.");
+        setValidationMessage("Envio indisponível agora.");
         return;
       }
       if (uploadResult.error.code === "auth_required") {
         setEntryState("failed");
-        setValidationMessage("Sessão necessária para enviar material.");
+        setValidationMessage("Entre para enviar material.");
         return;
       }
       if (uploadResult.error.code === "api_base_missing") {
         setEntryState("endpoint_unavailable");
-        setValidationMessage("Envio real indisponível neste ambiente.");
+        setValidationMessage("Envio indisponível agora.");
         return;
       }
       if (uploadResult.error.code === "mock_mode") {
         setEntryState("mock_only");
-        setValidationMessage("Modo de demonstração: nenhum arquivo foi enviado.");
+        setValidationMessage("Demonstração: nenhum arquivo foi enviado.");
         setResult(buildMockResult(selectedFile, selectedIntentId));
         return;
       }
@@ -216,9 +216,9 @@ export function MaterialUploadEntryClient() {
     connection.source === "unsupported" ||
     !confirmationChecked ||
     !selectedIntentId;
-  const showAuthGuidance = validationMessage === "Sessão necessária para enviar material.";
+  const showAuthGuidance = validationMessage === "Entre para enviar material.";
   const showOfflineGuidance = validationMessage === "Não foi possível carregar os dados agora.";
-  const showMissingBaseGuidance = validationMessage === "Envio real indisponível neste ambiente.";
+  const showMissingBaseGuidance = validationMessage === "Envio indisponível agora.";
   const showLocalSetup = showOfflineGuidance || showMissingBaseGuidance;
   const returnedExtension = result ? extensionForFileName(result.filename) || "sem extensão" : "";
   const selectedIntentLabel =
@@ -306,7 +306,7 @@ export function MaterialUploadEntryClient() {
                         setSelectedIntentId(option.id);
                         if (selectedFile && confirmationChecked) {
                           setValidationState("valid");
-                          setValidationMessage("Arquivo pronto para validação.");
+                          setValidationMessage("Arquivo pronto para envio.");
                         }
                       }}
                     />
@@ -326,17 +326,17 @@ export function MaterialUploadEntryClient() {
                   setConfirmationChecked(event.target.checked);
                   if (!event.target.checked && selectedFile) {
                     setValidationState("missing_confirmation");
-                    setValidationMessage("Confirmação necessária.");
+                    setValidationMessage("Confirme o envio.");
                   } else if (selectedFile && selectedIntentId) {
                     setValidationState("valid");
-                    setValidationMessage("Arquivo pronto para validação.");
+                    setValidationMessage("Arquivo pronto para envio.");
                   } else if (selectedFile) {
                     setValidationState("missing_confirmation");
-                    setValidationMessage("Classificação necessária.");
+                    setValidationMessage("Escolha o tipo do material.");
                   }
                 }}
               />
-              <span>Confirmo que este material pode ser enviado para validação.</span>
+              <span>Confirmo que este material pode ser enviado.</span>
             </label>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -344,7 +344,7 @@ export function MaterialUploadEntryClient() {
             {selectedIntentLabel ? <Badge>{selectedIntentLabel}</Badge> : null}
           </div>
           <p className="mt-5 text-sm leading-7 text-silver">
-            Esta etapa não gera questões, não gera simulados e não altera seu progresso.
+            O envio não cria questões nem registra estudo.
           </p>
           {showAuthGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
@@ -353,15 +353,14 @@ export function MaterialUploadEntryClient() {
           ) : null}
           {showOfflineGuidance ? (
             <p className="mt-3 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              O envio real depende do serviço de materiais disponível.
+              Tente novamente em instantes.
             </p>
           ) : null}
           {showLocalSetup ? (
             <div className="mt-4 rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">envio indisponível</div>
               <ul className="mt-3 space-y-2 text-sm leading-7 text-silver">
-                <li>• O envio real depende do serviço de materiais disponível.</li>
-                <li>• A demonstração continua acessível sem persistir arquivos.</li>
+                <li>• Tente novamente em instantes.</li>
                 <li>• A confirmação continua obrigatória antes de qualquer envio.</li>
               </ul>
             </div>
@@ -393,7 +392,7 @@ export function MaterialUploadEntryClient() {
             <div className="min-w-0">
               <div className="section-kicker">resultado</div>
               <CardTitle className="mt-5 break-words text-[1.8rem]">
-                {result.demoOnly ? "Modo de demonstração: nenhum arquivo foi enviado." : "Material recebido para validação"}
+                {result.demoOnly ? "Demonstração: nenhum arquivo foi enviado." : "Material enviado"}
               </CardTitle>
             </div>
             <Badge className={sourceBadgeClass(result.source)}>{sourceLabel(result.source)}</Badge>
@@ -429,14 +428,13 @@ export function MaterialUploadEntryClient() {
             ) : null}
           </div>
           <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-            <li>• Próximo estado esperado: Texto extraído ou aguardando validação.</li>
-            <li>• Se for PDF digitalizado, o arquivo pode seguir como OCR necessário.</li>
-            <li>• Após validação, o material pode ficar pronto para revisão.</li>
-            <li>• A classificação foi enviada como metadado do material; ela não aciona processamento automático.</li>
+            <li>• Próximo passo: abra o material para preparar, analisar ou consultar.</li>
+            <li>• PDFs digitalizados podem exigir conferência.</li>
+            <li>• A classificação escolhida organiza a biblioteca.</li>
             {result.demoOnly ? (
-              <li>• Modo de demonstração: nenhum arquivo foi persistido.</li>
+              <li>• Demonstração: nenhum arquivo foi salvo.</li>
             ) : (
-              <li>• Este material foi recebido nesta sessão. A listagem real depende da sessão autenticada.</li>
+              <li>• Este material foi recebido na sua conta.</li>
             )}
           </ul>
           <div className="mt-6 flex flex-wrap gap-3">

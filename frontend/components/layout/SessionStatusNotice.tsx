@@ -30,7 +30,7 @@ function statusBadgeClass(status: SessionState["status"]): string {
 
 function displaySessionLabel(sessionState: SessionState): string {
   if (sessionState.status === "backend_offline") {
-    return "Dados indisponíveis";
+    return "Indisponível";
   }
   if (sessionState.status === "unauthenticated") {
     return "Entrar para continuar";
@@ -46,10 +46,10 @@ function displaySessionDescription(sessionState: SessionState): string {
     return "Entre para acessar seus materiais e orientações.";
   }
   if (sessionState.status === "backend_offline") {
-    return "Dados reais não carregados agora.";
+    return "Não foi possível carregar seus dados agora.";
   }
   if (sessionState.status === "mock_mode") {
-    return "Demonstração disponível para conhecer o fluxo.";
+    return "Conheça o fluxo antes de entrar.";
   }
   return "Entre quando a sessão estiver disponível.";
 }
@@ -106,7 +106,7 @@ export function SessionStatusNotice({
 
     await refreshSessionAfterAction();
     setLogoutPending(false);
-    setActionMessage("Sessão encerrada neste ambiente.");
+    setActionMessage("Você saiu.");
   }
 
   const actionControl =

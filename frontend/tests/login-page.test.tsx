@@ -43,12 +43,12 @@ describe("login page", () => {
   it("renders minimal login without signup UI or auth internals", () => {
     render(<LoginPage />);
 
-    expect(screen.getByRole("heading", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Entre para continuar" })).toBeInTheDocument();
     expect(screen.getByLabelText("Usuário")).toBeInTheDocument();
     expect(screen.getByLabelText("Senha")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
     expect(screen.getAllByText("Voltar ao painel").length).toBeGreaterThan(0);
-    expect(screen.getByText(/acessar seus materiais, edital e orientações/i)).toBeInTheDocument();
+    expect(screen.getByText(/Acesse seus materiais, edital e caminho de estudo/i)).toBeInTheDocument();
     expect(screen.queryByText(/criar conta/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cadastro/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/token/i)).not.toBeInTheDocument();
@@ -111,7 +111,7 @@ describe("login page", () => {
     expect(notifySessionStateChanged).toHaveBeenCalled();
     expect(routerMocks.refresh).toHaveBeenCalled();
     expect(routerMocks.push).toHaveBeenCalledWith("/dashboard");
-    expect(await screen.findByText("Sessão ativa. Redirecionando para o painel.")).toBeInTheDocument();
+    expect(await screen.findByText("Entrada confirmada. Abrindo seu painel.")).toBeInTheDocument();
     expect(screen.queryByText("senha-segura-123")).not.toBeInTheDocument();
   });
 });

@@ -13,10 +13,10 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     {
       id: "scanned-ocr",
       internalKey: "ocr_adapter",
-      label: "OCR para PDF escaneado",
+      label: "PDF que exige conferência",
       status: "implemented_but_needs_manual_validation",
       source,
-      detail: "PDFs escaneados ainda podem exigir revisão antes de uma leitura confiável."
+      detail: "Alguns PDFs podem precisar de uma versão textual antes de entrar no estudo."
     },
     {
       id: "edital-ingestion",
@@ -29,10 +29,10 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     {
       id: "bibliography-alignment",
       internalKey: "bibliography_alignment",
-      label: "Cobertura e gaps do edital",
+      label: "Cobertura do edital",
       status: "partially_implemented",
       source,
-      detail: "Cobertura parcial e gaps encontrados ainda exigem conferência."
+      detail: "Pontos cobertos e pontos a revisar ainda exigem conferência."
     },
     {
       id: "pscpp-style",
@@ -45,10 +45,10 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     {
       id: "pscpp-generation",
       internalKey: "question_generation_blueprint",
-      label: "Questões candidatas",
+      label: "Questões de fixação",
       status: "metadata_only",
       source,
-      detail: "Questões candidatas seguem em orientação guiada, sem respostas finais expostas."
+      detail: "Questões de apoio orientam revisão, sem respostas finais expostas."
     },
     {
       id: "pscpp-cycle",
@@ -61,10 +61,10 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
     {
       id: "simulado-generation",
       internalKey: "simulado_assembly",
-      label: "Simulado em preparação",
+      label: "Avaliações futuras",
       status: "foundation_only",
       source,
-      detail: "A base existe, mas a prova final ainda exige revisão e não está executável."
+      detail: "Avaliações completas ficam para uma etapa posterior."
     },
     {
       id: "simulado-runtime",
@@ -72,7 +72,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
       label: "Sessão de treino",
       status: "implemented_and_tested",
       source,
-      detail: "A sessão de treino só deve avançar quando o simulado estiver realmente pronto."
+      detail: "A sessão de treino só deve avançar quando as avaliações futuras estiverem realmente prontas."
     },
     {
       id: "minimal-ledger",
@@ -80,7 +80,7 @@ export function buildAuditedCapabilityItems(source: ApiSource): CapabilityStatus
       label: "Progresso registrado com segurança",
       status: "implemented_and_tested",
       source,
-      detail: "Registro limitado e auditável, sem atualização ampla."
+      detail: "Registro limitado a ações explícitas, sem atualização ampla."
     },
     {
       id: "applied-ledger",

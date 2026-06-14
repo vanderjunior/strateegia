@@ -35,13 +35,13 @@ function buildFallback(sessionId: string): { connection: BackendConnectionInfo; 
 function safeOutputLabel(label: string): string {
   const normalized = label.toLowerCase();
   if (normalized.includes("quest")) {
-    return "Questões candidatas ainda não geradas";
+    return "Questões de fixação ainda não disponíveis";
   }
   if (normalized.includes("flashcard")) {
     return "Ideias de revisão para anotar";
   }
   if (normalized.includes("simulado")) {
-    return "Pontos para revisar antes de simulado futuro";
+    return "Pontos para revisar antes de avaliações futuras";
   }
   return label;
 }
@@ -108,7 +108,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
       <WorkspaceSourcePanel
         eyebrow="estudo / sessão"
         title={detail.title}
-        subtitle="Orientação de consulta com materiais, gaps e pontos de revisão, sem alterar seu progresso."
+        subtitle="Orientação de consulta com materiais e pontos de revisão, sem alterar seu progresso."
         connection={connection}
       />
 
@@ -210,7 +210,7 @@ export function StudySessionDetailClient({ sessionId }: { sessionId: string }) {
         </Card>
 
         <Card className="h-full min-w-0">
-          <div className="section-kicker">gaps conectados</div>
+          <div className="section-kicker">pontos conectados</div>
           <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Checklist de estudo</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.relatedGaps.map((gap) => (

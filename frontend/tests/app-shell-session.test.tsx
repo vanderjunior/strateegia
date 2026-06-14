@@ -59,14 +59,14 @@ describe("session status notice", () => {
     vi.mocked(loadSessionState).mockResolvedValue({
       status: "mock_mode",
       label: "Modo demonstração",
-      description: "Demonstração disponível para conhecer o fluxo.",
+      description: "Conheça o fluxo antes de entrar.",
       source: "mock"
     });
 
     render(<SessionStatusNotice variant="dashboard" />);
 
     expect(await screen.findByText("Modo demonstração")).toBeInTheDocument();
-    expect(screen.getByText(/Demonstração disponível/i)).toBeInTheDocument();
+    expect(screen.getByText(/Conheça o fluxo/i)).toBeInTheDocument();
     expect(screen.queryByText(/session id/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cookie/i)).not.toBeInTheDocument();
   });
@@ -162,15 +162,15 @@ describe("session status notice", () => {
     );
 
     expect(screen.getByRole("link", { name: /Dashboard/i })).toHaveAttribute("href", "/dashboard");
-    expect(screen.getByRole("link", { name: /Ciclo Aguardando edital analisado/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Ciclo Depois do edital/i })).toHaveAttribute(
       "href",
       "/pscpp/ciclo"
     );
     expect(screen.getByText("Questões").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getAllByText("Em preparação").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Mais tarde").length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText("Avaliações").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText("Execução").closest("[aria-disabled]")).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByText("Ainda não disponível")).toBeInTheDocument();
+    expect(screen.queryByText("Ainda não disponível")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Execução/i })).not.toBeInTheDocument();
   });
 });

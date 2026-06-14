@@ -28,14 +28,14 @@ export const acceptedUploadTypes: AcceptedUploadType[] = [
     label: "Markdown",
     extensions: [".md"],
     mimeTypes: ["text/markdown", "text/x-markdown"],
-    note: "Validação"
+    note: "Aceito"
   },
   {
     id: "pdf-scanned",
     label: "PDF digitalizado",
     extensions: [".pdf"],
     mimeTypes: ["application/pdf"],
-    note: "OCR em validação"
+    note: "Pode exigir conferência"
   }
 ];
 
@@ -56,9 +56,9 @@ export function validateUploadFile(file: File): { valid: boolean; message: strin
     return { valid: false, message: "O arquivo excede o limite atual de 5 MB." };
   }
   if (file.type && !ACCEPTED_MIME_TYPES.includes(file.type as (typeof ACCEPTED_MIME_TYPES)[number])) {
-    return { valid: false, message: "O arquivo não passou na validação de tipo." };
+    return { valid: false, message: "Tipo de arquivo não suportado." };
   }
-  return { valid: true, message: "Arquivo pronto para validação." };
+  return { valid: true, message: "Arquivo pronto para envio." };
 }
 
 export function formatUploadFileSize(bytes: number): string {

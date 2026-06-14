@@ -136,14 +136,14 @@ describe("PSCPP and study workspace copy", () => {
     expect(screen.queryByText(/gabarito/i)).not.toBeInTheDocument();
   });
 
-  it("keeps session 12 explicit about non-executable simulado limits", async () => {
+  it("keeps session 12 explicit about future assessment limits", async () => {
     render(<StudySessionDetailClient sessionId="session-12-simulado-curto-revisao" />);
 
     expect(await screen.findByText("Exemplo de orientação. Ainda não baseado no seu edital.")).toBeInTheDocument();
-    expect(await screen.findByText(/Simulado curto ainda não executável/i)).toBeInTheDocument();
-    expect(screen.getByText(/Questões candidatas ainda exigem revisão/i)).toBeInTheDocument();
-    expect(screen.getByText(/Esta tela não gera prova nem corrige respostas/i)).toBeInTheDocument();
-    expect(screen.getAllByText("Questões candidatas ainda não geradas").length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Avaliação completa fica para depois/i)).toBeInTheDocument();
+    expect(screen.getByText(/Questões de fixação ainda exigem revisão/i)).toBeInTheDocument();
+    expect(screen.getByText(/Esta tela não cria prova nem corrige respostas/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Questões de fixação ainda não disponíveis").length).toBeGreaterThan(0);
     expect(screen.queryByText("Começar sessão")).not.toBeInTheDocument();
     expect(screen.queryByText("Concluir sessão")).not.toBeInTheDocument();
   });

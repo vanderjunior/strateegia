@@ -39,6 +39,19 @@ function buildFallback(documentId: string): { connection: BackendConnectionInfo;
   };
 }
 
+function pipelineStatusLabel(label: string): string {
+  if (label === "Texto extraído") {
+    return "Leitura disponível";
+  }
+  if (label === "Pronto para revisão") {
+    return "Pronto para conferência";
+  }
+  if (label === "Leitura em validação") {
+    return "Pode exigir conferência";
+  }
+  return label;
+}
+
 export function PipelineDetailReadOnlyClient({ documentId }: { documentId: string }) {
   const [viewModel, setViewModel] = useState<{ connection: BackendConnectionInfo; detail: PipelineDetailViewModel | null }>(
     buildFallback(documentId)
@@ -64,7 +77,7 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
         <WorkspaceBackLink href="/materials">Voltar para materiais</WorkspaceBackLink>
 
         <WorkspaceSourcePanel
-          eyebrow="pipeline"
+          eyebrow="acompanhamento"
           title="Item não encontrado"
           subtitle="Este conteúdo não está disponível nesta sessão. Consulte os dados de demonstração ou volte para materiais."
           connection={connection}
@@ -88,19 +101,23 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
       <WorkspaceBackLink href={`/materials/${documentId}`}>Voltar para o material</WorkspaceBackLink>
 
       <WorkspaceSourcePanel
-        eyebrow="pipeline"
+        eyebrow="acompanhamento"
         title={detail.title}
-        subtitle="Acompanhe a linha do processamento com foco em extração, segmentação e revisão."
+        subtitle="Acompanhe as etapas de leitura e revisão deste material."
         connection={connection}
       />
 
       <Card className="min-w-0">
-        <div className="section-kicker">processamento</div>
-        <CardTitle className="mt-5 break-words text-[1.8rem]">Linha do processamento</CardTitle>
+        <div className="section-kicker">acompanhamento</div>
+        <CardTitle className="mt-5 break-words text-[1.8rem]">Etapas do material</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Badge className={sourceBadgeClass(detail.source)}>{sourceLabel(detail.source)}</Badge>
-          <Badge className={productStatusClass(detail.extractionStatus)}>{detail.extractionStatus}</Badge>
-          <Badge className={productStatusClass(detail.reviewState)}>{detail.reviewState}</Badge>
+          <Badge className={productStatusClass(pipelineStatusLabel(detail.extractionStatus))}>
+            {pipelineStatusLabel(detail.extractionStatus)}
+          </Badge>
+          <Badge className={productStatusClass(pipelineStatusLabel(detail.reviewState))}>
+            {pipelineStatusLabel(detail.reviewState)}
+          </Badge>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div>
@@ -108,7 +125,7 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
             <p className="mt-2 text-sm text-ink">{detail.sectionsCount ?? 0}</p>
           </div>
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">trechos</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">partes</div>
             <p className="mt-2 text-sm text-ink">{detail.chunksCount ?? 0}</p>
           </div>
         </div>
@@ -138,7 +155,7 @@ export function PipelineDetailReadOnlyClient({ documentId }: { documentId: strin
           {detail.notes.map((note) => (
             <li key={note}>• {note}</li>
           ))}
-          <li>• Nenhum texto bruto do documento é exibido nesta tela.</li>
+          <li>• O texto completo do documento não é exibido nesta tela.</li>
         </ul>
       </Card>
     </div>

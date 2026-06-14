@@ -39,7 +39,7 @@ export function MaterialsReadOnlyClient() {
       <WorkspaceSourcePanel
         eyebrow="materiais"
         title="Materiais"
-        subtitle="Acompanhe materiais adicionados, leitura segura e pontos que ainda exigem revisão."
+        subtitle="Envie editais e materiais de estudo para organizar sua preparação."
         connection={viewModel.connection}
       />
 
@@ -48,11 +48,10 @@ export function MaterialsReadOnlyClient() {
       <Card className="min-w-0 border-[rgba(201,169,110,0.14)] bg-[rgba(255,255,255,0.02)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 max-w-2xl">
-            <div className="section-kicker">entrada controlada</div>
+            <div className="section-kicker">novo envio</div>
             <CardTitle className="mt-4 break-words text-[1.8rem]">Enviar material</CardTitle>
             <p className="mt-3 text-sm leading-7 text-silver">
-              Adicione um PDF, TXT ou Markdown para validação inicial. O envio segue em etapa controlada e a leitura
-              posterior continua sujeita a revisão.
+              Adicione um PDF, TXT ou Markdown e escolha se é edital, material de estudo ou referência.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -90,8 +89,7 @@ export function MaterialsReadOnlyClient() {
                   tipo não informado
                 </div>
                 <p className="mt-2 text-sm leading-7 text-silver">
-                  Alguns arquivos foram enviados antes da classificação por tipo. Novos envios podem ser
-                  classificados como edital, material de estudo, prova anterior ou bibliografia.
+                  Alguns arquivos antigos não têm tipo definido. Novos envios podem ser classificados ao enviar.
                 </p>
               </div>
             ) : null}
@@ -154,7 +152,7 @@ export function MaterialsReadOnlyClient() {
                     <Card className="border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.02)]">
                       <CardTitle className="text-[1.4rem]">Nenhum item neste grupo</CardTitle>
                       <p className="mt-3 text-sm leading-7 text-silver">
-                        A classificação ajuda a organizar a biblioteca, mas não aciona processamento automático.
+                        Envie um material desse tipo quando precisar.
                       </p>
                     </Card>
                   )}
@@ -168,8 +166,8 @@ export function MaterialsReadOnlyClient() {
           <CardTitle className="mt-5 text-[1.8rem]">Nenhum material para exibir ainda</CardTitle>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-silver">
             {viewModel.connection.state === "connected" && viewModel.connection.source === "backend"
-              ? "Nenhum material foi encontrado na sua sessão até agora. Você pode enviar um material para iniciar a validação controlada."
-              : "Envie um material para iniciar a validação. O envio segue controlado e a leitura posterior continua sujeita a revisão."}
+              ? "Nenhum material foi encontrado na sua conta. Envie um material para começar."
+              : "Envie um material para começar."}
           </p>
         </Card>
       )}
@@ -180,9 +178,15 @@ export function MaterialsReadOnlyClient() {
 function MaterialCard({ item }: { item: MaterialListItem }) {
   const simpleStatus =
     item.processingStatus === "Material processado" || item.reviewState === "Pronto para revisão"
-      ? "Disponível para consulta"
+      ? item.materialType === "study_material"
+        ? "Material preparado"
+        : "Disponível para consulta"
       : item.processingStatus === "Recebido para validação"
-        ? "Arquivo recebido"
+        ? item.materialType === "study_material"
+          ? "Material enviado"
+          : item.materialType === "edital"
+            ? "Edital enviado"
+            : "Arquivo enviado"
         : "Pendente de organização";
 
   return (
@@ -201,15 +205,14 @@ function MaterialCard({ item }: { item: MaterialListItem }) {
             {item.materialTypeLabel}
           </Badge>
         ) : null}
-        <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
-          {item.typeLabel}
-        </Badge>
         <Badge className={productStatusClass(simpleStatus)}>{simpleStatus}</Badge>
       </div>
       <p className="mt-5 text-sm leading-7 text-silver">
         {item.materialType === "edital"
-          ? "Edital enviado. A análise ainda não foi executada automaticamente."
-          : "Material salvo na sua biblioteca para consulta."}
+          ? "O edital define o escopo da preparação."
+          : item.materialType === "study_material"
+            ? "Material de estudo para preparar e revisar."
+            : "Material salvo na sua biblioteca."}
       </p>
       <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <WorkspaceLink href={`/materials/${item.id}`}>Ver detalhes</WorkspaceLink>

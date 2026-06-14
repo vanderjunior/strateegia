@@ -25,8 +25,7 @@ function UnauthenticatedDashboardPanel() {
           Entre para ver seus materiais, edital e caminho de estudo.
         </CardTitle>
         <p className="mt-4 max-w-2xl text-sm leading-8 text-silver">
-          Sem uma sessão ativa, o painel evita mostrar contagens, sessões ou materiais de demonstração como se fossem
-          seus dados reais.
+          Entre para continuar de onde parou.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <WorkspaceLink href="/login">Entrar</WorkspaceLink>
@@ -41,12 +40,12 @@ function DashboardNextStepCard({ readiness }: { readiness: RealUserStudyReadines
   const title = readiness.editalAnalysisDescription;
   const detail =
     readiness.editalAnalysisState === "analysis_needs_review"
-      ? "Há análise real, mas ela ainda precisa de conferência antes de virar caminho de estudo concreto."
+      ? "Confira a análise antes de usar o edital no caminho de estudo."
       : readiness.editalAnalysisState === "analysis_unavailable"
-        ? "Dados reais não carregados agora. A orientação local continua disponível sem tratar demonstrações como seu plano."
+        ? "Não foi possível carregar o edital agora. Tente novamente em instantes."
         : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
-          ? "A classificação do arquivo foi preservada, mas ela ainda não transforma o edital em análise oficial. Enquanto isso, organize os materiais de estudo sem assumir cobertura."
-          : "O edital oficial define o escopo. Depois dele, envie materiais de estudo para comparar cobertura quando essa análise estiver disponível.";
+          ? "Analise o edital para definir o conteúdo da sua preparação."
+          : "Envie seu edital para definir o conteúdo da sua preparação.";
   const primaryLabel = readiness.shouldShowEditalUploadCTA ? "Enviar edital" : "Enviar materiais de estudo";
 
   return (
@@ -87,12 +86,11 @@ function MaterialsByTypeSummary({ readiness }: { readiness: RealUserStudyReadine
       </div>
       {readiness.hasRealStudyMaterial ? (
         <p className="mt-5 text-sm leading-7 text-silver">
-          Materiais de estudo enviados: {readiness.studyMaterialsCount}. A comparação com edital ainda depende de uma
-          análise real do edital.
+          Materiais de estudo enviados: {readiness.studyMaterialsCount}. Prepare-os quando quiser começar pelos blocos.
         </p>
       ) : (
         <p className="mt-5 text-sm leading-7 text-silver">
-          Depois do edital, envie materiais de estudo para comparar cobertura quando essa etapa estiver disponível.
+          Envie um material de estudo para começar.
         </p>
       )}
     </Card>

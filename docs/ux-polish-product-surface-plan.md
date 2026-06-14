@@ -365,3 +365,29 @@ Reason:
 - It reduces the cognitive load before layout changes.
 - It is easy to verify with existing product-safety, navigation, study, and material/edital tests.
 - It creates a cleaner vocabulary foundation for `/study` and block-detail layout refinements.
+
+## UX-Polish-B closeout
+
+UX-Polish-B implemented the first behavior-preserving cleanup slice. It did not change backend behavior, routes, API contracts, progress semantics, review eligibility, or any material completion/correction/scoring capability.
+
+Surfaces cleaned:
+
+- Landing, public navigation, login, AppShell/session notice, dashboard guidance.
+- Materials list/detail/upload, edital list/detail, material-step tracking.
+- `/study` blocks, cumulative review card, and progress summary card.
+- `/study/blocks/[blockId]` header, progress action copy, fixation questions, feedback, and reinforcement.
+
+Copy changes:
+
+- Preferred vocabulary is now more consistent: `Edital`, `Analisar edital`, `Material de estudo`, `Preparar para estudo`, `Seu caminho de estudo`, `Questões de fixação`, `Revisar escolha`, `Feedback`, `Reforço sugerido`, `Acompanhamento do estudo`, and `Revisão acumulada`.
+- Old or dense wording such as OCR validation, processing-line language, chunk-like labels, gaps, and long repeated cautions was replaced with product-facing terms such as `Pode exigir conferência`, `Etapas do material`, `partes`, and `pontos a cobrir`.
+- Login/auth states now use concise product copy: `Entre para continuar`, `Entrada confirmada. Abrindo seu painel.`, and safe unavailable messages.
+- `/study` now uses shorter supporting copy for review and progress states while preserving the safety meaning that review/progress cards do not complete materials or provide scoring.
+- Block detail now avoids duplicate objective alternatives and uses one concise feedback caution: `Orientação de estudo, sem correção oficial, notas ou alteração de progresso.`
+
+Remaining work:
+
+- UX-Polish-C should still refine `/study` hierarchy and card density.
+- UX-Polish-D should still refine block-detail grouping, spacing, and post-answer hierarchy.
+- UX-Polish-E should still simplify materials/editais structure beyond copy-level wording.
+- UX-Polish-F should still do responsive/mobile cleanup and browser visual QA.

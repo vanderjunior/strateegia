@@ -68,6 +68,20 @@ function coverageStatusLabel(status: BackendEditalCoverageItem["status"]): strin
   }
 }
 
+function editalStatusLabel(label: string): string {
+  if (label === "Análise candidata") {
+    return "Edital analisado";
+  }
+  return label;
+}
+
+function editalReviewLabel(label: string): string {
+  if (label === "Revisão necessária") {
+    return "Precisa de conferência";
+  }
+  return label;
+}
+
 function coverageStateFromResult(result: ApiResult<BackendEditalCoverage>): CoverageViewState {
   if (result.ok) {
     return { status: "ready", coverage: result.data };
@@ -76,7 +90,7 @@ function coverageStateFromResult(result: ApiResult<BackendEditalCoverage>): Cove
   if (result.error.code === "not_ready") {
     return {
       status: "not_ready",
-      message: "A cobertura ainda não está pronta. Ela depende de um edital analisado e de materiais de estudo enviados."
+      message: "A cobertura aparecerá depois da análise do edital e do envio de materiais de estudo."
     };
   }
 
@@ -279,16 +293,20 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
         <Card className="min-w-0">
           <div className="flex flex-wrap gap-2">
             <Badge className={sourceBadgeClass(detail.source)}>{sourceLabel(detail.source)}</Badge>
-            <Badge className={productStatusClass(detail.statusLabel)}>{detail.statusLabel}</Badge>
-            <Badge className={productStatusClass(detail.reviewState)}>{detail.reviewState}</Badge>
+            <Badge className={productStatusClass(editalStatusLabel(detail.statusLabel))}>
+              {editalStatusLabel(detail.statusLabel)}
+            </Badge>
+            <Badge className={productStatusClass(editalReviewLabel(detail.reviewState))}>
+              {editalReviewLabel(detail.reviewState)}
+            </Badge>
           </div>
           {isNotReady ? (
             <div className="mt-6 rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.06)] p-4">
               <p className="text-sm leading-7 text-silver">
-                Este edital foi recebido, mas ainda não há tópicos ou bibliografia prontos para orientar o estudo.
+                Analise o edital para organizar tópicos e bibliografia.
               </p>
               <p className="mt-2 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-                Confira se o arquivo tem texto extraível ou envie uma versão textual.
+                Se a análise não avançar, envie uma versão textual.
               </p>
             </div>
           ) : (
@@ -308,13 +326,13 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
                 </div>
                 <div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">
-                    gaps
+                    pontos a cobrir
                   </div>
                   <p className="mt-2 text-sm text-ink">{detail.gapsCount}</p>
                 </div>
               </div>
               <p className="mt-6 text-sm leading-7 text-silver">
-                Os itens abaixo são candidatos e permanecem sujeitos a revisão antes de qualquer uso posterior.
+                Confira os itens identificados antes de usar este edital no estudo.
               </p>
             </>
           )}
@@ -333,8 +351,8 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
 
       {isNotReady ? null : <section className="grid gap-4 xl:grid-cols-2">
         <Card className="min-w-0">
-          <div className="section-kicker">tópicos candidatos</div>
-          <CardTitle className="mt-5 break-words text-[1.8rem]">Tópicos candidatos</CardTitle>
+          <div className="section-kicker">tópicos</div>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Tópicos identificados</CardTitle>
           {detail.topicCandidates.length ? (
             <div className="mt-5 flex flex-wrap gap-2">
               {detail.topicCandidates.map((topic) => (
@@ -347,12 +365,12 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
               ))}
             </div>
           ) : (
-            <p className="mt-5 text-sm leading-7 text-silver">Nenhum tópico candidato para exibir ainda.</p>
+            <p className="mt-5 text-sm leading-7 text-silver">Nenhum tópico para exibir ainda.</p>
           )}
         </Card>
 
         <Card className="min-w-0">
-          <div className="section-kicker">bibliografia candidata</div>
+          <div className="section-kicker">bibliografia</div>
           <CardTitle className="mt-5 break-words text-[1.8rem]">Bibliografia identificada</CardTitle>
           {detail.bibliographyCandidates.length ? (
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
@@ -389,8 +407,8 @@ export function EditalDetailReadOnlyClient({ editalId }: { editalId: string }) {
         </Card>
 
         <Card className="min-w-0">
-          <div className="section-kicker">gaps</div>
-          <CardTitle className="mt-5 break-words text-[1.8rem]">Gaps encontrados</CardTitle>
+          <div className="section-kicker">pontos a cobrir</div>
+          <CardTitle className="mt-5 break-words text-[1.8rem]">Pontos a cobrir</CardTitle>
           <div className="mt-5 space-y-3">
             {detail.gapItems.map((item) => (
               <div

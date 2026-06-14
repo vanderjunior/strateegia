@@ -85,13 +85,13 @@ describe("upload validation helpers and component states", () => {
     const button = screen.getByRole("button", { name: "Enviar arquivo" });
 
     expect(button).toBeDisabled();
-    expect(screen.getAllByText(/OCR em validação/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/PDFs escaneados podem exigir OCR/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Pode exigir conferência/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/PDFs digitalizados podem exigir conferência/i).length).toBeGreaterThan(0);
     expect(screen.getByText("O que você está enviando?")).toBeInTheDocument();
     expect(screen.getByText("Material de estudo")).toBeInTheDocument();
     expect(screen.getByText("Prova anterior")).toBeInTheDocument();
     expect(screen.getByText("Bibliografia / referência")).toBeInTheDocument();
-    expect(screen.getByText("Confirmo que este material pode ser enviado para validação.")).toBeInTheDocument();
+    expect(screen.getByText("Confirmo que este material pode ser enviado.")).toBeInTheDocument();
 
     fireEvent.change(fileInput, {
       target: {
@@ -100,13 +100,13 @@ describe("upload validation helpers and component states", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Arquivo pronto para validação.").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Arquivo pronto para envio.").length).toBeGreaterThan(0);
     });
     expect(button).toBeDisabled();
 
     fireEvent.click(checkbox);
     expect(button).toBeDisabled();
-    expect(screen.getAllByText("Classificação necessária.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Escolha o tipo do material.").length).toBeGreaterThan(0);
 
     fireEvent.click(editalIntent);
     expect(button).toBeEnabled();
@@ -137,7 +137,7 @@ describe("upload validation helpers and component states", () => {
         materialType: "edital",
         materialTypeLabel: "Edital",
         sizeBytes: 2048,
-        processingStatus: "Material recebido para validação",
+        processingStatus: "Material enviado",
         extractionStatus: "Texto extraído",
         reviewState: "Pronto para revisão",
         source: "backend",
@@ -159,10 +159,10 @@ describe("upload validation helpers and component states", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Enviar arquivo" }));
 
-    expect((await screen.findAllByText("Material recebido para validação")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Material enviado")).length).toBeGreaterThan(0);
     expect(screen.getByText("classificação escolhida")).toBeInTheDocument();
     expect(screen.getAllByText("Edital").length).toBeGreaterThan(0);
-    expect(screen.getByText(/não aciona processamento automático/i)).toBeInTheDocument();
+    expect(screen.getByText(/classificação escolhida organiza a biblioteca/i)).toBeInTheDocument();
   });
 
   it("preserves intent selected before file choice and sends material_type=edital", async () => {

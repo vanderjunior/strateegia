@@ -14,9 +14,9 @@ function entryStateLabel(state: UploadEntryState): string {
     case "failed":
       return "Revisão necessária";
     case "mock_only":
-      return "Modo de demonstração";
+      return "Demonstração";
     case "endpoint_unavailable":
-      return "Configuração necessária";
+      return "Envio indisponível";
     case "ready_to_send":
       return "Pronto para envio";
     default:
@@ -75,9 +75,8 @@ export function UploadValidationSummary({
           <Badge className={productStatusClass(validationMessage)}>{validationMessage}</Badge>
         </div>
         <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-          <li>• PDFs escaneados podem exigir OCR em validação.</li>
-          <li>• A leitura de OCR pode exigir conferência antes da revisão.</li>
-          <li>• Esta etapa não gera questões, simulados nem altera seu progresso.</li>
+          <li>• PDFs digitalizados podem exigir conferência.</li>
+          <li>• O envio não cria questões nem registra estudo.</li>
           <li>• Para envio real, use PDF, TXT ou Markdown (.md).</li>
           {validationState === "missing_confirmation" && !confirmationChecked ? (
             <li>• Confirme o envio antes de liberar a ação.</li>

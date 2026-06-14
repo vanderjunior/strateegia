@@ -58,14 +58,14 @@ describe("materials adapter", () => {
     expect(viewModel.hasEdital).toBe(false);
   });
 
-  it("returns safe detail previews and OCR warnings without raw content", () => {
+  it("returns safe detail previews and conferência warnings without raw content", () => {
     const scanned = buildMockMaterialDetail("material-roteiro-porto");
     const textual = buildMockMaterialDetail("material-arte-naval");
     expect(scanned).not.toBeNull();
     expect(textual).not.toBeNull();
     const payload = JSON.stringify({ scanned, textual });
 
-    expect(scanned?.warnings.some((warning) => warning.includes("OCR"))).toBe(true);
+    expect(scanned?.warnings.some((warning) => warning.includes("versão textual"))).toBe(true);
     expect(scanned?.sectionPreviews.every((section) => Boolean(section.title))).toBe(true);
     expect(textual?.sectionPreviews.every((section) => Boolean(section.chunkRangeLabel))).toBe(true);
 

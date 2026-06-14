@@ -154,3 +154,12 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 4. ErrorReinforcement-Planning-A: define how missed or needs-review choices should reinforce specific themes without revealing gabarito, scoring, or mutating progress.
 5. PostgreSQL migration planning only after repository boundaries and real-user flows stabilize.
 6. UX-Polish-B: behavior-preserving copy cleanup and state-message consolidation across the active product surfaces.
+
+## UX-Polish-B Closeout
+
+- Product copy was simplified across landing, login/session, dashboard, materials/editais, upload, `/study`, and block detail surfaces.
+- State messages were consolidated so loading, empty, unavailable, partial, success, and caution copy use shorter user-facing language.
+- Materials/editais wording now distinguishes `Edital enviado`, `Edital analisado`, `Material enviado`, `Material preparado`, `pontos a cobrir`, and `Pode exigir conferência` without exposing raw lifecycle enum labels.
+- `/study` keeps the same layout and behavior, but review/progress supporting copy is shorter and avoids repeated warnings.
+- Block detail keeps summary, key points, fixation questions, selectable answer review, reinforcement, and explicit mark-studied behavior; duplicate objective alternatives were removed from the visual question card.
+- Behavior remains unchanged: no backend changes, no new routes, no automatic progress, no material completion, no review detail page, no score/gabarito/correction, no simulado, no OCR/LLM, no scheduler, no PostgreSQL, and no provider/signup.

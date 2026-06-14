@@ -19,9 +19,9 @@ describe("landing copy and CTA safety", () => {
     expect(screen.getByRole("link", { name: "Ver estudo de hoje" })).toHaveAttribute("href", "/study");
     expect(screen.getAllByRole("link", { name: "Solicitar convite" })[0]).toHaveAttribute("href", "/onboarding");
     expect(screen.getAllByRole("link", { name: "Enviar material" })[0]).toHaveAttribute("href", "/materials/upload");
-    expect(screen.getAllByText(/beta fechado/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/simulado em preparação/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/OCR em validação/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/preparação guiada/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Revisão acumulada/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Materiais de estudo/i).length).toBeGreaterThan(0);
 
     expect(screen.queryByText(/comprar/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/assinatura/i)).not.toBeInTheDocument();

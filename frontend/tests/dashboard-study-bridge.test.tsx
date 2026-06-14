@@ -20,7 +20,7 @@ describe("DashboardStudyBridge", () => {
 
     expect(screen.getAllByText(/orientação de estudo/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Sessão sugerida")).toBeInTheDocument();
-    expect(screen.getByText("Não altera seu progresso")).toBeInTheDocument();
+    expect(screen.getByText("Leitura orientada")).toBeInTheDocument();
     expect(await screen.findAllByText("Abrir orientação")).not.toHaveLength(0);
 
     expect(screen.queryByText("Começar sessão")).not.toBeInTheDocument();

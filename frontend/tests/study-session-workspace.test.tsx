@@ -248,16 +248,14 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     render(<StudySessionWorkspaceClient />);
 
     expect(await screen.findByText("Acompanhamento do estudo")).toBeInTheDocument();
-    expect(screen.getByText("Resumo das ações registradas por você.")).toBeInTheDocument();
+    expect(screen.getByText("Ações registradas por você.")).toBeInTheDocument();
     expect(screen.getByText("Materiais preparados")).toBeInTheDocument();
     expect(screen.getByText("Blocos marcados como estudados")).toBeInTheDocument();
     expect(screen.getByText("Questões revisadas nesta etapa")).toBeInTheDocument();
     expect(screen.getByText("Blocos abertos")).toBeInTheDocument();
     expect(screen.getByText("Pontos para reforço")).toBeInTheDocument();
     expect(screen.getByText("Revisão sugerida com base em materiais preparados.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Este resumo não conclui materiais automaticamente. Respostas oficiais e notas não fazem parte desta etapa.")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Sem conclusão automática de materiais.")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument();
@@ -491,9 +489,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     render(<StudySessionWorkspaceClient />);
 
-    expect(
-      (await screen.findAllByText("Baseado nos materiais preparados. Ainda não conectado completamente ao edital.")).length
-    ).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Baseado nos materiais preparados.")).length).toBeGreaterThan(0);
     expect(screen.getByText("Leitura inicial")).toBeInTheDocument();
     expect(screen.getByText("Material sem edital")).toBeInTheDocument();
     expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
@@ -598,14 +594,14 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     render(<StudySessionWorkspaceClient />);
 
     expect(await screen.findByText("Revisão acumulada sugerida")).toBeInTheDocument();
-    expect(screen.getByText("Use esta revisão para retomar pontos dos materiais preparados.")).toBeInTheDocument();
+    expect(screen.getByText("Retome pontos importantes antes de avançar.")).toBeInTheDocument();
     expect(screen.getByText("Revisão de atos administrativos")).toBeInTheDocument();
     expect(screen.getByText("Baseada em materiais preparados")).toBeInTheDocument();
     expect(screen.getByText("Revise os conceitos centrais dos blocos preparados.")).toBeInTheDocument();
     expect(screen.getByText("Direito Administrativo · Atos administrativos")).toBeInTheDocument();
     expect(screen.getByText(/Questões de revisão disponíveis · 5 itens/)).toBeInTheDocument();
     expect(screen.getByText("Retome os pontos principais antes das questões de revisão.")).toBeInTheDocument();
-    expect(screen.getByText("Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.")).toBeInTheDocument();
+    expect(screen.getByText("Revisão de apoio; continue estudando pelos blocos.")).toBeInTheDocument();
     expect(screen.getByText("Ver materiais")).toHaveAttribute("href", "/materials");
     expect(screen.queryByText("Abrir revisão")).not.toBeInTheDocument();
     expect(document.body.textContent).not.toContain("/study/review/");
@@ -721,7 +717,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     expect(await screen.findByText("Revisão acumulada em preparação.")).toBeInTheDocument();
     expect(screen.getByText("Prepare mais materiais para uma revisão mais completa.")).toBeInTheDocument();
-    expect(screen.getByText("Esta revisão ainda não altera seu progresso. Ela não substitui o estudo dos blocos.")).toBeInTheDocument();
+    expect(screen.queryByText("Revisão de apoio; continue estudando pelos blocos.")).not.toBeInTheDocument();
     expect(document.body.textContent).not.toContain("materiais estudados");
     expect(document.body.textContent).not.toContain("materiais concluídos");
     expect(document.body.textContent).not.toContain("progresso atualizado");

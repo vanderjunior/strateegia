@@ -19,7 +19,7 @@ export function DashboardPreview() {
         <div className="mb-8">
           <div className="section-kicker">preview do produto</div>
           <h2 className="mt-3 font-serif text-4xl text-ink">
-            Painel editorial para uma preparação ainda em beta fechado
+            Painel para organizar sua preparação
           </h2>
         </div>
         <div className="naval-window">

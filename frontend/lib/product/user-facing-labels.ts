@@ -6,11 +6,11 @@ export const userFacingLabels = {
   broadUpdatesProtected: "Atualizações amplas protegidas",
   controlledUpdateRecorded: "Atualização controlada registrada",
   safeApplyPolicy: "Política de aplicação segura",
-  simuladoFlow: "Fluxo auditável de simulado",
+  simuladoFlow: "Avaliações futuras",
   materialProcessed: "Material processado",
-  gapsFound: "Gaps encontrados",
+  gapsFound: "Pontos a revisar",
   summaryReadyForReview: "Resumo pronto para revisão",
-  simuladoPreparing: "Simulado em preparação",
+  simuladoPreparing: "Avaliações futuras",
   notExecutableYet: "Ainda não executável",
   protectedAnswerBoundaryKey
 } as const;

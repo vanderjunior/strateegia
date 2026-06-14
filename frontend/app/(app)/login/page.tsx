@@ -17,7 +17,7 @@ function messageForError(code: string): string {
     return "Não foi possível carregar o acesso agora.";
   }
   if (code === "missing_base_url") {
-    return "Sessão não configurada.";
+    return "Não foi possível carregar o acesso agora.";
   }
   if (code === "validation_failed") {
     return "Preencha usuário e senha para entrar.";
@@ -30,12 +30,12 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [message, setMessage] = useState("Entre para acessar seus materiais e orientações.");
+  const [message, setMessage] = useState("Entre para continuar.");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("submitting");
-    setMessage("Confirmando sessão.");
+    setMessage("Entrando...");
 
     const result = await loginWithPassword({ username, password });
 
@@ -48,7 +48,7 @@ export default function LoginPage() {
     await loadSessionState({ refresh: true });
     notifySessionStateChanged();
     setStatus("success");
-    setMessage("Sessão ativa. Redirecionando para o painel.");
+    setMessage("Entrada confirmada. Abrindo seu painel.");
     router.refresh();
     router.push("/dashboard");
   }
@@ -61,9 +61,9 @@ export default function LoginPage() {
 
       <Card>
         <div className="section-kicker">acesso</div>
-        <CardTitle className="mt-5 text-[2rem]">Entrar</CardTitle>
+        <CardTitle className="mt-5 text-[2rem]">Entre para continuar</CardTitle>
         <p className="mt-4 text-sm leading-7 text-silver">
-          Use esta tela para acessar seus materiais, edital e orientações de estudo.
+          Acesse seus materiais, edital e caminho de estudo.
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>

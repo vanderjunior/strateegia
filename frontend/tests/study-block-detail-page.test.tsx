@@ -168,21 +168,19 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Abrir material")).toHaveAttribute("href", "/materials/doc-1");
     expect(screen.getByText("Voltar ao caminho de estudo")).toHaveAttribute("href", "/study");
     expect(screen.getByText("Use este bloco como guia inicial de leitura.")).toBeInTheDocument();
-    expect(screen.getByText("Esta tela mostra apenas uma orientação de leitura para este bloco.")).toBeInTheDocument();
+    expect(screen.getByText("Leia o resumo, revise a questão e registre o estudo quando terminar.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marcar bloco como estudado" })).toBeInTheDocument();
-    expect(screen.getByText("Esta ação registra apenas este bloco. Ela não conclui o material.")).toBeInTheDocument();
+    expect(screen.getByText("Registra somente este bloco; não finaliza o material.")).toBeInTheDocument();
     expect(await screen.findByText("Questões de fixação")).toBeInTheDocument();
-    expect(screen.getByText("Use estas questões como revisão inicial do bloco. Elas ainda não exibem respostas oficiais nem avaliam respostas.")).toBeInTheDocument();
+    expect(screen.getByText("Revise o bloco com questões de apoio.")).toBeInTheDocument();
     expect(screen.getByText("Múltipla escolha · Básica")).toBeInTheDocument();
     expect(screen.getByText("1. Considerando o tema Direito Administrativo, escolha uma alternativa para orientar sua revisão de Atos administrativos.")).toBeInTheDocument();
-    expect(screen.getByText("A. Revisar Atos administrativos.")).toBeInTheDocument();
-    expect(screen.getByText("E. Comparar Atos administrativos com os demais pontos do bloco.")).toBeInTheDocument();
     expect(screen.getByText("Escolha uma alternativa")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "A. Revisar Atos administrativos." })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "E. Comparar Atos administrativos com os demais pontos do bloco." })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Revisar escolha" })).toBeInTheDocument();
     expect(screen.getByText("Questão candidata")).toBeInTheDocument();
-    expect(screen.getByText("Sem respostas oficiais nesta etapa")).toBeInTheDocument();
+    expect(screen.getByText("Revisão sem respostas oficiais")).toBeInTheDocument();
   });
 
   it("does not record progress on render", async () => {
@@ -371,8 +369,6 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.queryByText("Direito Administrativo · Atos administrativos")).not.toBeInTheDocument();
     expect(screen.getByText("Estas questões precisam de conferência.")).toBeInTheDocument();
     expect(screen.getByText("Certo ou errado · Média")).toBeInTheDocument();
-    expect(screen.getByText("C. Certo")).toBeInTheDocument();
-    expect(screen.getByText("E. Errado")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "C. Certo" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "E. Errado" })).toBeInTheDocument();
   });
@@ -529,8 +525,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getAllByText("Direito Administrativo · Atos administrativos").length).toBeGreaterThan(0);
     expect(screen.getByText("Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.")).toBeInTheDocument();
     expect(screen.getByText("Revisar resumo")).toBeInTheDocument();
-    expect(screen.getByText("Este feedback é uma orientação de estudo, não uma correção oficial.")).toBeInTheDocument();
-    expect(screen.getByText("Seu progresso ainda não é alterado nesta etapa.")).toBeInTheDocument();
+    expect(screen.getByText("Orientação de estudo, sem correção oficial, notas ou alteração de progresso.")).toBeInTheDocument();
   });
 
   it("renders needs-review feedback safely", async () => {
@@ -570,7 +565,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     expect(await screen.findByText("Esta escolha precisa de conferência.")).toBeInTheDocument();
     expect(screen.getByText("Revisitar bloco")).toBeInTheDocument();
-    expect(screen.getByText("Este feedback é uma orientação de estudo, não uma correção oficial.")).toBeInTheDocument();
+    expect(screen.getByText("Orientação de estudo, sem correção oficial, notas ou alteração de progresso.")).toBeInTheDocument();
   });
 
   it("maps retry reinforcement action safely", async () => {

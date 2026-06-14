@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Mentorium",
   description:
-    "Plataforma em beta fechado para materiais, edital, mapa PSCPP e estudo guiado com revisão necessária."
+    "Organize edital, materiais de estudo, blocos de leitura e revisão em um caminho guiado."
 };
 
 export default function RootLayout({

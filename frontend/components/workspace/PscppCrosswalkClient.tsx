@@ -94,7 +94,7 @@ export function PscppCrosswalkClient() {
                   {block.materialsCount} materiais
                 </Badge>
                 <Badge className="border-[rgba(168,184,196,0.16)] bg-[rgba(168,184,196,0.08)] text-silver">
-                  {block.gapsCount} gaps
+                  {block.gapsCount} pontos a revisar
                 </Badge>
               </div>
 
@@ -153,7 +153,7 @@ export function PscppCrosswalkClient() {
                 <WorkspaceLink href="/materials">Ver materiais</WorkspaceLink>
                 <WorkspaceLink href="/editais/edital-pscpp-referencia">Ver edital de referência</WorkspaceLink>
                 <WorkspaceLink href="/pscpp/ciclo">Ver ciclo PSCPP</WorkspaceLink>
-                <WorkspaceLink href="/pscpp/questoes">Ver questões candidatas</WorkspaceLink>
+                <WorkspaceLink href="/pscpp/questoes">Ver questões de fixação</WorkspaceLink>
               </div>
             </Card>
           ))}
@@ -162,8 +162,8 @@ export function PscppCrosswalkClient() {
 
       <section className="grid gap-4 2xl:grid-cols-[0.95fr_1.05fr]">
         <Card className="h-full min-w-0">
-          <div className="section-kicker">gaps principais</div>
-          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Gaps encontrados</CardTitle>
+          <div className="section-kicker">pontos principais</div>
+          <CardTitle className="mt-5 break-words text-[1.9rem] leading-[1.02]">Pontos a revisar</CardTitle>
           <div className="mt-5 space-y-3">
             {viewModel.mainGaps.map((gap) => (
               <div
@@ -250,7 +250,7 @@ export function PscppCrosswalkClient() {
             </Badge>
           </div>
           <p className="mt-5 text-sm leading-7 text-silver">
-            Este mapa conecta gaps e cobertura às sessões do ciclo sugerido, sem criar agenda e sem alterar seu
+            Este mapa conecta pontos a revisar e cobertura às sessões do ciclo sugerido, sem criar agenda e sem alterar seu
             progresso.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">

@@ -19,13 +19,13 @@ describe("study session adapters", () => {
     expect(nextSession?.relatedGapsCount).toBeGreaterThanOrEqual(0);
   });
 
-  it("keeps session 12 explicit about review-only simulado limits", () => {
+  it("keeps session 12 explicit about review-only assessment limits", () => {
     const detail = buildMockStudySessionDetail("session-12-simulado-curto-revisao");
 
     expect(detail).not.toBeNull();
-    expect(detail?.cautions).toContain("Simulado curto ainda não executável.");
-    expect(detail?.cautions).toContain("Questões candidatas ainda exigem revisão.");
-    expect(detail?.cautions).toContain("Esta tela não gera prova nem corrige respostas.");
+    expect(detail?.cautions).toContain("Avaliação completa fica para depois.");
+    expect(detail?.cautions).toContain("Questões de fixação ainda exigem revisão.");
+    expect(detail?.cautions).toContain("Esta tela não cria prova nem corrige respostas.");
   });
 
   it("does not expose mutation actions in session workspace or detail copy", () => {

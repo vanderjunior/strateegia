@@ -37,8 +37,8 @@ describe("product language helpers", () => {
     const draft = getUserFacingCapability("question_draft_generation", "student");
 
     expect(progress?.label).toBe("Progresso registrado com segurança");
-    expect(ocr?.label).toBe("OCR para PDF digitalizado");
-    expect(ocr?.safeStatusLabels).toContain("Experimental");
+    expect(ocr?.label).toBe("PDF que exige conferência");
+    expect(ocr?.safeStatusLabels).toContain("Precisa de conferência");
     expect(draft?.safeStatusLabels).toContain("Revisão necessária");
     expect(shouldShowCapability("runtime_apply_policy", "student")).toBe(true);
   });
@@ -64,7 +64,7 @@ describe("product language helpers", () => {
 
   it("exposes product-safe copy labels for dashboard and workspaces", () => {
     expect(getSafeProductCopy("materialProcessed")).toBe("Material processado");
-    expect(getSafeProductCopy("gapsFound")).toBe("Gaps encontrados");
+    expect(getSafeProductCopy("gapsFound")).toBe("Pontos a revisar");
     expect(getSafeProductCopy("notExecutableYet")).toBe("Ainda não executável");
   });
 });

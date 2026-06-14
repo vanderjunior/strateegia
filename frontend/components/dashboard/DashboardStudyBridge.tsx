@@ -56,7 +56,7 @@ export function DashboardStudyBridge() {
         <div className="flex max-w-full flex-wrap gap-2 lg:justify-end">
           <Badge className={sourceBadgeClass(viewModel.connection.source)}>{sourceLabel(viewModel.connection.source)}</Badge>
           <Badge className={productStatusClass("Guia flexível")}>Guia flexível</Badge>
-          <Badge className={productStatusClass("Não altera seu progresso")}>Não altera seu progresso</Badge>
+          <Badge className={productStatusClass("Leitura orientada")}>Leitura orientada</Badge>
         </div>
       </div>
 
@@ -87,8 +87,7 @@ export function DashboardStudyBridge() {
               />
             </div>
             <p className="mt-5 text-sm leading-7 text-silver">
-              Questões candidatas em revisão. Esta ponte não cria agenda, não altera progresso e não
-              executa simulado.
+              Abra o estudo para continuar pelos blocos preparados.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href={`/study/session/${nextSession.id}`}>Abrir orientação</WorkspaceLink>
@@ -100,12 +99,12 @@ export function DashboardStudyBridge() {
             <div className="section-kicker">atalhos de consulta</div>
             <CardTitle className="mt-5 text-[1.7rem] leading-[1.04]">Próximos passos de leitura</CardTitle>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-silver">
-              <li>Revise o mapa PSCPP para entender cobertura, gaps e prioridade do bloco atual.</li>
+              <li>Revise o mapa PSCPP para entender cobertura e prioridade do bloco atual.</li>
               <li>Use o ciclo PSCPP como sugestão flexível, sem criar agenda automaticamente.</li>
-              <li>Abra os materiais relacionados antes de revisar questões candidatas.</li>
+              <li>Abra os materiais relacionados antes das questões de fixação.</li>
             </ul>
             <p className="mt-5 text-sm leading-7 text-[rgba(232,238,242,0.68)]">
-              Guia flexível, sem agenda, sem progresso automático e sem geração de questões ou simulado.
+              Guia flexível; a agenda fica para uma etapa futura.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <WorkspaceLink href="/pscpp/mapa">Ver mapa PSCPP</WorkspaceLink>

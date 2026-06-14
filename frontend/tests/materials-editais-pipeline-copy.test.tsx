@@ -113,10 +113,10 @@ describe("materials, editais, and pipeline copy", () => {
 
     expect((await screen.findAllByText("Dados de demonstração")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Enviar material").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Material processado").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Análise candidata").length).toBeGreaterThan(0);
-    expect(screen.getByText("Linha do processamento")).toBeInTheDocument();
-    expect(screen.getAllByText("OCR em validação").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Material preparado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Edital analisado").length).toBeGreaterThan(0);
+    expect(screen.getByText("Etapas do material")).toBeInTheDocument();
+    expect(screen.getAllByText(/conferência/i).length).toBeGreaterThan(0);
 
     expect(screen.queryByText(/artifact/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/runtime chain/i)).not.toBeInTheDocument();

@@ -9,13 +9,12 @@ export function EarlyAccessSection() {
     <section id="acesso-antecipado" className="mx-auto max-w-7xl px-6 py-16">
       <Card className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <Badge>acesso antecipado</Badge>
+          <Badge>preparação guiada</Badge>
           <CardTitle className="mt-6 text-4xl">
-            Beta fechado para uma plataforma ainda em validação
+            Um caminho de estudo com revisão no centro
           </CardTitle>
           <p className="mt-5 max-w-2xl text-base leading-8 text-silver">
-            Mentorium não está se apresentando como produto público pronto. O objetivo desta fase é
-            validar materiais, edital, mapa PSCPP e estudo guiado antes de qualquer abertura ampla.
+            Use o fluxo atual para organizar edital, materiais e blocos de estudo com cautela.
           </p>
         </div>
         <div className="naval-window">
@@ -23,7 +22,7 @@ export function EarlyAccessSection() {
             <span className="naval-window-dot bg-[#e17d69]" />
             <span className="naval-window-dot bg-[#d6c477]" />
             <span className="naval-window-dot bg-[#8fc9a9]" />
-            <div className="window-url">beta fechado / acesso por convite</div>
+            <div className="window-url">preparação guiada</div>
           </div>
           <div className="flex flex-col justify-between gap-6 p-6">
             <div>
@@ -31,10 +30,10 @@ export function EarlyAccessSection() {
                 estado atual
               </div>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-silver">
-                <li>Leitura de PDFs textuais suportada</li>
-                <li>OCR em validação para arquivos escaneados</li>
-                <li>Mapa PSCPP e ciclo sugerido já disponíveis</li>
-                <li>Simulado em preparação e revisão necessária</li>
+                <li>Edital define o escopo da preparação</li>
+                <li>Materiais de estudo podem ser preparados</li>
+                <li>Blocos orientam o próximo passo</li>
+                <li>Revisão acumulada aparece quando houver base suficiente</li>
               </ul>
             </div>
             <div className="flex flex-wrap gap-4">

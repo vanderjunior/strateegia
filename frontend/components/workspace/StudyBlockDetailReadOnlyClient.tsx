@@ -233,7 +233,7 @@ function QuestionsCard({
         <div className="section-kicker">revisão</div>
         <h2 className="mt-3 break-words font-serif text-[2rem] text-ink">Questões de fixação</h2>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-silver">
-          Use estas questões como revisão inicial do bloco. Elas ainda não exibem respostas oficiais nem avaliam respostas.
+          Revise o bloco com questões de apoio.
         </p>
       </div>
 
@@ -288,7 +288,7 @@ function QuestionsCard({
                     </p>
                   ) : null}
 
-                  {item.alternatives.length ? (
+                  {!isObjectiveQuestion && item.alternatives.length ? (
                     <ul className="mt-5 space-y-2 text-sm leading-7 text-silver">
                       {item.alternatives.map((alternative) => (
                         <li key={`${item.question_id}-${alternative.id}`}>
@@ -380,16 +380,13 @@ function QuestionsCard({
                         </Badge>
                       </div>
                       <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted">
-                        Este feedback é uma orientação de estudo, não uma correção oficial.
-                      </p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-muted">
-                        Seu progresso ainda não é alterado nesta etapa.
+                        Orientação de estudo, sem correção oficial, notas ou alteração de progresso.
                       </p>
                     </div>
                   ) : null}
 
                   <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted">
-                    Sem respostas oficiais nesta etapa
+                    Revisão sem respostas oficiais
                   </p>
                 </Card>
               );
@@ -484,7 +481,7 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
           connection={{
             state: "connected",
             source: "backend",
-            title: "Dados reais",
+            title: "Bloco disponível",
             detail: "A leitura aparece quando o bloco estiver disponível."
           }}
         />
@@ -506,7 +503,7 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
           connection={{
             state: state.status === "auth_required" ? "auth_required" : "offline",
             source: state.status === "auth_required" ? "backend" : "offline",
-            title: state.status === "auth_required" ? "Entre para continuar" : "Dados reais não carregados agora",
+            title: state.status === "auth_required" ? "Entre para continuar" : "Não foi possível carregar agora",
             detail: state.message
           }}
         />
@@ -534,7 +531,7 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
           connection={{
             state: "connected",
             source: "backend",
-            title: "Dados reais",
+            title: "Bloco recebido",
             detail: state.message
           }}
         />
@@ -573,8 +570,8 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
         connection={{
           state: "connected",
           source: "backend",
-          title: "Dados reais",
-          detail: "Esta tela mostra apenas uma orientação de leitura para este bloco."
+          title: "Bloco disponível",
+          detail: "Leia o resumo, revise a questão e registre o estudo quando terminar."
         }}
       />
 
@@ -636,7 +633,7 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
             ) : null}
           </div>
           <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted">
-            Esta ação registra apenas este bloco. Ela não conclui o material.
+            Registra somente este bloco; não finaliza o material.
           </p>
         </div>
       </Card>

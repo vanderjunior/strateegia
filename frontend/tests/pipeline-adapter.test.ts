@@ -35,7 +35,7 @@ describe("pipeline adapter", () => {
     expect(textual?.steps.map((step) => step.label)).toEqual(
       expect.arrayContaining(["Enviado", "Texto extraído", "Segmentado", "Pronto para revisão"])
     );
-    expect(scanned?.steps.some((step) => step.statusLabel.includes("OCR"))).toBe(true);
+    expect(scanned?.steps.some((step) => step.statusLabel.includes("Conferência"))).toBe(true);
   });
 
   it("does not expose backend internals, raw text, or process actions", () => {

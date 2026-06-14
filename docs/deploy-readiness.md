@@ -749,6 +749,13 @@ Do not migrate persistence before staging proves the product flow and storage re
 - Run no-leakage and pricing/marketing greps.
 - Keep inspection disabled or auth-protected in production-like environments.
 
+## UX Copy Readiness
+
+- UX-Polish-B completed a behavior-preserving copy cleanup for the active product surfaces.
+- User-facing state messages now favor concise product language over implementation terms.
+- Safety copy remains present but shorter: answer review is still guidance only, study progress still does not complete materials automatically, and score/gabarito/correction remain absent.
+- Larger hierarchy, card-density, and responsive refinements remain pending UX-Polish-C through UX-Polish-F.
+
 ## Non-Goals
 
 - No PostgreSQL migration.

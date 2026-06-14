@@ -66,7 +66,7 @@ export function PscppWorkspaceClient() {
               ? "Há edital analisado, mas ele precisa de conferência antes de virar mapa personalizado."
               : readiness.editalAnalysisState === "edital_uploaded_not_analyzed"
                 ? "Você já enviou um edital, mas a análise ainda não foi executada nesta versão."
-                : "A referência ajuda a conhecer o formato do mapa, ciclo e questões candidatas. O caminho real depende de um edital analisado e de materiais da sua sessão."}
+                : "A referência ajuda a conhecer o formato do mapa, ciclo e questões de fixação. O caminho real depende de um edital analisado e de materiais da sua sessão."}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <WorkspaceLink href="/pscpp/mapa">Ver referência PSCPP</WorkspaceLink>
@@ -83,7 +83,7 @@ export function PscppWorkspaceClient() {
       <WorkspaceSourcePanel
         eyebrow="pscpp / praticagem"
         title={viewModel.profileTitle}
-        subtitle="Guia técnico-operacional para estudo, materiais e questões candidatas."
+        subtitle="Guia técnico-operacional para estudo, materiais e questões de fixação."
         connection={viewModel.connection}
       />
 
@@ -112,7 +112,7 @@ export function PscppWorkspaceClient() {
           </div>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">questões candidatas</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-silver">questões de fixação</div>
               <p className="mt-3 break-words text-sm text-ink">Fonte obrigatória e revisão necessária.</p>
             </div>
             <div className="rounded-2xl border border-[rgba(168,184,196,0.10)] bg-[rgba(255,255,255,0.03)] p-4">

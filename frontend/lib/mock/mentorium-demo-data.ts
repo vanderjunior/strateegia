@@ -31,12 +31,12 @@ import type {
 
 export const landingPipeline = [
   "Envio de material",
-  "Leitura e segmentação documental",
+  "Leitura do material",
   "Revisão de edital",
-  "Mapa de preparação e gaps",
+  "Mapa de preparação",
   "Ciclo de estudo flexível",
-  "Questões candidatas em revisão",
-  "Simulado em preparação"
+  "Questões de fixação",
+  "Revisão acumulada"
 ] as const;
 
 export const landingFeatures = [
@@ -49,8 +49,8 @@ export const landingFeatures = [
   {
     title: "Editais e bibliografia",
     description:
-      "Análise candidata, bibliografia identificada e gaps encontrados com revisão humana.",
-    badge: "análise candidata"
+      "Tópicos e bibliografia organizados para orientar sua preparação.",
+    badge: "analisar edital"
   },
   {
     title: "Perfil PSCPP/Praticagem",
@@ -65,16 +65,16 @@ export const landingFeatures = [
     badge: "guia flexível"
   },
   {
-    title: "Simulado em preparação",
+    title: "Revisão acumulada",
     description:
-      "Questões candidatas e montagem ainda exigem revisão antes de qualquer uso final.",
-    badge: "revisão necessária"
+      "Retome pontos importantes depois que houver base suficiente de estudo.",
+    badge: "revisão de apoio"
   },
   {
-    title: "OCR em validação",
+    title: "Arquivos que exigem conferência",
     description:
-      "PDFs escaneados podem exigir OCR e conferência manual antes de uma revisão segura.",
-    badge: "uso experimental"
+      "Alguns PDFs podem precisar de uma versão textual antes de entrar no estudo.",
+    badge: "conferência"
   }
 ] as const;
 
@@ -89,7 +89,7 @@ export const howItWorksSteps = [
     id: "02",
     title: "Entenda o mapa PSCPP",
     body:
-      "Cruze bibliografia, cobertura, gaps e blocos prioritários antes de decidir o foco."
+      "Cruze bibliografia, cobertura e blocos prioritários antes de decidir o foco."
   },
   {
     id: "03",
@@ -106,7 +106,7 @@ export const dashboardSidebar = [
   "Editais",
   "Ciclo",
   "Questoes",
-  "Simulados",
+  "Avaliações",
   "PSCPP",
   "Execução"
 ] as const;
@@ -131,9 +131,9 @@ export const studyOverviewCards: StudyOverviewCard[] = [
   {
     id: "study-overview-weekly-training",
     internalKey: "question_generation_blueprint",
-    title: "Questões candidatas",
-    value: "40 questões por tópico",
-    note: "fase de consolidação por cenários",
+    title: "Questões de fixação",
+    value: "Opções A-E",
+    note: "revisão do bloco estudado",
     metric: 66
   }
 ] as const;
@@ -148,10 +148,10 @@ export const documentStatusCards: CapabilityCard[] = [
   },
   {
     internalKey: "ocr_adapter",
-    title: "PDF escaneado / OCR",
+    title: "PDF que exige conferência",
     status: "implemented_but_needs_manual_validation" as CapabilityStatus,
-    summary: "OCR em validação para PDFs escaneados e materiais com leitura mais delicada.",
-    detail: "PDFs escaneados podem exigir revisão antes da leitura confiável."
+    summary: "Alguns PDFs podem precisar de uma versão textual antes de entrar no estudo.",
+    detail: "Use arquivos com texto selecionável sempre que possível."
   },
   {
     internalKey: "edital_ingestion",
@@ -162,9 +162,9 @@ export const documentStatusCards: CapabilityCard[] = [
   },
   {
     internalKey: "bibliography_alignment",
-    title: "Cobertura e gaps do edital",
+    title: "Cobertura do edital",
     status: "partially_implemented" as CapabilityStatus,
-    summary: "Cobertura parcial e gaps encontrados com base nos materiais atuais.",
+    summary: "Pontos cobertos e pontos a revisar com base nos materiais atuais.",
     detail: "Ainda não representa um mapeamento final verificado."
   }
 ] as const;
@@ -172,24 +172,24 @@ export const documentStatusCards: CapabilityCard[] = [
 export const runtimeStatusCards: CapabilityCard[] = [
   {
     internalKey: "attempt_session",
-    title: "Sessão de treino em revisão",
+    title: "Revisão de escolha",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Estrutura auditável de tentativa e revisão já existe.",
-    detail: "A etapa ainda exige revisão antes de qualquer uso executável."
+    summary: "A escolha pode receber feedback de estudo sem pontuação.",
+    detail: "A etapa orienta revisão, sem correção oficial."
   },
   {
     internalKey: "minimal_progress_ledger_apply",
     title: "Registro mínimo de progresso",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Mantido apenas como base técnica interna, sem uso visível para o candidato.",
-    detail: "Sem alterar ranking, retenção, agenda ou ciclo sugerido."
+    summary: "O estudante pode marcar um bloco como estudado.",
+    detail: "Não conclui material nem altera agenda automaticamente."
   },
   {
     internalKey: "applied_event_ledger",
-    title: "Registro auditável de aplicação",
+    title: "Atualização registrada",
     status: "implemented_and_tested" as CapabilityStatus,
-    summary: "Camada interna mantida para revisão auditável.",
-    detail: "Não representa uma ação aberta para o candidato."
+    summary: "Mantém o registro seguro de ações explícitas.",
+    detail: "Não representa uma conclusão automática."
   },
   {
     internalKey: "propagation_guardrail",
@@ -207,10 +207,10 @@ export const runtimeStatusCards: CapabilityCard[] = [
   },
   {
     internalKey: "simulado_assembly",
-    title: "Simulado em preparação",
+    title: "Avaliações futuras",
     status: "foundation_only" as CapabilityStatus,
-    summary: "A montagem existe como base, mas a prova final ainda não está verificada.",
-    detail: "Questões candidatas e montagem ainda exigem revisão antes do uso final."
+    summary: "Avaliações completas ficam para uma etapa posterior.",
+    detail: "O foco atual é estudo, revisão e acompanhamento."
   }
 ] as const;
 
@@ -224,10 +224,10 @@ export const pscppProfileCards: CapabilityCard[] = [
   },
   {
     internalKey: "question_generation_blueprint",
-    title: "Questões candidatas",
+    title: "Questões de fixação",
     status: "metadata_only" as CapabilityStatus,
-    summary: "Organização de questões candidatas com fonte obrigatória, bibliografia visível e revisão humana.",
-    detail: "Questões candidatas seguem com revisão humana e sem respostas finais expostas."
+    summary: "Questões de apoio com alternativas visíveis e sem respostas oficiais expostas.",
+    detail: "Servem para orientar revisão do bloco."
   },
   {
     internalKey: "pscpp_study_cycle_profile",
@@ -273,11 +273,11 @@ export const materialsWorkspaceItems: MaterialListItem[] = [
     typeLabel: "PDF digitalizado",
     materialType: "study_material",
     materialTypeLabel: "Material de estudo",
-    processingStatus: "OCR necessário",
-    extractionStatus: "OCR em validação",
+    processingStatus: "Conferência necessária",
+    extractionStatus: "Conferência necessária",
     sectionsCount: null,
     chunksCount: null,
-    reviewState: "OCR em validação",
+    reviewState: "Conferência necessária",
     source: "mock",
     relatedGaps: 1
   }
@@ -307,8 +307,8 @@ export const materialDetailsById: Record<string, MaterialDetail> = {
   "material-roteiro-porto": {
     ...materialsWorkspaceItems[2],
     warnings: [
-      "Este arquivo pode precisar de OCR antes da revisão.",
-      "OCR em validação."
+      "Este arquivo pode precisar de uma versão textual antes da revisão.",
+      "Conferência necessária."
     ],
     sectionPreviews: [],
     sourceNote: "Arquivo digitalizado mantido em etapa de revisão até existir leitura confiável."
@@ -447,24 +447,24 @@ export const pipelineDetailsById: Record<string, PipelineDetailViewModel> = {
     documentId: "material-roteiro-porto",
     title: "Roteiro escaneado - trecho porto.pdf",
     source: "mock",
-    extractionStatus: "OCR em validação",
-    reviewState: "OCR necessário",
+    extractionStatus: "Conferência necessária",
+    reviewState: "Conferência necessária",
     sectionsCount: null,
     chunksCount: null,
-    notes: ["Este arquivo pode precisar de OCR antes da revisão."],
+    notes: ["Este arquivo pode precisar de uma versão textual antes da revisão."],
     steps: [
       { id: "uploaded", label: "Enviado", statusLabel: "Concluído", tone: "complete", detail: "Material já está registrado." },
-      { id: "extracted", label: "Texto extraído", statusLabel: "OCR necessário", tone: "warning", detail: "A leitura textual ainda não está pronta." },
-      { id: "chunked", label: "Segmentado", statusLabel: "Validação pendente", tone: "pending", detail: "A segmentação depende de validação do OCR." },
-      { id: "review", label: "Pronto para revisão", statusLabel: "OCR em validação", tone: "warning", detail: "Arquivo mantido para conferência." }
+      { id: "extracted", label: "Texto extraído", statusLabel: "Conferência necessária", tone: "warning", detail: "A leitura textual ainda não está pronta." },
+      { id: "chunked", label: "Segmentado", statusLabel: "Validação pendente", tone: "pending", detail: "A preparação depende de uma versão textual confiável." },
+      { id: "review", label: "Pronto para revisão", statusLabel: "Conferência necessária", tone: "warning", detail: "Arquivo mantido para conferência." }
     ]
   }
 };
 
 export const betaSignals = [
-  "beta fechado",
+  "preparação guiada",
   "acesso antecipado",
-  "uso experimental",
+  "uso com conferência",
   "convite",
   "ambiente em validacao"
 ] as const;
@@ -519,12 +519,12 @@ export const pscppPhasePlan: PscppPhaseItem[] = [
   {
     id: "phase-advanced",
     title: "Aprofundamento e produção de questões inéditas",
-    detail: "Usar bibliografia visível e revisão humana para lapidar questões candidatas."
+    detail: "Usar bibliografia visível e revisão humana para lapidar questões de fixação."
   },
   {
     id: "phase-post-edital",
     title: "Pós-edital e ajuste fino",
-    detail: "Repriorizar blocos com base no edital atual, gaps e erros recorrentes."
+    detail: "Repriorizar blocos com base no edital atual e pontos de reforço."
   }
 ];
 
@@ -540,7 +540,7 @@ export const pscppRotation: PscppRotationSession[] = [
   { id: "rotation-9", index: 9, title: "Navegação restrita", detail: "Radar, ECDIS, AIS, passage planning" },
   { id: "rotation-10", index: 10, title: "Rebocadores", detail: "Interação, bollard pull, escort" },
   { id: "rotation-11", index: 11, title: "Meteorologia", detail: "Oceanografia, marés, METAREA" },
-  { id: "rotation-12", index: 12, title: "Simulado curto + revisão", detail: "Erros recorrentes e ajuste fino" }
+  { id: "rotation-12", index: 12, title: "Revisão curta", detail: "Pontos de reforço e ajuste fino" }
 ];
 
 export const pscppSessionStructure = [
@@ -578,7 +578,7 @@ export const pscppQuestionArchetypes: PscppQuestionGuidanceItem[] = [
 ];
 
 export const pscppQuestionSourceRules: PscppQuestionGuidanceItem[] = [
-  { id: "rule-source", title: "Fonte obrigatória", detail: "Cada questão candidata precisa nascer de uma fonte ou edital claramente identificado." },
+  { id: "rule-source", title: "Fonte obrigatória", detail: "Cada questão de fixação precisa nascer de uma fonte ou edital claramente identificado." },
   { id: "rule-bibliography", title: "Bibliografia visível", detail: "A âncora bibliográfica deve ficar explícita para revisão posterior." },
   { id: "rule-scenario", title: "Cenário operacional", detail: "Priorizar situações técnicas compatíveis com a banca e a praticagem." },
   { id: "rule-distractors", title: "Distratores tecnicamente plausíveis", detail: "Alternativas erradas devem parecer críveis sem distorcer a fonte." }
@@ -588,7 +588,7 @@ export const pscppQuestionReviewRules: PscppQuestionGuidanceItem[] = [
   { id: "review-human", title: "Revisão humana da resposta final", detail: "Não fechar resposta final sem revisão humana e confronto com a fonte." },
   { id: "review-negative", title: "Cuidado com comando negativo", detail: "Destacar instruções como incorreta, exceto ou falsa para evitar ruído." },
   { id: "review-weights", title: "Pesos variados como guia", detail: "Usar dificuldade e peso apenas como orientação, não como nota definitiva." },
-  { id: "review-status", title: "Questões candidatas", detail: "Tratar a saída como revisão necessária e ainda não finalizada." }
+  { id: "review-status", title: "Questões de fixação", detail: "Tratar a saída como revisão necessária e ainda não finalizada." }
 ];
 
 export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
@@ -613,15 +613,15 @@ export const pscppWorkspaceViewModelMock: PscppWorkspaceViewModel = {
     },
     {
       id: "pscpp-summary-questions",
-      label: "Questões candidatas",
+      label: "Questões de fixação",
       value: "Fonte obrigatória",
       detail: "Orientação por fonte, bibliografia e revisão humana."
     },
     {
       id: "pscpp-summary-simulado",
-      label: "Simulado",
-      value: "Simulado em preparação",
-      detail: "Ainda não executável de ponta a ponta."
+      label: "Avaliações",
+      value: "Etapa futura",
+      detail: "O foco atual é estudo, revisão e acompanhamento."
     }
   ],
   profileTitle: "PSCPP / Praticagem",
@@ -692,19 +692,19 @@ export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
       id: "pscpp-questions-source",
       label: "Fonte obrigatória",
       value: "Bibliografia visível",
-      detail: "Questões candidatas precisam de âncora clara em fonte ou edital."
+      detail: "Questões de fixação precisam de âncora clara em fonte ou edital."
     },
     {
       id: "pscpp-questions-review",
       label: "Revisão",
       value: "Revisão necessária",
-      detail: "Não tratar questão candidata como finalizada."
+      detail: "Não tratar questão de fixação como finalizada."
     },
     {
       id: "pscpp-questions-simulado",
-      label: "Simulado",
-      value: "Simulado em preparação",
-      detail: "A organização existe como guia, mas a execução final ainda requer revisão."
+      label: "Avaliações",
+      value: "Etapa futura",
+      detail: "A organização existe como guia, mas a avaliação completa fica para depois."
     },
     {
       id: "pscpp-questions-weights",
@@ -717,7 +717,7 @@ export const pscppQuestionsViewModelMock: PscppQuestionsViewModel = {
   sourceRules: pscppQuestionSourceRules,
   reviewRules: pscppQuestionReviewRules,
   relationToSimulado: [
-    "Questões candidatas",
+    "Questões de fixação",
     "Revisão necessária",
     "Ainda não finalizadas"
   ]
@@ -735,7 +735,7 @@ const pscppCrosswalkSessionRefs: Record<string, PscppCrosswalkSessionRef> = {
   "9": { id: "rotation-9", index: 9, label: "Sessão 9", detail: "Navegação restrita: radar, ECDIS, AIS, passage planning" },
   "10": { id: "rotation-10", index: 10, label: "Sessão 10", detail: "Rebocadores, interação, bollard pull, escort" },
   "11": { id: "rotation-11", index: 11, label: "Sessão 11", detail: "Meteorologia, oceanografia, marés, METAREA" },
-  "12": { id: "rotation-12", index: 12, label: "Sessão 12", detail: "Simulado curto + revisão de erros" }
+  "12": { id: "rotation-12", index: 12, label: "Sessão 12", detail: "Revisão curta de pontos de reforço" }
 };
 
 export const pscppCrosswalkBlocks: PscppCrosswalkBlockItem[] = [
@@ -829,7 +829,7 @@ export const pscppCrosswalkBlocks: PscppCrosswalkBlockItem[] = [
         id: "material-roteiro-porto",
         title: "Roteiro escaneado - trecho porto.pdf",
         typeLabel: "PDF digitalizado",
-        statusLabel: "OCR em validação",
+        statusLabel: "Conferência necessária",
         linkHref: "/materials/material-roteiro-porto"
       }
     ],
@@ -842,7 +842,7 @@ export const pscppCrosswalkBlocks: PscppCrosswalkBlockItem[] = [
       }
     ],
     gaps: ["Radar, ECDIS e AIS precisam de material mais completo."],
-    notes: ["O principal material relacionado ainda depende de validação de OCR."]
+    notes: ["O principal material relacionado ainda depende de uma versão textual confiável."]
   },
   {
     id: "crosswalk-block-4",
@@ -971,7 +971,7 @@ export const pscppCrosswalkViewModelMock: PscppCrosswalkViewModel = {
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Mapa PSCPP montado por orientação de demonstração a partir de materiais, edital, gaps e ciclo sugerido."
+    detail: "Mapa PSCPP montado por orientação de demonstração a partir de materiais, edital, pontos a revisar e ciclo sugerido."
   },
   summary: [
     {
@@ -994,15 +994,15 @@ export const pscppCrosswalkViewModelMock: PscppCrosswalkViewModel = {
     },
     {
       id: "pscpp-map-summary-gaps",
-      label: "Gaps encontrados",
+      label: "Pontos a revisar",
       value: "4",
-      detail: "Lacunas principais conectadas ao edital de referência."
+      detail: "Pontos principais conectados ao edital de referência."
     },
     {
       id: "pscpp-map-summary-sessions",
       label: "Sessões sugeridas",
       value: "8",
-      detail: "Sessões do ciclo ligadas aos gaps mais urgentes."
+      detail: "Sessões do ciclo ligadas aos pontos de reforço mais urgentes."
     }
   ],
   blocks: pscppCrosswalkBlocks,
@@ -1074,11 +1074,11 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s1-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s1-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s1-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s1-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
+      { id: "s1-o4", label: "Questões de fixação para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
-      "Questões candidatas ainda exigem revisão."
+      "Questões de fixação ainda exigem revisão."
     ]
   },
   "session-2-colreg-regras": {
@@ -1106,11 +1106,11 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s2-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s2-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s2-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s2-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
+      { id: "s2-o4", label: "Questões de fixação para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
-      "Questões candidatas ainda exigem revisão."
+      "Questões de fixação ainda exigem revisão."
     ]
   },
   "session-3-arte-naval": {
@@ -1138,11 +1138,11 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s3-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s3-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s3-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s3-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
+      { id: "s3-o4", label: "Questões de fixação para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
-      "Questões candidatas ainda exigem revisão."
+      "Questões de fixação ainda exigem revisão."
     ]
   },
   "session-9-navegacao-restrita": {
@@ -1170,24 +1170,24 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s9-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s9-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s9-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s9-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
+      { id: "s9-o4", label: "Questões de fixação para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
-      "Questões candidatas ainda exigem revisão."
+      "Questões de fixação ainda exigem revisão."
     ]
   },
   "session-12-simulado-curto-revisao": {
     id: "session-12-simulado-curto-revisao",
     sessionNumber: 12,
-    title: "Sessão 12 — Simulado curto + revisão de erros",
-    objective: "Revisar lacunas e transformar erros em próximos passos.",
+    title: "Sessão 12 — Revisão curta",
+    objective: "Revisar pontos a reforçar e transformar dúvidas em próximos passos.",
     priorityBlockTitle: pscppCrosswalkBlocks[4].title,
     durationLabel: "20 + 60-90 + 40 + 20 min",
     relatedMaterialsCount: 0,
     relatedGapsCount: 1,
     statusLabel: "Revisão necessária",
-    note: "Usa revisão curta e não representa geração executável de simulado.",
+    note: "Usa revisão curta e não representa avaliação completa.",
     structure: [...pscppSessionStructure],
     relatedMaterials: [],
     relatedEditais: pscppCrosswalkBlocks[4].relatedEditais,
@@ -1202,13 +1202,13 @@ export const studySessionDetailsById: Record<string, StudySessionDetail> = {
       { id: "s12-o1", label: "Resumo operacional", statusLabel: "Pendente de revisão" },
       { id: "s12-o2", label: "Mapa de pegadinhas", statusLabel: "Pendente de revisão" },
       { id: "s12-o3", label: "Flashcards", statusLabel: "Pendente de revisão" },
-      { id: "s12-o4", label: "Questões candidatas para revisão", statusLabel: "Revisão necessária" }
+      { id: "s12-o4", label: "Questões de fixação para revisão", statusLabel: "Revisão necessária" }
     ],
     cautions: [
       "Esta tela não altera seu progresso.",
-      "Questões candidatas ainda exigem revisão.",
-      "Simulado curto ainda não executável.",
-      "Esta tela não gera prova nem corrige respostas."
+      "Questões de fixação ainda exigem revisão.",
+      "Avaliação completa fica para depois.",
+      "Esta tela não cria prova nem corrige respostas."
     ]
   }
 };
@@ -1218,7 +1218,7 @@ export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel 
     state: "mock",
     source: "mock",
     title: "Dados de demonstração",
-    detail: "Sessões sugeridas montadas por orientação de demonstração a partir do ciclo PSCPP, materiais relacionados e gaps conectados."
+    detail: "Sessões sugeridas montadas por orientação de demonstração a partir do ciclo PSCPP, materiais relacionados e pontos a revisar."
   },
   summary: [
     {
@@ -1229,9 +1229,9 @@ export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel 
     },
     {
       id: "study-summary-gaps",
-      label: "Gaps conectados",
+      label: "Pontos conectados",
       value: "5",
-      detail: "Lacunas ligadas diretamente às sessões do caminho PSCPP."
+      detail: "Pontos ligados diretamente às sessões do caminho PSCPP."
     },
     {
       id: "study-summary-materials",
@@ -1241,7 +1241,7 @@ export const studySessionWorkspaceViewModelMock: StudySessionWorkspaceViewModel 
     },
     {
       id: "study-summary-questions",
-      label: "Questões candidatas em revisão",
+      label: "Questões de fixação em revisão",
       value: "5",
       detail: "As saídas esperadas seguem como revisão necessária."
     }
@@ -1356,7 +1356,7 @@ export const onboardingSteps: OnboardingStepItem[] = [
     description: "O estudo guiado deve partir do edital analisado, não de exemplos genéricos.",
     statusLabel: "Orientação futura",
     note: "Enquanto isso, você pode consultar exemplos marcados como demonstração.",
-    cautionLabel: "A orientação não altera progresso, não agenda tarefas e não executa simulado.",
+    cautionLabel: "A orientação não altera progresso nem agenda tarefas.",
     primaryLink: {
       label: "Ver estudo guiado",
       href: "/study"
@@ -1366,11 +1366,11 @@ export const onboardingSteps: OnboardingStepItem[] = [
   {
     id: "onboarding-step-6",
     stepNumber: 6,
-    title: "Questões e simulados serão liberados depois",
+    title: "Questões e avaliações serão liberadas depois",
     description: "Essas áreas dependem de edital analisado, materiais relacionados e revisão antes de uso.",
     statusLabel: "Em preparação",
-    note: "Execução de simulado ainda não está disponível.",
-    cautionLabel: "Esta etapa não gera questões, não gera simulados e não altera progresso.",
+    note: "Avaliações completas ainda não estão disponíveis.",
+    cautionLabel: "Esta etapa não cria avaliações nem altera progresso.",
     primaryLink: {
       label: "Ver referência PSCPP",
       href: "/pscpp"
@@ -1419,7 +1419,7 @@ export const onboardingViewModelMock: OnboardingViewModel = {
   reviewHighlights: [
     "Algumas funções ainda estão em validação e serão liberadas aos poucos.",
     "A análise de edital, cobertura e estudo personalizado permanecem pendentes.",
-    "Não há execução de simulado, geração de questões ou alteração de progresso nesta etapa."
+    "Não há avaliação completa, geração de questões ou alteração de progresso nesta etapa."
   ],
   steps: onboardingSteps
 };
