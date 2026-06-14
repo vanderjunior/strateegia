@@ -188,17 +188,22 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     render(<StudySessionWorkspaceClient />);
 
-    expect(await screen.findByText("Seu caminho de estudo")).toBeInTheDocument();
+    expect(await screen.findByText("Continue seus estudos")).toBeInTheDocument();
+    expect(screen.getByText("Continuar estudando")).toHaveAttribute("href", "/study/blocks/block-1");
+    expect(screen.getByText("Seu caminho de estudo")).toBeInTheDocument();
     expect(screen.getAllByText("Conectado ao edital.").length).toBeGreaterThan(0);
-    expect(screen.getByText("Atos administrativos")).toBeInTheDocument();
-    expect(screen.getByText("Direito Administrativo · Atos administrativos")).toBeInTheDocument();
-    expect(screen.getByText("Aula preparada")).toBeInTheDocument();
+    expect(screen.getAllByText("Atos administrativos").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Direito Administrativo · Atos administrativos").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Aula preparada").length).toBeGreaterThan(0);
     expect(screen.getAllByText("5 min").length).toBeGreaterThan(0);
     expect(screen.getByText("Estudar bloco")).toBeInTheDocument();
     expect(screen.queryByText("Fallback antigo")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar questões")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerar simulado")).not.toBeInTheDocument();
     expect(screen.queryByText("Concluir estudo")).not.toBeInTheDocument();
+    const pageText = document.body.textContent ?? "";
+    expect(pageText.indexOf("Continue seus estudos")).toBeLessThan(pageText.indexOf("Seu caminho de estudo"));
+    expect(pageText.indexOf("Seu caminho de estudo")).toBeLessThan(pageText.indexOf("Acompanhamento do estudo"));
     expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
   });
 
@@ -255,7 +260,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(screen.getByText("Blocos abertos")).toBeInTheDocument();
     expect(screen.getByText("Pontos para reforço")).toBeInTheDocument();
     expect(screen.getByText("Revisão sugerida com base em materiais preparados.")).toBeInTheDocument();
-    expect(screen.getByText("Sem conclusão automática de materiais.")).toBeInTheDocument();
+    expect(screen.getByText("Os registros não concluem materiais automaticamente.")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument();
@@ -324,7 +329,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     expect(await screen.findByText("Baseada em materiais estudados")).toBeInTheDocument();
     expect(screen.getByText("Materiais estudados")).toBeInTheDocument();
-    expect(screen.getByText("Revisão sugerida com base em materiais estudados.")).toBeInTheDocument();
+    expect(screen.queryByText("Revisão sugerida com base em materiais estudados.")).not.toBeInTheDocument();
     expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
     expect(document.body.textContent).not.toContain("material concluído");
     expect(document.body.textContent).not.toContain("progresso atualizado");
@@ -393,13 +398,13 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     render(<StudySessionWorkspaceClient />);
 
     expect(await screen.findByText("Baseada em materiais preparados")).toBeInTheDocument();
-    expect(screen.getByText("Revisão sugerida com base em materiais preparados.")).toBeInTheDocument();
+    expect(screen.queryByText("Revisão sugerida com base em materiais preparados.")).not.toBeInTheDocument();
     expect(screen.queryByText("Materiais estudados")).not.toBeInTheDocument();
     expect(screen.queryByText("Revisão sugerida com base em materiais estudados.")).not.toBeInTheDocument();
     expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
   });
 
-  it("handles auth-required and unavailable progress summary states safely", async () => {
+  it("handles auth-required study state without competing progress panels", async () => {
     nextStudySessionMock.fetchStudyBlocks.mockResolvedValue({
       ok: false,
       status: 401,
@@ -428,25 +433,10 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
       }
     });
 
-    const { unmount } = render(<StudySessionWorkspaceClient />);
-
-    expect(await screen.findByText("Entre para acompanhar seu estudo.")).toBeInTheDocument();
-    expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
-
-    unmount();
-    nextStudySessionMock.fetchStudyProgressSummary.mockResolvedValueOnce({
-      ok: false,
-      status: 502,
-      source: "offline",
-      error: {
-        code: "backend_offline",
-        message: "Não foi possível carregar seu resumo de progresso agora."
-      }
-    });
-
     render(<StudySessionWorkspaceClient />);
 
-    expect(await screen.findByText("Não foi possível carregar seu acompanhamento agora.")).toBeInTheDocument();
+    expect(await screen.findByText("Entre para ver sua sessão de estudo.")).toBeInTheDocument();
+    expect(screen.queryByText("Acompanhamento do estudo")).not.toBeInTheDocument();
     expect(nextStudySessionMock.createStudyProgressEvent).not.toHaveBeenCalled();
   });
 
@@ -490,10 +480,10 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     render(<StudySessionWorkspaceClient />);
 
     expect((await screen.findAllByText("Baseado nos materiais preparados.")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Leitura inicial")).toBeInTheDocument();
-    expect(screen.getByText("Material sem edital")).toBeInTheDocument();
+    expect(screen.getAllByText("Leitura inicial").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Material sem edital").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
-    expect(screen.getByText("Ver material")).toBeInTheDocument();
+    expect(screen.getByText("Estudar bloco")).toBeInTheDocument();
   });
 
   it("renders a ready read-only study session from a prepared material", async () => {
@@ -593,7 +583,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     render(<StudySessionWorkspaceClient />);
 
-    expect(await screen.findByText("Revisão acumulada sugerida")).toBeInTheDocument();
+    expect(await screen.findByText("Revisão acumulada")).toBeInTheDocument();
     expect(screen.getByText("Retome pontos importantes antes de avançar.")).toBeInTheDocument();
     expect(screen.getByText("Revisão de atos administrativos")).toBeInTheDocument();
     expect(screen.getByText("Baseada em materiais preparados")).toBeInTheDocument();
@@ -601,8 +591,8 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
     expect(screen.getByText("Direito Administrativo · Atos administrativos")).toBeInTheDocument();
     expect(screen.getByText(/Questões de revisão disponíveis · 5 itens/)).toBeInTheDocument();
     expect(screen.getByText("Retome os pontos principais antes das questões de revisão.")).toBeInTheDocument();
-    expect(screen.getByText("Revisão de apoio; continue estudando pelos blocos.")).toBeInTheDocument();
-    expect(screen.getByText("Ver materiais")).toHaveAttribute("href", "/materials");
+    expect(screen.getByText("Revisão de apoio; continue pelos blocos.")).toBeInTheDocument();
+    expect(screen.queryByText("Ver materiais")).not.toBeInTheDocument();
     expect(screen.queryByText("Abrir revisão")).not.toBeInTheDocument();
     expect(document.body.textContent).not.toContain("/study/review/");
     expect(document.body.textContent).not.toContain("gabarito");
@@ -671,7 +661,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     render(<StudySessionWorkspaceClient />);
 
-    expect(await screen.findByText("Revisão acumulada sugerida")).toBeInTheDocument();
+    expect(await screen.findByText("Revisão acumulada")).toBeInTheDocument();
     expect(screen.getByText("Baseada em blocos disponíveis")).toBeInTheDocument();
     expect(screen.getAllByText("Precisa de conferência").length).toBeGreaterThan(0);
     expect(screen.getByText(/Questões de revisão em conferência · 2 itens/)).toBeInTheDocument();
@@ -762,7 +752,7 @@ describe("StudySessionWorkspaceClient next prepared material session", () => {
 
     render(<StudySessionWorkspaceClient />);
 
-    expect(await screen.findByText("Bloco disponível")).toBeInTheDocument();
+    expect((await screen.findAllByText("Bloco disponível")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Prepare pelo menos 3 materiais de estudo para montar uma revisão acumulada.")).not.toBeInTheDocument();
   });
 

@@ -752,9 +752,10 @@ Do not migrate persistence before staging proves the product flow and storage re
 ## UX Copy Readiness
 
 - UX-Polish-B completed a behavior-preserving copy cleanup for the active product surfaces.
+- UX-Polish-C refined `/study` hierarchy so the first visible work action is `Continue seus estudos`, followed by the study path, compact cumulative review, and compact progress summary.
 - User-facing state messages now favor concise product language over implementation terms.
 - Safety copy remains present but shorter: answer review is still guidance only, study progress still does not complete materials automatically, and score/gabarito/correction remain absent.
-- Larger hierarchy, card-density, and responsive refinements remain pending UX-Polish-C through UX-Polish-F.
+- Block-detail, materials/editais, AppShell/mobile, and final browser visual QA refinements remain pending UX-Polish-D through UX-Polish-F and UX-Polish-QA-A.
 
 ## Non-Goals
 

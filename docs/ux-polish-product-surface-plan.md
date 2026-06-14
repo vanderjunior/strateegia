@@ -387,7 +387,28 @@ Copy changes:
 
 Remaining work:
 
-- UX-Polish-C should still refine `/study` hierarchy and card density.
 - UX-Polish-D should still refine block-detail grouping, spacing, and post-answer hierarchy.
 - UX-Polish-E should still simplify materials/editais structure beyond copy-level wording.
 - UX-Polish-F should still do responsive/mobile cleanup and browser visual QA.
+
+## UX-Polish-C closeout
+
+UX-Polish-C implemented the `/study` hierarchy and card-density refinement without changing backend behavior, API contracts, progress semantics, review eligibility, or study/review/progress writes.
+
+Hierarchy now used on `/study`:
+
+- Primary continuation: `Continue seus estudos` promotes the first backend-ordered available block with `Continuar estudando`.
+- Study path: `Seu caminho de estudo` remains the primary content list and preserves backend order, block routes, and safe readiness labels.
+- Cumulative review: `Revisão acumulada` is compact and secondary; it preserves backend-provided prepared/study-block/studied-material basis copy and does not expose a future `/study/review/<id>` route.
+- Progress summary: `Acompanhamento do estudo` is compact and count-focused; it shows only explicit backend counts and one concise no-automatic-completion note.
+- Supporting states: auth/not-ready states use one primary message, and non-actionable review/progress states are hidden when study blocks are already available.
+
+Behavior preserved:
+
+- No backend changes, new endpoints, new API calls, automatic progress events, material completion, progress-aware frontend inference, review detail page, score/gabarito/correction, simulado, OCR/LLM, scheduler, PostgreSQL, provider, or signup behavior were added.
+
+Remaining work:
+
+- UX-Polish-D should refine block-detail grouping, spacing, and post-answer hierarchy.
+- UX-Polish-E should simplify materials/editais structure beyond copy-level wording.
+- UX-Polish-F should handle broader responsive/mobile cleanup, especially AppShell/navigation density.
