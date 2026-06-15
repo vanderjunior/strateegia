@@ -143,17 +143,17 @@ def test_grounded_summary_and_validated_questions_are_source_backed(tmp_path):
     assert internal["_correct_answer"] in {alternative["id"] for alternative in questions[0]["alternatives"]}
 
 
-def test_persisted_attempt_correctness_and_idempotency(tmp_path):
+def test_answer_review_correctness_is_deterministic_and_stateless(tmp_path):
     client, repository = create_client(tmp_path)
     user = register_and_login(client)
     upload_material(
         client,
         "competencia.md",
-        (
-            b"# Competencia\n\n"
-            b"A competencia indica quem pode praticar o ato administrativo. "
-            b"A finalidade publica orienta o uso do ato administrativo."
-        ),
+            (
+                b"# Competencia\n\n"
+                b"A competencia consiste em atribuicao administrativa que deve limitar a atuacao "
+                b"para proteger a finalidade publica e produzir efeitos imediatos."
+            ),
     )
     block = first_block(client)
     question = public_questions(client, str(block["block_id"]))[0]
@@ -165,28 +165,25 @@ def test_persisted_attempt_correctness_and_idempotency(tmp_path):
     assert first.status_code == 200
     assert first.json()["result"] == "correct"
     assert second.json() == first.json()
-    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
-    assert len(attempts) == 1
-    assert attempts[0]["selected_answer"] == internal["_correct_answer"]
-    states = repository.get_study_question_attempt_states(user_id=user["user_id"])
-    assert states[str(question["question_id"])]["current_bucket"] == "reviewing"
+    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
+    assert repository.get_study_question_attempt_states(user_id=user["user_id"]) == {}
 
 
-def test_incorrect_attempt_becomes_weak_and_prioritized(tmp_path):
+def test_incorrect_review_does_not_create_weak_or_adaptive_state(tmp_path):
     client, repository = create_client(tmp_path)
     user = register_and_login(client)
     upload_material(
         client,
         "motivo.md",
-        (
-            b"# Motivo\n\n"
-            b"O motivo apresenta os fatos e fundamentos que justificam o ato. "
-            b"A forma organiza a exteriorizacao do ato administrativo. "
-            b"O objeto representa o efeito juridico produzido pelo ato."
-        ),
+            (
+                b"# Motivo\n\n"
+                b"O motivo consiste em fundamento administrativo que deve limitar a decisao "
+                b"para proteger a finalidade publica e produzir efeitos imediatos."
+            ),
     )
     block = first_block(client)
-    question = public_questions(client, str(block["block_id"]))[0]
+    initial_questions = public_questions(client, str(block["block_id"]))
+    question = initial_questions[0]
     internal = internal_question(repository, user["user_id"], str(block["block_id"]), str(question["question_id"]))
     wrong_answer = next(
         alternative["id"]
@@ -197,28 +194,27 @@ def test_incorrect_attempt_becomes_weak_and_prioritized(tmp_path):
     response = post_review(client, str(block["block_id"]), str(question["question_id"]), wrong_answer)
     assert response.status_code == 200
     assert response.json()["result"] == "incorrect"
-    assert repository.list_study_weak_topic_signals(user_id=user["user_id"])
+    assert repository.list_study_weak_topic_signals(user_id=user["user_id"]) == {}
 
     next_questions = public_questions(client, str(block["block_id"]))
-    assert next_questions[0]["question_id"] == question["question_id"]
+    assert next_questions == initial_questions
 
 
-def test_correct_attempt_is_temporarily_suppressed_when_other_questions_exist(tmp_path):
+def test_correct_review_does_not_suppress_or_reorder_questions(tmp_path):
     client, repository = create_client(tmp_path)
     user = register_and_login(client)
     upload_material(
         client,
         "forma.md",
-        (
-            b"# Forma\n\n"
-            b"A forma organiza a exteriorizacao do ato administrativo. "
-            b"O objeto representa o efeito juridico produzido pelo ato. "
-            b"A competencia indica quem pode praticar o ato administrativo."
-        ),
+            (
+                b"# Forma\n\n"
+                b"A forma consiste em requisito administrativo que deve limitar a exteriorizacao "
+                b"para proteger a finalidade publica e produzir efeitos imediatos."
+            ),
     )
     block = first_block(client)
     questions = public_questions(client, str(block["block_id"]))
-    assert len(questions) >= 2
+    assert questions
     first_question = questions[0]
     internal = internal_question(repository, user["user_id"], str(block["block_id"]), str(first_question["question_id"]))
 
@@ -227,21 +223,21 @@ def test_correct_attempt_is_temporarily_suppressed_when_other_questions_exist(tm
     assert response.json()["result"] == "correct"
 
     next_questions = public_questions(client, str(block["block_id"]))
-    assert next_questions[0]["question_id"] != first_question["question_id"]
+    assert next_questions == questions
 
 
-def test_cumulative_review_reports_real_weak_topic_signals(tmp_path):
+def test_cumulative_review_remains_studied_material_based_without_answer_memory(tmp_path):
     client, repository = create_client(tmp_path)
     user = register_and_login(client)
     for index in range(3):
         upload_material(
             client,
             f"material-{index}.md",
-            (
-                f"# Tema {index}\n\n"
-                f"O tema {index} possui uma regra principal para revisar. "
-                f"A regra {index} deve ser comparada com as excecoes do material."
-            ).encode("utf-8"),
+                (
+                    f"# Tema {index}\n\n"
+                    f"O tema {index} consiste em regra administrativa que deve limitar a atuacao "
+                    f"para proteger a finalidade publica e produzir efeitos imediatos."
+                ).encode("utf-8"),
         )
     blocks = client.get("/api/study/blocks").json()["items"]
     first = blocks[0]
@@ -269,6 +265,6 @@ def test_cumulative_review_reports_real_weak_topic_signals(tmp_path):
     progress = client.get("/api/study/progress/summary").json()
     review = client.get("/api/study/review/next").json()
     assert progress["studied_materials_count"] >= 3
-    assert progress["weak_topics_count"] >= 1
+    assert progress["weak_topics_count"] == 0
     assert review["basis"] == "studied_materials"
-    assert review["reinforcement"]["weak_topics_count"] >= 1
+    assert review["reinforcement"]["weak_topics_count"] == 0

@@ -128,7 +128,8 @@ def upload_and_prepare_study_material(client: TestClient, index: int) -> str:
         content=(
             f"# Tema {index}\n\n"
             "RAW-REVIEW-BLOCK-SHOULD-NOT-LEAK\n\n"
-            "Conteudo seguro para estudo."
+            f"O tema {index} consiste em atividade administrativa que deve limitar direitos "
+            "para proteger a finalidade publica e produzir efeitos imediatos."
         ).encode("utf-8"),
     )
     return prepare_study_material(client, uploaded)

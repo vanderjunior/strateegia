@@ -18,6 +18,11 @@ Direito Administrativo:
 2.2 Poderes administrativos.
 """
 
+GROUNDED_QUESTION_SOURCE = (
+    b"O poder de policia consiste em atividade administrativa que deve limitar direitos "
+    b"para proteger a finalidade publica e produzir efeitos imediatos."
+)
+
 
 ALLOWED_RESPONSE_KEYS = {
     "block_id",
@@ -161,7 +166,7 @@ def prepare_ready_question(client: TestClient) -> tuple[str, dict[str, object]]:
         content=(
             b"# Atos administrativos\n\n"
             b"RAW-ANSWER-REVIEW-SHOULD-NOT-LEAK\n\n"
-            b"Conteudo seguro."
+            + GROUNDED_QUESTION_SOURCE
         ),
     )
     prepare_study_material(client, uploaded)
@@ -267,26 +272,24 @@ def test_answer_review_rejects_invalid_body(tmp_path):
         assert response.status_code == 422
 
 
-def test_answer_review_returns_conservative_short_answer_feedback(tmp_path, monkeypatch):
+def test_answer_review_returns_404_when_profile_has_no_supported_objective_question(tmp_path, monkeypatch):
     owner, _, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
     monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "short_answer")
-    block_id, question = prepare_ready_question(owner)
+    uploaded = upload_material(
+        owner,
+        filename="aula.md",
+        content=b"# Atos administrativos\n\n" + GROUNDED_QUESTION_SOURCE,
+    )
+    prepare_study_material(owner, uploaded)
+    block_id = str(first_block(owner)["block_id"])
 
-    response = post_review(owner, block_id, str(question["question_id"]))
-    payload = response.json()
+    response = post_review(owner, block_id, "question:unsupported")
 
-    assert response.status_code == 200
-    assert payload["block_id"] == block_id
-    assert payload["question_id"] == question["question_id"]
-    assert payload["review_status"] == "reviewed"
-    assert payload["result"] == "ungraded"
-    assert "registrada" in payload["feedback"]
-    assert payload["reinforcement"]["suggested_action"] == "review_summary"
-    assert_bounded_answer_review_payload(payload)
+    assert response.status_code == 404
 
 
-def test_answer_review_grades_validated_choice_and_persists_attempt(tmp_path):
+def test_answer_review_grades_validated_choice_without_persisting_attempt(tmp_path):
     owner, _, _, repository, _ = create_clients(tmp_path)
     user = register_and_login(owner, "owner")
     block_id, question = prepare_ready_question(owner)
@@ -304,11 +307,7 @@ def test_answer_review_grades_validated_choice_and_persists_attempt(tmp_path):
     assert response.status_code == 200
     assert payload["review_status"] == "reviewed"
     assert payload["result"] in {"correct", "incorrect"}
-    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
-    assert len(attempts) == 1
-    assert attempts[0]["question_id"] == question["question_id"]
-    assert attempts[0]["selected_answer"] == "A"
-    assert attempts[0]["correctness_state"] == payload["result"]
+    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
     assert_bounded_answer_review_payload(payload)
 
 
@@ -331,10 +330,7 @@ def test_answer_review_grades_validated_true_false(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert payload["review_status"] == "reviewed"
     assert payload["result"] == "correct"
-    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
-    assert len(attempts) == 1
-    assert attempts[0]["selected_answer"] == "C"
-    assert attempts[0]["correctness_state"] == "correct"
+    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
     assert_bounded_answer_review_payload(payload)
 
 
@@ -365,7 +361,7 @@ def test_answer_review_reinforcement_includes_connected_edital_labels(tmp_path):
     assert_bounded_answer_review_payload(payload)
 
 
-def test_answer_review_is_idempotent_and_persists_one_attempt_for_same_choice(tmp_path):
+def test_answer_review_is_idempotent_and_read_only_for_same_choice(tmp_path):
     owner, _, _, repository, data_path = create_clients(tmp_path)
     user = register_and_login(owner, "stable-owner")
     block_id, question = prepare_ready_question(owner)
@@ -380,9 +376,8 @@ def test_answer_review_is_idempotent_and_persists_one_attempt_for_same_choice(tm
     assert first.json() == second.json()
     after_progress = repository.load_progress(user_id=user["user_id"]).model_dump(mode="json")
     assert after_progress == before_progress
-    assert data_path.read_text(encoding="utf-8") != before_file
-    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
-    assert len(attempts) == 1
+    assert data_path.read_text(encoding="utf-8") == before_file
+    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
 
 
 def test_answer_review_is_user_scoped(tmp_path):

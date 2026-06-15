@@ -12,24 +12,23 @@ Personal-Study-MVP-A moved the current textual study path beyond the Release-Cap
 
 - Milestone 0 fixed the noisy mixed-format edital extraction regression so `Meteorologia` is detected conservatively.
 - Eligible textual study blocks now use deterministic extractive summaries from source chunk text instead of the placeholder `Resumo em preparação para esta seção.`.
-- Study-block objective questions now have backend-internal evidence-backed answer keys when one unambiguous source-supported answer can be derived.
-- Answer review now persists bounded selected-answer attempts and derives `correct`, `incorrect`, or `ungraded` server-side.
-- Incorrect validated attempts create weak-topic signals that feed reinforcement copy and cumulative-review candidate priority.
-- Correct validated attempts are temporarily suppressed by a deterministic selection-round policy; there is no permanent mastery and no generic 24h/7d/30d SRS.
+- Study-block objective questions now use deterministic source transformations and have backend-internal evidence-backed answer keys only when one unambiguous answer can be derived.
+- Answer review derives `correct`, `incorrect`, or cautious `ungraded` feedback server-side but remains stateless.
+- Selected answers, weak-topic signals, suppression, and adaptive ordering remain unfinished.
 - The frontend still never receives answer keys, correctness inputs, mastery state, score, gabarito, raw chunks, or storage paths.
 
 Updated verdicts after this sprint:
 
 | Scenario | Verdict | Conditions |
 | --- | --- | --- |
-| A. Local personal alpha | `CONDITIONAL_GO` | Stronger than before for textual materials: grounded summaries, validated objective questions, persisted attempts, and bounded adaptation now exist. Backups and user review are still required. |
+| A. Local personal alpha | `CONDITIONAL_GO` | Stronger than before for textual materials: grounded summaries and validated objective questions now exist. Attempt memory and adaptation remain absent; backups and user review are still required. |
 | B. Private 1-2 user staging | `CONDITIONAL_GO` | Still requires single replica, private access, persistent disk, and backup drill. |
 | C. Full-corpus textual personal study | `CONDITIONAL_GO` | Conditional on textual sources, small corpus size, accepted extractive-question limitations, and manual review of outputs. |
-| D. Adaptive question memory | `CONDITIONAL_GO` | Minimal deterministic memory exists for study-block questions; it is not a full scheduler. |
+| D. Adaptive question memory | `NO_GO` | Study-block answer review is stateless; selected answers and correctness history are not persisted. |
 | E. Primary exam preparation environment | `NO_GO` | Still blocked by OCR/corpus coverage, limited deterministic question strategies, no executable cumulative review session, and no official correction/scoring. |
 | F. Public production | `NO_GO` | Still blocked by JSON/file persistence, auth/session hardening, object storage, concurrency, observability, and security review. |
 
-The current product can ingest an edital, prepare textual materials, show an ordered study path, expose extractive source-grounded summaries/key points, show objective questions with internal correctness when validated, persist selected-answer attempts, record explicit block-study progress, and show a cumulative review candidate with weak-topic signals. It still cannot prove syllabus sufficiency, execute a full cumulative review session, handle OCR-required corpora by default, or support public production.
+The current product can ingest an edital, prepare textual materials, show an ordered study path, expose extractive source-grounded summaries/key points, show deterministic objective questions with internal correctness when validated, record explicit block-study progress, and show a cumulative review candidate. It still cannot remember selected answers, adapt question order, prove syllabus sufficiency, execute a full cumulative review session, handle OCR-required corpora by default, or support public production.
 
 ## GO / NO-GO Verdicts
 
@@ -56,8 +55,10 @@ summary_item {'status': 'ready', 'summary': 'O poder de policia consiste na ativ
 title_only_summary {'status': 'needs_review', 'key_points': [], 'source_anchors': []}
 coverage {'coverage_status': 'partial', 'covered_subtopics_count': 2, 'partial_subtopics_count': 1, 'uncovered_subtopics_count': 0}
 blocks {'blocks_status': 'ready', 'scope_status': 'connected_to_edital', 'blocks_count': 3}
-questions {'question_status': 'ready', 'mode': 'review_only'} type multiple_choice with A-E alternatives
-answer_review {'review_status': 'needs_review', 'result': 'needs_review'}
+questions {'question_status': 'ready', 'mode': 'review_only', 'alternatives_count': 5, 'answer_key_exposed': false, 'repeat_is_identical': true}
+internal_question {'validation_state': 'validated', 'strategy': 'definition', 'source_anchor_present': true, 'generator_version': 'grounded-question-v1'}
+answer_review {'incorrect_result': 'incorrect', 'correct_result': 'correct', 'source_grounded_feedback': true, 'repository_unchanged': true, 'attempts_count': 0}
+ambiguous_question_source {'question_status': 'needs_review', 'items_count': 0}
 progress_before review_basis prepared_materials
 progress_after studied_blocks_count 3, studied_materials_count 3, review_basis studied_materials
 review_next basis studied_materials, materials_count 3, blocks_count 3
@@ -96,8 +97,8 @@ Counts exceeded 3 because the local Compose QA volume already contained older fi
 | Study blocks | `USABLE_ALPHA` | `routes.py` helpers | `GET /api/study/blocks`, `/study/session/next` | `/study` | Computed from prepared summaries | Study block/session tests | 3 blocks generated | Ordered list, not scheduler | Real cycle/scheduler contract |
 | Block detail | `USABLE_ALPHA` | `routes.py` | `GET /api/study/blocks/{block_id}` | `/study/blocks/[blockId]` | Computed from material summary | Block detail tests | Detail returns bounded extractive summary/key points when source evidence is sufficient | Summary quality still requires validation with real corpora | Grounded question quality remains separate |
 | Summaries/key points | `USABLE_ALPHA` | `_extractive_study_summary`, `_bounded_study_summary_item` in `routes.py` | `/api/materials/{id}/study/summary`, block detail | Material and block detail | Deterministically computed on read; no summary artifact writes | Summary, block-detail, session, and extraction regression tests | Source sentences, key points, bounded anchors, fingerprint, and generator version are returned deterministically | No LLM synthesis; insufficient/title-only/noisy source remains `needs_review`; pedagogical quality requires real-material validation | Validate extractive quality across representative exam corpora |
-| Fixation questions | `PLACEHOLDER` | `_bounded_fixation_questions_response` | `GET /api/study/blocks/{id}/questions` | Block detail | Computed; not persisted | Fixation tests | A-E candidate alternatives returned | No answer key; candidates orient review | Reviewed question authoring and answer keys |
-| Answer review | `READ_ONLY` | `_bounded_answer_review_response` | `POST /api/study/blocks/{id}/questions/{id}/answer/review` | Block detail feedback | Stateless response; no selected answer persisted | Answer review tests | Result `needs_review` for choice | No official correctness | Attempt/correction contract |
+| Fixation questions | `USABLE_ALPHA` | `_internal_fixation_question_candidates`, `_bounded_fixation_questions_response` | `GET /api/study/blocks/{id}/questions` | Block detail | Deterministically computed; not persisted | Grounded fixation, fixation read, and answer-review tests | A-E/A-D and C/E questions use bounded source evidence and stable fingerprints | Conservative rule set returns fewer/no questions when evidence or distractors are insufficient; real-material quality validation remains necessary | Persist attempts only in a later explicit phase |
+| Answer review | `READ_ONLY` | `_bounded_answer_review_response` | `POST /api/study/blocks/{id}/questions/{id}/answer/review` | Block detail feedback | Stateless response; no selected answer persisted | Answer review and grounded fixation tests | Validated questions derive correct/incorrect server-side and return bounded source-grounded feedback | No attempt history, official correction, score, mastery, or adaptation | Attempt-memory contract and implementation |
 | Attempt memory | `MISSING` | Legacy `record_answer` exists but not current study UI path | Legacy `/questions/{id}/answer`, not study review | Not connected | Current selected answer not persisted | No current adaptive attempt tests | `reviewed_questions_count` remained 0 after answer review smoke | Cannot suppress/prioritize questions | Persist attempts from review UI after correction model |
 | Reinforcement | `READ_ONLY` | Answer review helper | Included in answer-review response | `Reforço sugerido` panel | Stateless | Reinforcement UI tests | Message returned | Does not alter schedule | Persist weak-topic signals |
 | Explicit progress | `USABLE_ALPHA` | `record_study_progress_event`, summary helpers | `/api/study/progress/events`, `/api/study/progress/summary` | Block detail button, `/study` card | JSON event metadata | Progress tests | Marking blocks studied persisted | Explicit only; no material completion | Progress UI/summary hardening |
@@ -163,18 +164,11 @@ Title-only, empty, formatting-noise, and otherwise insufficient source content r
 
 ## Questions Assessment
 
-Runtime output shows multiple-choice alternatives such as:
+Classification: `USABLE_ALPHA`.
 
-```json
-[
-  {"id": "A", "text": "Revisar Atos administrativos."},
-  {"id": "B", "text": "Relacionar Direito Administrativo ao resumo do bloco."}
-]
-```
+Eligible source statements can produce deterministic A-E/A-D or CEBRASPE C/E questions. The backend keeps the stable fingerprint, source anchor, evidence, rationale, validation state, and correct answer internal. Public pre-answer responses expose only the prompt and alternatives. Only `validated` questions support server-derived correct/incorrect feedback; ambiguous, title-only, noisy, or weakly distinguishable source produces no validated question.
 
-Classification: `PLACEHOLDER`.
-
-Questions are selectable review candidates/templates. They are not reliable exam questions because there is no correct alternative or official answer key. A student can use them as prompts for revisiting a block, not as a safe proof of learning.
+The generator currently supports a deliberately small rule set: definitions, rules/conditions, exceptions, classifications, explicit factual relations, numeric facts, controlled contradictions, and source-concept association swaps. It prioritizes precision over quantity and still requires validation against representative real exam materials.
 
 ## Attempt Memory And Adaptation
 

@@ -138,6 +138,11 @@ GROUNDED_SUMMARY_MAX_SENTENCES = 5
 GROUNDED_SUMMARY_MAX_CHARS = 960
 GROUNDED_SUMMARY_MAX_KEY_POINTS = 7
 GROUNDED_SUMMARY_MAX_SOURCE_ANCHORS = 5
+GROUNDED_QUESTION_GENERATOR_VERSION = "grounded-question-v1"
+GROUNDED_QUESTION_GENERATION_METHOD = "deterministic_source_transformation"
+GROUNDED_QUESTION_MAX_ITEMS = 5
+GROUNDED_QUESTION_MAX_PROMPT_CHARS = 240
+GROUNDED_QUESTION_MAX_ALTERNATIVE_CHARS = 320
 SESSION_COOKIE_NAME = "studyflow_session"
 STUDY_PROGRESS_EVENT_TYPES = {
     "block_opened",
@@ -2254,51 +2259,204 @@ def _section_chunks_for_detail(
     ]
 
 
-def _grounded_question_sentences(
+QUESTION_AMBIGUITY_MARKERS = (
+    " pode ser ",
+    " podem ser ",
+    " em geral ",
+    " normalmente ",
+    " possivelmente ",
+    " talvez ",
+    " ou ",
+)
+
+QUESTION_FALSE_TRANSFORMATIONS = (
+    (r"\bconsiste em\b", "não consiste em"),
+    (r"\bdeve\b", "não deve"),
+    (r"\bdevem\b", "não devem"),
+    (r"\bpode\b", "não pode"),
+    (r"\bpodem\b", "não podem"),
+    (r"\bexige\b", "não exige"),
+    (r"\binclui\b", "não inclui"),
+    (r"\bpermite\b", "não permite"),
+    (r"\bimpede\b", "não impede"),
+    (r"\blimitar\b", "ampliar"),
+    (r"\blimita\b", "amplia"),
+    (r"\bimediatos\b", "posteriores"),
+    (r"\bimediato\b", "posterior"),
+    (r"\bfinalidade publica\b", "finalidade privada"),
+    (r"\bfinalidade pública\b", "finalidade privada"),
+    (r"\batividade administrativa\b", "atividade privada"),
+    (r"\befeitos juridicos\b", "efeitos sem natureza jurídica"),
+    (r"\befeitos jurídicos\b", "efeitos sem natureza jurídica"),
+    (r"\bobrigatoria\b", "facultativa"),
+    (r"\bobrigatória\b", "facultativa"),
+    (r"\bantes\b", "depois"),
+)
+
+
+def _question_strategy(sentence: str) -> str | None:
+    normalized = f" {_normalize_study_text(sentence)} "
+    if any(marker in normalized for marker in QUESTION_AMBIGUITY_MARKERS):
+        return None
+    if any(marker in normalized for marker in (" consiste ", " define ", " significa ")):
+        return "definition"
+    if any(marker in normalized for marker in (" exceto ", " salvo ", " excecao ", " exceção ")):
+        return "exception"
+    if any(marker in normalized for marker in (" deve ", " devem ", " exige ", " quando ", " se ")):
+        return "rule_condition"
+    if any(marker in normalized for marker in (" classifica ", " classificam ", " inclui ", " compreende ")):
+        return "classification"
+    if any(
+        marker in normalized
+        for marker in (
+            " indica ",
+            " apresenta ",
+            " representa ",
+            " organiza ",
+            " produz ",
+            " corresponde ",
+            " possui ",
+        )
+    ):
+        return "factual_relation"
+    if re.search(r"\b\d+(?:[.,]\d+)?\b", normalized):
+        return "explicit_fact"
+    return None
+
+
+def _grounded_question_evidence(
     repository: JsonStudyRepository,
     user_id: str,
     detail: dict[str, object],
-) -> list[str]:
+) -> list[dict[str, object]]:
     chunks = _section_chunks_for_detail(repository, user_id, detail)
-    text = "\n".join(str(getattr(chunk, "text", "") or "") for chunk in chunks)
-    sentences = _split_source_sentences(text)
     terms = _study_term_tokens(
         detail.get("title"),
         detail.get("topic_label"),
         detail.get("subtopic_label"),
     )
-    scored = [
-        (_sentence_score(sentence, terms), index, sentence)
-        for index, sentence in enumerate(sentences)
-        if len(sentence) <= 320
-    ]
-    if not scored:
-        return []
-    return [
-        sentence
-        for _, _, sentence in sorted(
-            sorted(scored, key=lambda item: (-item[0], item[1]))[:5],
-            key=lambda item: item[1],
+    candidates = _summary_statement_candidates(
+        title=str(detail.get("title") or ""),
+        chunks=chunks,
+        terms=terms,
+    )
+    evidence: list[dict[str, object]] = []
+    for candidate in candidates:
+        sentence = str(candidate["text"])
+        strategy = _question_strategy(sentence)
+        if strategy is None or len(sentence) > GROUNDED_QUESTION_MAX_ALTERNATIVE_CHARS:
+            continue
+        evidence.append(
+            {
+                "text": sentence,
+                "strategy": strategy,
+                "score": int(candidate["score"]),
+                "source_order": candidate["source_order"],
+                "anchor": dict(candidate["anchor"]),
+            }
         )
-    ]
+    return sorted(
+        evidence,
+        key=lambda item: (-int(item["score"]), item["source_order"], str(item["text"])),
+    )
+
+
+def _controlled_false_variants(sentence: str, source_sentences: set[str]) -> list[str]:
+    variants: list[str] = []
+    seen = {_normalize_study_text(sentence)}
+    for pattern, replacement in QUESTION_FALSE_TRANSFORMATIONS:
+        if re.search(pattern, sentence, flags=re.IGNORECASE) is None:
+            continue
+        variant = re.sub(pattern, replacement, sentence, count=1, flags=re.IGNORECASE)
+        normalized = _normalize_study_text(variant)
+        if not normalized or normalized in seen or normalized in source_sentences:
+            continue
+        seen.add(normalized)
+        variants.append(variant)
+    return variants
+
+
+def _relation_parts(sentence: str) -> tuple[str, str] | None:
+    match = re.search(
+        r"\b(?:consiste|define|significa|deve|devem|exige|indica|apresenta|representa|organiza|produz|corresponde|possui)\b",
+        sentence,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    subject = sentence[: match.start()].strip(" ,:;-")
+    predicate = sentence[match.start() :].strip()
+    if len(subject.split()) < 2 or len(predicate.split()) < 3:
+        return None
+    return subject, predicate
+
+
+def _relation_false_variants(
+    sentence: str,
+    evidence_items: list[dict[str, object]],
+    source_sentences: set[str],
+) -> list[str]:
+    current = _relation_parts(sentence)
+    if current is None:
+        return []
+    subject, predicate = current
+    variants: list[str] = []
+    seen = {_normalize_study_text(sentence)}
+    for item in evidence_items:
+        other_sentence = str(item["text"])
+        if _normalize_study_text(other_sentence) == _normalize_study_text(sentence):
+            continue
+        other = _relation_parts(other_sentence)
+        if other is None:
+            continue
+        other_subject, other_predicate = other
+        for variant in (f"{subject} {other_predicate}", f"{other_subject} {predicate}"):
+            normalized = _normalize_study_text(variant)
+            if not normalized or normalized in seen or normalized in source_sentences:
+                continue
+            seen.add(normalized)
+            variants.append(variant)
+    return variants
+
+
+def _question_focus(sentence: str, fallback: str) -> str:
+    normalized = " ".join(sentence.split())
+    marker_match = re.search(
+        r"\b(?:consiste|define|significa|deve|devem|exige|indica|apresenta|representa|organiza|produz)\b",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    focus = normalized[: marker_match.start()].strip(" ,:;-") if marker_match else fallback
+    return focus[:80] or fallback[:80]
+
+
+def _grounded_question_prompt(*, strategy: str, sentence: str, fallback: str) -> str:
+    focus = _question_focus(sentence, fallback)
+    if focus and not focus.isupper():
+        focus = f"{focus[0].lower()}{focus[1:]}"
+    if strategy == "definition":
+        prompt = f"Segundo o material, qual afirmação define corretamente {focus}?"
+    elif strategy == "exception":
+        prompt = f"Qual afirmação preserva corretamente a exceção apresentada sobre {focus}?"
+    elif strategy == "classification":
+        prompt = f"Qual classificação sobre {focus} está expressamente apoiada pelo material?"
+    elif strategy == "explicit_fact":
+        prompt = f"Qual informação objetiva sobre {focus} está expressamente apoiada pelo material?"
+    else:
+        prompt = f"Qual afirmação sobre {focus} está expressamente apoiada pelo material?"
+    return " ".join(prompt.split())[:GROUNDED_QUESTION_MAX_PROMPT_CHARS]
 
 
 def _multiple_choice_alternatives(
     *,
     correct_text: str,
-    focus_label: str,
-    fingerprint: str,
+    false_variants: list[str],
+    ordering_fingerprint: str,
     option_count: int = 5,
 ) -> tuple[list[dict[str, str]], str]:
     option_ids = list("ABCDE")[:option_count]
-    distractors = [
-        f"O material indica que {focus_label} deve ser ignorado na preparação.",
-        f"O material afirma que {focus_label} não se relaciona aos pontos principais do bloco.",
-        "A seção orienta apenas decorar o título, sem observar regras, condições ou conceitos.",
-        "O conteúdo apresentado não traz informação útil para revisar este ponto.",
-    ]
-    texts = [correct_text[:220], *distractors[: max(0, option_count - 1)]]
-    correct_index = int(fingerprint[:2], 16) % option_count
+    texts = [correct_text, *false_variants[: option_count - 1]]
+    correct_index = int(ordering_fingerprint[:2], 16) % option_count
     ordered: list[str] = []
     distractor_index = 1
     for index in range(option_count):
@@ -2308,7 +2466,7 @@ def _multiple_choice_alternatives(
             ordered.append(texts[distractor_index])
             distractor_index += 1
     alternatives = [
-        {"id": option_id, "text": _bounded_study_summary_title(text, fallback="Alternativa de estudo")}
+        {"id": option_id, "text": " ".join(text.split())[:GROUNDED_QUESTION_MAX_ALTERNATIVE_CHARS]}
         for option_id, text in zip(option_ids, ordered)
     ]
     return alternatives, option_ids[correct_index]
@@ -2321,26 +2479,12 @@ def _true_false_alternatives() -> list[dict[str, str]]:
     ]
 
 
-def _objective_prompt(
-    *,
-    profile: str,
-    label: str,
-    topic_label: str | None,
-    subtopic_label: str | None,
-) -> str:
-    prompt_label = subtopic_label or topic_label or label
-    if profile == "cebraspe_true_false":
-        return f"Com base no material, julgue a afirmação sobre {prompt_label}."
-    if topic_label:
-        return f"Qual afirmação está apoiada pelo material sobre {topic_label}: {label}?"
-    return f"Qual afirmação está apoiada pelo material sobre {label}?"
-
-
 def _append_fixation_candidate(
     candidates: list[dict[str, object]],
-    seen_prompts: set[str],
+    seen_questions: set[str],
     *,
     block_id: str,
+    material_id: str,
     prompt: str,
     topic_label: str | None,
     subtopic_label: str | None,
@@ -2349,75 +2493,51 @@ def _append_fixation_candidate(
     alternatives: list[dict[str, str]] | None = None,
     correct_answer: str | None = None,
     evidence: str | None = None,
+    source_anchor: dict[str, object] | None = None,
+    rationale: str | None = None,
+    strategy: str | None = None,
     validation_state: str = "needs_review",
     fingerprint: str | None = None,
 ) -> None:
-    safe_prompt = _bounded_study_summary_title(prompt, fallback="")
+    safe_prompt = " ".join(prompt.split())[:GROUNDED_QUESTION_MAX_PROMPT_CHARS]
     if not safe_prompt:
         return
-    prompt_key = safe_prompt.casefold()
-    if prompt_key in seen_prompts or len(candidates) >= 5:
-        return
-    seen_prompts.add(prompt_key)
-    question_fingerprint = fingerprint or _question_fingerprint(
-        block_id,
+    public_alternatives = alternatives or []
+    question_key = _question_fingerprint(
         safe_prompt,
-        alternatives or [],
-        PERSONAL_STUDY_MVP_VERSION,
+        [(item.get("id"), item.get("text")) for item in public_alternatives],
+        block_id,
+        question_type,
+        GROUNDED_QUESTION_GENERATOR_VERSION,
     )
+    if question_key in seen_questions or len(candidates) >= GROUNDED_QUESTION_MAX_ITEMS:
+        return
+    seen_questions.add(question_key)
+    question_fingerprint = fingerprint or question_key
     candidates.append(
         {
             "question_id": f"question:{block_id}:{question_fingerprint}",
             "type": question_type,
             "prompt": safe_prompt,
-            "alternatives": alternatives or [],
+            "alternatives": public_alternatives,
             "topic_label": topic_label,
             "subtopic_label": subtopic_label,
             "difficulty": "basic",
             "status": status,
             "_correct_answer": correct_answer,
             "_evidence": evidence,
+            "_source_anchor": dict(source_anchor or {}),
+            "_rationale": rationale,
+            "_material_id": material_id,
+            "_block_id": block_id,
+            "_strategy": strategy,
+            "_generator_method": GROUNDED_QUESTION_GENERATION_METHOD,
+            "_generator_version": GROUNDED_QUESTION_GENERATOR_VERSION,
             "_validation_state": validation_state,
             "_fingerprint": question_fingerprint,
-            "_version": PERSONAL_STUDY_MVP_VERSION,
+            "_version": GROUNDED_QUESTION_GENERATOR_VERSION,
         }
     )
-
-
-def _adaptive_question_order(
-    repository: JsonStudyRepository,
-    user_id: str,
-    candidates: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    states = repository.get_study_question_attempt_states(user_id=user_id)
-    current_round = max(
-        [int(state.get("selection_round", 0) or 0) for state in states.values()] or [0]
-    ) + 1
-
-    def priority(question: dict[str, object]) -> tuple[int, int, str]:
-        question_id = str(question["question_id"])
-        state = states.get(question_id, {})
-        bucket = str(state.get("current_bucket") or "new")
-        next_round = int(state.get("next_eligible_round", 0) or 0)
-        if bucket == "temporarily_mastered" and next_round > current_round:
-            return (5, next_round, question_id)
-        if bucket == "weak":
-            return (0, next_round, question_id)
-        if str(state.get("last_correctness")) == "incorrect":
-            return (1, next_round, question_id)
-        if str(state.get("last_correctness")) == "ungraded":
-            return (2, next_round, question_id)
-        if not state:
-            return (3, next_round, question_id)
-        return (4, next_round, question_id)
-
-    ordered = sorted(candidates, key=priority)
-    active = [
-        question
-        for question in ordered
-        if priority(question)[0] < 5
-    ]
-    return (active or ordered)[:5]
 
 
 def _internal_fixation_question_candidates(
@@ -2429,43 +2549,61 @@ def _internal_fixation_question_candidates(
     if detail["detail_status"] == "not_ready":
         return detail, "not_ready", []
 
-    item_status = "candidate" if detail["detail_status"] == "ready" else "needs_review"
     topic_label = detail["topic_label"] if isinstance(detail["topic_label"], str) else None
     subtopic_label = detail["subtopic_label"] if isinstance(detail["subtopic_label"], str) else None
     candidates: list[dict[str, object]] = []
-    seen_prompts: set[str] = set()
+    seen_questions: set[str] = set()
     profile = _resolve_fixation_question_profile(detail)
-    labels = _fixation_labels_from_detail(detail)
-    source_sentences = _grounded_question_sentences(repository, user_id, detail)
-    focus_label = subtopic_label or topic_label or (labels[0] if labels else str(detail.get("title") or "este ponto"))
+    if profile not in {"multiple_choice_ae", "multiple_choice_ad", "cebraspe_true_false"}:
+        return detail, "unsupported", []
+    evidence_items = _grounded_question_evidence(repository, user_id, detail)
+    source_sentences = {_normalize_study_text(str(item["text"])) for item in evidence_items}
+    focus_label = subtopic_label or topic_label or str(detail.get("title") or "este ponto")
+    item_status = "candidate" if detail["detail_status"] == "ready" else "needs_review"
 
-    if profile in {"multiple_choice_ae", "multiple_choice_ad"} and source_sentences:
+    if profile in {"multiple_choice_ae", "multiple_choice_ad"}:
         option_count = 4 if profile == "multiple_choice_ad" else 5
-        for sentence_index, sentence in enumerate(source_sentences):
-            question_label = f"{focus_label} — ponto {sentence_index + 1}"
-            fingerprint = _question_fingerprint(
+        for evidence in evidence_items:
+            sentence = str(evidence["text"])
+            false_variants = _controlled_false_variants(sentence, source_sentences)
+            false_variants.extend(
+                variant
+                for variant in _relation_false_variants(sentence, evidence_items, source_sentences)
+                if _normalize_study_text(variant)
+                not in {_normalize_study_text(item) for item in false_variants}
+            )
+            if len(false_variants) < option_count - 1:
+                continue
+            prompt = _grounded_question_prompt(
+                strategy=str(evidence["strategy"]),
+                sentence=sentence,
+                fallback=focus_label,
+            )
+            ordering_fingerprint = _question_fingerprint(
                 detail["block_id"],
                 sentence,
-                focus_label,
                 profile,
-                PERSONAL_STUDY_MVP_VERSION,
+                GROUNDED_QUESTION_GENERATOR_VERSION,
             )
             alternatives, correct_answer = _multiple_choice_alternatives(
                 correct_text=sentence,
-                focus_label=focus_label,
-                fingerprint=fingerprint,
+                false_variants=false_variants,
+                ordering_fingerprint=ordering_fingerprint,
                 option_count=option_count,
+            )
+            fingerprint = _question_fingerprint(
+                prompt,
+                [(item["id"], item["text"]) for item in alternatives],
+                detail["block_id"],
+                profile,
+                GROUNDED_QUESTION_GENERATOR_VERSION,
             )
             _append_fixation_candidate(
                 candidates,
-                seen_prompts,
+                seen_questions,
                 block_id=str(detail["block_id"]),
-                prompt=_objective_prompt(
-                    profile=profile,
-                    label=question_label,
-                    topic_label=topic_label,
-                    subtopic_label=subtopic_label,
-                ),
+                material_id=str(detail["material_id"]),
+                prompt=prompt,
                 topic_label=topic_label,
                 subtopic_label=subtopic_label,
                 status=item_status,
@@ -2473,26 +2611,33 @@ def _internal_fixation_question_candidates(
                 alternatives=alternatives,
                 correct_answer=correct_answer,
                 evidence=sentence,
+                source_anchor=dict(evidence["anchor"]),
+                rationale="A alternativa correta reproduz a proposição explícita do material; as demais alteram um elemento factual.",
+                strategy=str(evidence["strategy"]),
                 validation_state="validated",
                 fingerprint=fingerprint,
             )
 
-    if profile == "cebraspe_true_false" and source_sentences:
+    if profile == "cebraspe_true_false":
         alternatives = _true_false_alternatives()
-        for sentence_index, sentence in enumerate(source_sentences):
-            question_label = f"{focus_label} — ponto {sentence_index + 1}"
-            fingerprint = _question_fingerprint(
+        for evidence in evidence_items:
+            sentence = str(evidence["text"])
+            true_prompt = f"Julgue o item: {sentence}"
+            if len(true_prompt) > GROUNDED_QUESTION_MAX_PROMPT_CHARS:
+                continue
+            true_fingerprint = _question_fingerprint(
+                true_prompt,
+                alternatives,
                 detail["block_id"],
-                sentence,
-                focus_label,
                 profile,
-                PERSONAL_STUDY_MVP_VERSION,
+                GROUNDED_QUESTION_GENERATOR_VERSION,
             )
             _append_fixation_candidate(
                 candidates,
-                seen_prompts,
+                seen_questions,
                 block_id=str(detail["block_id"]),
-                prompt=f"{_objective_prompt(profile=profile, label=question_label, topic_label=topic_label, subtopic_label=subtopic_label)} {sentence[:180]}",
+                material_id=str(detail["material_id"]),
+                prompt=true_prompt,
                 topic_label=topic_label,
                 subtopic_label=subtopic_label,
                 status=item_status,
@@ -2500,25 +2645,47 @@ def _internal_fixation_question_candidates(
                 alternatives=alternatives,
                 correct_answer="C",
                 evidence=sentence,
+                source_anchor=dict(evidence["anchor"]),
+                rationale="A afirmação reproduz uma proposição explícita do material.",
+                strategy=str(evidence["strategy"]),
                 validation_state="validated",
-                fingerprint=fingerprint,
+                fingerprint=true_fingerprint,
             )
-
-    if not candidates:
-        for label in labels:
+            false_variants = _controlled_false_variants(sentence, source_sentences)
+            if not false_variants:
+                continue
+            false_prompt = f"Julgue o item: {false_variants[0]}"
+            if len(false_prompt) > GROUNDED_QUESTION_MAX_PROMPT_CHARS:
+                continue
+            false_fingerprint = _question_fingerprint(
+                false_prompt,
+                alternatives,
+                detail["block_id"],
+                profile,
+                GROUNDED_QUESTION_GENERATOR_VERSION,
+            )
             _append_fixation_candidate(
                 candidates,
-                seen_prompts,
+                seen_questions,
                 block_id=str(detail["block_id"]),
-                prompt=f"Explique, com suas palavras, o ponto principal relacionado a {label}.",
+                material_id=str(detail["material_id"]),
+                prompt=false_prompt,
                 topic_label=topic_label,
                 subtopic_label=subtopic_label,
                 status=item_status,
-                validation_state="needs_review",
+                question_type="true_false",
+                alternatives=alternatives,
+                correct_answer="E",
+                evidence=sentence,
+                source_anchor=dict(evidence["anchor"]),
+                rationale="A afirmação altera um elemento da proposição explícita do material.",
+                strategy=str(evidence["strategy"]),
+                validation_state="validated",
+                fingerprint=false_fingerprint,
             )
 
     if not candidates:
-        return detail, "not_ready", []
+        return detail, "needs_review", []
     question_status = "ready" if detail["detail_status"] == "ready" else "needs_review"
     return detail, question_status, candidates
 
@@ -2528,8 +2695,12 @@ def _bounded_fixation_questions_response(
     user_id: str,
     block_id: str,
 ) -> dict[str, object]:
-    detail = _bounded_study_block_detail_response(repository, user_id, block_id)
-    if detail["detail_status"] == "not_ready":
+    detail, question_status, candidates = _internal_fixation_question_candidates(
+        repository,
+        user_id,
+        block_id,
+    )
+    if question_status == "not_ready":
         return {
             "block_id": str(detail["block_id"]),
             "question_status": "not_ready",
@@ -2539,104 +2710,11 @@ def _bounded_fixation_questions_response(
             "source": "user_scope",
         }
 
-    item_status = "candidate" if detail["detail_status"] == "ready" else "needs_review"
-    topic_label = detail["topic_label"] if isinstance(detail["topic_label"], str) else None
-    subtopic_label = detail["subtopic_label"] if isinstance(detail["subtopic_label"], str) else None
-    candidates: list[dict[str, object]] = []
-    seen_prompts: set[str] = set()
-    profile = _resolve_fixation_question_profile(detail)
-    labels = _fixation_labels_from_detail(detail)
-    source_sentences = _grounded_question_sentences(repository, user_id, detail)
-    focus_label = subtopic_label or topic_label or (labels[0] if labels else str(detail.get("title") or "este ponto"))
-
-    if profile in {"multiple_choice_ae", "multiple_choice_ad"} and source_sentences:
-        option_count = 4 if profile == "multiple_choice_ad" else 5
-        for sentence_index, sentence in enumerate(source_sentences):
-            question_label = f"{focus_label} — ponto {sentence_index + 1}"
-            fingerprint = _question_fingerprint(
-                detail["block_id"],
-                sentence,
-                focus_label,
-                profile,
-                PERSONAL_STUDY_MVP_VERSION,
-            )
-            alternatives, correct_answer = _multiple_choice_alternatives(
-                correct_text=sentence,
-                focus_label=focus_label,
-                fingerprint=fingerprint,
-                option_count=option_count,
-            )
-            _append_fixation_candidate(
-                candidates,
-                seen_prompts,
-                block_id=str(detail["block_id"]),
-                prompt=_objective_prompt(
-                    profile=profile,
-                    label=question_label,
-                    topic_label=topic_label,
-                    subtopic_label=subtopic_label,
-                ),
-                topic_label=topic_label,
-                subtopic_label=subtopic_label,
-                status=item_status,
-                question_type="multiple_choice",
-                alternatives=alternatives,
-                correct_answer=correct_answer,
-                evidence=sentence,
-                validation_state="validated",
-                fingerprint=fingerprint,
-            )
-
-    if profile == "cebraspe_true_false" and source_sentences:
-        alternatives = _true_false_alternatives()
-        for sentence_index, sentence in enumerate(source_sentences):
-            question_label = f"{focus_label} — ponto {sentence_index + 1}"
-            fingerprint = _question_fingerprint(
-                detail["block_id"],
-                sentence,
-                focus_label,
-                profile,
-                PERSONAL_STUDY_MVP_VERSION,
-            )
-            _append_fixation_candidate(
-                candidates,
-                seen_prompts,
-                block_id=str(detail["block_id"]),
-                prompt=f"{_objective_prompt(profile=profile, label=question_label, topic_label=topic_label, subtopic_label=subtopic_label)} {sentence[:180]}",
-                topic_label=topic_label,
-                subtopic_label=subtopic_label,
-                status=item_status,
-                question_type="true_false",
-                alternatives=alternatives,
-                correct_answer="C",
-                evidence=sentence,
-                validation_state="validated",
-                fingerprint=fingerprint,
-            )
-
-    if not candidates:
-        for label in labels:
-            _append_fixation_candidate(
-                candidates,
-                seen_prompts,
-                block_id=str(detail["block_id"]),
-                prompt=f"Explique, com suas palavras, o ponto principal relacionado a {label}.",
-                topic_label=topic_label,
-                subtopic_label=subtopic_label,
-                status=item_status,
-                validation_state="needs_review",
-            )
-
-    if not candidates:
-        question_status = "not_ready"
-    else:
-        question_status = "ready" if detail["detail_status"] == "ready" else "needs_review"
-
     return {
         "block_id": str(detail["block_id"]),
         "question_status": question_status,
         "mode": "review_only",
-        "items": [_public_question_payload(item) for item in _adaptive_question_order(repository, user_id, candidates)],
+        "items": [_public_question_payload(item) for item in candidates],
         "warnings_count": 1 if question_status == "needs_review" else 0,
         "source": "user_scope",
     }
@@ -2668,7 +2746,7 @@ def _bounded_answer_review_response(
     question_id: str,
     payload: StudyBlockAnswerReviewRequest,
 ) -> dict[str, object]:
-    answer, answer_format, idempotency_key = _validate_answer_review_request(payload)
+    answer, answer_format, _idempotency_key = _validate_answer_review_request(payload)
     detail, _question_status, candidates = _internal_fixation_question_candidates(repository, user_id, block_id)
     question = next(
         (
@@ -2695,16 +2773,26 @@ def _bounded_answer_review_response(
     expected_format = "true_false" if question_type == "true_false" else "choice" if question_type == "multiple_choice" else "text"
     if answer_format != expected_format:
         raise HTTPException(status_code=422, detail="answer_format does not match question type.")
+    allowed_answers = {
+        str(alternative.get("id"))
+        for alternative in question.get("alternatives", [])
+        if isinstance(alternative, dict) and isinstance(alternative.get("id"), str)
+    }
+    if question_type in {"multiple_choice", "true_false"} and answer not in allowed_answers:
+        raise HTTPException(status_code=422, detail="answer is not an alternative for this question.")
 
     validation_state = str(question.get("_validation_state") or "needs_review")
     correct_answer = question.get("_correct_answer") if isinstance(question.get("_correct_answer"), str) else None
     evidence = question.get("_evidence") if isinstance(question.get("_evidence"), str) else None
-    fingerprint = str(question.get("_fingerprint") or _question_fingerprint(question_id, PERSONAL_STUDY_MVP_VERSION))
     if validation_state == "validated" and correct_answer:
         review_status = "reviewed"
         result = "correct" if answer == correct_answer else "incorrect"
         if result == "correct":
-            feedback = "Sua escolha está alinhada com a evidência do material."
+            feedback = (
+                f"Sua escolha está alinhada com o material: {evidence}"
+                if evidence
+                else "Sua escolha está alinhada com a evidência do material."
+            )
             suggested_action = "review_summary"
         else:
             feedback = "Sua escolha não corresponde à evidência usada para esta questão. Revise o trecho indicado."
@@ -2714,26 +2802,8 @@ def _bounded_answer_review_response(
     else:
         review_status = "reviewed" if question_type == "short_answer" and answer_format == "text" else "needs_review"
         result = "ungraded"
-        feedback = "Esta escolha foi registrada, mas a questão ainda não tem validação suficiente para avaliar certo ou errado."
+        feedback = "Esta escolha foi recebida, mas a questão ainda não tem validação suficiente para avaliar certo ou errado."
         suggested_action = "review_summary" if question_type == "short_answer" else "revisit_block"
-
-    attempt_key = idempotency_key or f"study-answer-review:{block_id}:{question_id}:{answer}"
-    repository.record_study_question_attempt(
-        user_id=user_id,
-        question_id=question_id,
-        selected_answer=answer,
-        correctness_state=result if result in {"correct", "incorrect"} else "ungraded",
-        block_id=block_id,
-        material_id=str(detail.get("material_id") or ""),
-        topic_id=detail.get("topic_id") if isinstance(detail.get("topic_id"), str) else None,
-        topic_label=topic_label,
-        subtopic_id=detail.get("subtopic_id") if isinstance(detail.get("subtopic_id"), str) else None,
-        subtopic_label=subtopic_label,
-        question_fingerprint=fingerprint,
-        question_version=PERSONAL_STUDY_MVP_VERSION,
-        response_context="study_block",
-        idempotency_key=attempt_key,
-    )
 
     return {
         "block_id": str(detail["block_id"]),

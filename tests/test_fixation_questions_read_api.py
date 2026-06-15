@@ -18,6 +18,11 @@ Direito Administrativo:
 2.2 Poderes administrativos.
 """
 
+GROUNDED_QUESTION_SOURCE = (
+    b"O poder de policia consiste em atividade administrativa que deve limitar direitos "
+    b"para proteger a finalidade publica e produzir efeitos imediatos."
+)
+
 
 ALLOWED_RESPONSE_KEYS = {
     "block_id",
@@ -224,7 +229,7 @@ def test_fixation_questions_return_ready_material_only_candidates(tmp_path):
         content=(
             b"# Atos administrativos\n\n"
             b"RAW-FIXATION-QUESTIONS-SHOULD-NOT-LEAK\n\n"
-            b"Conteudo seguro."
+            + GROUNDED_QUESTION_SOURCE
         ),
     )
     prepare_study_material(owner, uploaded)
@@ -239,7 +244,6 @@ def test_fixation_questions_return_ready_material_only_candidates(tmp_path):
     assert payload["mode"] == "review_only"
     assert payload["items"]
     assert_multiple_choice_ae(payload)
-    assert any("Atos administrativos" in item["prompt"] for item in payload["items"])
     assert all(item["status"] == "candidate" for item in payload["items"])
     assert_bounded_questions_payload(payload)
 
@@ -269,7 +273,6 @@ def test_fixation_questions_include_connected_edital_labels(tmp_path):
     assert all(item["topic_label"] == "Direito Administrativo" for item in payload["items"])
     assert all(item["subtopic_label"] == "Atos administrativos" for item in payload["items"])
     assert_multiple_choice_ae(payload)
-    assert any("Direito Administrativo" in item["prompt"] for item in payload["items"])
     assert_bounded_questions_payload(payload)
 
 
@@ -279,7 +282,7 @@ def test_fixation_questions_support_true_false_for_cebraspe_profile(tmp_path, mo
     uploaded = upload_material(
         owner,
         filename="cebraspe.md",
-        content=b"# Atos administrativos\n\nConteudo seguro.",
+        content=b"# Atos administrativos\n\n" + GROUNDED_QUESTION_SOURCE,
     )
     prepare_study_material(owner, uploaded)
     block = first_block(owner)
@@ -305,7 +308,7 @@ def test_fixation_questions_support_multiple_choice_ad_profile(tmp_path, monkeyp
     uploaded = upload_material(
         owner,
         filename="objetiva-ad.md",
-        content=b"# Atos administrativos\n\nConteudo seguro.",
+        content=b"# Atos administrativos\n\n" + GROUNDED_QUESTION_SOURCE,
     )
     prepare_study_material(owner, uploaded)
     block = first_block(owner)
@@ -325,13 +328,13 @@ def test_fixation_questions_support_multiple_choice_ad_profile(tmp_path, monkeyp
     assert_bounded_questions_payload(payload)
 
 
-def test_fixation_questions_keep_short_answer_as_fallback(tmp_path, monkeypatch):
+def test_fixation_questions_return_unsupported_without_fabricated_fallback(tmp_path, monkeypatch):
     owner, _, _, _ = create_clients(tmp_path)
     register_and_login(owner, "owner")
     uploaded = upload_material(
         owner,
         filename="fallback.md",
-        content=b"# Atos administrativos\n\nConteudo seguro.",
+        content=b"# Atos administrativos\n\n" + GROUNDED_QUESTION_SOURCE,
     )
     prepare_study_material(owner, uploaded)
     block = first_block(owner)
@@ -341,10 +344,8 @@ def test_fixation_questions_keep_short_answer_as_fallback(tmp_path, monkeypatch)
     payload = response.json()
 
     assert response.status_code == 200
-    assert payload["question_status"] == "ready"
-    assert payload["items"]
-    assert all(item["type"] == "short_answer" for item in payload["items"])
-    assert all(item["alternatives"] == [] for item in payload["items"])
+    assert payload["question_status"] == "unsupported"
+    assert payload["items"] == []
     assert_bounded_questions_payload(payload)
 
 
@@ -373,14 +374,8 @@ def test_fixation_questions_return_not_ready_when_block_detail_is_not_ready(tmp_
     monkeypatch.setattr(routes, "_bounded_study_block_detail_response", fake_detail_response)
     monkeypatch.setattr(
         routes,
-        "_grounded_question_sentences",
-        lambda repository, user_id, detail: [
-            "Atos administrativos produzem efeitos juridicos imediatos.",
-            "Poderes administrativos orientam a atuacao da Administracao.",
-            "Responsabilidade civil do Estado exige analise de dano e nexo.",
-            "Controle administrativo revisa atos conforme a legalidade.",
-            "Licitacoes organizam a selecao da proposta conforme regras publicas.",
-        ],
+        "_grounded_question_evidence",
+        lambda repository, user_id, detail: [],
     )
 
     response = owner.get(encoded_questions_path("study-block:not-ready:doc-1:0"))
@@ -415,7 +410,7 @@ def test_fixation_questions_are_idempotent_and_read_only(tmp_path):
     uploaded = upload_material(
         owner,
         filename="aula-estavel.md",
-        content=b"# Aula estavel\n\nConteudo seguro.",
+        content=b"# Aula estavel\n\n" + GROUNDED_QUESTION_SOURCE,
     )
     document_id = prepare_study_material(owner, uploaded)
     block = first_block(owner)
@@ -473,13 +468,26 @@ def test_fixation_questions_limit_and_deduplicate_candidates(tmp_path, monkeypat
     monkeypatch.setattr(routes, "_bounded_study_block_detail_response", fake_detail_response)
     monkeypatch.setattr(
         routes,
-        "_grounded_question_sentences",
+        "_grounded_question_evidence",
         lambda repository, user_id, detail: [
-            "Atos administrativos produzem efeitos juridicos imediatos.",
-            "Poderes administrativos orientam a atuacao da Administracao.",
-            "Responsabilidade civil do Estado exige analise de dano e nexo.",
-            "Controle administrativo revisa atos conforme a legalidade.",
-            "Licitacoes organizam a selecao da proposta conforme regras publicas.",
+            {
+                "text": (
+                    f"O conceito {index} consiste em atividade administrativa que deve limitar direitos "
+                    f"para proteger a finalidade publica e produzir efeitos imediatos."
+                ),
+                "strategy": "definition",
+                "score": 10 - index,
+                "source_order": (index, 0),
+                "anchor": {
+                    "chunk_id": f"chunk-{index}",
+                    "chunk_index": index,
+                    "sentence_index": 0,
+                    "excerpt_fingerprint": f"fingerprint-{index}",
+                    "page_start": None,
+                    "page_end": None,
+                },
+            }
+            for index in range(5)
         ],
     )
 
