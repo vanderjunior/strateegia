@@ -50,6 +50,12 @@ ALLOWED_SECTION_KEYS = {
     "key_points",
     "estimated_minutes",
     "status",
+    "source_material_id",
+    "source_section_id",
+    "source_anchors",
+    "content_fingerprint",
+    "generator_version",
+    "generation_method",
 }
 
 ALLOWED_ACTION_KEYS = {
@@ -192,6 +198,12 @@ def assert_bounded_detail_payload(payload: dict[str, object]) -> None:
         assert all(isinstance(point, str) for point in section["key_points"])
         assert isinstance(section["estimated_minutes"], int)
         assert section["status"] in {"ready", "needs_review"}
+        assert section["source_material_id"] == payload["material_id"]
+        assert section["source_section_id"] == section["section_id"]
+        assert isinstance(section["source_anchors"], list)
+        assert isinstance(section["content_fingerprint"], str)
+        assert section["generator_version"] == "grounded-summary-v1"
+        assert section["generation_method"] == "deterministic_extractive"
     for action in payload["actions"]:
         assert_bounded_action(action)
     assert_no_forbidden_terms(payload)

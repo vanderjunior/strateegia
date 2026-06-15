@@ -3,6 +3,7 @@ from io import BytesIO
 
 from fastapi.testclient import TestClient
 
+from app.domain.models import DocumentChunk
 from app.main import create_app
 from app.repositories.json_store import JsonStudyRepository
 
@@ -26,6 +27,21 @@ ALLOWED_STUDY_SUMMARY_ITEM_KEYS = {
     "key_points",
     "estimated_minutes",
     "status",
+    "source_material_id",
+    "source_section_id",
+    "source_anchors",
+    "content_fingerprint",
+    "generator_version",
+    "generation_method",
+}
+
+ALLOWED_SOURCE_ANCHOR_KEYS = {
+    "chunk_id",
+    "chunk_index",
+    "sentence_index",
+    "excerpt_fingerprint",
+    "page_start",
+    "page_end",
 }
 
 
@@ -113,9 +129,28 @@ def assert_bounded_study_summary_payload(payload: dict[str, object]) -> None:
         assert isinstance(item["section_id"], str)
         assert isinstance(item["title"], str)
         assert isinstance(item["summary"], str)
+        assert len(item["summary"]) <= 960
         assert isinstance(item["key_points"], list)
+        assert len(item["key_points"]) <= 7
+        assert all(len(point) <= 320 for point in item["key_points"])
         assert isinstance(item["estimated_minutes"], int)
         assert item["status"] in {"ready", "needs_review"}
+        assert item["source_material_id"] == payload["document_id"]
+        assert item["source_section_id"] == item["section_id"]
+        assert isinstance(item["source_anchors"], list)
+        assert len(item["source_anchors"]) <= 5
+        for anchor in item["source_anchors"]:
+            assert set(anchor.keys()) == ALLOWED_SOURCE_ANCHOR_KEYS
+            assert isinstance(anchor["chunk_id"], str)
+            assert isinstance(anchor["chunk_index"], int)
+            assert isinstance(anchor["sentence_index"], int)
+            assert isinstance(anchor["excerpt_fingerprint"], str)
+            assert anchor["page_start"] is None or isinstance(anchor["page_start"], int)
+            assert anchor["page_end"] is None or isinstance(anchor["page_end"], int)
+        assert isinstance(item["content_fingerprint"], str)
+        assert len(item["content_fingerprint"]) == 24
+        assert item["generator_version"] == "grounded-summary-v1"
+        assert item["generation_method"] == "deterministic_extractive"
     assert_no_forbidden_terms(payload)
 
 
@@ -268,3 +303,120 @@ def test_study_material_summary_is_idempotent(tmp_path):
 
     assert first == second
     assert_bounded_study_summary_payload(first)
+
+
+def test_grounded_summary_preserves_definition_exception_and_source_anchors(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "grounded-owner")
+    uploaded = upload_material(
+        owner,
+        filename="poder-policia.md",
+        content=(
+            b"# Poder de policia\n\n"
+            b"O poder de policia consiste na atividade administrativa que limita direitos em favor do interesse publico. "
+            b"A atuacao deve observar competencia, finalidade e proporcionalidade. "
+            b"Exceto quando a lei autoriza medida imediata, a administracao deve respeitar o procedimento previsto. "
+            b"A fiscalizacao preventiva reduz riscos antes da ocorrencia do dano."
+        ),
+    )
+    document_id = uploaded["metadata"]["document_id"]
+    assert owner.post(f"/api/materials/{document_id}/study/prepare").status_code == 200
+
+    payload = owner.get(f"/api/materials/{document_id}/study/summary").json()
+    item = payload["items"][0]
+
+    assert payload["summary_status"] == "ready"
+    assert item["status"] == "ready"
+    assert "O poder de policia consiste" in item["summary"]
+    assert "Exceto quando a lei autoriza" in item["summary"]
+    assert 2 <= len(item["source_anchors"]) <= 5
+    assert all(point in item["summary"] for point in item["key_points"])
+    assert item["source_material_id"] == document_id
+    assert item["source_section_id"] == item["section_id"]
+    assert_bounded_study_summary_payload(payload)
+
+
+def test_grounded_summary_deduplicates_repeated_sentences_and_list_items(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "list-owner")
+    uploaded = upload_material(
+        owner,
+        filename="classificacao.md",
+        content=(
+            b"# Classificacao dos atos\n\n"
+            b"Os atos administrativos classificam-se conforme alcance e destinatarios.\n"
+            b"- Atos gerais possuem destinatarios indeterminados.\n"
+            b"- Atos individuais possuem destinatarios determinados.\n"
+            b"- Atos gerais possuem destinatarios indeterminados.\n"
+            b"Os atos administrativos classificam-se conforme alcance e destinatarios."
+        ),
+    )
+    document_id = uploaded["metadata"]["document_id"]
+    assert owner.post(f"/api/materials/{document_id}/study/prepare").status_code == 200
+
+    item = owner.get(f"/api/materials/{document_id}/study/summary").json()["items"][0]
+
+    assert item["status"] == "ready"
+    assert item["summary"].count("Atos gerais possuem destinatarios indeterminados.") == 1
+    assert item["summary"].count("classificam-se conforme alcance e destinatarios.") == 1
+    assert len(item["key_points"]) == len(set(item["key_points"]))
+    assert len(item["key_points"]) <= 7
+
+
+def test_grounded_summary_fingerprint_is_stable_and_changes_with_source(tmp_path):
+    owner, _, _, repository = create_clients(tmp_path)
+    user = register_and_login(owner, "fingerprint-owner")
+    uploaded = upload_material(
+        owner,
+        filename="competencia.md",
+        content=(
+            b"# Competencia\n\n"
+            b"A competencia define qual agente pode praticar o ato administrativo."
+        ),
+    )
+    document_id = uploaded["metadata"]["document_id"]
+    assert owner.post(f"/api/materials/{document_id}/study/prepare").status_code == 200
+
+    first = owner.get(f"/api/materials/{document_id}/study/summary").json()
+    second = owner.get(f"/api/materials/{document_id}/study/summary").json()
+    first_item = first["items"][0]
+    assert first_item["content_fingerprint"] == second["items"][0]["content_fingerprint"]
+
+    chunks = repository.list_document_chunks(document_id, user_id=user["user_id"])
+    changed = [
+        DocumentChunk.model_validate(
+            {
+                **chunk.model_dump(mode="json"),
+                "text": "A competencia define o agente legalmente autorizado e impede atuacao fora dos limites previstos.",
+                "text_length": 96,
+            }
+        )
+        for chunk in chunks
+    ]
+    repository.save_document_chunks(document_id, changed, user_id=user["user_id"])
+
+    third_item = owner.get(f"/api/materials/{document_id}/study/summary").json()["items"][0]
+    assert third_item["content_fingerprint"] != first_item["content_fingerprint"]
+    assert third_item["summary"] != first_item["summary"]
+
+
+def test_grounded_summary_rejects_formatting_noise_as_source_evidence(tmp_path):
+    owner, _, _, _ = create_clients(tmp_path)
+    register_and_login(owner, "noise-owner")
+    uploaded = upload_material(
+        owner,
+        filename="indice.md",
+        content=(
+            b"# Indice\n\n"
+            b"1\n2\n3\nPagina 4\nTodos os direitos reservados."
+        ),
+    )
+    document_id = uploaded["metadata"]["document_id"]
+    assert owner.post(f"/api/materials/{document_id}/study/prepare").status_code == 200
+
+    item = owner.get(f"/api/materials/{document_id}/study/summary").json()["items"][0]
+
+    assert item["status"] == "needs_review"
+    assert item["summary"] == "Conteúdo insuficiente para montar um resumo confiável desta seção."
+    assert item["key_points"] == []
+    assert item["source_anchors"] == []

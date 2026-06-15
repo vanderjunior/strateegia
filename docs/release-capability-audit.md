@@ -52,7 +52,8 @@ login 200
 upload_edital 201
 analyze_edital 200 {'analysis_status': 'analyzed', 'topics_count': 2, 'subtopics_count': 3, 'bibliography_count': 2, 'warnings_count': 0}
 prepare_material ... ready_for_study
-summary_item {'summary': 'Resumo em preparação para esta seção.', 'key_points': ['Atos administrativos']}
+summary_item {'status': 'ready', 'summary': 'O poder de policia consiste na atividade administrativa que limita direitos em favor do interesse publico. A atuacao deve observar competencia, finalidade e proporcionalidade. Exceto quando a lei autoriza medida imediata, a administracao deve respeitar o procedimento previsto.', 'key_points_count': 3, 'source_anchors_count': 3, 'generator_version': 'grounded-summary-v1', 'repeat_is_identical': true}
+title_only_summary {'status': 'needs_review', 'key_points': [], 'source_anchors': []}
 coverage {'coverage_status': 'partial', 'covered_subtopics_count': 2, 'partial_subtopics_count': 1, 'uncovered_subtopics_count': 0}
 blocks {'blocks_status': 'ready', 'scope_status': 'connected_to_edital', 'blocks_count': 3}
 questions {'question_status': 'ready', 'mode': 'review_only'} type multiple_choice with A-E alternatives
@@ -93,8 +94,8 @@ Counts exceeded 3 because the local Compose QA volume already contained older fi
 | Bibliography/reference matching | `PARTIAL` | `bibliography_alignment.py` | `/api/edital/{id}/align-bibliography`, `/alignment` | Limited/read surfaces | Alignment persisted | Bibliography tests | Source inspection | Token overlap, not proof of source adequacy | Product UI and semantic matching |
 | Coverage estimation | `PARTIAL` | `routes.py`, `bibliography_alignment.py` | `GET /api/editais/{id}/coverage` | Edital detail | Computed from material contexts | Coverage tests | Synthetic coverage partial | Lexical estimate only | Coverage confidence model and review UI |
 | Study blocks | `USABLE_ALPHA` | `routes.py` helpers | `GET /api/study/blocks`, `/study/session/next` | `/study` | Computed from prepared summaries | Study block/session tests | 3 blocks generated | Ordered list, not scheduler | Real cycle/scheduler contract |
-| Block detail | `USABLE_ALPHA` | `routes.py` | `GET /api/study/blocks/{block_id}` | `/study/blocks/[blockId]` | Computed from material summary | Block detail tests | Detail returned section summary/key points | Summary placeholder | Real summary generation |
-| Summaries/key points | `PLACEHOLDER` | `_bounded_study_summary_item` in `routes.py` | `/api/materials/{id}/study/summary`, block detail | Material and block detail | Computed from section titles | Summary tests | Returned `Resumo em preparação para esta seção.` | Not pedagogical; does not use full section content beyond titles | Generate source-grounded summaries |
+| Block detail | `USABLE_ALPHA` | `routes.py` | `GET /api/study/blocks/{block_id}` | `/study/blocks/[blockId]` | Computed from material summary | Block detail tests | Detail returns bounded extractive summary/key points when source evidence is sufficient | Summary quality still requires validation with real corpora | Grounded question quality remains separate |
+| Summaries/key points | `USABLE_ALPHA` | `_extractive_study_summary`, `_bounded_study_summary_item` in `routes.py` | `/api/materials/{id}/study/summary`, block detail | Material and block detail | Deterministically computed on read; no summary artifact writes | Summary, block-detail, session, and extraction regression tests | Source sentences, key points, bounded anchors, fingerprint, and generator version are returned deterministically | No LLM synthesis; insufficient/title-only/noisy source remains `needs_review`; pedagogical quality requires real-material validation | Validate extractive quality across representative exam corpora |
 | Fixation questions | `PLACEHOLDER` | `_bounded_fixation_questions_response` | `GET /api/study/blocks/{id}/questions` | Block detail | Computed; not persisted | Fixation tests | A-E candidate alternatives returned | No answer key; candidates orient review | Reviewed question authoring and answer keys |
 | Answer review | `READ_ONLY` | `_bounded_answer_review_response` | `POST /api/study/blocks/{id}/questions/{id}/answer/review` | Block detail feedback | Stateless response; no selected answer persisted | Answer review tests | Result `needs_review` for choice | No official correctness | Attempt/correction contract |
 | Attempt memory | `MISSING` | Legacy `record_answer` exists but not current study UI path | Legacy `/questions/{id}/answer`, not study review | Not connected | Current selected answer not persisted | No current adaptive attempt tests | `reviewed_questions_count` remained 0 after answer review smoke | Cannot suppress/prioritize questions | Persist attempts from review UI after correction model |
@@ -154,18 +155,11 @@ What does not exist:
 
 ## Summaries Assessment
 
-Runtime output shows:
+Classification: `USABLE_ALPHA`.
 
-```json
-{
-  "summary": "Resumo em preparação para esta seção.",
-  "key_points": ["Atos administrativos"]
-}
-```
+Eligible textual blocks now select bounded, non-duplicated source statements for the summary and key points. The response includes safe source anchors, a deterministic content fingerprint, generator version, and generation method. The implementation computes on read and does not persist duplicate summary artifacts.
 
-Classification: `PLACEHOLDER`.
-
-The current block/material summaries are useful as section labels and navigation scaffolding, but they are not sufficient for primary study. They do not yet synthesize the full section text into a pedagogical explanation.
+Title-only, empty, formatting-noise, and otherwise insufficient source content remains `needs_review` with no fabricated summary. This is deterministic extractive study support, not LLM synthesis or proof of pedagogical completeness; representative real-material validation remains necessary.
 
 ## Questions Assessment
 
@@ -255,7 +249,7 @@ Frontend:
 
 P0 required before full personal study:
 
-- Real source-grounded summaries.
+- Validate source-grounded summary quality across representative real exam materials.
 - Correctness model and reviewed answer keys.
 - Persist selected answers/attempts.
 - Adaptive question memory and scheduling.
@@ -289,4 +283,4 @@ Implement attempt persistence and correctness planning before expanding review U
 1. `Correction-Planning-A`: answer-key/correction semantics.
 2. `AttemptMemory-B`: persist selected answers as ungraded attempts first.
 3. `QuestionQuality-B`: generate reviewed, answerable objective questions with reliable keys.
-4. `SummaryQuality-B`: replace placeholder summaries with source-grounded summaries.
+4. Validate the grounded-summary output against representative real exam materials without expanding it into generated or adaptive content.

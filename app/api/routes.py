@@ -132,6 +132,12 @@ from app.services.user_service import LocalUserService
 router = APIRouter(prefix="/api")
 
 PERSONAL_STUDY_MVP_VERSION = "personal-study-mvp-v1"
+GROUNDED_SUMMARY_GENERATOR_VERSION = "grounded-summary-v1"
+GROUNDED_SUMMARY_GENERATION_METHOD = "deterministic_extractive"
+GROUNDED_SUMMARY_MAX_SENTENCES = 5
+GROUNDED_SUMMARY_MAX_CHARS = 960
+GROUNDED_SUMMARY_MAX_KEY_POINTS = 7
+GROUNDED_SUMMARY_MAX_SOURCE_ANCHORS = 5
 SESSION_COOKIE_NAME = "studyflow_session"
 STUDY_PROGRESS_EVENT_TYPES = {
     "block_opened",
@@ -1181,6 +1187,31 @@ SOURCE_LEAK_MARKERS = (
     "c:\\",
 )
 
+SUMMARY_ALWAYS_NOISE_MARKERS = (
+    "todos os direitos reservados",
+    "all rights reserved",
+    "copyright",
+    "www.",
+    "http://",
+    "https://",
+)
+
+SUMMARY_SHORT_NOISE_PREFIXES = (
+    "sumario",
+    "sumário",
+    "indice",
+    "índice",
+    "pagina",
+    "página",
+)
+
+SUMMARY_DANGLING_REFERENCE_MARKERS = (
+    "conforme acima",
+    "como visto acima",
+    "conforme mencionado anteriormente",
+    "como visto anteriormente",
+)
+
 
 def _safe_source_sentence(value: object, *, limit: int = 360) -> str | None:
     sentence = " ".join(str(value or "").split())
@@ -1268,67 +1299,186 @@ def _sentence_score(sentence: str, terms: set[str]) -> int:
     return score
 
 
+def _summary_source_fingerprint(
+    *,
+    material_id: str,
+    section_id: str,
+    title: str,
+    chunks: list[object],
+) -> str:
+    source_text = "\n".join(
+        _normalize_study_text(getattr(chunk, "text", ""))
+        for chunk in sorted(chunks, key=lambda item: getattr(item, "chunk_index", 0))
+    )
+    identity = "|".join(
+        (
+            material_id,
+            section_id,
+            _normalize_study_text(title),
+            source_text,
+            GROUNDED_SUMMARY_GENERATOR_VERSION,
+            str(GROUNDED_SUMMARY_MAX_SENTENCES),
+            str(GROUNDED_SUMMARY_MAX_CHARS),
+            str(GROUNDED_SUMMARY_MAX_KEY_POINTS),
+        )
+    )
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+
+
+def _is_summary_noise(sentence: str, *, title: str) -> bool:
+    normalized = _normalize_study_text(sentence)
+    if not normalized or normalized == _normalize_study_text(title):
+        return True
+    if len(normalized) < 12 or len(normalized.split()) < 2:
+        return True
+    if re.fullmatch(r"(?:pagina\s*)?\d+(?:\s+de\s+\d+)?", normalized):
+        return True
+    if any(marker in normalized for marker in SUMMARY_ALWAYS_NOISE_MARKERS):
+        return True
+    if len(normalized) <= 80 and normalized.startswith(SUMMARY_SHORT_NOISE_PREFIXES):
+        return True
+    if any(marker in normalized for marker in SUMMARY_DANGLING_REFERENCE_MARKERS) and len(normalized) < 120:
+        return True
+    return False
+
+
+def _summary_statement_candidates(
+    *,
+    title: str,
+    chunks: list[object],
+    terms: set[str],
+) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for chunk in sorted(chunks, key=lambda item: getattr(item, "chunk_index", 0)):
+        raw_text = str(getattr(chunk, "text", "") or "")
+        pieces = re.split(r"(?<=[.!?])\s+|\n+", raw_text)
+        for sentence_index, piece in enumerate(pieces):
+            cleaned = re.sub(r"^\s*(?:[-*•]|\d+[\.\)])\s+", "", piece).strip()
+            sentence = _safe_source_sentence(cleaned, limit=1000)
+            if sentence is None or len(sentence) > 320 or _is_summary_noise(sentence, title=title):
+                continue
+            normalized = _normalize_study_text(sentence)
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            score = _sentence_score(sentence, terms)
+            if re.match(r"^\s*(?:[-*•]|\d+[\.\)])\s+", piece):
+                score += 2
+            candidates.append(
+                {
+                    "text": sentence,
+                    "score": score,
+                    "source_order": (int(getattr(chunk, "chunk_index", 0)), sentence_index),
+                    "anchor": {
+                        "chunk_id": str(getattr(chunk, "chunk_id", "")),
+                        "chunk_index": int(getattr(chunk, "chunk_index", 0)),
+                        "sentence_index": sentence_index,
+                        "excerpt_fingerprint": hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16],
+                        "page_start": getattr(chunk, "page_start", None),
+                        "page_end": getattr(chunk, "page_end", None),
+                    },
+                }
+            )
+    return candidates
+
+
+def _select_summary_statements(candidates: list[dict[str, object]]) -> list[dict[str, object]]:
+    ranked = sorted(
+        candidates,
+        key=lambda item: (
+            -int(item["score"]),
+            item["source_order"],
+            str(item["text"]),
+        ),
+    )
+    selected: list[dict[str, object]] = []
+    current_length = 0
+    for candidate in ranked:
+        sentence = str(candidate["text"])
+        added_length = len(sentence) + (1 if selected else 0)
+        if current_length + added_length > GROUNDED_SUMMARY_MAX_CHARS:
+            continue
+        selected.append(candidate)
+        current_length += added_length
+        if len(selected) >= GROUNDED_SUMMARY_MAX_SENTENCES:
+            break
+    return sorted(selected, key=lambda item: item["source_order"])
+
+
 def _extractive_study_summary(
     *,
+    material_id: str,
+    section_id: str,
     title: str,
     chunks: list[object],
     topic_label: object | None = None,
     subtopic_label: object | None = None,
-) -> tuple[str, list[str], str]:
-    text = "\n".join(str(getattr(chunk, "text", "") or "") for chunk in chunks)
-    sentences = _split_source_sentences(text)
+) -> dict[str, object]:
+    content_fingerprint = _summary_source_fingerprint(
+        material_id=material_id,
+        section_id=section_id,
+        title=title,
+        chunks=chunks,
+    )
     terms = _study_term_tokens(title, topic_label, subtopic_label)
-    scored = [
-        (_sentence_score(sentence, terms), index, sentence)
-        for index, sentence in enumerate(sentences)
-    ]
-    scored = [item for item in scored if item[0] > 0 or len(sentences) <= 3]
-    if not scored:
-        return (
-            "Conteúdo insuficiente para montar um resumo confiável desta seção.",
-            [],
-            "needs_review",
-        )
-    selected = sorted(sorted(scored, key=lambda item: (-item[0], item[1]))[:3], key=lambda item: item[1])
-    selected_sentences = [sentence for _, _, sentence in selected]
-    summary = " ".join(selected_sentences)
-    key_points = []
-    for sentence in selected_sentences:
-        point = re.split(r"[:.;]", sentence, maxsplit=1)[0].strip()
-        point = _bounded_study_summary_title(point, fallback="")
-        if point and point.casefold() not in {item.casefold() for item in key_points}:
-            key_points.append(point)
-        if len(key_points) >= 3:
-            break
-    if not key_points:
-        key_points = [title]
-    return summary[:720], key_points, "ready"
+    candidates = _summary_statement_candidates(title=title, chunks=chunks, terms=terms)
+    selected = _select_summary_statements(candidates)
+    if not selected:
+        return {
+            "summary": "Conteúdo insuficiente para montar um resumo confiável desta seção.",
+            "key_points": [],
+            "status": "needs_review",
+            "source_anchors": [],
+            "content_fingerprint": content_fingerprint,
+        }
+    selected_sentences = [str(item["text"]) for item in selected]
+    key_points = selected_sentences[:GROUNDED_SUMMARY_MAX_KEY_POINTS]
+    return {
+        "summary": " ".join(selected_sentences),
+        "key_points": key_points,
+        "status": "ready",
+        "source_anchors": [
+            dict(item["anchor"])
+            for item in selected[:GROUNDED_SUMMARY_MAX_SOURCE_ANCHORS]
+        ],
+        "content_fingerprint": content_fingerprint,
+    }
 
 
 def _bounded_study_summary_item(
     section,
     chunks: list[object],
     *,
+    material_id: str,
     topic_label: object | None = None,
     subtopic_label: object | None = None,
 ) -> dict[str, object]:
     title = _bounded_study_summary_title(section.title, fallback="Seção sem título")
     has_specific_title = title.lower() not in {"document", "seção sem título", "section"}
     estimated_minutes = max(3, min(20, max(1, len(chunks)) * 5))
-    summary, key_points, source_status = _extractive_study_summary(
+    grounded = _extractive_study_summary(
+        material_id=material_id,
+        section_id=str(section.section_id),
         title=title,
         chunks=chunks,
         topic_label=topic_label,
         subtopic_label=subtopic_label,
     )
-    status = "ready" if has_specific_title and source_status == "ready" else "needs_review"
+    status = "ready" if has_specific_title and grounded["status"] == "ready" else "needs_review"
     return {
         "section_id": section.section_id,
         "title": title,
-        "summary": summary,
-        "key_points": key_points if has_specific_title else [],
+        "summary": str(grounded["summary"]),
+        "key_points": list(grounded["key_points"]) if has_specific_title else [],
         "estimated_minutes": estimated_minutes,
         "status": status,
+        "source_material_id": material_id,
+        "source_section_id": str(section.section_id),
+        "source_anchors": list(grounded["source_anchors"]) if has_specific_title else [],
+        "content_fingerprint": str(grounded["content_fingerprint"]),
+        "generator_version": GROUNDED_SUMMARY_GENERATOR_VERSION,
+        "generation_method": GROUNDED_SUMMARY_GENERATION_METHOD,
     }
 
 
@@ -1361,6 +1511,7 @@ def _bounded_study_material_summary_response(
                     chunks_by_section.get(section.section_id, []),
                     key=lambda chunk: getattr(chunk, "chunk_index", 0),
                 ),
+                material_id=document_id,
             )
             for section in sections
         ]

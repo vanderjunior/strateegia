@@ -36,6 +36,12 @@ ALLOWED_ITEM_KEYS = {
     "key_points",
     "estimated_minutes",
     "status",
+    "source_material_id",
+    "source_section_id",
+    "source_anchors",
+    "content_fingerprint",
+    "generator_version",
+    "generation_method",
 }
 
 ALLOWED_ACTION_KEYS = {
@@ -153,6 +159,12 @@ def assert_bounded_ready_payload(payload: dict[str, object]) -> None:
         assert isinstance(item["key_points"], list)
         assert isinstance(item["estimated_minutes"], int)
         assert item["status"] in {"ready", "needs_review"}
+        assert item["source_material_id"] == payload["document_id"]
+        assert item["source_section_id"] == item["section_id"]
+        assert isinstance(item["source_anchors"], list)
+        assert isinstance(item["content_fingerprint"], str)
+        assert item["generator_version"] == "grounded-summary-v1"
+        assert item["generation_method"] == "deterministic_extractive"
     for action in payload["next_actions"]:
         assert_bounded_action(action)
     assert_no_forbidden_terms(payload)
