@@ -759,6 +759,7 @@ export async function reviewStudyBlockQuestionAnswer(
   payload: {
     answer: string;
     answer_format: StudyBlockAnswerFormat;
+    idempotency_key?: string | null;
   }
 ): Promise<ApiResult<BackendStudyBlockAnswerReview>> {
   const { baseUrl, forceMock } = getApiConfig();
@@ -792,7 +793,8 @@ export async function reviewStudyBlockQuestionAnswer(
         cache: "no-store",
         body: JSON.stringify({
           answer: payload.answer,
-          answer_format: payload.answer_format
+          answer_format: payload.answer_format,
+          idempotency_key: payload.idempotency_key ?? null
         })
       }
     );

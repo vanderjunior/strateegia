@@ -773,3 +773,11 @@ Do not migrate persistence before staging proves the product flow and storage re
 - Free/ephemeral hosting is not sufficient for realistic study data because uploads, extracted text, chunks, analyses, and progress events are filesystem/JSON-backed.
 - Heroku-style ephemeral dynos are not a fit until Mentorium moves mutable state to PostgreSQL/object storage.
 - Public production remains `NO_GO` until transactional persistence, object storage, production auth/session handling, concurrency controls, observability, and a security review exist.
+
+## Personal-Study-MVP-A Readiness Update
+
+- The textual personal-study core is stronger than the Release-Capability-Audit-A baseline: summaries are now extractive/source-grounded for eligible blocks, validated questions have backend-only evidence-backed answer keys, and selected-answer attempts persist with server-derived correctness.
+- Private alpha remains conditional on single-replica JSON/file storage, persistent `/app/data`, backup/restore discipline, trusted users, and clear disclosure that OCR, official correction, public score, and permanent mastery are not available.
+- New persisted study state includes bounded question attempts, adaptive question state, and weak-topic signals; these must be backed up with the existing JSON store and uploads.
+- The adaptive policy is deterministic and local to the backend. It does not use a scheduler service, fixed 24h/7d/30d SRS cadence, frontend inference, PostgreSQL, LLM generation, or OCR.
+- Deployment remains `NO_GO` for public production. The remaining blockers are transactional persistence, object storage, production auth/session handling, stronger concurrency controls, observability, security review, OCR strategy, and broader pedagogical QA on real corpora.

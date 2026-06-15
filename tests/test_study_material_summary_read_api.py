@@ -220,8 +220,9 @@ def test_prepared_markdown_study_material_returns_bounded_summary_items(tmp_path
         "Atos administrativos",
         "Poder de policia",
     ]
-    assert payload["items"][0]["summary"] == "Resumo em preparação para esta seção."
-    assert payload["items"][0]["key_points"] == ["Atos administrativos"]
+    assert payload["items"][0]["summary"] == "Conteúdo insuficiente para montar um resumo confiável desta seção."
+    assert payload["items"][0]["key_points"] == []
+    assert payload["items"][1]["summary"] == "Conteudo seguro para estudo."
     assert payload["items"][0]["estimated_minutes"] >= 3
     assert_bounded_study_summary_payload(payload)
 
@@ -267,4 +268,3 @@ def test_study_material_summary_is_idempotent(tmp_path):
 
     assert first == second
     assert_bounded_study_summary_payload(first)
-

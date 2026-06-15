@@ -173,3 +173,12 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 - Critical product limits are explicit: summaries are placeholders, questions are candidates without answer keys, answer review is stateless/conservative, selected answers are not persisted as adaptive attempts, reinforcement does not affect scheduling, and the study path is an ordered block list rather than a true scheduler.
 - Deployment guidance now recommends local Docker plus Tailscale for private alpha, with Railway/Render persistent disks only as conditional fallback; public production remains no-go.
 - `.env.example` now documents optional OCR variables while keeping OCR disabled by default.
+
+## Personal-Study-MVP-A Closeout
+
+- Eligible textual study blocks now receive deterministic extractive summaries and key points from the user's own source text instead of visible placeholder copy.
+- Objective fixation questions now carry backend-only evidence, fingerprint, validation state, and correct-answer metadata; the frontend still receives only the bounded public question shape.
+- Answer review now persists bounded selected-answer attempts, derives `correct`, `incorrect`, or `ungraded` server-side, and keeps score/gabarito/official correction out of the UI.
+- Incorrect validated attempts create weak-topic signals that can influence subsequent bounded question ordering, reinforcement copy, and cumulative review metadata.
+- The adaptive policy is intentionally small and deterministic: wrong items become weak, first correct items move to review, repeated correct items are temporarily suppressed, and ungraded items do not affect mastery.
+- Frontend changes are limited to using the existing study block/review surfaces and forwarding optional idempotency keys; there is still no review detail page, percentage, material completion, simulado execution, OCR/LLM behavior, PostgreSQL, provider/signup, public score, or answer-key reveal.

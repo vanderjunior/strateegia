@@ -263,7 +263,11 @@ def test_study_block_detail_returns_connected_edital_labels(tmp_path):
     uploaded = upload_material(
         owner,
         filename="atos-administrativos.md",
-        content=b"# Atos administrativos\n\nRAW-STUDY-BLOCK-DETAIL-SHOULD-NOT-LEAK",
+        content=(
+            b"# Atos administrativos\n\n"
+            b"RAW-STUDY-BLOCK-DETAIL-SHOULD-NOT-LEAK\n\n"
+            b"Atos administrativos produzem efeitos juridicos imediatos e devem observar finalidade publica."
+        ),
     )
     document_id = prepare_study_material(owner, uploaded)
     block = first_block(owner)

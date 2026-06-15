@@ -2,6 +2,12 @@
 
 This guide evaluates private deployment options for the current Mentorium architecture.
 
+## Personal-Study-MVP-A Capability Note
+
+Private staging can now demonstrate grounded textual study behavior: extractive summaries, internally validated objective questions, persisted selected-answer attempts, weak-topic signals, and a bounded adaptive question queue. This does not make the app public-production ready. Keep staging private, single-replica, backed by persistent disk, and clearly labeled alpha.
+
+Do not market staging as official correction, scoring, permanent mastery, OCR-complete, or simulado execution.
+
 ## Recommendation
 
 Primary option: local Docker host plus Tailscale for one or two trusted testers.
@@ -181,4 +187,3 @@ Before every deploy:
 ## Single-Replica Requirement
 
 Run only one backend replica while storage is JSON/file based. Multiple writers can corrupt or overwrite state because writes are read-modify-write against one JSON file.
-

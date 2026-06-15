@@ -341,6 +341,7 @@ class EditalIngestionService:
                 continue
             section_text = str(section.metadata.get("text") or "")
             current_topic_id: str | None = None
+            current_topic_accepts_bullets = False
             for raw_line in self._meaningful_lines(section_text):
                 top_level_number_match = re.match(r"^\d+[\.\)]\s+(.+)$", raw_line)
                 bullet_match = re.match(r"^[-*•]\s+(.+)$", raw_line)
@@ -362,23 +363,25 @@ class EditalIngestionService:
                         reasoning="numbered subtopic line inside content section",
                     )
                     continue
-                if bullet_match and current_topic_id is not None:
-                    subtopic_order = self._append_subtopic_candidates(
-                        subtopics,
-                        parent_topic_id=current_topic_id,
-                        source_text=bullet_match.group(1),
-                        order_index=subtopic_order,
-                        section=section,
-                        raw_line=raw_line,
-                        confidence=0.7,
-                        reasoning="bulleted subtopic line inside current content topic",
-                    )
-                    continue
                 if top_level_number_match:
                     candidate_text = top_level_number_match.group(1).strip()
                     reasoning = "numbered topic line inside content section"
                     confidence = 0.88
                 elif bullet_match:
+                    if current_topic_id is not None and current_topic_accepts_bullets:
+                        subtopic_order = self._append_subtopic_candidates(
+                            subtopics,
+                            parent_topic_id=current_topic_id,
+                            source_text=bullet_match.group(1),
+                            order_index=subtopic_order,
+                            section=section,
+                            raw_line=raw_line,
+                            confidence=0.72,
+                            reasoning="bulleted subtopic line under subject heading",
+                        )
+                        continue
+                    # Flat bullet lists under "Conteudo Programatico" are topic lists;
+                    # inline colon text below still becomes bounded subtopic evidence.
                     candidate_text = bullet_match.group(1).strip()
                     reasoning = "bulleted topic line inside content section"
                     confidence = 0.88
@@ -414,6 +417,7 @@ class EditalIngestionService:
                     )
                 )
                 current_topic_id = topic_id
+                current_topic_accepts_bullets = bool(colon_match and trailing_text is None)
                 if trailing_text:
                     subtopic_order = self._append_subtopic_candidates(
                         subtopics,

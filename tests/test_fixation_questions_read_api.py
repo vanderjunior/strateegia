@@ -251,7 +251,11 @@ def test_fixation_questions_include_connected_edital_labels(tmp_path):
     uploaded = upload_material(
         owner,
         filename="atos-administrativos.md",
-        content=b"# Atos administrativos\n\nRAW-FIXATION-QUESTIONS-SHOULD-NOT-LEAK",
+        content=(
+            b"# Atos administrativos\n\n"
+            b"RAW-FIXATION-QUESTIONS-SHOULD-NOT-LEAK\n\n"
+            b"Atos administrativos produzem efeitos juridicos imediatos e devem observar finalidade publica."
+        ),
     )
     prepare_study_material(owner, uploaded)
     block = first_block(owner)
@@ -367,6 +371,17 @@ def test_fixation_questions_return_not_ready_when_block_detail_is_not_ready(tmp_
         }
 
     monkeypatch.setattr(routes, "_bounded_study_block_detail_response", fake_detail_response)
+    monkeypatch.setattr(
+        routes,
+        "_grounded_question_sentences",
+        lambda repository, user_id, detail: [
+            "Atos administrativos produzem efeitos juridicos imediatos.",
+            "Poderes administrativos orientam a atuacao da Administracao.",
+            "Responsabilidade civil do Estado exige analise de dano e nexo.",
+            "Controle administrativo revisa atos conforme a legalidade.",
+            "Licitacoes organizam a selecao da proposta conforme regras publicas.",
+        ],
+    )
 
     response = owner.get(encoded_questions_path("study-block:not-ready:doc-1:0"))
     payload = response.json()
@@ -456,6 +471,17 @@ def test_fixation_questions_limit_and_deduplicate_candidates(tmp_path, monkeypat
         }
 
     monkeypatch.setattr(routes, "_bounded_study_block_detail_response", fake_detail_response)
+    monkeypatch.setattr(
+        routes,
+        "_grounded_question_sentences",
+        lambda repository, user_id, detail: [
+            "Atos administrativos produzem efeitos juridicos imediatos.",
+            "Poderes administrativos orientam a atuacao da Administracao.",
+            "Responsabilidade civil do Estado exige analise de dano e nexo.",
+            "Controle administrativo revisa atos conforme a legalidade.",
+            "Licitacoes organizam a selecao da proposta conforme regras publicas.",
+        ],
+    )
 
     response = owner.get(encoded_questions_path("study-block:wide:doc-1:0"))
     payload = response.json()

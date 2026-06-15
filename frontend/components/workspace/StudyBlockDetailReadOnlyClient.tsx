@@ -153,6 +153,12 @@ function suggestedActionLabel(action: BackendStudyBlockAnswerReview["reinforceme
 }
 
 function reviewResultMessage(review: BackendStudyBlockAnswerReview): string {
+  if (review.result === "correct") {
+    return "Escolha alinhada ao material.";
+  }
+  if (review.result === "incorrect") {
+    return "Revise este ponto antes de avançar.";
+  }
   if (review.result === "ungraded") {
     return "Escolha revisada sem pontuação.";
   }

@@ -67,6 +67,14 @@ Scanned PDFs usually produce an OCR-required state. OCR is disabled by default.
 
 ## Personal Full-Corpus Study Guidance
 
+Personal-Study-MVP-A adds a real bounded textual study core:
+
+- eligible textual study blocks show deterministic extractive summaries from source text;
+- validated objective questions have backend-internal evidence-backed answer keys;
+- answer review persists selected-answer attempts and derives correct/incorrect only when validation is supported;
+- incorrect validated attempts create weak-topic signals;
+- correct validated attempts are temporarily suppressed by selection rounds, not fixed 24h/7d/30d SRS.
+
 Current safe path:
 
 1. Upload edital as `edital`.
@@ -75,11 +83,11 @@ Current safe path:
 4. Prepare each material.
 5. Open `/study`.
 6. Study blocks.
-7. Use fixation questions as review prompts.
+7. Use fixation questions as validated practice when the backend can derive correctness; otherwise treat them as ungraded prompts.
 8. Mark blocks studied explicitly.
 9. Check progress/review candidate.
 
-Do not treat the current questions as graded exam questions. Do not rely on current summaries as complete pedagogical summaries.
+Do not treat feedback as official exam correction. There is no public score, no gabarito reveal, no permanent mastery claim, and no executable cumulative review detail page yet.
 
 ## Backup
 
@@ -164,5 +172,4 @@ The fixture is explicit, idempotent, and disabled in production.
 - Keep backups before uploading a real corpus.
 - Avoid concurrent heavy writes with multiple testers.
 - Do not expose `/inspection` publicly.
-- Do not assume OCR, official correction, adaptive scheduling, or simulado execution exists.
-
+- Do not assume OCR, official correction, full adaptive scheduling, or simulado execution exists.

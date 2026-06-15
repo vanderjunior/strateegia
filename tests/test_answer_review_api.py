@@ -281,14 +281,14 @@ def test_answer_review_returns_conservative_short_answer_feedback(tmp_path, monk
     assert payload["question_id"] == question["question_id"]
     assert payload["review_status"] == "reviewed"
     assert payload["result"] == "ungraded"
-    assert "Compare sua resposta" in payload["feedback"]
+    assert "registrada" in payload["feedback"]
     assert payload["reinforcement"]["suggested_action"] == "review_summary"
     assert_bounded_answer_review_payload(payload)
 
 
-def test_answer_review_accepts_choice_without_grading_objective_candidates(tmp_path):
-    owner, _, _, _, _ = create_clients(tmp_path)
-    register_and_login(owner, "owner")
+def test_answer_review_grades_validated_choice_and_persists_attempt(tmp_path):
+    owner, _, _, repository, _ = create_clients(tmp_path)
+    user = register_and_login(owner, "owner")
     block_id, question = prepare_ready_question(owner)
 
     assert question["type"] == "multiple_choice"
@@ -302,15 +302,19 @@ def test_answer_review_accepts_choice_without_grading_objective_candidates(tmp_p
     payload = response.json()
 
     assert response.status_code == 200
-    assert payload["review_status"] == "needs_review"
-    assert payload["result"] == "needs_review"
-    assert "regra segura" in payload["feedback"]
+    assert payload["review_status"] == "reviewed"
+    assert payload["result"] in {"correct", "incorrect"}
+    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
+    assert len(attempts) == 1
+    assert attempts[0]["question_id"] == question["question_id"]
+    assert attempts[0]["selected_answer"] == "A"
+    assert attempts[0]["correctness_state"] == payload["result"]
     assert_bounded_answer_review_payload(payload)
 
 
-def test_answer_review_accepts_true_false_without_grading(tmp_path, monkeypatch):
-    owner, _, _, _, _ = create_clients(tmp_path)
-    register_and_login(owner, "owner")
+def test_answer_review_grades_validated_true_false(tmp_path, monkeypatch):
+    owner, _, _, repository, _ = create_clients(tmp_path)
+    user = register_and_login(owner, "owner")
     monkeypatch.setattr(routes, "_resolve_fixation_question_profile", lambda detail: "cebraspe_true_false")
     block_id, question = prepare_ready_question(owner)
 
@@ -325,9 +329,12 @@ def test_answer_review_accepts_true_false_without_grading(tmp_path, monkeypatch)
     payload = response.json()
 
     assert response.status_code == 200
-    assert payload["review_status"] == "needs_review"
-    assert payload["result"] == "needs_review"
-    assert "regra segura" in payload["feedback"]
+    assert payload["review_status"] == "reviewed"
+    assert payload["result"] == "correct"
+    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
+    assert len(attempts) == 1
+    assert attempts[0]["selected_answer"] == "C"
+    assert attempts[0]["correctness_state"] == "correct"
     assert_bounded_answer_review_payload(payload)
 
 
@@ -338,13 +345,17 @@ def test_answer_review_reinforcement_includes_connected_edital_labels(tmp_path):
     uploaded = upload_material(
         owner,
         filename="atos-administrativos.md",
-        content=b"# Atos administrativos\n\nRAW-ANSWER-REVIEW-SHOULD-NOT-LEAK",
+        content=(
+            b"# Atos administrativos\n\n"
+            b"RAW-ANSWER-REVIEW-SHOULD-NOT-LEAK\n\n"
+            b"Atos administrativos produzem efeitos juridicos imediatos e devem observar finalidade publica."
+        ),
     )
     prepare_study_material(owner, uploaded)
     block = first_block(owner)
     question = first_question(owner, str(block["block_id"]))
 
-    response = post_review(owner, str(block["block_id"]), str(question["question_id"]))
+    response = post_review(owner, str(block["block_id"]), str(question["question_id"]), answer="A", answer_format="choice")
     payload = response.json()
 
     assert response.status_code == 200
@@ -354,22 +365,24 @@ def test_answer_review_reinforcement_includes_connected_edital_labels(tmp_path):
     assert_bounded_answer_review_payload(payload)
 
 
-def test_answer_review_is_idempotent_and_does_not_persist_or_mutate_progress(tmp_path):
+def test_answer_review_is_idempotent_and_persists_one_attempt_for_same_choice(tmp_path):
     owner, _, _, repository, data_path = create_clients(tmp_path)
     user = register_and_login(owner, "stable-owner")
     block_id, question = prepare_ready_question(owner)
     before_progress = repository.load_progress(user_id=user["user_id"]).model_dump(mode="json")
     before_file = data_path.read_text(encoding="utf-8")
 
-    first = post_review(owner, block_id, str(question["question_id"]))
-    second = post_review(owner, block_id, str(question["question_id"]))
+    first = post_review(owner, block_id, str(question["question_id"]), answer="A", answer_format="choice")
+    second = post_review(owner, block_id, str(question["question_id"]), answer="A", answer_format="choice")
 
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json() == second.json()
     after_progress = repository.load_progress(user_id=user["user_id"]).model_dump(mode="json")
     assert after_progress == before_progress
-    assert data_path.read_text(encoding="utf-8") == before_file
+    assert data_path.read_text(encoding="utf-8") != before_file
+    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
+    assert len(attempts) == 1
 
 
 def test_answer_review_is_user_scoped(tmp_path):
@@ -388,7 +401,7 @@ def test_answer_review_does_not_leak_answer_keys_or_raw_content(tmp_path):
     register_and_login(owner, "owner")
     block_id, question = prepare_ready_question(owner)
 
-    response = post_review(owner, block_id, str(question["question_id"]))
+    response = post_review(owner, block_id, str(question["question_id"]), answer="A", answer_format="choice")
     payload = response.json()
 
     assert response.status_code == 200

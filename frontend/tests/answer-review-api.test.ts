@@ -65,7 +65,7 @@ describe("answer review API wrapper", () => {
         method: "POST",
         credentials: "include",
         cache: "no-store",
-        body: JSON.stringify({ answer: "Minha resposta", answer_format: "text" })
+        body: JSON.stringify({ answer: "Minha resposta", answer_format: "text", idempotency_key: null })
       })
     );
     expect(result.ok).toBe(true);

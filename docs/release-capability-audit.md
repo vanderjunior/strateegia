@@ -6,7 +6,30 @@ Audit date: 2026-06-14
 
 Mentorium is a useful local/private alpha for organizing textual study materials and walking a student through a safe study workspace. It is not yet a complete adaptive exam-preparation environment.
 
-The current product can ingest an edital, prepare textual materials, show an ordered study path, expose placeholder summaries/key points, show objective question candidates, collect conservative answer review, record explicit block-study progress, and show a read-only cumulative review candidate. It cannot yet reliably teach from complete summaries, grade answers, remember selected alternatives as attempts, suppress mastered questions, prioritize wrong questions, or prove syllabus sufficiency.
+## Personal-Study-MVP-A Update
+
+Personal-Study-MVP-A moved the current textual study path beyond the Release-Capability-Audit-A placeholder state:
+
+- Milestone 0 fixed the noisy mixed-format edital extraction regression so `Meteorologia` is detected conservatively.
+- Eligible textual study blocks now use deterministic extractive summaries from source chunk text instead of the placeholder `Resumo em preparação para esta seção.`.
+- Study-block objective questions now have backend-internal evidence-backed answer keys when one unambiguous source-supported answer can be derived.
+- Answer review now persists bounded selected-answer attempts and derives `correct`, `incorrect`, or `ungraded` server-side.
+- Incorrect validated attempts create weak-topic signals that feed reinforcement copy and cumulative-review candidate priority.
+- Correct validated attempts are temporarily suppressed by a deterministic selection-round policy; there is no permanent mastery and no generic 24h/7d/30d SRS.
+- The frontend still never receives answer keys, correctness inputs, mastery state, score, gabarito, raw chunks, or storage paths.
+
+Updated verdicts after this sprint:
+
+| Scenario | Verdict | Conditions |
+| --- | --- | --- |
+| A. Local personal alpha | `CONDITIONAL_GO` | Stronger than before for textual materials: grounded summaries, validated objective questions, persisted attempts, and bounded adaptation now exist. Backups and user review are still required. |
+| B. Private 1-2 user staging | `CONDITIONAL_GO` | Still requires single replica, private access, persistent disk, and backup drill. |
+| C. Full-corpus textual personal study | `CONDITIONAL_GO` | Conditional on textual sources, small corpus size, accepted extractive-question limitations, and manual review of outputs. |
+| D. Adaptive question memory | `CONDITIONAL_GO` | Minimal deterministic memory exists for study-block questions; it is not a full scheduler. |
+| E. Primary exam preparation environment | `NO_GO` | Still blocked by OCR/corpus coverage, limited deterministic question strategies, no executable cumulative review session, and no official correction/scoring. |
+| F. Public production | `NO_GO` | Still blocked by JSON/file persistence, auth/session hardening, object storage, concurrency, observability, and security review. |
+
+The current product can ingest an edital, prepare textual materials, show an ordered study path, expose extractive source-grounded summaries/key points, show objective questions with internal correctness when validated, persist selected-answer attempts, record explicit block-study progress, and show a cumulative review candidate with weak-topic signals. It still cannot prove syllabus sufficiency, execute a full cumulative review session, handle OCR-required corpora by default, or support public production.
 
 ## GO / NO-GO Verdicts
 

@@ -113,15 +113,22 @@ function toSafeAnswerFormat(value: unknown): StudyBlockAnswerFormat | null {
     : null;
 }
 
-function sanitizeRequestBody(payload: unknown): { answer?: string; answer_format?: StudyBlockAnswerFormat } {
+function sanitizeRequestBody(payload: unknown): {
+  answer?: string;
+  answer_format?: StudyBlockAnswerFormat;
+  idempotency_key?: string | null;
+} {
   const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
-  const body: { answer?: string; answer_format?: StudyBlockAnswerFormat } = {};
+  const body: { answer?: string; answer_format?: StudyBlockAnswerFormat; idempotency_key?: string | null } = {};
   if (typeof raw.answer === "string") {
     body.answer = raw.answer;
   }
   const answerFormat = toSafeAnswerFormat(raw.answer_format);
   if (answerFormat) {
     body.answer_format = answerFormat;
+  }
+  if (raw.idempotency_key === null || typeof raw.idempotency_key === "string") {
+    body.idempotency_key = toSafeNullableString(raw.idempotency_key);
   }
   return body;
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import hashlib
 import unicodedata
 from pathlib import Path
 
@@ -129,6 +130,8 @@ from app.services.user_service import LocalUserService
 
 
 router = APIRouter(prefix="/api")
+
+PERSONAL_STUDY_MVP_VERSION = "personal-study-mvp-v1"
 SESSION_COOKIE_NAME = "studyflow_session"
 STUDY_PROGRESS_EVENT_TYPES = {
     "block_opened",
@@ -1152,17 +1155,180 @@ def _bounded_study_summary_title(value: object, fallback: str = "Material de est
     return title[:120]
 
 
-def _bounded_study_summary_item(section, chunk_count: int) -> dict[str, object]:
+SOURCE_LEAK_MARKERS = (
+    "should-not-leak",
+    "raw-",
+    "raw text",
+    "extracted_text",
+    "chunk body",
+    "section body",
+    "storage_path",
+    "answer_key",
+    "correct_answer",
+    "correct_alternative",
+    "gabarito",
+    "is_correct",
+    "solution",
+    "rationale",
+    "correction",
+    "score",
+    "token",
+    "cookie",
+    "password_hash",
+    "studyflow_session",
+    "session token",
+    "/users/",
+    "c:\\",
+)
+
+
+def _safe_source_sentence(value: object, *, limit: int = 360) -> str | None:
+    sentence = " ".join(str(value or "").split())
+    if len(sentence) < 12:
+        return None
+    lowered = sentence.lower()
+    if any(marker in lowered for marker in SOURCE_LEAK_MARKERS):
+        return None
+    return sentence[:limit]
+
+
+def _split_source_sentences(text: str) -> list[str]:
+    normalized = re.sub(r"^\s*[-*•]\s+", "", text, flags=re.MULTILINE)
+    pieces = re.split(r"(?<=[.!?])\s+|\n+", normalized)
+    sentences: list[str] = []
+    seen: set[str] = set()
+    for piece in pieces:
+        sentence = _safe_source_sentence(piece)
+        if sentence is None:
+            continue
+        key = _normalize_study_text(sentence)
+        if key in seen:
+            continue
+        seen.add(key)
+        sentences.append(sentence)
+    return sentences
+
+
+def _normalize_study_text(value: object) -> str:
+    lowered = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode("ascii")
+    lowered = lowered.lower()
+    lowered = re.sub(r"[^a-z0-9]+", " ", lowered)
+    return re.sub(r"\s+", " ", lowered).strip()
+
+
+def _study_term_tokens(*values: object) -> set[str]:
+    ignored = {
+        "para",
+        "como",
+        "este",
+        "esta",
+        "esse",
+        "essa",
+        "material",
+        "estudo",
+        "aula",
+        "secao",
+        "seção",
+        "document",
+        "conteudo",
+        "conteúdo",
+    }
+    tokens: set[str] = set()
+    for value in values:
+        for token in _normalize_study_text(value).split():
+            if len(token) >= 4 and token not in ignored:
+                tokens.add(token)
+    return tokens
+
+
+def _sentence_score(sentence: str, terms: set[str]) -> int:
+    normalized = _normalize_study_text(sentence)
+    score = sum(3 for term in terms if term in normalized)
+    pedagogical_markers = (
+        "define",
+        "consiste",
+        "deve",
+        "podera",
+        "poderá",
+        "quando",
+        "exceto",
+        "salvo",
+        "inclui",
+        "classifica",
+        "objetivo",
+        "regra",
+        "condicao",
+        "condição",
+        "causa",
+        "efeito",
+    )
+    score += sum(1 for marker in pedagogical_markers if marker in normalized)
+    if 60 <= len(sentence) <= 260:
+        score += 2
+    return score
+
+
+def _extractive_study_summary(
+    *,
+    title: str,
+    chunks: list[object],
+    topic_label: object | None = None,
+    subtopic_label: object | None = None,
+) -> tuple[str, list[str], str]:
+    text = "\n".join(str(getattr(chunk, "text", "") or "") for chunk in chunks)
+    sentences = _split_source_sentences(text)
+    terms = _study_term_tokens(title, topic_label, subtopic_label)
+    scored = [
+        (_sentence_score(sentence, terms), index, sentence)
+        for index, sentence in enumerate(sentences)
+    ]
+    scored = [item for item in scored if item[0] > 0 or len(sentences) <= 3]
+    if not scored:
+        return (
+            "Conteúdo insuficiente para montar um resumo confiável desta seção.",
+            [],
+            "needs_review",
+        )
+    selected = sorted(sorted(scored, key=lambda item: (-item[0], item[1]))[:3], key=lambda item: item[1])
+    selected_sentences = [sentence for _, _, sentence in selected]
+    summary = " ".join(selected_sentences)
+    key_points = []
+    for sentence in selected_sentences:
+        point = re.split(r"[:.;]", sentence, maxsplit=1)[0].strip()
+        point = _bounded_study_summary_title(point, fallback="")
+        if point and point.casefold() not in {item.casefold() for item in key_points}:
+            key_points.append(point)
+        if len(key_points) >= 3:
+            break
+    if not key_points:
+        key_points = [title]
+    return summary[:720], key_points, "ready"
+
+
+def _bounded_study_summary_item(
+    section,
+    chunks: list[object],
+    *,
+    topic_label: object | None = None,
+    subtopic_label: object | None = None,
+) -> dict[str, object]:
     title = _bounded_study_summary_title(section.title, fallback="Seção sem título")
     has_specific_title = title.lower() not in {"document", "seção sem título", "section"}
-    estimated_minutes = max(3, min(20, max(1, chunk_count) * 5))
+    estimated_minutes = max(3, min(20, max(1, len(chunks)) * 5))
+    summary, key_points, source_status = _extractive_study_summary(
+        title=title,
+        chunks=chunks,
+        topic_label=topic_label,
+        subtopic_label=subtopic_label,
+    )
+    status = "ready" if has_specific_title and source_status == "ready" else "needs_review"
     return {
         "section_id": section.section_id,
         "title": title,
-        "summary": "Resumo em preparação para esta seção.",
-        "key_points": [title] if has_specific_title else [],
+        "summary": summary,
+        "key_points": key_points if has_specific_title else [],
         "estimated_minutes": estimated_minutes,
-        "status": "ready" if has_specific_title else "needs_review",
+        "status": status,
     }
 
 
@@ -1179,10 +1345,10 @@ def _bounded_study_material_summary_response(
         key=lambda section: (section.order_index, section.section_id),
     )
     chunks = repository.list_document_chunks(document_id, user_id=user_id)
-    chunks_by_section: dict[str, int] = {}
+    chunks_by_section: dict[str, list[object]] = {}
     for chunk in chunks:
         if chunk.section_id:
-            chunks_by_section[chunk.section_id] = chunks_by_section.get(chunk.section_id, 0) + 1
+            chunks_by_section.setdefault(chunk.section_id, []).append(chunk)
 
     if preparation["preparation_status"] in {"not_ready", "failed"} or not sections:
         summary_status = "not_ready" if preparation["preparation_status"] != "failed" else "failed"
@@ -1191,7 +1357,10 @@ def _bounded_study_material_summary_response(
         items = [
             _bounded_study_summary_item(
                 section,
-                chunks_by_section.get(section.section_id, 0),
+                sorted(
+                    chunks_by_section.get(section.section_id, []),
+                    key=lambda chunk: getattr(chunk, "chunk_index", 0),
+                ),
             )
             for section in sections
         ]
@@ -1374,11 +1543,11 @@ def _bounded_study_block_item(
         else "material"
     )
     block_id = f"study-block:{scope_key}:{document_id}:{section_index}"
-    item_status = str(section_item["status"])
     summary_status = str(summary["summary_status"])
+    has_specific_section = section_title.lower() not in {"document", "seção sem título", "section"}
     status = (
         "ready"
-        if item_status == "ready" and summary_status == "ready" and (connected or not edital_available)
+        if has_specific_section and summary_status != "failed" and (connected or not edital_available)
         else "needs_review"
     )
     title = (
@@ -1571,17 +1740,33 @@ def _bounded_review_summary_item(block: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _bounded_review_reinforcement_item(block: dict[str, object]) -> dict[str, object]:
+def _bounded_review_reinforcement_item(
+    block: dict[str, object],
+    weak_topic_signals: dict[str, int] | None = None,
+) -> dict[str, object]:
     topic_label = block["topic_label"] if isinstance(block.get("topic_label"), str) else None
     subtopic_label = block["subtopic_label"] if isinstance(block.get("subtopic_label"), str) else None
+    topic_id = block["topic_id"] if isinstance(block.get("topic_id"), str) else None
+    subtopic_id = block["subtopic_id"] if isinstance(block.get("subtopic_id"), str) else None
     focus_label = subtopic_label or topic_label or _bounded_study_summary_title(
         block.get("title"),
         fallback="os pontos principais",
     )
+    weak_topic_signals = weak_topic_signals or {}
+    weak_count = max(
+        int(weak_topic_signals.get(str(subtopic_id), 0) or 0) if subtopic_id else 0,
+        int(weak_topic_signals.get(str(topic_id), 0) or 0) if topic_id else 0,
+        int(weak_topic_signals.get(str(focus_label), 0) or 0),
+    )
+    message = (
+        f"Priorize {focus_label}: há tentativa incorreta registrada neste ponto."
+        if weak_count > 0
+        else f"Revise {focus_label} com calma antes de avançar para novos pontos."
+    )
     return {
         "topic_label": topic_label,
         "subtopic_label": subtopic_label,
-        "message": f"Revise {focus_label} com calma. Ainda não há histórico de respostas para apontar pontos fracos reais.",
+        "message": message,
     }
 
 
@@ -1616,7 +1801,20 @@ def _bounded_next_review_block_response(repository: JsonStudyRepository, user_id
     if materials_count < 3 and blocks_count < 3:
         return _not_ready_review_block_response(materials_count, blocks_count)
 
-    selected_blocks = review_blocks[: min(5, len(review_blocks))]
+    weak_topic_signals = repository.list_study_weak_topic_signals(user_id=user_id)
+
+    def review_block_priority(block: dict[str, object]) -> tuple[int, str]:
+        identifiers = [
+            block.get("subtopic_id"),
+            block.get("topic_id"),
+            block.get("subtopic_label"),
+            block.get("topic_label"),
+            block.get("title"),
+        ]
+        has_weak_signal = any(str(identifier) in weak_topic_signals for identifier in identifiers if identifier)
+        return (0 if has_weak_signal else 1, str(block.get("block_id") or ""))
+
+    selected_blocks = sorted(review_blocks, key=review_block_priority)[: min(5, len(review_blocks))]
     estimated_minutes = sum(int(block.get("estimated_minutes", 0) or 0) for block in selected_blocks)
     if estimated_minutes <= 0:
         estimated_minutes = max(5, min(30, blocks_count * 5))
@@ -1650,9 +1848,12 @@ def _bounded_next_review_block_response(repository: JsonStudyRepository, user_id
             "items_count": questions_count,
         },
         "reinforcement": {
-            "status": "needs_review",
-            "weak_topics_count": 0,
-            "items": [_bounded_review_reinforcement_item(block) for block in selected_blocks[:3]],
+            "status": "ready" if weak_topic_signals else "needs_review",
+            "weak_topics_count": len(weak_topic_signals),
+            "items": [
+                _bounded_review_reinforcement_item(block, weak_topic_signals)
+                for block in selected_blocks[:3]
+            ],
         },
         "actions": [
             _bounded_study_session_action("Abrir revisão", f"/study/review/{review_id}"),
@@ -1699,13 +1900,18 @@ def _bounded_study_progress_summary_response(repository: JsonStudyRepository, us
         for event in events
         if event.get("event_type") == "block_marked_studied" and event.get("target_type") == "block"
     }
-    reviewed_questions_count = len(
-        [
-            event
-            for event in events
-            if event.get("event_type") == "question_reviewed" and event.get("target_type") == "question"
-        ]
+    reviewed_question_ids = {
+        str(event.get("target_id"))
+        for event in events
+        if event.get("event_type") == "question_reviewed" and event.get("target_type") == "question"
+    }
+    reviewed_question_ids.update(
+        str(attempt.get("question_id"))
+        for attempt in repository.list_study_question_attempts(user_id=user_id)
+        if isinstance(attempt.get("question_id"), str)
     )
+    reviewed_questions_count = len(reviewed_question_ids)
+    weak_topics_count = len(repository.list_study_weak_topic_signals(user_id=user_id))
     prepared_summaries = _prepared_review_material_summaries(repository, user_id)
     prepared_materials_count = len(prepared_summaries)
     blocks = _bounded_study_blocks_response(repository, user_id)
@@ -1732,7 +1938,7 @@ def _bounded_study_progress_summary_response(repository: JsonStudyRepository, us
         "review_due": review_due,
         "review_basis": review_basis,
         "reviewed_questions_count": reviewed_questions_count,
-        "weak_topics_count": 0,
+        "weak_topics_count": weak_topics_count,
         "source": "user_scope",
     }
 
@@ -1860,29 +2066,101 @@ def _resolve_fixation_question_profile(detail: dict[str, object]) -> str:
     return "multiple_choice_ae"
 
 
-def _objective_alternative_texts(label: str) -> list[str]:
+def _question_fingerprint(*parts: object) -> str:
+    normalized = "|".join(_normalize_study_text(part) for part in parts)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:20]
+
+
+def _public_question_payload(question: dict[str, object]) -> dict[str, object]:
+    return {
+        "question_id": str(question["question_id"]),
+        "type": str(question["type"]),
+        "prompt": str(question["prompt"]),
+        "alternatives": list(question.get("alternatives", [])),
+        "topic_label": question.get("topic_label") if isinstance(question.get("topic_label"), str) else None,
+        "subtopic_label": question.get("subtopic_label") if isinstance(question.get("subtopic_label"), str) else None,
+        "difficulty": str(question.get("difficulty") or "basic"),
+        "status": str(question.get("status") or "needs_review"),
+    }
+
+
+def _section_chunks_for_detail(
+    repository: JsonStudyRepository,
+    user_id: str,
+    detail: dict[str, object],
+) -> list[object]:
+    material_id = str(detail.get("material_id") or "")
+    section_ids = {
+        str(section.get("section_id"))
+        for section in detail.get("sections", [])
+        if isinstance(section, dict) and isinstance(section.get("section_id"), str)
+    }
+    chunks = repository.list_document_chunks(material_id, user_id=user_id)
     return [
-        f"Revisar {label}.",
-        f"Relacionar {label} ao resumo do bloco.",
-        f"Identificar pontos principais de {label}.",
-        f"Retomar {label} no material estudado.",
-        f"Comparar {label} com os demais pontos do bloco.",
+        chunk
+        for chunk in sorted(chunks, key=lambda item: item.chunk_index)
+        if chunk.section_id in section_ids
     ]
 
 
-def _multiple_choice_alternatives(labels: list[str], option_count: int = 5) -> list[dict[str, str]]:
-    if not labels:
+def _grounded_question_sentences(
+    repository: JsonStudyRepository,
+    user_id: str,
+    detail: dict[str, object],
+) -> list[str]:
+    chunks = _section_chunks_for_detail(repository, user_id, detail)
+    text = "\n".join(str(getattr(chunk, "text", "") or "") for chunk in chunks)
+    sentences = _split_source_sentences(text)
+    terms = _study_term_tokens(
+        detail.get("title"),
+        detail.get("topic_label"),
+        detail.get("subtopic_label"),
+    )
+    scored = [
+        (_sentence_score(sentence, terms), index, sentence)
+        for index, sentence in enumerate(sentences)
+        if len(sentence) <= 320
+    ]
+    if not scored:
         return []
+    return [
+        sentence
+        for _, _, sentence in sorted(
+            sorted(scored, key=lambda item: (-item[0], item[1]))[:5],
+            key=lambda item: item[1],
+        )
+    ]
+
+
+def _multiple_choice_alternatives(
+    *,
+    correct_text: str,
+    focus_label: str,
+    fingerprint: str,
+    option_count: int = 5,
+) -> tuple[list[dict[str, str]], str]:
     option_ids = list("ABCDE")[:option_count]
-    alternatives: list[dict[str, str]] = []
-    for index, option_id in enumerate(option_ids):
-        label = labels[index % len(labels)]
-        text_options = _objective_alternative_texts(label)
-        text = _bounded_study_summary_title(text_options[index % len(text_options)], fallback="")
-        if not text:
-            return []
-        alternatives.append({"id": option_id, "text": text})
-    return alternatives
+    distractors = [
+        f"O material indica que {focus_label} deve ser ignorado na preparação.",
+        f"O material afirma que {focus_label} não se relaciona aos pontos principais do bloco.",
+        "A seção orienta apenas decorar o título, sem observar regras, condições ou conceitos.",
+        "O conteúdo apresentado não traz informação útil para revisar este ponto.",
+    ]
+    texts = [correct_text[:220], *distractors[: max(0, option_count - 1)]]
+    correct_index = int(fingerprint[:2], 16) % option_count
+    ordered: list[str] = []
+    distractor_index = 1
+    for index in range(option_count):
+        if index == correct_index:
+            ordered.append(texts[0])
+        else:
+            ordered.append(texts[distractor_index])
+            distractor_index += 1
+    alternatives = [
+        {"id": option_id, "text": _bounded_study_summary_title(text, fallback="Alternativa de estudo")}
+        for option_id, text in zip(option_ids, ordered)
+    ]
+    return alternatives, option_ids[correct_index]
 
 
 def _true_false_alternatives() -> list[dict[str, str]]:
@@ -1901,10 +2179,10 @@ def _objective_prompt(
 ) -> str:
     prompt_label = subtopic_label or topic_label or label
     if profile == "cebraspe_true_false":
-        return f"Considere o ponto {prompt_label} como foco de revisão deste bloco."
+        return f"Com base no material, julgue a afirmação sobre {prompt_label}."
     if topic_label:
-        return f"Considerando o tema {topic_label}, escolha uma alternativa para orientar sua revisão de {label}."
-    return f"Com base nos pontos principais deste bloco, escolha uma alternativa relacionada a {label}."
+        return f"Qual afirmação está apoiada pelo material sobre {topic_label}: {label}?"
+    return f"Qual afirmação está apoiada pelo material sobre {label}?"
 
 
 def _append_fixation_candidate(
@@ -1918,6 +2196,10 @@ def _append_fixation_candidate(
     status: str,
     question_type: str = "short_answer",
     alternatives: list[dict[str, str]] | None = None,
+    correct_answer: str | None = None,
+    evidence: str | None = None,
+    validation_state: str = "needs_review",
+    fingerprint: str | None = None,
 ) -> None:
     safe_prompt = _bounded_study_summary_title(prompt, fallback="")
     if not safe_prompt:
@@ -1926,9 +2208,15 @@ def _append_fixation_candidate(
     if prompt_key in seen_prompts or len(candidates) >= 5:
         return
     seen_prompts.add(prompt_key)
+    question_fingerprint = fingerprint or _question_fingerprint(
+        block_id,
+        safe_prompt,
+        alternatives or [],
+        PERSONAL_STUDY_MVP_VERSION,
+    )
     candidates.append(
         {
-            "question_id": f"question:{block_id}:{len(candidates)}",
+            "question_id": f"question:{block_id}:{question_fingerprint}",
             "type": question_type,
             "prompt": safe_prompt,
             "alternatives": alternatives or [],
@@ -1936,8 +2224,152 @@ def _append_fixation_candidate(
             "subtopic_label": subtopic_label,
             "difficulty": "basic",
             "status": status,
+            "_correct_answer": correct_answer,
+            "_evidence": evidence,
+            "_validation_state": validation_state,
+            "_fingerprint": question_fingerprint,
+            "_version": PERSONAL_STUDY_MVP_VERSION,
         }
     )
+
+
+def _adaptive_question_order(
+    repository: JsonStudyRepository,
+    user_id: str,
+    candidates: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    states = repository.get_study_question_attempt_states(user_id=user_id)
+    current_round = max(
+        [int(state.get("selection_round", 0) or 0) for state in states.values()] or [0]
+    ) + 1
+
+    def priority(question: dict[str, object]) -> tuple[int, int, str]:
+        question_id = str(question["question_id"])
+        state = states.get(question_id, {})
+        bucket = str(state.get("current_bucket") or "new")
+        next_round = int(state.get("next_eligible_round", 0) or 0)
+        if bucket == "temporarily_mastered" and next_round > current_round:
+            return (5, next_round, question_id)
+        if bucket == "weak":
+            return (0, next_round, question_id)
+        if str(state.get("last_correctness")) == "incorrect":
+            return (1, next_round, question_id)
+        if str(state.get("last_correctness")) == "ungraded":
+            return (2, next_round, question_id)
+        if not state:
+            return (3, next_round, question_id)
+        return (4, next_round, question_id)
+
+    ordered = sorted(candidates, key=priority)
+    active = [
+        question
+        for question in ordered
+        if priority(question)[0] < 5
+    ]
+    return (active or ordered)[:5]
+
+
+def _internal_fixation_question_candidates(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+) -> tuple[dict[str, object], str, list[dict[str, object]]]:
+    detail = _bounded_study_block_detail_response(repository, user_id, block_id)
+    if detail["detail_status"] == "not_ready":
+        return detail, "not_ready", []
+
+    item_status = "candidate" if detail["detail_status"] == "ready" else "needs_review"
+    topic_label = detail["topic_label"] if isinstance(detail["topic_label"], str) else None
+    subtopic_label = detail["subtopic_label"] if isinstance(detail["subtopic_label"], str) else None
+    candidates: list[dict[str, object]] = []
+    seen_prompts: set[str] = set()
+    profile = _resolve_fixation_question_profile(detail)
+    labels = _fixation_labels_from_detail(detail)
+    source_sentences = _grounded_question_sentences(repository, user_id, detail)
+    focus_label = subtopic_label or topic_label or (labels[0] if labels else str(detail.get("title") or "este ponto"))
+
+    if profile in {"multiple_choice_ae", "multiple_choice_ad"} and source_sentences:
+        option_count = 4 if profile == "multiple_choice_ad" else 5
+        for sentence_index, sentence in enumerate(source_sentences):
+            question_label = f"{focus_label} — ponto {sentence_index + 1}"
+            fingerprint = _question_fingerprint(
+                detail["block_id"],
+                sentence,
+                focus_label,
+                profile,
+                PERSONAL_STUDY_MVP_VERSION,
+            )
+            alternatives, correct_answer = _multiple_choice_alternatives(
+                correct_text=sentence,
+                focus_label=focus_label,
+                fingerprint=fingerprint,
+                option_count=option_count,
+            )
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=_objective_prompt(
+                    profile=profile,
+                    label=question_label,
+                    topic_label=topic_label,
+                    subtopic_label=subtopic_label,
+                ),
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
+                question_type="multiple_choice",
+                alternatives=alternatives,
+                correct_answer=correct_answer,
+                evidence=sentence,
+                validation_state="validated",
+                fingerprint=fingerprint,
+            )
+
+    if profile == "cebraspe_true_false" and source_sentences:
+        alternatives = _true_false_alternatives()
+        for sentence_index, sentence in enumerate(source_sentences):
+            question_label = f"{focus_label} — ponto {sentence_index + 1}"
+            fingerprint = _question_fingerprint(
+                detail["block_id"],
+                sentence,
+                focus_label,
+                profile,
+                PERSONAL_STUDY_MVP_VERSION,
+            )
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=f"{_objective_prompt(profile=profile, label=question_label, topic_label=topic_label, subtopic_label=subtopic_label)} {sentence[:180]}",
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
+                question_type="true_false",
+                alternatives=alternatives,
+                correct_answer="C",
+                evidence=sentence,
+                validation_state="validated",
+                fingerprint=fingerprint,
+            )
+
+    if not candidates:
+        for label in labels:
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=f"Explique, com suas palavras, o ponto principal relacionado a {label}.",
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
+                validation_state="needs_review",
+            )
+
+    if not candidates:
+        return detail, "not_ready", []
+    question_status = "ready" if detail["detail_status"] == "ready" else "needs_review"
+    return detail, question_status, candidates
 
 
 def _bounded_fixation_questions_response(
@@ -1963,47 +2395,72 @@ def _bounded_fixation_questions_response(
     seen_prompts: set[str] = set()
     profile = _resolve_fixation_question_profile(detail)
     labels = _fixation_labels_from_detail(detail)
+    source_sentences = _grounded_question_sentences(repository, user_id, detail)
+    focus_label = subtopic_label or topic_label or (labels[0] if labels else str(detail.get("title") or "este ponto"))
 
-    if profile in {"multiple_choice_ae", "multiple_choice_ad"} and labels:
+    if profile in {"multiple_choice_ae", "multiple_choice_ad"} and source_sentences:
         option_count = 4 if profile == "multiple_choice_ad" else 5
-        alternatives = _multiple_choice_alternatives(labels, option_count=option_count)
-        if alternatives:
-            for label in labels:
-                _append_fixation_candidate(
-                    candidates,
-                    seen_prompts,
-                    block_id=str(detail["block_id"]),
-                    prompt=_objective_prompt(
-                        profile=profile,
-                        label=label,
-                        topic_label=topic_label,
-                        subtopic_label=subtopic_label,
-                    ),
-                    topic_label=topic_label,
-                    subtopic_label=subtopic_label,
-                    status=item_status,
-                    question_type="multiple_choice",
-                    alternatives=alternatives,
-                )
-
-    if profile == "cebraspe_true_false" and labels:
-        alternatives = _true_false_alternatives()
-        for label in labels:
+        for sentence_index, sentence in enumerate(source_sentences):
+            question_label = f"{focus_label} — ponto {sentence_index + 1}"
+            fingerprint = _question_fingerprint(
+                detail["block_id"],
+                sentence,
+                focus_label,
+                profile,
+                PERSONAL_STUDY_MVP_VERSION,
+            )
+            alternatives, correct_answer = _multiple_choice_alternatives(
+                correct_text=sentence,
+                focus_label=focus_label,
+                fingerprint=fingerprint,
+                option_count=option_count,
+            )
             _append_fixation_candidate(
                 candidates,
                 seen_prompts,
                 block_id=str(detail["block_id"]),
                 prompt=_objective_prompt(
                     profile=profile,
-                    label=label,
+                    label=question_label,
                     topic_label=topic_label,
                     subtopic_label=subtopic_label,
                 ),
                 topic_label=topic_label,
                 subtopic_label=subtopic_label,
                 status=item_status,
+                question_type="multiple_choice",
+                alternatives=alternatives,
+                correct_answer=correct_answer,
+                evidence=sentence,
+                validation_state="validated",
+                fingerprint=fingerprint,
+            )
+
+    if profile == "cebraspe_true_false" and source_sentences:
+        alternatives = _true_false_alternatives()
+        for sentence_index, sentence in enumerate(source_sentences):
+            question_label = f"{focus_label} — ponto {sentence_index + 1}"
+            fingerprint = _question_fingerprint(
+                detail["block_id"],
+                sentence,
+                focus_label,
+                profile,
+                PERSONAL_STUDY_MVP_VERSION,
+            )
+            _append_fixation_candidate(
+                candidates,
+                seen_prompts,
+                block_id=str(detail["block_id"]),
+                prompt=f"{_objective_prompt(profile=profile, label=question_label, topic_label=topic_label, subtopic_label=subtopic_label)} {sentence[:180]}",
+                topic_label=topic_label,
+                subtopic_label=subtopic_label,
+                status=item_status,
                 question_type="true_false",
                 alternatives=alternatives,
+                correct_answer="C",
+                evidence=sentence,
+                validation_state="validated",
+                fingerprint=fingerprint,
             )
 
     if not candidates:
@@ -2016,6 +2473,7 @@ def _bounded_fixation_questions_response(
                 topic_label=topic_label,
                 subtopic_label=subtopic_label,
                 status=item_status,
+                validation_state="needs_review",
             )
 
     if not candidates:
@@ -2027,7 +2485,7 @@ def _bounded_fixation_questions_response(
         "block_id": str(detail["block_id"]),
         "question_status": question_status,
         "mode": "review_only",
-        "items": candidates,
+        "items": [_public_question_payload(item) for item in _adaptive_question_order(repository, user_id, candidates)],
         "warnings_count": 1 if question_status == "needs_review" else 0,
         "source": "user_scope",
     }
@@ -2037,7 +2495,7 @@ ANSWER_REVIEW_FORMATS = {"text", "choice", "true_false"}
 MAX_ANSWER_REVIEW_LENGTH = 2000
 
 
-def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> tuple[str, str]:
+def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> tuple[str, str, str | None]:
     answer = payload.answer.strip()
     answer_format = payload.answer_format.strip()
     if not answer:
@@ -2046,7 +2504,10 @@ def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> t
         raise HTTPException(status_code=422, detail="answer is too long.")
     if answer_format not in ANSWER_REVIEW_FORMATS:
         raise HTTPException(status_code=422, detail="answer_format is invalid.")
-    return answer, answer_format
+    idempotency_key = payload.idempotency_key.strip() if payload.idempotency_key else None
+    if idempotency_key is not None and (not idempotency_key or len(idempotency_key) > 160):
+        raise HTTPException(status_code=422, detail="idempotency_key is invalid.")
+    return answer, answer_format, idempotency_key
 
 
 def _bounded_answer_review_response(
@@ -2056,12 +2517,12 @@ def _bounded_answer_review_response(
     question_id: str,
     payload: StudyBlockAnswerReviewRequest,
 ) -> dict[str, object]:
-    _answer, answer_format = _validate_answer_review_request(payload)
-    questions = _bounded_fixation_questions_response(repository, user_id, block_id)
+    answer, answer_format, idempotency_key = _validate_answer_review_request(payload)
+    detail, _question_status, candidates = _internal_fixation_question_candidates(repository, user_id, block_id)
     question = next(
         (
             item
-            for item in questions["items"]
+            for item in candidates
             if isinstance(item, dict) and item.get("question_id") == question_id
         ),
         None,
@@ -2080,19 +2541,51 @@ def _bounded_answer_review_response(
         reinforcement_message = "Revise o resumo do bloco e compare sua resposta com os pontos principais."
 
     question_type = str(question.get("type") or "")
-    if question_type == "short_answer" and answer_format == "text":
+    expected_format = "true_false" if question_type == "true_false" else "choice" if question_type == "multiple_choice" else "text"
+    if answer_format != expected_format:
+        raise HTTPException(status_code=422, detail="answer_format does not match question type.")
+
+    validation_state = str(question.get("_validation_state") or "needs_review")
+    correct_answer = question.get("_correct_answer") if isinstance(question.get("_correct_answer"), str) else None
+    evidence = question.get("_evidence") if isinstance(question.get("_evidence"), str) else None
+    fingerprint = str(question.get("_fingerprint") or _question_fingerprint(question_id, PERSONAL_STUDY_MVP_VERSION))
+    if validation_state == "validated" and correct_answer:
         review_status = "reviewed"
-        result = "ungraded"
-        feedback = "Compare sua resposta com o resumo do bloco e revise os pontos principais relacionados."
-        suggested_action = "review_summary"
+        result = "correct" if answer == correct_answer else "incorrect"
+        if result == "correct":
+            feedback = "Sua escolha está alinhada com a evidência do material."
+            suggested_action = "review_summary"
+        else:
+            feedback = "Sua escolha não corresponde à evidência usada para esta questão. Revise o trecho indicado."
+            suggested_action = "retry_question"
+            if evidence:
+                reinforcement_message = f"Revise este ponto no resumo: {evidence[:220]}"
     else:
-        review_status = "needs_review"
-        result = "needs_review"
-        feedback = "Esta questão ainda não tem uma regra segura de revisão automática."
-        suggested_action = "revisit_block"
+        review_status = "reviewed" if question_type == "short_answer" and answer_format == "text" else "needs_review"
+        result = "ungraded"
+        feedback = "Esta escolha foi registrada, mas a questão ainda não tem validação suficiente para avaliar certo ou errado."
+        suggested_action = "review_summary" if question_type == "short_answer" else "revisit_block"
+
+    attempt_key = idempotency_key or f"study-answer-review:{block_id}:{question_id}:{answer}"
+    repository.record_study_question_attempt(
+        user_id=user_id,
+        question_id=question_id,
+        selected_answer=answer,
+        correctness_state=result if result in {"correct", "incorrect"} else "ungraded",
+        block_id=block_id,
+        material_id=str(detail.get("material_id") or ""),
+        topic_id=detail.get("topic_id") if isinstance(detail.get("topic_id"), str) else None,
+        topic_label=topic_label,
+        subtopic_id=detail.get("subtopic_id") if isinstance(detail.get("subtopic_id"), str) else None,
+        subtopic_label=subtopic_label,
+        question_fingerprint=fingerprint,
+        question_version=PERSONAL_STUDY_MVP_VERSION,
+        response_context="study_block",
+        idempotency_key=attempt_key,
+    )
 
     return {
-        "block_id": str(questions["block_id"]),
+        "block_id": str(detail["block_id"]),
         "question_id": question_id,
         "review_status": review_status,
         "result": result,

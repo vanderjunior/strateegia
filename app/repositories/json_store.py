@@ -1315,12 +1315,21 @@ class JsonStudyRepository:
             "idempotency": {},
         }
 
+    def _default_study_question_attempts_payload(self) -> dict[str, object]:
+        return {
+            "attempts": {},
+            "idempotency": {},
+            "states": {},
+            "weak_topics": {},
+        }
+
     def _default_user_payload(self) -> dict[str, object]:
         return {
             "documents": [],
             "answers": [],
             "progress": self._default_progress_payload(),
             "study_progress_events": self._default_study_progress_events_payload(),
+            "study_question_attempts": self._default_study_question_attempts_payload(),
             "materials": [],
             "document_pipeline": {
                 "states": {},
@@ -1487,6 +1496,9 @@ class JsonStudyRepository:
             user_state["progress"] = self._normalize_progress_payload(user_state.get("progress"))
             user_state["study_progress_events"] = self._normalize_study_progress_events_payload(
                 user_state.get("study_progress_events")
+            )
+            user_state["study_question_attempts"] = self._normalize_study_question_attempts_payload(
+                user_state.get("study_question_attempts")
             )
             user_state["document_pipeline"] = self._normalize_document_pipeline_payload(
                 user_state.get("document_pipeline")
@@ -1656,6 +1668,15 @@ class JsonStudyRepository:
             normalized["events"] = {}
         if not isinstance(normalized.get("idempotency"), dict):
             normalized["idempotency"] = {}
+        return normalized
+
+    def _normalize_study_question_attempts_payload(self, payload: object) -> dict[str, object]:
+        normalized = self._default_study_question_attempts_payload()
+        if isinstance(payload, dict):
+            normalized.update(payload)
+        for key in ("attempts", "idempotency", "states", "weak_topics"):
+            if not isinstance(normalized.get(key), dict):
+                normalized[key] = {}
         return normalized
 
     def _normalize_document_pipeline_payload(self, payload: object) -> dict[str, object]:
@@ -2128,6 +2149,12 @@ class JsonStudyRepository:
         events = self._normalize_study_progress_events_payload(user_state.get("study_progress_events"))
         user_state["study_progress_events"] = events
         return events
+
+    def _study_question_attempts_container(self, payload: dict[str, object], user_id: str) -> dict[str, object]:
+        user_state = self._ensure_user_state(payload, user_id)
+        attempts = self._normalize_study_question_attempts_payload(user_state.get("study_question_attempts"))
+        user_state["study_question_attempts"] = attempts
+        return attempts
 
     def _documents_container(self, payload: dict[str, object], user_id: str | None) -> list[dict[str, object]]:
         if user_id is None:
@@ -5423,6 +5450,144 @@ class JsonStudyRepository:
         ]
         events.sort(key=lambda event: str(event.get("created_at", "")))
         return events
+
+    def record_study_question_attempt(
+        self,
+        *,
+        user_id: str,
+        question_id: str,
+        selected_answer: str,
+        correctness_state: str,
+        block_id: str,
+        material_id: str,
+        topic_id: str | None,
+        topic_label: str | None,
+        subtopic_id: str | None,
+        subtopic_label: str | None,
+        question_fingerprint: str,
+        question_version: str,
+        response_context: str = "study_block",
+        idempotency_key: str | None = None,
+    ) -> dict[str, object]:
+        payload = self._read()
+        container = self._study_question_attempts_container(payload, user_id)
+        attempts = container["attempts"]
+        idempotency = container["idempotency"]
+        states = container["states"]
+        weak_topics = container["weak_topics"]
+
+        if idempotency_key:
+            existing_attempt_id = idempotency.get(idempotency_key)
+            if isinstance(existing_attempt_id, str):
+                existing = attempts.get(existing_attempt_id)
+                if isinstance(existing, dict):
+                    return dict(existing)
+
+        now = utc_now().isoformat()
+        existing_attempts = [
+            item
+            for item in attempts.values()
+            if isinstance(item, dict) and item.get("question_id") == question_id
+        ]
+        attempt_number = len(existing_attempts) + 1
+        attempt_id = f"study-question-attempt:{uuid4()}"
+        state = dict(states.get(question_id) if isinstance(states.get(question_id), dict) else {})
+        times_seen = int(state.get("times_seen", 0) or 0) + 1
+        correct_count = int(state.get("correct_count", 0) or 0)
+        incorrect_count = int(state.get("incorrect_count", 0) or 0)
+        consecutive_correct = int(state.get("consecutive_correct", 0) or 0)
+        selection_round = int(state.get("selection_round", 0) or 0) + 1
+
+        if correctness_state == "correct":
+            correct_count += 1
+            consecutive_correct += 1
+            current_bucket = "temporarily_mastered" if consecutive_correct >= 2 else "reviewing"
+            next_eligible_round = selection_round + (3 if current_bucket == "temporarily_mastered" else 1)
+        elif correctness_state == "incorrect":
+            incorrect_count += 1
+            consecutive_correct = 0
+            current_bucket = "weak"
+            next_eligible_round = selection_round + 1
+            weak_key = subtopic_id or topic_id or topic_label or subtopic_label or question_id
+            weak_topics[str(weak_key)] = int(weak_topics.get(str(weak_key), 0) or 0) + 1
+        else:
+            current_bucket = state.get("current_bucket") if state.get("current_bucket") in {
+                "learning",
+                "weak",
+                "reviewing",
+                "temporarily_mastered",
+            } else "learning"
+            next_eligible_round = selection_round
+
+        attempt = {
+            "attempt_id": attempt_id,
+            "question_id": question_id,
+            "selected_answer": selected_answer,
+            "correctness_state": correctness_state,
+            "attempted_at": now,
+            "attempt_number": attempt_number,
+            "block_id": block_id,
+            "material_id": material_id,
+            "topic_id": topic_id,
+            "topic_label": topic_label,
+            "subtopic_id": subtopic_id,
+            "subtopic_label": subtopic_label,
+            "question_fingerprint": question_fingerprint,
+            "question_version": question_version,
+            "response_context": response_context,
+            "idempotency_key": idempotency_key,
+        }
+        attempts[attempt_id] = attempt
+        states[question_id] = {
+            "question_id": question_id,
+            "question_fingerprint": question_fingerprint,
+            "times_seen": times_seen,
+            "correct_count": correct_count,
+            "incorrect_count": incorrect_count,
+            "consecutive_correct": consecutive_correct,
+            "last_attempt_at": now,
+            "last_correctness": correctness_state,
+            "next_eligible_round": next_eligible_round,
+            "current_bucket": current_bucket,
+            "selection_round": selection_round,
+            "topic_id": topic_id,
+            "topic_label": topic_label,
+            "subtopic_id": subtopic_id,
+            "subtopic_label": subtopic_label,
+        }
+        if idempotency_key:
+            idempotency[idempotency_key] = attempt_id
+        self._write(payload)
+        return dict(attempt)
+
+    def list_study_question_attempts(self, *, user_id: str) -> list[dict[str, object]]:
+        payload = self._read()
+        container = self._study_question_attempts_container(payload, user_id)
+        attempts = [
+            dict(attempt)
+            for attempt in container["attempts"].values()
+            if isinstance(attempt, dict)
+        ]
+        attempts.sort(key=lambda attempt: str(attempt.get("attempted_at", "")))
+        return attempts
+
+    def get_study_question_attempt_states(self, *, user_id: str) -> dict[str, dict[str, object]]:
+        payload = self._read()
+        container = self._study_question_attempts_container(payload, user_id)
+        return {
+            str(question_id): dict(state)
+            for question_id, state in container["states"].items()
+            if isinstance(state, dict)
+        }
+
+    def list_study_weak_topic_signals(self, *, user_id: str) -> dict[str, int]:
+        payload = self._read()
+        container = self._study_question_attempts_container(payload, user_id)
+        return {
+            str(topic_id): int(count)
+            for topic_id, count in container["weak_topics"].items()
+            if isinstance(count, int) or str(count).isdigit()
+        }
 
     def _update_pedagogical_memory(
         self,
