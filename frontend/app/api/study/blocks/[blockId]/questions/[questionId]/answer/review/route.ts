@@ -6,7 +6,9 @@ import type {
   StudyBlockAnswerFormat,
   StudyBlockAnswerReviewResult,
   StudyBlockAnswerReviewStatus,
-  StudyBlockAnswerReviewSuggestedAction
+  StudyBlockAnswerReviewSuggestedAction,
+  StudyQuestionAttemptContext,
+  StudyQuestionAttemptCorrectness
 } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +39,18 @@ const ALLOWED_SUGGESTED_ACTIONS = new Set<StudyBlockAnswerReviewSuggestedAction>
   "review_summary",
   "retry_question",
   "revisit_block"
+]);
+
+const ALLOWED_ATTEMPT_CONTEXTS = new Set<StudyQuestionAttemptContext>([
+  "study_block",
+  "cumulative_review",
+  "reinforcement"
+]);
+
+const ALLOWED_CORRECTNESS_STATES = new Set<StudyQuestionAttemptCorrectness>([
+  "correct",
+  "incorrect",
+  "ungraded"
 ]);
 
 function marker(...parts: string[]): string {
@@ -113,13 +127,25 @@ function toSafeAnswerFormat(value: unknown): StudyBlockAnswerFormat | null {
     : null;
 }
 
+function toSafeAttemptContext(value: unknown): StudyQuestionAttemptContext | null {
+  return typeof value === "string" && ALLOWED_ATTEMPT_CONTEXTS.has(value as StudyQuestionAttemptContext)
+    ? (value as StudyQuestionAttemptContext)
+    : null;
+}
+
 function sanitizeRequestBody(payload: unknown): {
   answer?: string;
   answer_format?: StudyBlockAnswerFormat;
-  idempotency_key?: string | null;
+  response_context?: StudyQuestionAttemptContext;
+  idempotency_key?: string;
 } {
   const raw = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
-  const body: { answer?: string; answer_format?: StudyBlockAnswerFormat; idempotency_key?: string | null } = {};
+  const body: {
+    answer?: string;
+    answer_format?: StudyBlockAnswerFormat;
+    response_context?: StudyQuestionAttemptContext;
+    idempotency_key?: string;
+  } = {};
   if (typeof raw.answer === "string") {
     body.answer = raw.answer;
   }
@@ -127,8 +153,15 @@ function sanitizeRequestBody(payload: unknown): {
   if (answerFormat) {
     body.answer_format = answerFormat;
   }
-  if (raw.idempotency_key === null || typeof raw.idempotency_key === "string") {
-    body.idempotency_key = toSafeNullableString(raw.idempotency_key);
+  const responseContext = toSafeAttemptContext(raw.response_context);
+  if (responseContext) {
+    body.response_context = responseContext;
+  }
+  if (typeof raw.idempotency_key === "string") {
+    const idempotencyKey = toSafeString(raw.idempotency_key);
+    if (idempotencyKey) {
+      body.idempotency_key = idempotencyKey;
+    }
   }
   return body;
 }
@@ -157,6 +190,17 @@ function sanitizeAnswerReview(payload: unknown): BackendStudyBlockAnswerReview {
     raw.reinforcement && typeof raw.reinforcement === "object"
       ? (raw.reinforcement as Record<string, unknown>)
       : {};
+  const attempt =
+    raw.attempt && typeof raw.attempt === "object"
+      ? (raw.attempt as Record<string, unknown>)
+      : {};
+  const correctnessState =
+    typeof attempt.correctness_state === "string" &&
+    ALLOWED_CORRECTNESS_STATES.has(attempt.correctness_state as StudyQuestionAttemptCorrectness)
+      ? (attempt.correctness_state as StudyQuestionAttemptCorrectness)
+      : "ungraded";
+  const responseContext =
+    toSafeAttemptContext(attempt.response_context) ?? "study_block";
 
   return {
     block_id: toSafeString(raw.block_id),
@@ -169,6 +213,19 @@ function sanitizeAnswerReview(payload: unknown): BackendStudyBlockAnswerReview {
       subtopic_label: toSafeNullableString(reinforcement.subtopic_label),
       message: toSafeString(reinforcement.message, "Revise o resumo do bloco antes de avançar."),
       suggested_action: toSafeSuggestedAction(reinforcement.suggested_action)
+    },
+    attempt: {
+      attempt_id: toSafeString(attempt.attempt_id),
+      question_id: toSafeString(attempt.question_id),
+      selected_answer: toSafeString(attempt.selected_answer),
+      correctness_state: correctnessState,
+      attempted_at: toSafeString(attempt.attempted_at),
+      attempt_number:
+        typeof attempt.attempt_number === "number" && attempt.attempt_number >= 1
+          ? Math.trunc(attempt.attempt_number)
+          : 1,
+      response_context: responseContext,
+      persisted: true
     },
     source: "user_scope"
   };

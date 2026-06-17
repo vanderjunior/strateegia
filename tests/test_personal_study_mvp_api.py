@@ -143,7 +143,7 @@ def test_grounded_summary_and_validated_questions_are_source_backed(tmp_path):
     assert internal["_correct_answer"] in {alternative["id"] for alternative in questions[0]["alternatives"]}
 
 
-def test_answer_review_correctness_is_deterministic_and_stateless(tmp_path):
+def test_answer_review_correctness_is_deterministic_and_idempotently_persisted(tmp_path):
     client, repository = create_client(tmp_path)
     user = register_and_login(client)
     upload_material(
@@ -165,7 +165,9 @@ def test_answer_review_correctness_is_deterministic_and_stateless(tmp_path):
     assert first.status_code == 200
     assert first.json()["result"] == "correct"
     assert second.json() == first.json()
-    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
+    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
+    assert len(attempts) == 1
+    assert attempts[0]["correctness_state"] == "correct"
     assert repository.get_study_question_attempt_states(user_id=user["user_id"]) == {}
 
 

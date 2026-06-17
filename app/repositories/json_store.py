@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from threading import RLock
 from uuid import uuid4
 
 from app.domain.models import (
@@ -1282,9 +1283,14 @@ class UserScopedStudyRepository:
         )
 
 
+class StudyQuestionAttemptIdempotencyConflict(ValueError):
+    pass
+
+
 class JsonStudyRepository:
     def __init__(self, path: Path):
         self.path = Path(path)
+        self._study_question_attempt_lock = RLock()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if not self.path.exists():
             self._write(self._default_payload())
@@ -1472,6 +1478,14 @@ class JsonStudyRepository:
             json.dumps(payload, ensure_ascii=True, indent=2),
             encoding="utf-8",
         )
+
+    def _write_study_question_attempt_payload(self, payload: dict[str, object]) -> None:
+        temporary_path = self.path.with_name(f".{self.path.name}.attempts.tmp")
+        temporary_path.write_text(
+            json.dumps(payload, ensure_ascii=True, indent=2),
+            encoding="utf-8",
+        )
+        temporary_path.replace(self.path)
 
     def _normalize_storage_payload(self, payload: dict[str, object] | None) -> dict[str, object]:
         normalized = self._default_payload()
@@ -5465,110 +5479,110 @@ class JsonStudyRepository:
         subtopic_id: str | None,
         subtopic_label: str | None,
         question_fingerprint: str,
-        question_version: str,
+        question_generator_version: str,
         response_context: str = "study_block",
-        idempotency_key: str | None = None,
+        idempotency_key: str,
     ) -> dict[str, object]:
-        payload = self._read()
-        container = self._study_question_attempts_container(payload, user_id)
-        attempts = container["attempts"]
-        idempotency = container["idempotency"]
-        states = container["states"]
-        weak_topics = container["weak_topics"]
-
-        if idempotency_key:
+        with self._study_question_attempt_lock:
+            payload = self._read()
+            container = self._study_question_attempts_container(payload, user_id)
+            attempts = container["attempts"]
+            idempotency = container["idempotency"]
             existing_attempt_id = idempotency.get(idempotency_key)
             if isinstance(existing_attempt_id, str):
                 existing = attempts.get(existing_attempt_id)
-                if isinstance(existing, dict):
-                    return dict(existing)
+                if not isinstance(existing, dict):
+                    raise StudyQuestionAttemptIdempotencyConflict(idempotency_key)
+                expected = {
+                    "question_id": question_id,
+                    "selected_answer": selected_answer,
+                    "block_id": block_id,
+                    "material_id": material_id,
+                    "question_fingerprint": question_fingerprint,
+                    "question_generator_version": question_generator_version,
+                    "response_context": response_context,
+                }
+                if any(existing.get(key) != value for key, value in expected.items()):
+                    raise StudyQuestionAttemptIdempotencyConflict(idempotency_key)
+                return dict(existing)
 
-        now = utc_now().isoformat()
-        existing_attempts = [
-            item
-            for item in attempts.values()
-            if isinstance(item, dict) and item.get("question_id") == question_id
-        ]
-        attempt_number = len(existing_attempts) + 1
-        attempt_id = f"study-question-attempt:{uuid4()}"
-        state = dict(states.get(question_id) if isinstance(states.get(question_id), dict) else {})
-        times_seen = int(state.get("times_seen", 0) or 0) + 1
-        correct_count = int(state.get("correct_count", 0) or 0)
-        incorrect_count = int(state.get("incorrect_count", 0) or 0)
-        consecutive_correct = int(state.get("consecutive_correct", 0) or 0)
-        selection_round = int(state.get("selection_round", 0) or 0) + 1
-
-        if correctness_state == "correct":
-            correct_count += 1
-            consecutive_correct += 1
-            current_bucket = "temporarily_mastered" if consecutive_correct >= 2 else "reviewing"
-            next_eligible_round = selection_round + (3 if current_bucket == "temporarily_mastered" else 1)
-        elif correctness_state == "incorrect":
-            incorrect_count += 1
-            consecutive_correct = 0
-            current_bucket = "weak"
-            next_eligible_round = selection_round + 1
-            weak_key = subtopic_id or topic_id or topic_label or subtopic_label or question_id
-            weak_topics[str(weak_key)] = int(weak_topics.get(str(weak_key), 0) or 0) + 1
-        else:
-            current_bucket = state.get("current_bucket") if state.get("current_bucket") in {
-                "learning",
-                "weak",
-                "reviewing",
-                "temporarily_mastered",
-            } else "learning"
-            next_eligible_round = selection_round
-
-        attempt = {
-            "attempt_id": attempt_id,
-            "question_id": question_id,
-            "selected_answer": selected_answer,
-            "correctness_state": correctness_state,
-            "attempted_at": now,
-            "attempt_number": attempt_number,
-            "block_id": block_id,
-            "material_id": material_id,
-            "topic_id": topic_id,
-            "topic_label": topic_label,
-            "subtopic_id": subtopic_id,
-            "subtopic_label": subtopic_label,
-            "question_fingerprint": question_fingerprint,
-            "question_version": question_version,
-            "response_context": response_context,
-            "idempotency_key": idempotency_key,
-        }
-        attempts[attempt_id] = attempt
-        states[question_id] = {
-            "question_id": question_id,
-            "question_fingerprint": question_fingerprint,
-            "times_seen": times_seen,
-            "correct_count": correct_count,
-            "incorrect_count": incorrect_count,
-            "consecutive_correct": consecutive_correct,
-            "last_attempt_at": now,
-            "last_correctness": correctness_state,
-            "next_eligible_round": next_eligible_round,
-            "current_bucket": current_bucket,
-            "selection_round": selection_round,
-            "topic_id": topic_id,
-            "topic_label": topic_label,
-            "subtopic_id": subtopic_id,
-            "subtopic_label": subtopic_label,
-        }
-        if idempotency_key:
+            now = utc_now().isoformat()
+            existing_attempts = [
+                item
+                for item in attempts.values()
+                if (
+                    isinstance(item, dict)
+                    and item.get("question_fingerprint") == question_fingerprint
+                    and item.get("question_generator_version") == question_generator_version
+                )
+            ]
+            attempt_number = len(existing_attempts) + 1
+            attempt_id = f"study-question-attempt:{uuid4()}"
+            attempt = {
+                "attempt_id": attempt_id,
+                "user_id": user_id,
+                "question_id": question_id,
+                "selected_answer": selected_answer,
+                "correctness_state": correctness_state,
+                "attempted_at": now,
+                "attempt_number": attempt_number,
+                "block_id": block_id,
+                "material_id": material_id,
+                "topic_id": topic_id,
+                "topic_label": topic_label,
+                "subtopic_id": subtopic_id,
+                "subtopic_label": subtopic_label,
+                "question_fingerprint": question_fingerprint,
+                "question_generator_version": question_generator_version,
+                "response_context": response_context,
+                "idempotency_key": idempotency_key,
+                "created_at": now,
+            }
+            attempts[attempt_id] = attempt
             idempotency[idempotency_key] = attempt_id
-        self._write(payload)
-        return dict(attempt)
+            self._write_study_question_attempt_payload(payload)
+            return dict(attempt)
 
-    def list_study_question_attempts(self, *, user_id: str) -> list[dict[str, object]]:
+    def list_study_question_attempts(
+        self,
+        *,
+        user_id: str,
+        question_fingerprint: str | None = None,
+        question_generator_version: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, object]]:
         payload = self._read()
         container = self._study_question_attempts_container(payload, user_id)
         attempts = [
             dict(attempt)
             for attempt in container["attempts"].values()
-            if isinstance(attempt, dict)
+            if (
+                isinstance(attempt, dict)
+                and isinstance(attempt.get("attempt_id"), str)
+                and isinstance(attempt.get("question_id"), str)
+                and isinstance(attempt.get("selected_answer"), str)
+                and attempt.get("correctness_state") in {"correct", "incorrect", "ungraded"}
+                and isinstance(attempt.get("attempted_at"), str)
+                and isinstance(attempt.get("attempt_number"), int)
+                and isinstance(attempt.get("question_fingerprint"), str)
+                and isinstance(attempt.get("question_generator_version"), str)
+                and attempt.get("response_context") in {"study_block", "cumulative_review", "reinforcement"}
+                and (question_fingerprint is None or attempt.get("question_fingerprint") == question_fingerprint)
+                and (
+                    question_generator_version is None
+                    or attempt.get("question_generator_version") == question_generator_version
+                )
+            )
         ]
-        attempts.sort(key=lambda attempt: str(attempt.get("attempted_at", "")))
+        attempts.sort(
+            key=lambda attempt: (
+                str(attempt.get("attempted_at", "")),
+                int(attempt.get("attempt_number", 0) or 0),
+                str(attempt.get("attempt_id", "")),
+            )
+        )
+        if limit is not None:
+            return attempts[-max(0, limit) :]
         return attempts
 
     def get_study_question_attempt_states(self, *, user_id: str) -> dict[str, dict[str, object]]:

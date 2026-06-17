@@ -191,7 +191,7 @@ def test_insufficient_and_ambiguous_sources_produce_no_validated_question(tmp_pa
     assert internal_questions(repository, str(user["user_id"]), str(ambiguous_block["block_id"])) == []
 
 
-def test_answer_review_is_server_derived_source_grounded_and_stateless(tmp_path):
+def test_answer_review_is_server_derived_source_grounded_and_persisted(tmp_path):
     owner, _, _, repository = create_clients(tmp_path)
     user = register_and_login(owner, "stateless-review-owner")
     uploaded = upload_material(owner, filename="review.md", content=DEFINITION_SOURCE)
@@ -209,11 +209,19 @@ def test_answer_review_is_server_derived_source_grounded_and_stateless(tmp_path)
 
     incorrect = owner.post(
         encoded_review_path(block_id, str(public["question_id"])),
-        json={"answer": wrong_answer, "answer_format": "choice"},
+        json={
+            "answer": wrong_answer,
+            "answer_format": "choice",
+            "idempotency_key": "grounded-incorrect",
+        },
     )
     correct = owner.post(
         encoded_review_path(block_id, str(public["question_id"])),
-        json={"answer": correct_answer, "answer_format": "choice"},
+        json={
+            "answer": correct_answer,
+            "answer_format": "choice",
+            "idempotency_key": "grounded-correct",
+        },
     )
 
     assert incorrect.status_code == 200
@@ -222,7 +230,9 @@ def test_answer_review_is_server_derived_source_grounded_and_stateless(tmp_path)
     assert correct.status_code == 200
     assert correct.json()["result"] == "correct"
     assert str(internal["_evidence"]) in correct.json()["feedback"]
-    assert repository.list_study_question_attempts(user_id=str(user["user_id"])) == before_attempts
+    attempts = repository.list_study_question_attempts(user_id=str(user["user_id"]))
+    assert len(attempts) == len(before_attempts) + 2
+    assert [attempt["correctness_state"] for attempt in attempts[-2:]] == ["incorrect", "correct"]
     assert repository.list_study_progress_events(user_id=str(user["user_id"])) == before_progress
 
 

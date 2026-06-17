@@ -1,4 +1,5 @@
 import json
+from itertools import count
 from io import BytesIO
 from urllib.parse import quote
 
@@ -31,6 +32,7 @@ ALLOWED_RESPONSE_KEYS = {
     "result",
     "feedback",
     "reinforcement",
+    "attempt",
     "source",
 }
 
@@ -40,6 +42,19 @@ ALLOWED_REINFORCEMENT_KEYS = {
     "message",
     "suggested_action",
 }
+
+ALLOWED_ATTEMPT_KEYS = {
+    "attempt_id",
+    "question_id",
+    "selected_answer",
+    "correctness_state",
+    "attempted_at",
+    "attempt_number",
+    "response_context",
+    "persisted",
+}
+
+ATTEMPT_KEYS = count(1)
 
 FORBIDDEN_RESPONSE_TERMS = (
     "RAW-ANSWER-REVIEW-SHOULD-NOT-LEAK",
@@ -182,10 +197,17 @@ def post_review(
     *,
     answer: str = "Minha resposta sobre atos administrativos.",
     answer_format: str = "text",
+    idempotency_key: str | None = None,
+    response_context: str = "study_block",
 ):
     return client.post(
         encoded_review_path(block_id, question_id),
-        json={"answer": answer, "answer_format": answer_format},
+        json={
+            "answer": answer,
+            "answer_format": answer_format,
+            "response_context": response_context,
+            "idempotency_key": idempotency_key or f"answer-review-test:{next(ATTEMPT_KEYS)}",
+        },
     )
 
 
@@ -214,6 +236,17 @@ def assert_bounded_answer_review_payload(payload: dict[str, object]) -> None:
         "retry_question",
         "revisit_block",
     }
+    assert set(payload["attempt"].keys()) == ALLOWED_ATTEMPT_KEYS
+    assert payload["attempt"]["question_id"] == payload["question_id"]
+    assert payload["attempt"]["selected_answer"]
+    assert payload["attempt"]["correctness_state"] in {"correct", "incorrect", "ungraded"}
+    assert payload["attempt"]["attempt_number"] >= 1
+    assert payload["attempt"]["response_context"] in {
+        "study_block",
+        "cumulative_review",
+        "reinforcement",
+    }
+    assert payload["attempt"]["persisted"] is True
     assert payload["source"] == "user_scope"
     assert_no_forbidden_terms(payload)
 
@@ -223,7 +256,11 @@ def test_answer_review_requires_auth(tmp_path):
 
     response = anonymous.post(
         "/api/study/blocks/study-block%3Amissing%3Adoc%3A0/questions/question%3Amissing/answer/review",
-        json={"answer": "Resposta", "answer_format": "text"},
+        json={
+            "answer": "Resposta",
+            "answer_format": "text",
+            "idempotency_key": "anonymous-attempt",
+        },
     )
 
     assert response.status_code == 401
@@ -235,7 +272,11 @@ def test_answer_review_returns_404_for_missing_block(tmp_path):
 
     response = owner.post(
         "/api/study/blocks/study-block%3Amissing%3Adoc%3A0/questions/question%3Amissing/answer/review",
-        json={"answer": "Resposta", "answer_format": "text"},
+        json={
+            "answer": "Resposta",
+            "answer_format": "text",
+            "idempotency_key": "missing-block-attempt",
+        },
     )
 
     assert response.status_code == 404
@@ -264,6 +305,7 @@ def test_answer_review_rejects_invalid_body(tmp_path):
         {"answer": "   ", "answer_format": "text"},
         {"answer": "Resposta", "answer_format": "unsupported"},
         {"answer": "x" * 2001, "answer_format": "text"},
+        {"answer": "Resposta", "answer_format": "text"},
         {"answer": "Resposta", "answer_format": "text", "answer_key": "SHOULD-NOT-BE-ACCEPTED"},
     ]
 
@@ -289,7 +331,7 @@ def test_answer_review_returns_404_when_profile_has_no_supported_objective_quest
     assert response.status_code == 404
 
 
-def test_answer_review_grades_validated_choice_without_persisting_attempt(tmp_path):
+def test_answer_review_grades_validated_choice_and_persists_attempt(tmp_path):
     owner, _, _, repository, _ = create_clients(tmp_path)
     user = register_and_login(owner, "owner")
     block_id, question = prepare_ready_question(owner)
@@ -307,7 +349,10 @@ def test_answer_review_grades_validated_choice_without_persisting_attempt(tmp_pa
     assert response.status_code == 200
     assert payload["review_status"] == "reviewed"
     assert payload["result"] in {"correct", "incorrect"}
-    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
+    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
+    assert len(attempts) == 1
+    assert attempts[0]["selected_answer"] == "A"
+    assert attempts[0]["correctness_state"] == payload["result"]
     assert_bounded_answer_review_payload(payload)
 
 
@@ -330,7 +375,9 @@ def test_answer_review_grades_validated_true_false(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert payload["review_status"] == "reviewed"
     assert payload["result"] == "correct"
-    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
+    attempts = repository.list_study_question_attempts(user_id=user["user_id"])
+    assert len(attempts) == 1
+    assert attempts[0]["correctness_state"] == "correct"
     assert_bounded_answer_review_payload(payload)
 
 
@@ -361,23 +408,35 @@ def test_answer_review_reinforcement_includes_connected_edital_labels(tmp_path):
     assert_bounded_answer_review_payload(payload)
 
 
-def test_answer_review_is_idempotent_and_read_only_for_same_choice(tmp_path):
+def test_answer_review_exact_retry_is_idempotent_without_progress_mutation(tmp_path):
     owner, _, _, repository, data_path = create_clients(tmp_path)
     user = register_and_login(owner, "stable-owner")
     block_id, question = prepare_ready_question(owner)
     before_progress = repository.load_progress(user_id=user["user_id"]).model_dump(mode="json")
-    before_file = data_path.read_text(encoding="utf-8")
-
-    first = post_review(owner, block_id, str(question["question_id"]), answer="A", answer_format="choice")
-    second = post_review(owner, block_id, str(question["question_id"]), answer="A", answer_format="choice")
+    first = post_review(
+        owner,
+        block_id,
+        str(question["question_id"]),
+        answer="A",
+        answer_format="choice",
+        idempotency_key="stable-answer-review",
+    )
+    second = post_review(
+        owner,
+        block_id,
+        str(question["question_id"]),
+        answer="A",
+        answer_format="choice",
+        idempotency_key="stable-answer-review",
+    )
 
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json() == second.json()
     after_progress = repository.load_progress(user_id=user["user_id"]).model_dump(mode="json")
     assert after_progress == before_progress
-    assert data_path.read_text(encoding="utf-8") == before_file
-    assert repository.list_study_question_attempts(user_id=user["user_id"]) == []
+    assert data_path.read_text(encoding="utf-8")
+    assert len(repository.list_study_question_attempts(user_id=user["user_id"])) == 1
 
 
 def test_answer_review_is_user_scoped(tmp_path):

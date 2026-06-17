@@ -19,7 +19,10 @@ from app.api.schemas import (
 )
 from app.config import inspection_enabled, inspection_requires_auth
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
-from app.repositories.json_store import JsonStudyRepository
+from app.repositories.json_store import (
+    JsonStudyRepository,
+    StudyQuestionAttemptIdempotencyConflict,
+)
 from app.services.document_ingestion import ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_BYTES, normalize_material_type
 from app.services.bibliography_alignment import BibliographyAlignmentService
 from app.services.curriculum_graph_builder import CurriculumGraphBuilderService
@@ -2721,10 +2724,11 @@ def _bounded_fixation_questions_response(
 
 
 ANSWER_REVIEW_FORMATS = {"text", "choice", "true_false"}
+ANSWER_REVIEW_CONTEXTS = {"study_block", "cumulative_review", "reinforcement"}
 MAX_ANSWER_REVIEW_LENGTH = 2000
 
 
-def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> tuple[str, str, str | None]:
+def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> tuple[str, str, str, str]:
     answer = payload.answer.strip()
     answer_format = payload.answer_format.strip()
     if not answer:
@@ -2733,20 +2737,21 @@ def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> t
         raise HTTPException(status_code=422, detail="answer is too long.")
     if answer_format not in ANSWER_REVIEW_FORMATS:
         raise HTTPException(status_code=422, detail="answer_format is invalid.")
-    idempotency_key = payload.idempotency_key.strip() if payload.idempotency_key else None
-    if idempotency_key is not None and (not idempotency_key or len(idempotency_key) > 160):
+    response_context = payload.response_context.strip()
+    if response_context not in ANSWER_REVIEW_CONTEXTS:
+        raise HTTPException(status_code=422, detail="response_context is invalid.")
+    idempotency_key = payload.idempotency_key.strip()
+    if not idempotency_key or len(idempotency_key) > 160:
         raise HTTPException(status_code=422, detail="idempotency_key is invalid.")
-    return answer, answer_format, idempotency_key
+    return answer, answer_format, response_context, idempotency_key
 
 
-def _bounded_answer_review_response(
+def _resolve_internal_fixation_question(
     repository: JsonStudyRepository,
     user_id: str,
     block_id: str,
     question_id: str,
-    payload: StudyBlockAnswerReviewRequest,
-) -> dict[str, object]:
-    answer, answer_format, _idempotency_key = _validate_answer_review_request(payload)
+) -> tuple[dict[str, object], dict[str, object]]:
     detail, _question_status, candidates = _internal_fixation_question_candidates(repository, user_id, block_id)
     question = next(
         (
@@ -2758,6 +2763,36 @@ def _bounded_answer_review_response(
     )
     if question is None:
         raise HTTPException(status_code=404, detail="Study block question not found.")
+    return detail, question
+
+
+def _bounded_question_attempt_payload(attempt: dict[str, object]) -> dict[str, object]:
+    return {
+        "attempt_id": str(attempt["attempt_id"]),
+        "question_id": str(attempt["question_id"]),
+        "selected_answer": str(attempt["selected_answer"]),
+        "correctness_state": str(attempt["correctness_state"]),
+        "attempted_at": str(attempt["attempted_at"]),
+        "attempt_number": int(attempt["attempt_number"]),
+        "response_context": str(attempt["response_context"]),
+        "persisted": True,
+    }
+
+
+def _bounded_answer_review_response(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+    question_id: str,
+    payload: StudyBlockAnswerReviewRequest,
+) -> dict[str, object]:
+    answer, answer_format, response_context, idempotency_key = _validate_answer_review_request(payload)
+    detail, question = _resolve_internal_fixation_question(
+        repository,
+        user_id,
+        block_id,
+        question_id,
+    )
 
     topic_label = question["topic_label"] if isinstance(question.get("topic_label"), str) else None
     subtopic_label = question["subtopic_label"] if isinstance(question.get("subtopic_label"), str) else None
@@ -2805,6 +2840,31 @@ def _bounded_answer_review_response(
         feedback = "Esta escolha foi recebida, mas a questão ainda não tem validação suficiente para avaliar certo ou errado."
         suggested_action = "review_summary" if question_type == "short_answer" else "revisit_block"
 
+    question_fingerprint = str(question.get("_fingerprint") or "")
+    question_generator_version = str(question.get("_generator_version") or "")
+    material_id = str(question.get("_material_id") or detail.get("material_id") or "")
+    if not question_fingerprint or not question_generator_version or not material_id:
+        raise HTTPException(status_code=409, detail="Question identity is no longer available.")
+    try:
+        attempt = repository.record_study_question_attempt(
+            user_id=user_id,
+            question_id=question_id,
+            selected_answer=answer,
+            correctness_state=result if result in {"correct", "incorrect"} else "ungraded",
+            block_id=str(detail["block_id"]),
+            material_id=material_id,
+            topic_id=detail["topic_id"] if isinstance(detail.get("topic_id"), str) else None,
+            topic_label=topic_label,
+            subtopic_id=detail["subtopic_id"] if isinstance(detail.get("subtopic_id"), str) else None,
+            subtopic_label=subtopic_label,
+            question_fingerprint=question_fingerprint,
+            question_generator_version=question_generator_version,
+            response_context=response_context,
+            idempotency_key=idempotency_key,
+        )
+    except StudyQuestionAttemptIdempotencyConflict as exc:
+        raise HTTPException(status_code=409, detail="idempotency_key conflicts with a previous attempt.") from exc
+
     return {
         "block_id": str(detail["block_id"]),
         "question_id": question_id,
@@ -2817,6 +2877,35 @@ def _bounded_answer_review_response(
             "message": reinforcement_message,
             "suggested_action": suggested_action,
         },
+        "attempt": _bounded_question_attempt_payload(attempt),
+        "source": "user_scope",
+    }
+
+
+def _bounded_question_attempt_history_response(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+    question_id: str,
+) -> dict[str, object]:
+    _detail, question = _resolve_internal_fixation_question(
+        repository,
+        user_id,
+        block_id,
+        question_id,
+    )
+    question_fingerprint = str(question.get("_fingerprint") or "")
+    question_generator_version = str(question.get("_generator_version") or "")
+    attempts = repository.list_study_question_attempts(
+        user_id=user_id,
+        question_fingerprint=question_fingerprint,
+        question_generator_version=question_generator_version,
+        limit=20,
+    )
+    return {
+        "question_id": question_id,
+        "items_count": len(attempts),
+        "items": [_bounded_question_attempt_payload(attempt) for attempt in attempts],
         "source": "user_scope",
     }
 
@@ -2874,6 +2963,22 @@ def review_study_block_answer(
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_answer_review_response(repository, user_id, block_id, question_id, payload)
+
+
+@router.get("/study/blocks/{block_id}/questions/{question_id}/attempts")
+def get_study_block_question_attempts(
+    block_id: str,
+    question_id: str,
+    request: Request,
+):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_question_attempt_history_response(
+        repository,
+        user_id,
+        block_id,
+        question_id,
+    )
 
 
 @router.get("/study/blocks/{block_id}")

@@ -20,6 +20,16 @@ function reviewedPayload() {
       message: "Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.",
       suggested_action: "review_summary"
     },
+    attempt: {
+      attempt_id: "study-question-attempt:1",
+      question_id: "question:study-block:topic-1:doc-1:0:0",
+      selected_answer: "A",
+      correctness_state: "ungraded",
+      attempted_at: "2026-06-15T12:00:00Z",
+      attempt_number: 1,
+      response_context: "study_block",
+      persisted: true
+    },
     source: "user_scope"
   };
 }
@@ -56,7 +66,12 @@ describe("answer review API wrapper", () => {
     const result = await reviewStudyBlockQuestionAnswer(
       "study-block:topic-1:doc-1:0",
       "question:study-block:topic-1:doc-1:0:0",
-      { answer: "Minha resposta", answer_format: "text" }
+      {
+        answer: "Minha resposta",
+        answer_format: "text",
+        response_context: "study_block",
+        idempotency_key: "attempt-api-1"
+      }
     );
 
     expect(fetchSpy).toHaveBeenCalledWith(
@@ -65,7 +80,12 @@ describe("answer review API wrapper", () => {
         method: "POST",
         credentials: "include",
         cache: "no-store",
-        body: JSON.stringify({ answer: "Minha resposta", answer_format: "text", idempotency_key: null })
+        body: JSON.stringify({
+          answer: "Minha resposta",
+          answer_format: "text",
+          response_context: "study_block",
+          idempotency_key: "attempt-api-1"
+        })
       })
     );
     expect(result.ok).toBe(true);
@@ -107,7 +127,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "choice"
+      answer_format: "choice",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-needs-review"
     });
 
     expect(result.ok).toBe(true);
@@ -123,6 +145,7 @@ describe("answer review API wrapper", () => {
     [401, "auth_required", "Entre para revisar sua resposta."],
     [403, "auth_required", "Entre para revisar sua resposta."],
     [404, "not_found", "Questão ou bloco de estudo não encontrado."],
+    [409, "validation_error", "Não foi possível confirmar esta tentativa."],
     [422, "validation_error", "Revise sua resposta antes de enviar."],
     [502, "backend_offline", "Não foi possível revisar sua resposta agora."],
     [503, "missing_base_url", "A revisão da resposta não está configurada neste ambiente."]
@@ -134,7 +157,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: `attempt-api-http-${status}`
     });
 
     expect(result.ok).toBe(false);
@@ -155,7 +180,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-network"
     });
 
     expect(result.ok).toBe(false);
@@ -174,7 +201,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-config"
     });
 
     expect(result.ok).toBe(false);
@@ -195,7 +224,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-mock"
     });
 
     expect(result.ok).toBe(false);
@@ -211,7 +242,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "unsupported" as "text"
+      answer_format: "unsupported" as "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-invalid-format"
     });
 
     expect(result.ok).toBe(false);
@@ -228,7 +261,9 @@ describe("answer review API wrapper", () => {
     );
     const invalidJson = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-invalid-json"
     });
     expect(invalidJson.ok).toBe(false);
     if (!invalidJson.ok) {
@@ -246,7 +281,9 @@ describe("answer review API wrapper", () => {
     );
     const invalidShape = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-api-invalid-shape"
     });
     expect(invalidShape.ok).toBe(false);
     if (!invalidShape.ok) {
@@ -274,7 +311,9 @@ describe("answer review API wrapper", () => {
 
     const result = await reviewStudyBlockQuestionAnswer("block-1", "question-1", {
       answer: "Resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: `attempt-api-status-${reviewStatus}`
     });
 
     expect(result.ok).toBe(false);

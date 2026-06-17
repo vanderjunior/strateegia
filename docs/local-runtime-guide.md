@@ -72,8 +72,12 @@ Personal-Study-MVP-A adds a real bounded textual study core:
 - eligible textual study blocks show deterministic extractive summaries from source text;
 - validated objective questions have backend-internal evidence-backed answer keys;
 - answer review persists selected-answer attempts and derives correct/incorrect only when validation is supported;
-- incorrect validated attempts create weak-topic signals;
-- correct validated attempts are temporarily suppressed by selection rounds, not fixed 24h/7d/30d SRS.
+- exact network retries reuse one idempotency key without duplicating the attempt;
+- bounded owner-scoped attempt history survives repository reload and backend restart.
+
+Attempts do not yet create weak-topic signals, suppress correct questions, prioritize errors, or alter future question order. No 24h/7d/30d SRS or other adaptive scheduler is active.
+
+Each explicit answer submission requires a unique idempotency key. A network retry must reuse that key; after a confirmed response, a later attempt must use a new one. Attempt records are immutable and stored in the same owner-scoped JSON repository as other alpha state. Keep the backend at one replica and include the data volume in backups.
 
 Current safe path:
 

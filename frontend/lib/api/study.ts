@@ -24,6 +24,8 @@ import type {
   StudyBlockAnswerReviewResult,
   StudyBlockAnswerReviewStatus,
   StudyBlockAnswerReviewSuggestedAction,
+  StudyQuestionAttemptContext,
+  StudyQuestionAttemptCorrectness,
   StudyBlockQuestionDifficulty,
   StudyBlockQuestionItemStatus,
   StudyBlockQuestionStatus,
@@ -156,6 +158,18 @@ const ANSWER_REVIEW_ACTIONS = new Set<StudyBlockAnswerReviewSuggestedAction>([
   "review_summary",
   "retry_question",
   "revisit_block"
+]);
+
+const ATTEMPT_CORRECTNESS_STATES = new Set<StudyQuestionAttemptCorrectness>([
+  "correct",
+  "incorrect",
+  "ungraded"
+]);
+
+const ATTEMPT_CONTEXTS = new Set<StudyQuestionAttemptContext>([
+  "study_block",
+  "cumulative_review",
+  "reinforcement"
 ]);
 
 const SUMMARY_STATUSES = new Set([
@@ -323,6 +337,7 @@ function isStudyBlockAnswerReviewPayload(value: unknown): value is BackendStudyB
   }
   const data = value as Partial<BackendStudyBlockAnswerReview>;
   const reinforcement = data.reinforcement as Partial<BackendStudyBlockAnswerReview["reinforcement"]> | undefined;
+  const attempt = data.attempt as Partial<BackendStudyBlockAnswerReview["attempt"]> | undefined;
   return (
     typeof data.block_id === "string" &&
     typeof data.question_id === "string" &&
@@ -335,6 +350,20 @@ function isStudyBlockAnswerReviewPayload(value: unknown): value is BackendStudyB
     (reinforcement.subtopic_label === null || typeof reinforcement.subtopic_label === "string") &&
     typeof reinforcement.message === "string" &&
     Boolean(reinforcement.suggested_action && ANSWER_REVIEW_ACTIONS.has(reinforcement.suggested_action)) &&
+    Boolean(attempt) &&
+    typeof attempt === "object" &&
+    typeof attempt.attempt_id === "string" &&
+    attempt.question_id === data.question_id &&
+    typeof attempt.selected_answer === "string" &&
+    Boolean(
+      attempt.correctness_state &&
+        ATTEMPT_CORRECTNESS_STATES.has(attempt.correctness_state)
+    ) &&
+    typeof attempt.attempted_at === "string" &&
+    typeof attempt.attempt_number === "number" &&
+    attempt.attempt_number >= 1 &&
+    Boolean(attempt.response_context && ATTEMPT_CONTEXTS.has(attempt.response_context)) &&
+    attempt.persisted === true &&
     data.source === "user_scope"
   );
 }
@@ -351,6 +380,16 @@ function normalizeStudyBlockAnswerReviewPayload(data: BackendStudyBlockAnswerRev
       subtopic_label: data.reinforcement.subtopic_label,
       message: data.reinforcement.message,
       suggested_action: data.reinforcement.suggested_action
+    },
+    attempt: {
+      attempt_id: data.attempt.attempt_id,
+      question_id: data.attempt.question_id,
+      selected_answer: data.attempt.selected_answer,
+      correctness_state: data.attempt.correctness_state,
+      attempted_at: data.attempt.attempted_at,
+      attempt_number: data.attempt.attempt_number,
+      response_context: data.attempt.response_context,
+      persisted: true
     },
     source: "user_scope"
   };
@@ -759,7 +798,8 @@ export async function reviewStudyBlockQuestionAnswer(
   payload: {
     answer: string;
     answer_format: StudyBlockAnswerFormat;
-    idempotency_key?: string | null;
+    response_context: StudyQuestionAttemptContext;
+    idempotency_key: string;
   }
 ): Promise<ApiResult<BackendStudyBlockAnswerReview>> {
   const { baseUrl, forceMock } = getApiConfig();
@@ -779,6 +819,9 @@ export async function reviewStudyBlockQuestionAnswer(
   if (!ANSWER_FORMATS.has(payload.answer_format)) {
     return makeApiFailure("backend", "validation_error", "Revise sua resposta antes de enviar.", 422);
   }
+  if (!ATTEMPT_CONTEXTS.has(payload.response_context) || !payload.idempotency_key.trim()) {
+    return makeApiFailure("backend", "validation_error", "Revise sua resposta antes de enviar.", 422);
+  }
 
   try {
     const response = await fetch(
@@ -794,7 +837,8 @@ export async function reviewStudyBlockQuestionAnswer(
         body: JSON.stringify({
           answer: payload.answer,
           answer_format: payload.answer_format,
-          idempotency_key: payload.idempotency_key ?? null
+          response_context: payload.response_context,
+          idempotency_key: payload.idempotency_key
         })
       }
     );
@@ -818,6 +862,9 @@ export async function reviewStudyBlockQuestionAnswer(
     }
     if (response.status === 422) {
       return makeApiFailure("backend", "validation_error", "Revise sua resposta antes de enviar.", response.status);
+    }
+    if (response.status === 409) {
+      return makeApiFailure("backend", "validation_error", "Não foi possível confirmar esta tentativa.", response.status);
     }
     if (!response.ok) {
       return makeApiFailure(

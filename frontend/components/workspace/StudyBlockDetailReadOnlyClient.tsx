@@ -42,6 +42,7 @@ type QuestionsState =
 
 type QuestionReviewState = {
   selectedAlternative?: string;
+  submissionKey?: string;
   status?: "submitting" | "success" | "error";
   message?: string;
   review?: BackendStudyBlockAnswerReview;
@@ -54,6 +55,14 @@ type StudyProgressActionState =
   | { status: "submitting" }
   | { status: "success"; message: string }
   | { status: "error"; message: string };
+
+function createAttemptSubmissionKey(questionId: string): string {
+  const suffix =
+    typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `question-attempt:${questionId}:${suffix}`;
+}
 
 function statusLabel(status: BackendStudyBlockDetail["detail_status"]): string {
   if (status === "ready") {
@@ -206,7 +215,10 @@ function QuestionsCard({
     }
 
     const answerFormat: StudyBlockAnswerFormat = item.type === "true_false" ? "true_false" : "choice";
+    const submissionKey =
+      current?.submissionKey ?? createAttemptSubmissionKey(item.question_id);
     updateQuestionReview(item.question_id, {
+      submissionKey,
       status: "submitting",
       message: undefined,
       review: undefined
@@ -214,11 +226,14 @@ function QuestionsCard({
 
     const result = await reviewStudyBlockQuestionAnswer(blockId, item.question_id, {
       answer: selectedAlternative,
-      answer_format: answerFormat
+      answer_format: answerFormat,
+      response_context: "study_block",
+      idempotency_key: submissionKey
     });
 
     if (result.ok) {
       updateQuestionReview(item.question_id, {
+        submissionKey: undefined,
         status: "success",
         message: undefined,
         review: result.data
@@ -325,6 +340,7 @@ function QuestionsCard({
                                 onChange={() =>
                                   updateQuestionReview(item.question_id, {
                                     selectedAlternative: alternative.id,
+                                    submissionKey: undefined,
                                     status: undefined,
                                     message: undefined,
                                     review: undefined

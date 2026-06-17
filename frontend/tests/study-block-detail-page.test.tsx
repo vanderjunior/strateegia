@@ -92,6 +92,16 @@ function reviewedAnswer(overrides: Record<string, unknown> = {}) {
       message: "Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.",
       suggested_action: "review_summary"
     },
+    attempt: {
+      attempt_id: "study-question-attempt:1",
+      question_id: "question:study-block:topic-1:doc-1:0:0",
+      selected_answer: "A",
+      correctness_state: "ungraded",
+      attempted_at: "2026-06-15T12:00:00Z",
+      attempt_number: 1,
+      response_context: "study_block",
+      persisted: true
+    },
     source: "user_scope",
     ...overrides
   };
@@ -418,7 +428,14 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledWith(
         "study-block:topic-1:doc-1:0",
         "question:study-block:topic-1:doc-1:0:0",
-        { answer: "A", answer_format: "choice" }
+        {
+          answer: "A",
+          answer_format: "choice",
+          response_context: "study_block",
+          idempotency_key: expect.stringMatching(
+            /^question-attempt:question:study-block:topic-1:doc-1:0:0:/
+          )
+        }
       );
     });
   });
@@ -458,9 +475,66 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledWith(
         "study-block:topic-1:doc-1:0",
         "question:study-block:topic-1:doc-1:0:0",
-        { answer: "C", answer_format: "true_false" }
+        {
+          answer: "C",
+          answer_format: "true_false",
+          response_context: "study_block",
+          idempotency_key: expect.stringMatching(
+            /^question-attempt:question:study-block:topic-1:doc-1:0:0:/
+          )
+        }
       );
     });
+  });
+
+  it("reuses an inconclusive submission key and creates a new key after confirmation", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+    studyBlockDetailMock.reviewStudyBlockQuestionAnswer
+      .mockResolvedValueOnce({
+        ok: false,
+        status: null,
+        source: "offline",
+        error: {
+          code: "backend_offline",
+          message: "Não foi possível revisar sua resposta agora."
+        }
+      })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        source: "backend",
+        data: reviewedAnswer()
+      });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    expect(await screen.findByText("Não foi possível revisar sua escolha agora.")).toBeInTheDocument();
+    const firstKey = studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mock.calls[0][2].idempotency_key;
+
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await screen.findByText("Feedback");
+    const retryKey = studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mock.calls[1][2].idempotency_key;
+    expect(retryKey).toBe(firstKey);
+
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await waitFor(() => {
+      expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledTimes(3);
+    });
+    const laterKey = studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mock.calls[2][2].idempotency_key;
+    expect(laterKey).not.toBe(firstKey);
   });
 
   it("renders loading state while reviewing a selected option", async () => {

@@ -589,6 +589,21 @@ export type StudyBlockAnswerReviewResult = "correct" | "incorrect" | "partial" |
 
 export type StudyBlockAnswerReviewSuggestedAction = "review_summary" | "retry_question" | "revisit_block";
 
+export type StudyQuestionAttemptCorrectness = "correct" | "incorrect" | "ungraded";
+
+export type StudyQuestionAttemptContext = "study_block" | "cumulative_review" | "reinforcement";
+
+export interface BackendStudyQuestionAttempt {
+  attempt_id: string;
+  question_id: string;
+  selected_answer: string;
+  correctness_state: StudyQuestionAttemptCorrectness;
+  attempted_at: string;
+  attempt_number: number;
+  response_context: StudyQuestionAttemptContext;
+  persisted: true;
+}
+
 export interface BackendStudyBlockAnswerReview {
   block_id: string;
   question_id: string;
@@ -601,6 +616,7 @@ export interface BackendStudyBlockAnswerReview {
     message: string;
     suggested_action: StudyBlockAnswerReviewSuggestedAction;
   };
+  attempt: BackendStudyQuestionAttempt;
   source: "user_scope";
 }
 

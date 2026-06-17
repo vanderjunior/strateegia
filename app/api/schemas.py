@@ -17,7 +17,8 @@ class StudyBlockAnswerReviewRequest(BaseModel):
 
     answer: str
     answer_format: str
-    idempotency_key: str | None = None
+    response_context: str = "study_block"
+    idempotency_key: str
 
 
 class AnswerSubmission(BaseModel):

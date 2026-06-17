@@ -15,6 +15,16 @@ function reviewedPayload() {
       message: "Revise o resumo do bloco e compare sua resposta com os pontos principais de Atos administrativos.",
       suggested_action: "review_summary"
     },
+    attempt: {
+      attempt_id: "study-question-attempt:1",
+      question_id: "question:study-block:topic-1:doc-1:0:0",
+      selected_answer: "A",
+      correctness_state: "ungraded",
+      attempted_at: "2026-06-15T12:00:00Z",
+      attempt_number: 1,
+      response_context: "study_block",
+      persisted: true
+    },
     source: "user_scope"
   };
 }
@@ -26,7 +36,11 @@ function requestFor(body: Record<string, unknown>, cookie = "studyflow_session=s
       "content-type": "application/json",
       cookie
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      response_context: "study_block",
+      idempotency_key: "attempt-proxy-default",
+      ...body
+    })
   });
 }
 
@@ -63,10 +77,14 @@ describe("answer review same-origin proxy route", () => {
       requestFor({
         answer: "Minha resposta",
         answer_format: "text",
+        response_context: "study_block",
+        idempotency_key: "attempt-proxy-1",
         answer_key: "ANSWER-SHOULD-NOT-FORWARD",
         correct_answer: "CORRECT-SHOULD-NOT-FORWARD",
         gabarito: "GABARITO-SHOULD-NOT-FORWARD",
         score: 10,
+        mastery: "mastered",
+        next_eligible_at: "2099-01-01T00:00:00Z",
         correction: "CORRECTION-SHOULD-NOT-FORWARD",
         rationale: "RATIONALE-SHOULD-NOT-FORWARD"
       }),
@@ -87,7 +105,9 @@ describe("answer review same-origin proxy route", () => {
     );
     expect(JSON.parse(String(forwardedInit?.body))).toEqual({
       answer: "Minha resposta",
-      answer_format: "text"
+      answer_format: "text",
+      response_context: "study_block",
+      idempotency_key: "attempt-proxy-1"
     });
   });
 
@@ -170,7 +190,7 @@ describe("answer review same-origin proxy route", () => {
     expect(dumped).not.toContain("TRACE-SHOULD-NOT-LEAK");
   });
 
-  it.each([401, 403, 404, 422])("passes through backend status %i", async (status) => {
+  it.each([401, 403, 404, 409, 422])("passes through backend status %i", async (status) => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>

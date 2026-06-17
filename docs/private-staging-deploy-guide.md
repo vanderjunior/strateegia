@@ -4,7 +4,7 @@ This guide evaluates private deployment options for the current Mentorium archit
 
 ## Personal-Study-MVP-A Capability Note
 
-Private staging can now demonstrate grounded textual study behavior: extractive summaries, internally validated objective questions, persisted selected-answer attempts, weak-topic signals, and a bounded adaptive question queue. This does not make the app public-production ready. Keep staging private, single-replica, backed by persistent disk, and clearly labeled alpha.
+Private staging can now demonstrate grounded textual study behavior: extractive summaries, internally validated objective questions, and immutable owner-scoped selected-answer attempts. Attempts do not yet create weak-topic signals, suppress questions, or drive an adaptive queue. This does not make the app public-production ready. Keep staging private, single-replica, backed by persistent disk, and clearly labeled alpha.
 
 Do not market staging as official correction, scoring, permanent mastery, OCR-complete, or simulado execution.
 
@@ -23,6 +23,7 @@ Mentorium currently stores:
 - JSON application state.
 - Uploaded source files.
 - Extracted text, chunks, sections, analyses, and progress events.
+- Question attempts and their idempotency index.
 
 That means the backend service needs durable filesystem storage. Stateless platforms or ephemeral filesystems will lose data unless storage is moved to an external database/object store.
 
