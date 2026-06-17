@@ -2726,6 +2726,16 @@ def _bounded_fixation_questions_response(
 ANSWER_REVIEW_FORMATS = {"text", "choice", "true_false"}
 ANSWER_REVIEW_CONTEXTS = {"study_block", "cumulative_review", "reinforcement"}
 MAX_ANSWER_REVIEW_LENGTH = 2000
+ADAPTIVE_QUESTION_SELECTOR_VERSION = "attempt-aware-queue-v1"
+ADAPTIVE_QUESTION_DEFAULT_LIMIT = 5
+ADAPTIVE_QUESTION_MAX_LIMIT = 10
+ADAPTIVE_WEAK_COOLDOWN_ATTEMPTS = 1
+ADAPTIVE_UNGRADED_COOLDOWN_ATTEMPTS = 1
+ADAPTIVE_REVIEWING_COOLDOWN_ATTEMPTS = 3
+ADAPTIVE_MASTERED_COOLDOWN_ATTEMPTS = 8
+ADAPTIVE_MAX_WEAK_OR_UNGRADED = 2
+ADAPTIVE_MAX_NEW_CURRENT = 2
+ADAPTIVE_MAX_HISTORICAL = 1
 
 
 def _validate_answer_review_request(payload: StudyBlockAnswerReviewRequest) -> tuple[str, str, str, str]:
@@ -2910,6 +2920,325 @@ def _bounded_question_attempt_history_response(
     }
 
 
+def _attempt_question_key(attempt: dict[str, object]) -> tuple[str, str]:
+    return (
+        str(attempt.get("question_fingerprint") or ""),
+        str(attempt.get("question_generator_version") or ""),
+    )
+
+
+def _derive_question_attempt_state(
+    attempts: list[dict[str, object]],
+    *,
+    question_fingerprint: str,
+    question_generator_version: str,
+) -> dict[str, object]:
+    key = (question_fingerprint, question_generator_version)
+    indexed_attempts = [
+        (index, attempt)
+        for index, attempt in enumerate(attempts)
+        if _attempt_question_key(attempt) == key
+    ]
+    if not indexed_attempts:
+        return {
+            "state": "new",
+            "later_attempts": len(attempts),
+            "incorrect_count": 0,
+            "consecutive_correct": 0,
+            "latest_index": None,
+        }
+
+    latest_index, latest_attempt = indexed_attempts[-1]
+    latest_correctness = str(latest_attempt.get("correctness_state") or "ungraded")
+    later_attempts = max(0, len(attempts) - latest_index - 1)
+    incorrect_count = sum(
+        1
+        for _index, attempt in indexed_attempts
+        if attempt.get("correctness_state") == "incorrect"
+    )
+    consecutive_correct = 0
+    for _index, attempt in reversed(indexed_attempts):
+        if attempt.get("correctness_state") != "correct":
+            break
+        consecutive_correct += 1
+
+    if latest_correctness == "incorrect":
+        state = "weak"
+    elif latest_correctness == "ungraded":
+        state = "ungraded"
+    elif consecutive_correct >= 2:
+        state = "temporarily_mastered"
+    else:
+        state = "reviewing"
+
+    return {
+        "state": state,
+        "later_attempts": later_attempts,
+        "incorrect_count": incorrect_count,
+        "consecutive_correct": consecutive_correct,
+        "latest_index": latest_index,
+    }
+
+
+def _adaptive_question_is_eligible(state: str, later_attempts: int) -> bool:
+    if state == "new":
+        return True
+    if state == "weak":
+        return later_attempts >= ADAPTIVE_WEAK_COOLDOWN_ATTEMPTS
+    if state == "ungraded":
+        return later_attempts >= ADAPTIVE_UNGRADED_COOLDOWN_ATTEMPTS
+    if state == "reviewing":
+        return later_attempts >= ADAPTIVE_REVIEWING_COOLDOWN_ATTEMPTS
+    if state == "temporarily_mastered":
+        return later_attempts >= ADAPTIVE_MASTERED_COOLDOWN_ATTEMPTS
+    return False
+
+
+def _adaptive_question_rank(candidate: dict[str, object]) -> tuple[int, int, int, str]:
+    state = str(candidate["state"])
+    if state == "weak":
+        priority = 0
+    elif state == "ungraded":
+        priority = 1
+    elif state == "new" and candidate["block_id"] == candidate["current_block_id"]:
+        priority = 2
+    elif state == "reviewing":
+        priority = 3
+    elif candidate.get("historical"):
+        priority = 4
+    elif state == "temporarily_mastered":
+        priority = 5
+    else:
+        priority = 6
+    return (
+        priority,
+        -int(candidate.get("incorrect_count", 0) or 0),
+        -int(candidate.get("later_attempts", 0) or 0),
+        str(candidate.get("question_fingerprint") or ""),
+    )
+
+
+def _append_unique_adaptive_question(
+    selected: list[dict[str, object]],
+    candidate: dict[str, object],
+    seen_fingerprints: set[str],
+    *,
+    limit: int,
+) -> None:
+    if len(selected) >= limit:
+        return
+    fingerprint = str(candidate.get("question_fingerprint") or "")
+    if not fingerprint or fingerprint in seen_fingerprints:
+        return
+    seen_fingerprints.add(fingerprint)
+    selected.append(candidate)
+
+
+def _current_user_validated_question_candidates(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_items: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    for block in block_items:
+        block_id = block.get("block_id")
+        if not isinstance(block_id, str):
+            continue
+        try:
+            _detail, _status, questions = _internal_fixation_question_candidates(repository, user_id, block_id)
+        except HTTPException:
+            continue
+        for question in questions:
+            if (
+                isinstance(question, dict)
+                and question.get("_validation_state") == "validated"
+                and isinstance(question.get("_fingerprint"), str)
+                and isinstance(question.get("_generator_version"), str)
+            ):
+                candidates.append(question)
+    return candidates
+
+
+def _bounded_adaptive_question_queue_response(
+    repository: JsonStudyRepository,
+    user_id: str,
+    block_id: str,
+    *,
+    limit: int,
+) -> dict[str, object]:
+    if limit < 1 or limit > ADAPTIVE_QUESTION_MAX_LIMIT:
+        raise HTTPException(status_code=422, detail="Question queue limit is invalid.")
+
+    current_detail, current_status, current_questions = _internal_fixation_question_candidates(
+        repository,
+        user_id,
+        block_id,
+    )
+    if current_status == "not_ready":
+        return {
+            "block_id": str(current_detail["block_id"]),
+            "queue_status": "not_ready",
+            "mode": "attempt_aware",
+            "items_count": 0,
+            "items": [],
+            "source": "user_scope",
+        }
+
+    block_items = [
+        item
+        for item in _bounded_study_blocks_response(repository, user_id).get("items", [])
+        if isinstance(item, dict)
+    ]
+    studied_block_ids = _explicitly_studied_block_ids(repository, user_id)
+    corpus_blocks = [
+        block
+        for block in block_items
+        if block.get("block_id") == block_id or str(block.get("block_id")) in studied_block_ids
+    ]
+    if not any(block.get("block_id") == block_id for block in corpus_blocks):
+        corpus_blocks.append(
+            {
+                "block_id": block_id,
+                "material_id": current_detail.get("material_id"),
+            }
+        )
+
+    attempts = repository.list_study_question_attempts(user_id=user_id)
+    last_attempt_key = _attempt_question_key(attempts[-1]) if attempts else ("", "")
+    queue_candidates: list[dict[str, object]] = []
+    seen_corpus_fingerprints: set[str] = set()
+    for question in _current_user_validated_question_candidates(repository, user_id, corpus_blocks):
+        fingerprint = str(question["_fingerprint"])
+        if fingerprint in seen_corpus_fingerprints:
+            continue
+        seen_corpus_fingerprints.add(fingerprint)
+        generator_version = str(question["_generator_version"])
+        state_payload = _derive_question_attempt_state(
+            attempts,
+            question_fingerprint=fingerprint,
+            question_generator_version=generator_version,
+        )
+        block_for_question = str(question.get("_block_id") or "")
+        historical = block_for_question != block_id and block_for_question in studied_block_ids
+        queue_candidates.append(
+            {
+                "question": question,
+                "block_id": block_for_question,
+                "current_block_id": block_id,
+                "question_fingerprint": fingerprint,
+                "question_generator_version": generator_version,
+                "state": state_payload["state"],
+                "later_attempts": state_payload["later_attempts"],
+                "incorrect_count": state_payload["incorrect_count"],
+                "consecutive_correct": state_payload["consecutive_correct"],
+                "eligible": _adaptive_question_is_eligible(
+                    str(state_payload["state"]),
+                    int(state_payload["later_attempts"]),
+                ),
+                "historical": historical,
+                "last_attempted": (fingerprint, generator_version) == last_attempt_key,
+            }
+        )
+
+    queue_candidates.sort(key=_adaptive_question_rank)
+    selected: list[dict[str, object]] = []
+    seen_selected_fingerprints: set[str] = set()
+
+    weak_or_ungraded = [
+        candidate
+        for candidate in queue_candidates
+        if candidate["eligible"] and candidate["state"] in {"weak", "ungraded"}
+    ][:ADAPTIVE_MAX_WEAK_OR_UNGRADED]
+    for candidate in weak_or_ungraded:
+        _append_unique_adaptive_question(
+            selected,
+            candidate,
+            seen_selected_fingerprints,
+            limit=limit,
+        )
+
+    new_current = [
+        candidate
+        for candidate in queue_candidates
+        if candidate["eligible"] and candidate["state"] == "new" and candidate["block_id"] == block_id
+    ][:ADAPTIVE_MAX_NEW_CURRENT]
+    for candidate in new_current:
+        _append_unique_adaptive_question(
+            selected,
+            candidate,
+            seen_selected_fingerprints,
+            limit=limit,
+        )
+
+    reviewing = [
+        candidate
+        for candidate in queue_candidates
+        if candidate["eligible"] and candidate["state"] == "reviewing"
+    ]
+    for candidate in reviewing:
+        _append_unique_adaptive_question(
+            selected,
+            candidate,
+            seen_selected_fingerprints,
+            limit=limit,
+        )
+
+    historical = [
+        candidate
+        for candidate in queue_candidates
+        if candidate["historical"]
+        and (candidate["eligible"] or candidate["state"] == "temporarily_mastered")
+    ][:ADAPTIVE_MAX_HISTORICAL]
+    for candidate in historical:
+        _append_unique_adaptive_question(
+            selected,
+            candidate,
+            seen_selected_fingerprints,
+            limit=limit,
+        )
+
+    eligible_remaining = [
+        candidate
+        for candidate in queue_candidates
+        if candidate["eligible"]
+    ]
+    for candidate in eligible_remaining:
+        _append_unique_adaptive_question(
+            selected,
+            candidate,
+            seen_selected_fingerprints,
+            limit=limit,
+        )
+
+    if not selected and queue_candidates:
+        for candidate in queue_candidates:
+            if not candidate["last_attempted"] or len(queue_candidates) == 1:
+                _append_unique_adaptive_question(
+                    selected,
+                    candidate,
+                    seen_selected_fingerprints,
+                    limit=limit,
+                )
+                break
+
+    if len(selected) > 1 and selected[0].get("last_attempted"):
+        for index, candidate in enumerate(selected[1:], start=1):
+            if not candidate.get("last_attempted"):
+                selected[0], selected[index] = selected[index], selected[0]
+                break
+
+    items = [_public_question_payload(candidate["question"]) for candidate in selected[:limit]]
+    queue_status = "ready" if items else "needs_review"
+    return {
+        "block_id": str(current_detail["block_id"]),
+        "queue_status": queue_status,
+        "mode": "attempt_aware",
+        "items_count": len(items),
+        "items": items,
+        "source": "user_scope",
+    }
+
+
 @router.get("/study/blocks")
 def get_study_blocks(request: Request):
     user_id = _require_authenticated_user_id(request)
@@ -2951,6 +3280,18 @@ def get_study_block_questions(block_id: str, request: Request):
     user_id = _require_authenticated_user_id(request)
     repository = get_repository(request)
     return _bounded_fixation_questions_response(repository, user_id, block_id)
+
+
+@router.get("/study/blocks/{block_id}/questions/next")
+def get_next_study_block_questions(block_id: str, request: Request, limit: int = ADAPTIVE_QUESTION_DEFAULT_LIMIT):
+    user_id = _require_authenticated_user_id(request)
+    repository = get_repository(request)
+    return _bounded_adaptive_question_queue_response(
+        repository,
+        user_id,
+        block_id,
+        limit=limit,
+    )
 
 
 @router.post("/study/blocks/{block_id}/questions/{question_id}/answer/review")

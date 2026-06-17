@@ -14,21 +14,22 @@ Personal-Study-MVP-A moved the current textual study path beyond the Release-Cap
 - Eligible textual study blocks now use deterministic extractive summaries from source chunk text instead of the placeholder `Resumo em preparação para esta seção.`.
 - Study-block objective questions now use deterministic source transformations and have backend-internal evidence-backed answer keys only when one unambiguous answer can be derived.
 - Answer review derives `correct`, `incorrect`, or cautious `ungraded` feedback server-side and persists immutable owner-scoped attempts.
-- Selected answers and attempt numbers now survive restart; weak-topic signals, suppression, and adaptive ordering remain unfinished.
+- Selected answers and attempt numbers now survive restart; Adaptive-Queue-A adds a deterministic backend queue derived from those attempts.
+- The queue prioritizes eligible prior errors and ungraded questions, preserves new current-block questions, suppresses recent correct answers by attempt milestones, and includes a bounded historical sample from explicitly studied blocks.
 - The frontend still never receives answer keys, correctness inputs, mastery state, score, gabarito, raw chunks, or storage paths.
 
 Updated verdicts after this sprint:
 
 | Scenario | Verdict | Conditions |
 | --- | --- | --- |
-| A. Local personal alpha | `CONDITIONAL_GO` | Grounded summaries, validated objective questions, and persisted attempt history now exist. Adaptation remains absent; backups and user review are still required. |
+| A. Local personal alpha | `CONDITIONAL_GO` | Grounded summaries, validated objective questions, persisted attempt history, and backend attempt-aware queue now exist. Frontend queue adoption, backups, and user review are still required. |
 | B. Private 1-2 user staging | `CONDITIONAL_GO` | Still requires single replica, private access, persistent disk, and backup drill. |
 | C. Full-corpus textual personal study | `CONDITIONAL_GO` | Conditional on textual sources, small corpus size, accepted extractive-question limitations, and manual review of outputs. |
-| D. Adaptive question memory | `NO_GO` | Attempt history is persisted, but no weak-topic policy, suppression, eligibility rule, or adaptive queue consumes it. |
+| D. Adaptive question memory | `CONDITIONAL_GO` | Backend queue derives eligibility and ordering from attempts, but the main frontend flow does not consume it yet and no full cyclical scheduler exists. |
 | E. Primary exam preparation environment | `NO_GO` | Still blocked by OCR/corpus coverage, limited deterministic question strategies, no executable cumulative review session, and no official correction/scoring. |
 | F. Public production | `NO_GO` | Still blocked by JSON/file persistence, auth/session hardening, object storage, concurrency, observability, and security review. |
 
-The current product can ingest an edital, prepare textual materials, show an ordered study path, expose extractive source-grounded summaries/key points, show deterministic objective questions with internal correctness when validated, remember explicit selected-answer attempts, record block-study progress, and show a cumulative review candidate. It still cannot adapt question order, prove syllabus sufficiency, execute a full cumulative review session, handle OCR-required corpora by default, or support public production.
+The current product can ingest an edital, prepare textual materials, show an ordered study path, expose extractive source-grounded summaries/key points, show deterministic objective questions with internal correctness when validated, remember explicit selected-answer attempts, derive a bounded attempt-aware backend queue, record block-study progress, and show a cumulative review candidate. It still cannot prove syllabus sufficiency, execute a full cumulative review session, handle OCR-required corpora by default, or support public production.
 
 ## GO / NO-GO Verdicts
 
@@ -37,7 +38,7 @@ The current product can ingest an edital, prepare textual materials, show an ord
 | A. Local personal alpha | `CONDITIONAL_GO` | Good for experimenting with eligible textual `.md`, `.txt`, and textual `.pdf` content, while reviewing deterministic outputs and keeping backups. |
 | B. Private 1-2 user staging | `CONDITIONAL_GO` | Use single replica, persistent volume, private access, backup/restore routine, and no public claims of adaptive grading. |
 | C. Full-corpus personal study | `NO_GO` | Still blocked by OCR gaps, incomplete corpus-coverage proof, limited deterministic question strategies, no executable review session, and JSON concurrency/storage risk. |
-| D. Adaptive question memory | `NO_GO` | Selected answers and correctness history are persisted, but no adaptive policy consumes them. |
+| D. Adaptive question memory | `CONDITIONAL_GO` | Backend queue consumes attempts with milestone-based cooldown; frontend adoption and full cyclical scheduling remain incomplete. |
 | E. Primary exam preparation environment | `NO_GO` | The system cannot yet prove syllabus sufficiency, cover OCR-dependent corpora, execute cumulative reviews, or adapt scheduling from attempt history. |
 | F. Public production | `NO_GO` | Needs transactional persistence, production auth/session design, upload storage, backup/restore, rate limits, monitoring, and security review. |
 
@@ -94,12 +95,12 @@ Counts exceeded 3 because the local Compose QA volume already contained older fi
 | Edital analysis | `PARTIAL` | `edital_ingestion.py` | `POST /api/materials/{id}/edital/analyze` | Material detail, `/editais` | Candidate result/state persisted | Edital tests; one full-suite fixture currently failing | Synthetic edital returned topics/subtopics/bibliography | Heuristic extraction; noisy fixture missed Meteorologia | Harden parser and manual review |
 | Bibliography/reference matching | `PARTIAL` | `bibliography_alignment.py` | `/api/edital/{id}/align-bibliography`, `/alignment` | Limited/read surfaces | Alignment persisted | Bibliography tests | Source inspection | Token overlap, not proof of source adequacy | Product UI and semantic matching |
 | Coverage estimation | `PARTIAL` | `routes.py`, `bibliography_alignment.py` | `GET /api/editais/{id}/coverage` | Edital detail | Computed from material contexts | Coverage tests | Synthetic coverage partial | Lexical estimate only | Coverage confidence model and review UI |
-| Study blocks | `USABLE_ALPHA` | `routes.py` helpers | `GET /api/study/blocks`, `/study/session/next` | `/study` | Computed from prepared summaries | Study block/session tests | 3 blocks generated | Ordered list, not scheduler | Real cycle/scheduler contract |
+| Study blocks | `USABLE_ALPHA` | `routes.py` helpers | `GET /api/study/blocks`, `/study/session/next` | `/study` | Computed from prepared summaries | Study block/session tests | 3 blocks generated | Main path is ordered list; adaptive question queue is separate backend read | Frontend queue adoption and real cycle contract |
 | Block detail | `USABLE_ALPHA` | `routes.py` | `GET /api/study/blocks/{block_id}` | `/study/blocks/[blockId]` | Computed from material summary | Block detail tests | Detail returns bounded extractive summary/key points when source evidence is sufficient | Summary quality still requires validation with real corpora | Grounded question quality remains separate |
 | Summaries/key points | `USABLE_ALPHA` | `_extractive_study_summary`, `_bounded_study_summary_item` in `routes.py` | `/api/materials/{id}/study/summary`, block detail | Material and block detail | Deterministically computed on read; no summary artifact writes | Summary, block-detail, session, and extraction regression tests | Source sentences, key points, bounded anchors, fingerprint, and generator version are returned deterministically | No LLM synthesis; insufficient/title-only/noisy source remains `needs_review`; pedagogical quality requires real-material validation | Validate extractive quality across representative exam corpora |
-| Fixation questions | `USABLE_ALPHA` | `_internal_fixation_question_candidates`, `_bounded_fixation_questions_response` | `GET /api/study/blocks/{id}/questions` | Block detail | Deterministically computed; not persisted | Grounded fixation, fixation read, answer-review, and attempt-memory tests | A-E/A-D and C/E questions use bounded source evidence and stable fingerprints | Conservative rule set returns fewer/no questions when evidence or distractors are insufficient; real-material quality validation remains necessary | Adaptive selection remains separate |
+| Fixation questions | `USABLE_ALPHA` | `_internal_fixation_question_candidates`, `_bounded_fixation_questions_response`, `_bounded_adaptive_question_queue_response` | `GET /api/study/blocks/{id}/questions`, `GET /api/study/blocks/{id}/questions/next` | Block detail uses regular list; queue is backend-only | Deterministically computed; queue derived on read from persisted attempts | Grounded fixation, fixation read, answer-review, attempt-memory, and adaptive-queue tests | A-E/A-D and C/E questions use bounded source evidence and stable fingerprints; queue prioritizes weak/ungraded/new/reviewing/historical items | Conservative generation returns fewer/no questions; frontend does not consume queue yet | Personal-study E2E and frontend queue adoption |
 | Answer review | `USABLE_ALPHA` | `_bounded_answer_review_response`, `record_study_question_attempt` | `POST /api/study/blocks/{id}/questions/{id}/answer/review` | Block detail feedback | Immutable attempt persisted in user-scoped JSON | Answer review, grounded fixation, and attempt-memory tests | Validated questions derive correctness server-side; unvalidated resolvable questions stay `ungraded` | No official correction, score, mastery, or adaptation | Validate with representative real material |
-| Attempt memory | `USABLE_ALPHA` | `record_study_question_attempt`, bounded history helper | Answer review POST; `GET /api/study/blocks/{block_id}/questions/{question_id}/attempts` | Submission is connected; history is API-only | Selected answer, correctness state, identity/version, context, and attempt number persist | `test_question_attempt_memory_api.py` | Exact retry is stable; conflicting key reuse returns 409; new keys allow later attempts; reload preserves history | Single-replica JSON, no adaptive consumer | Adaptive queue in a separate phase |
+| Attempt memory | `USABLE_ALPHA` | `record_study_question_attempt`, bounded history helper | Answer review POST; `GET /api/study/blocks/{block_id}/questions/{question_id}/attempts` | Submission is connected; history is API-only | Selected answer, correctness state, identity/version, context, and attempt number persist | `test_question_attempt_memory_api.py`, `test_adaptive_question_queue_api.py` | Exact retry is stable; conflicting key reuse returns 409; new keys allow later attempts; reload preserves history; queue derives state without writing | Single-replica JSON; frontend does not show history/queue yet | Personal-study E2E |
 | Reinforcement | `READ_ONLY` | Answer review helper | Included in answer-review response | `Reforço sugerido` panel | Stateless | Reinforcement UI tests | Message returned | Does not alter schedule | Persist weak-topic signals |
 | Explicit progress | `USABLE_ALPHA` | `record_study_progress_event`, summary helpers | `/api/study/progress/events`, `/api/study/progress/summary` | Block detail button, `/study` card | JSON event metadata | Progress tests | Marking blocks studied persisted | Explicit only; no material completion | Progress UI/summary hardening |
 | Studied-material derivation | `USABLE_ALPHA` | `_studied_material_ids_from_blocks` | Progress summary/review next | `/study` renders backend basis | Computed from explicit events | Review progress tests | 3 studied materials after all blocks marked | Requires safe block-material mapping | QA with larger material structures |
@@ -174,7 +175,17 @@ The generator currently supports a deliberately small rule set: definitions, rul
 
 Current answer review persists the selected alternative, timestamp, server-derived correctness state, stable question fingerprint/version, response context, and per-question attempt number. A client-provided idempotency key is required: exact retries return the original record, conflicting reuse returns `409`, and a new key permits a legitimate later attempt.
 
-The history is immutable, owner-scoped, bounded to the latest 20 records per resolved question, and survives repository reload. It does not persist or derive next eligibility, weakness category, mastery, suppression, or reinforcement history. Therefore attempt memory is `USABLE_ALPHA`, while adaptive question memory remains `MISSING`.
+The history is immutable, owner-scoped, bounded to the latest 20 records per resolved question, and survives repository reload.
+
+Adaptive-Queue-A derives question state on read without mutating attempts:
+
+- `new`: no attempts exist.
+- `ungraded`: latest attempt is ungraded.
+- `weak`: latest validated attempt is incorrect.
+- `reviewing`: latest validated attempt is correct with fewer than two consecutive correct attempts.
+- `temporarily_mastered`: at least two consecutive validated correct attempts, never permanent.
+
+Eligibility uses later explicit attempts by the same user, not fixed wall-clock intervals: weak/ungraded after 1 later attempt, reviewing after 3, and temporarily mastered after 8 or as a bounded historical sample. The queue is deterministic and owner-scoped, avoids immediate repetition when alternatives exist, and samples historical questions only from explicitly studied blocks. It does not yet power the main frontend block-detail flow and is not a complete cyclical scheduler.
 
 ## Review And Reinforcement
 
@@ -218,9 +229,10 @@ Safety:
 Backend full suite:
 
 - Command: `PYTHONPATH=./.python_packages /Users/vjr/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -m pytest`
-- Result after Attempt-Memory-A: `1548 passed`, `0 failed`, `5 existing SWIG/PyMuPDF deprecation warnings`.
-- Focused attempt/question/review suite: `43 passed`.
+- Result after Adaptive-Queue-A: `1556 passed`, `0 failed`, `5 existing SWIG/PyMuPDF deprecation warnings`.
+- Focused adaptive/attempt/question/review suite: `54 passed`.
 - Runtime persistence smoke: three immutable attempts persisted, exact retry returned the same attempt, conflicting key reuse returned `409`, repository reload retained all three records, and adaptive/weak-topic containers remained empty.
+- Runtime queue smoke: five validated questions across current/studied blocks, weak question prioritized after an intervening attempt, reviewing/mastered cooldowns honored by attempt milestones, bounded historical item present, queue reload identical, and queue GET created no attempts or progress events.
 
 Frontend:
 
@@ -233,7 +245,7 @@ Frontend:
 P0 required before full personal study:
 
 - Validate source-grounded summary quality across representative real exam materials.
-- Adaptive question memory and scheduling.
+- Integrate the backend attempt-aware queue into a real end-to-end study flow.
 - Better edital extraction validation for broader noisy/complex structures.
 - Backup/restore command tested on real corpus.
 
@@ -259,4 +271,4 @@ P3 later:
 
 ## Recommended Next Sprint
 
-The next narrow capability phase is `Adaptive-Queue-A`: consume persisted attempts with a deterministic, owner-scoped selection policy without adding global scores or permanent mastery. Real-material validation of summaries and questions remains a parallel quality requirement.
+The next narrow capability phase is `Personal-Study-E2E-A`: exercise the real textual study path end to end with the attempt-aware queue, confirm frontend integration decisions, and keep score/gabarito/review-execution boundaries explicit. Real-material validation of summaries and questions remains a parallel quality requirement.
