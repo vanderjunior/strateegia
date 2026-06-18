@@ -10,7 +10,7 @@ Do not market staging as official correction, scoring, permanent mastery, OCR-co
 
 ## Recommendation
 
-Primary option: local Docker host plus Tailscale for one or two trusted testers.
+Primary option after Personal-Study-E2E-A: Railway Hobby-style private staging with a persistent backend volume, or local Docker host plus Tailscale when cloud credentials are not available.
 
 Fallback option: Railway Hobby or Render paid service with persistent disk/volume, single backend replica, and explicit backups.
 
@@ -57,16 +57,17 @@ Then expose access only to trusted tailnet users. Tailscale CLI docs describe co
 
 Status: conditional fallback.
 
-Railway volumes provide persistent data for services. Railway docs list volume sizes by plan: Free/Trial 0.5 GB, Hobby 5 GB, Pro 50 GB, and note that replicas cannot be used with volumes: https://docs.railway.com/volumes/reference
+Railway volumes provide persistent data for services. Treat the backend as single-replica while JSON/file storage is in use.
 
 Required setup:
 
 - Backend service from root `Dockerfile`.
 - Frontend service from `frontend/Dockerfile`.
-- Volume mounted to backend at `/app/data`.
-- `STUDYFLOW_DATA_FILE=/app/data/study_data.json`.
-- `STUDYFLOW_UPLOAD_ROOT=/app/data/uploads`.
-- `APP_ENV=production`.
+- Volume mounted to backend at `/data`.
+- `DATA_DIR=/data`.
+- `APP_ENV=staging`.
+- `ENABLE_PUBLIC_REGISTRATION=false`.
+- `SESSION_COOKIE_SECURE=true`.
 - `ENABLE_INSPECTION=false` or protect it explicitly.
 - `BACKEND_INTERNAL_URL` on frontend pointing to backend private URL.
 - One backend replica only.
@@ -79,6 +80,8 @@ Risks:
 
 Verdict: `CONDITIONAL_GO` for 1-2 testers only after backup drill.
 
+Before tester access, run the NPM audit triage in `docs/staging-launch-runbook.md`. Do not proceed if a high or critical production-runtime advisory is present.
+
 ## Option C: Render Paid Service With Disk
 
 Status: conditional fallback.
@@ -87,10 +90,10 @@ Render persistent disks preserve filesystem changes across deploys/restarts for 
 
 Required setup:
 
-- Backend Docker service with disk mounted at `/app/data`.
+- Backend Docker service with disk mounted at `/data` or the provider-specific persistent disk path.
 - Frontend web service.
 - Single backend instance.
-- Same env as Railway.
+- Same env as Railway, adjusted only for the provider-specific disk mount.
 - Backup routine from disk snapshots plus exported tarball.
 
 Risks:
@@ -134,11 +137,13 @@ Do not assume a free plan is sufficient. Railway Free volume is 0.5 GB per curre
 Backend:
 
 ```text
-APP_ENV=production
-STUDYFLOW_DATA_FILE=/app/data/study_data.json
-STUDYFLOW_UPLOAD_ROOT=/app/data/uploads
+APP_ENV=staging
+DATA_DIR=/data
+ENABLE_PUBLIC_REGISTRATION=false
+SESSION_COOKIE_SECURE=true
 ENABLE_INSPECTION=false
 INSPECTION_ALLOWED_IN_PRODUCTION=false
+REQUIRE_AUTH_FOR_INSPECTION=true
 ENABLE_OCR=false
 ```
 
@@ -146,13 +151,13 @@ Frontend:
 
 ```text
 BACKEND_INTERNAL_URL=<private backend URL>
-NEXT_PUBLIC_API_BASE_URL=<public backend URL if needed>
+NEXT_PUBLIC_API_BASE_URL=
 NEXT_PUBLIC_USE_MOCK_API=false
 ```
 
 ## Cookies And Auth
 
-Current cookies are HTTP-only and SameSite=Lax but not explicitly secure. For private staging behind HTTPS, add/verify secure cookie behavior before external testers.
+Current staging cookies are HTTP-only, SameSite=Lax, and secure when `APP_ENV=staging` unless explicitly overridden.
 
 Sessions are in memory; backend restart logs users out.
 
@@ -160,7 +165,7 @@ Sessions are in memory; backend restart logs users out.
 
 Suggested checks:
 
-- Backend: `GET /api/exam-profiles`.
+- Backend: `GET /api/health`.
 - Frontend: `GET /`.
 
 ## Backup Policy
@@ -168,7 +173,7 @@ Suggested checks:
 Before every deploy:
 
 1. Stop writes if possible.
-2. Export `/app/data` to a tarball.
+2. Export `/data` to a tarball.
 3. Store backup outside the hosting volume.
 4. Verify restore on a separate environment.
 
@@ -188,3 +193,7 @@ Before every deploy:
 ## Single-Replica Requirement
 
 Run only one backend replica while storage is JSON/file based. Multiple writers can corrupt or overwrite state because writes are read-modify-write against one JSON file.
+
+## Detailed Railway Runbook
+
+Use `docs/staging-launch-runbook.md` for the exact two-service Railway setup, tester creation command, smoke checklist, restart-persistence checks, backup procedure, and rollback flow.

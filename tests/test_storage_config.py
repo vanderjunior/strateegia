@@ -28,6 +28,7 @@ def register_and_login(client: TestClient, username: str) -> dict[str, object]:
 
 def test_default_storage_paths_are_preserved(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("DATA_DIR", raising=False)
     monkeypatch.delenv("STUDYFLOW_DATA_FILE", raising=False)
     monkeypatch.delenv("STUDYFLOW_UPLOAD_ROOT", raising=False)
 
@@ -38,6 +39,21 @@ def test_default_storage_paths_are_preserved(tmp_path, monkeypatch):
     assert app.state.repository.path == Path("data") / "study_data.json"
     assert app.state.storage_root == Path("data") / "uploads"
     assert (tmp_path / "data" / "study_data.json").exists()
+
+
+def test_data_dir_drives_default_staging_persistent_paths(tmp_path, monkeypatch):
+    data_dir = tmp_path / "railway-data"
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.delenv("STUDYFLOW_DATA_FILE", raising=False)
+    monkeypatch.delenv("STUDYFLOW_UPLOAD_ROOT", raising=False)
+
+    app = create_app()
+
+    assert get_studyflow_data_file() == data_dir / "study_data.json"
+    assert get_studyflow_upload_root() == data_dir / "uploads"
+    assert app.state.repository.path == data_dir / "study_data.json"
+    assert app.state.storage_root == data_dir / "uploads"
+    assert app.state.repository.path.exists()
 
 
 def test_env_configured_data_file_and_upload_root_are_used(tmp_path, monkeypatch):

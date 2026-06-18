@@ -109,7 +109,7 @@ Como executar:
 
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:8000`
-- Backend health smoke: `curl http://localhost:8000/api/exam-profiles`
+- Backend health smoke: `curl http://localhost:8000/api/health`
 
 Create a user from the UI at `/login`, or use `POST /api/auth/register` on the backend. The app does not require a production auth bypass.
 
@@ -117,9 +117,12 @@ Create a user from the UI at `/login`, or use `POST /api/auth/register` on the b
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `APP_ENV` | `development` | `development`, `test`, or `production`. |
-| `STUDYFLOW_DATA_FILE` | `data/study_data.json` | JSON data file. |
-| `STUDYFLOW_UPLOAD_ROOT` | `data/uploads` | Upload/artifact root. |
+| `APP_ENV` | `development` | `development`, `test`, `staging`, or `production`. |
+| `DATA_DIR` | `data` | Base directory for mutable JSON/upload data. Railway staging uses `/data`. |
+| `STUDYFLOW_DATA_FILE` | `$DATA_DIR/study_data.json` | Optional JSON data-file override. |
+| `STUDYFLOW_UPLOAD_ROOT` | `$DATA_DIR/uploads` | Optional upload/artifact-root override. |
+| `ENABLE_PUBLIC_REGISTRATION` | dev/test true, staging/prod false | Controls the backend register endpoint. |
+| `SESSION_COOKIE_SECURE` | staging/prod true | Adds the Secure cookie flag for HTTPS staging. |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://127.0.0.1:8000` | Browser-visible backend base for local dev. |
 | `BACKEND_INTERNAL_URL` | `http://127.0.0.1:8000` | Frontend server-to-backend proxy base. |
 | `NEXT_PUBLIC_USE_MOCK_API` | `false` | Mock mode toggle. |
@@ -213,7 +216,7 @@ Python 3.12 is the Docker/runtime target. The local Codex audit used a bundled P
 
 Primary recommendation today: local Docker + Tailscale for one or two testers. This best matches the current JSON/file persistence and single-replica assumptions.
 
-Fallback: Railway Hobby or Render paid service with a persistent volume/disk mounted at `/app/data`, one backend replica, separate frontend service, explicit backups, and private access controls.
+Fallback/cloud path: Railway private staging with frontend and backend services, a persistent backend volume mounted at `/data`, one backend replica, separate frontend service, explicit backups, and private access controls. See `docs/staging-launch-runbook.md`.
 
 Heroku-style ephemeral dynos are not a good fit unless data is moved out of the local filesystem.
 

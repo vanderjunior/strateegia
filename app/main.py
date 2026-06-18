@@ -24,11 +24,7 @@ def create_app(
     app.state.pipeline = pipeline or StudyPipeline()
     app.state.session_manager = SessionManager()
     app.state.auth_sessions = {}
-    default_upload_root = (
-        app.state.repository.path.parent / "uploads"
-        if repository is not None
-        else Path("data") / "uploads"
-    )
+    default_upload_root = app.state.repository.path.parent / "uploads"
     app.state.storage_root = get_studyflow_upload_root(default_upload_root)
     app.include_router(router)
     app.mount(

@@ -78,6 +78,41 @@ def test_login_me_logout_flow_uses_cookie_session(tmp_path):
     assert me_after_logout.json() == {"authenticated": False, "user": None}
 
 
+def test_public_registration_is_disabled_in_staging(tmp_path, monkeypatch):
+    monkeypatch.setenv("APP_ENV", "staging")
+    monkeypatch.delenv("ENABLE_PUBLIC_REGISTRATION", raising=False)
+    client, _ = create_client(tmp_path)
+
+    registered = client.post(
+        "/api/auth/register",
+        json={
+            "username": "staging-public",
+            "password": "senha-segura-123",
+            "display_name": "Staging Public",
+        },
+    )
+
+    assert registered.status_code == 404
+
+
+def test_staging_login_cookie_is_secure_when_user_exists(tmp_path, monkeypatch):
+    monkeypatch.setenv("APP_ENV", "staging")
+    client, repository = create_client(tmp_path)
+    LocalUserService(repository).register_user(
+        username="staging-user",
+        password="senha-segura-123",
+        display_name="Staging User",
+    )
+
+    logged_in = client.post(
+        "/api/auth/login",
+        json={"username": "staging-user", "password": "senha-segura-123"},
+    )
+
+    assert logged_in.status_code == 200
+    assert "secure" in logged_in.headers["set-cookie"].lower()
+
+
 def test_readme_and_requirements_cover_product_foundation_sections():
     requirements = Path("requirements.txt").read_text(encoding="utf-8").lower()
     readme = Path("README.md").read_text(encoding="utf-8").lower()

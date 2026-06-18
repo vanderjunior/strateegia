@@ -17,7 +17,7 @@ from app.api.schemas import (
     UserRegisterRequest,
     SessionStartRequest,
 )
-from app.config import inspection_enabled, inspection_requires_auth
+from app.config import inspection_enabled, inspection_requires_auth, public_registration_enabled, session_cookie_secure
 from app.domain.models import AnswerSubmission, BoardStyle, ProgressState
 from app.repositories.json_store import (
     JsonStudyRepository,
@@ -166,6 +166,11 @@ STUDY_PROGRESS_EVENT_TARGETS = {
 
 def get_repository(request: Request) -> JsonStudyRepository:
     return request.app.state.repository
+
+
+@router.get("/health")
+def health_check() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 def get_pipeline(request: Request) -> StudyPipeline:
@@ -677,6 +682,8 @@ def submit_feedback_answer(submission: FeedbackAnswerSubmission, request: Reques
 
 @router.post("/auth/register", status_code=201)
 def register_user(payload: UserRegisterRequest, request: Request):
+    if not public_registration_enabled():
+        raise HTTPException(status_code=404, detail="Not found.")
     try:
         user = get_user_service(request).register_user(
             username=payload.username,
@@ -704,6 +711,7 @@ def login_user(payload: UserLoginRequest, request: Request, response: Response):
         token,
         httponly=True,
         samesite="lax",
+        secure=session_cookie_secure(),
     )
     return {"authenticated": True, "user": _public_user_payload(user)}
 

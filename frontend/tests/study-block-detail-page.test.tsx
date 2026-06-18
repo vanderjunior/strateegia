@@ -119,6 +119,19 @@ function progressEventResponse(overrides: Record<string, unknown> = {}) {
   };
 }
 
+async function chooseAlternativeAndReview(name: string) {
+  const selectedOption = await screen.findByRole("radio", { name });
+  await act(async () => {
+    fireEvent.click(selectedOption);
+  });
+  await waitFor(() => {
+    expect(selectedOption).toBeChecked();
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+  });
+}
+
 describe("StudyBlockDetailReadOnlyClient", () => {
   beforeEach(() => {
     studyBlockDetailMock.createStudyProgressEvent.mockReset();
@@ -425,8 +438,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     await waitFor(() => {
       expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledWith(
@@ -477,8 +489,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByText("Feedback")).toBeInTheDocument();
     expect(screen.getByText("Compare sua escolha com o resumo do bloco.")).toBeInTheDocument();
@@ -517,8 +528,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "C. Certo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("C. Certo");
 
     await waitFor(() => {
       expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledWith(
@@ -568,8 +578,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
     expect(await screen.findByText("Não foi possível revisar sua escolha agora.")).toBeInTheDocument();
     const firstKey = studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mock.calls[0][2].idempotency_key;
 
@@ -608,8 +617,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByRole("button", { name: "Revisando escolha..." })).toBeDisabled();
     await act(async () => {
@@ -638,8 +646,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByText("Feedback")).toBeInTheDocument();
     expect(screen.getByText("Escolha revisada sem pontuação.")).toBeInTheDocument();
@@ -683,8 +690,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByText("Esta escolha precisa de conferência.")).toBeInTheDocument();
     expect(screen.getByText("Revisitar bloco")).toBeInTheDocument();
@@ -720,8 +726,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByText("Reforço sugerido")).toBeInTheDocument();
     expect(screen.getByText("Tentar novamente")).toBeInTheDocument();
@@ -757,8 +762,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByText("Reforço sugerido")).toBeInTheDocument();
     expect(
@@ -794,8 +798,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
 
     render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
 
-    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
-    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+    await chooseAlternativeAndReview("A. Revisar Atos administrativos.");
 
     expect(await screen.findByText(message)).toBeInTheDocument();
     expect(screen.queryByText("Mensagem técnica que não deve aparecer.")).not.toBeInTheDocument();

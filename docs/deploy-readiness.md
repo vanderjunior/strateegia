@@ -757,19 +757,32 @@ Do not migrate persistence before staging proves the product flow and storage re
 - Safety copy remains present but shorter: answer review is still guidance only, study progress still does not complete materials automatically, and score/gabarito/correction remain absent.
 - Block-detail, materials/editais, AppShell/mobile, and final browser visual QA refinements remain pending UX-Polish-D through UX-Polish-F and UX-Polish-QA-A.
 
+## Staging-Launch-A Update
+
+- Repository preparation for private Railway staging is complete.
+- Backend now supports `APP_ENV=staging`, `DATA_DIR=/data`, secure cookies by default in staging, and disabled public registration by default in staging/production.
+- Backend exposes a lightweight non-mutating `GET /api/health` endpoint for service health checks.
+- Root Docker startup now uses `scripts/start_backend.sh`, which binds Uvicorn to `0.0.0.0:$PORT`.
+- `scripts/create_staging_user.py` creates one tester user explicitly with password supplied by environment variable or secure prompt; it does not run during normal startup and refuses `APP_ENV=production`.
+- Deployment status is `READY_FOR_MANUAL_DEPLOY` because no Railway credentials/project/domain were available in this environment.
+- Use `docs/staging-launch-runbook.md` for exact Railway service configuration, smoke testing, persistence checks, backup, and rollback.
+- Local staging-prep validation passed: backend `1560 passed`, frontend `523 passed`, frontend build/typecheck passed, Docker Compose rebuilt both images, backend `/api/health` returned `200`, and frontend `/` returned `200`.
+- Railway public URL smoke, Railway restart/redeploy persistence, volume backup creation, and tester account creation remain manual deployment steps.
+- NPM audit triage: non-forced `npm audit fix` removed the dev high/critical Vite/Vitest findings and updated the lockfile within existing semver ranges. A moderate production Next/PostCSS advisory remains because npm only offers a forced breaking remediation; this is documented as a staging risk, not a public-production clearance.
+
 ## Non-Goals
 
 - No PostgreSQL migration.
 - No external auth provider.
-- No deployment provider configuration.
+- No public production deployment provider configuration.
 - No upload/process/OCR/generation/simulado/progress/scheduler behavior changes.
 - No pricing, plans, checkout, or public SaaS packaging.
 
 ## Release-Capability-Audit-A Deployment Finding
 
-- Current architecture is suitable for local/private alpha only when `/app/data` is persistent and backed up.
+- Current architecture is suitable for local/private alpha only when the backend data directory is persistent and backed up.
 - Primary private staging recommendation is local Docker plus Tailscale because it preserves the current single-host JSON/upload assumptions.
-- Railway Hobby or Render paid persistent disk can be considered for 1-2 trusted testers only with one backend replica, explicit `/app/data` volume/disk, secure inspection settings, and backup/restore validation.
+- Railway Hobby or Render paid persistent disk can be considered for 1-2 trusted testers only with one backend replica, explicit persistent data mount, secure inspection settings, and backup/restore validation.
 - Free/ephemeral hosting is not sufficient for realistic study data because uploads, extracted text, chunks, analyses, and progress events are filesystem/JSON-backed.
 - Heroku-style ephemeral dynos are not a fit until Mentorium moves mutable state to PostgreSQL/object storage.
 - Public production remains `NO_GO` until transactional persistence, object storage, production auth/session handling, concurrency controls, observability, and a security review exist.
@@ -777,7 +790,7 @@ Do not migrate persistence before staging proves the product flow and storage re
 ## Personal-Study-MVP-A Readiness Update
 
 - The textual personal-study core is stronger than the Release-Capability-Audit-A baseline: summaries are now extractive/source-grounded for eligible blocks, validated questions have backend-only evidence-backed answer keys, and selected-answer attempts persist with server-derived correctness.
-- Private alpha remains conditional on single-replica JSON/file storage, persistent `/app/data`, backup/restore discipline, trusted users, and clear disclosure that OCR, official correction, public score, and permanent mastery are not available.
+- Private alpha remains conditional on single-replica JSON/file storage, persistent backend data, backup/restore discipline, trusted users, and clear disclosure that OCR, official correction, public score, and permanent mastery are not available.
 - New persisted study state includes bounded question attempts, adaptive question state, and weak-topic signals; these must be backed up with the existing JSON store and uploads.
 - The adaptive policy is deterministic and local to the backend. It does not use a scheduler service, fixed 24h/7d/30d SRS cadence, frontend inference, PostgreSQL, LLM generation, or OCR.
 - Deployment remains `NO_GO` for public production. The remaining blockers are transactional persistence, object storage, production auth/session handling, stronger concurrency controls, observability, security review, OCR strategy, and broader pedagogical QA on real corpora.
@@ -785,6 +798,6 @@ Do not migrate persistence before staging proves the product flow and storage re
 ## Personal-Study-E2E-A Readiness Update
 
 - Block detail now consumes the backend adaptive question queue through the frontend same-origin proxy and refreshes that queue only after confirmed explicit answer submissions.
-- This improves the local/private alpha study loop, but does not change deployment topology: staging must still run one backend replica with persistent `/app/data`, backups, private access, and clear alpha labeling.
+- This improves the local/private alpha study loop, but does not change deployment topology: staging must still run one backend replica with persistent backend data, backups, private access, and clear alpha labeling.
 - Queue reads are non-mutating and must not be treated as a scheduler service, scoring engine, permanent mastery model, or production-ready adaptive platform.
 - Compose E2E passed for a fresh textual user: one edital was uploaded/analyzed, three Markdown study materials were prepared, block detail rendered grounded summary/key points plus the adaptive queue, incorrect/correct attempts persisted, progress/review switched to `studied_materials`, backend restart preserved state, and a second user did not see the first user's materials or attempt influence.

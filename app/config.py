@@ -6,7 +6,7 @@ from pathlib import Path
 
 TRUE_VALUES = {"true", "1", "yes", "on"}
 FALSE_VALUES = {"false", "0", "no", "off"}
-VALID_APP_ENVS = {"development", "test", "production"}
+VALID_APP_ENVS = {"development", "test", "staging", "production"}
 DEFAULT_STUDYFLOW_DATA_FILE = Path("data") / "study_data.json"
 DEFAULT_STUDYFLOW_UPLOAD_ROOT = Path("data") / "uploads"
 
@@ -20,6 +20,10 @@ def get_app_env() -> str:
 
 def is_production() -> bool:
     return get_app_env() == "production"
+
+
+def is_deployed_env() -> bool:
+    return get_app_env() in {"staging", "production"}
 
 
 def parse_bool_env(name: str, default: bool) -> bool:
@@ -41,12 +45,24 @@ def get_path_env(name: str, default: Path) -> Path:
     return Path(str(raw).strip()).expanduser()
 
 
+def get_data_dir() -> Path:
+    return get_path_env("DATA_DIR", Path("data"))
+
+
 def get_studyflow_data_file() -> Path:
-    return get_path_env("STUDYFLOW_DATA_FILE", DEFAULT_STUDYFLOW_DATA_FILE)
+    return get_path_env("STUDYFLOW_DATA_FILE", get_data_dir() / "study_data.json")
 
 
 def get_studyflow_upload_root(default: Path | None = None) -> Path:
-    return get_path_env("STUDYFLOW_UPLOAD_ROOT", default or DEFAULT_STUDYFLOW_UPLOAD_ROOT)
+    return get_path_env("STUDYFLOW_UPLOAD_ROOT", default or get_data_dir() / "uploads")
+
+
+def public_registration_enabled() -> bool:
+    return parse_bool_env("ENABLE_PUBLIC_REGISTRATION", not is_deployed_env())
+
+
+def session_cookie_secure() -> bool:
+    return parse_bool_env("SESSION_COOKIE_SECURE", is_deployed_env())
 
 
 def inspection_allowed_in_production() -> bool:
@@ -54,7 +70,7 @@ def inspection_allowed_in_production() -> bool:
 
 
 def inspection_enabled() -> bool:
-    if is_production():
+    if is_deployed_env():
         if not inspection_allowed_in_production():
             return False
         return parse_bool_env("ENABLE_INSPECTION", False)
@@ -62,5 +78,5 @@ def inspection_enabled() -> bool:
 
 
 def inspection_requires_auth() -> bool:
-    default = True if is_production() else False
+    default = True if is_deployed_env() else False
     return parse_bool_env("REQUIRE_AUTH_FOR_INSPECTION", default)

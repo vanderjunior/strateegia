@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app.domain.models import BoardStyle, Document, GeneratedQuestion, Topic
 from app.main import create_app
 from app.repositories.json_store import JsonStudyRepository
+from app.services.user_service import LocalUserService
 
 
 def build_document(*, title: str, topic_id: str, question_id: str, created_at: datetime) -> Document:
@@ -53,22 +54,19 @@ def create_client(tmp_path):
 
 
 def register_and_login(client: TestClient, username: str):
-    register = client.post(
-        "/api/auth/register",
-        json={
-            "username": username,
-            "password": "senha-segura-123",
-            "display_name": username.title(),
-            "email": f"{username}@example.com",
-        },
+    repository = client.app.state.repository
+    user = LocalUserService(repository).register_user(
+        username=username,
+        password="senha-segura-123",
+        display_name=username.title(),
+        email=f"{username}@example.com",
     )
-    assert register.status_code == 201
     login = client.post(
         "/api/auth/login",
         json={"username": username, "password": "senha-segura-123"},
     )
     assert login.status_code == 200
-    return register.json()
+    return user.model_dump(mode="json")
 
 
 def test_test_environment_keeps_inspection_routes_available_by_default(tmp_path, monkeypatch):
@@ -118,12 +116,20 @@ def test_explicit_disable_blocks_inspection_consistently_without_mutation(tmp_pa
     assert current_before == current_after
 
 
-def test_production_blocks_inspection_by_default_but_keeps_normal_routes_available(tmp_path, monkeypatch):
+def test_production_blocks_inspection_and_public_registration_by_default_but_keeps_login_available(
+    tmp_path, monkeypatch
+):
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.delenv("ENABLE_INSPECTION", raising=False)
     monkeypatch.delenv("INSPECTION_ALLOWED_IN_PRODUCTION", raising=False)
     monkeypatch.delenv("REQUIRE_AUTH_FOR_INSPECTION", raising=False)
-    client, _ = create_client(tmp_path)
+    client, repository = create_client(tmp_path)
+    LocalUserService(repository).register_user(
+        username="produser",
+        password="senha-segura-123",
+        display_name="Prod User",
+        email="produser@example.com",
+    )
 
     home = client.get("/")
     register = client.post(
@@ -135,11 +141,18 @@ def test_production_blocks_inspection_by_default_but_keeps_normal_routes_availab
             "email": "produser@example.com",
         },
     )
+    login = client.post(
+        "/api/auth/login",
+        json={"username": "produser", "password": "senha-segura-123"},
+    )
+    health = client.get("/api/health")
     inspection = client.get("/inspection")
     runtime = client.get("/api/inspection/runtime")
 
     assert home.status_code == 200
-    assert register.status_code == 201
+    assert health.status_code == 200
+    assert register.status_code == 404
+    assert login.status_code == 200
     assert inspection.status_code == 404
     assert runtime.status_code == 404
 
@@ -150,7 +163,7 @@ def test_production_explicit_enable_requires_auth_and_allows_authenticated_acces
     monkeypatch.setenv("INSPECTION_ALLOWED_IN_PRODUCTION", "true")
     monkeypatch.setenv("REQUIRE_AUTH_FOR_INSPECTION", "true")
     client, repository = create_client(tmp_path)
-    authed = TestClient(client.app)
+    authed = TestClient(client.app, base_url="https://testserver")
     now = datetime(2026, 5, 17, 16, 30, tzinfo=timezone.utc)
     register_and_login(authed, "guardado")
     repository.save_document(
@@ -183,7 +196,7 @@ def test_development_auth_required_mode_blocks_unauthenticated_and_preserves_aut
     monkeypatch.delenv("ENABLE_INSPECTION", raising=False)
     monkeypatch.delenv("INSPECTION_ALLOWED_IN_PRODUCTION", raising=False)
     client, _ = create_client(tmp_path)
-    authed = TestClient(client.app)
+    authed = TestClient(client.app, base_url="https://testserver")
     register_and_login(authed, "devauth")
 
     unauth = client.get("/api/inspection/runtime")

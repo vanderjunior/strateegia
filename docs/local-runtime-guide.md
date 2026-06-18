@@ -16,7 +16,7 @@ cp .env.example .env
 docker compose build
 docker compose up -d
 docker compose ps
-curl http://localhost:8000/api/exam-profiles
+curl http://localhost:8000/api/health
 open http://localhost:3000
 ```
 
@@ -38,10 +38,11 @@ Files:
 
 The backend also supports:
 
+- `DATA_DIR`
 - `STUDYFLOW_DATA_FILE`
 - `STUDYFLOW_UPLOAD_ROOT`
 
-Use those only if you deliberately want a different data location.
+By default, `STUDYFLOW_DATA_FILE` and `STUDYFLOW_UPLOAD_ROOT` resolve below `DATA_DIR`. Local development remains backward compatible with `DATA_DIR=data`; Railway staging should set `DATA_DIR=/data`.
 
 ## User Creation
 
@@ -54,6 +55,13 @@ curl -X POST http://localhost:8000/api/auth/register \
 ```
 
 Then log in at `/login`.
+
+For private staging, public registration is disabled by default. Create tester users with:
+
+```bash
+APP_ENV=staging DATA_DIR=/data MENTORIUM_TESTER_PASSWORD='<set-in-shell-only>' \
+python scripts/create_staging_user.py --username tester-one --display-name 'Tester One'
+```
 
 ## Supported Uploads
 

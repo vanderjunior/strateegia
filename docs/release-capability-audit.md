@@ -283,3 +283,16 @@ P3 later:
 ## Recommended Next Sprint
 
 The next narrow phase is `Staging-Launch-A`: prepare a private, single-replica staging launch with persistent disk, backup/restore rehearsal, inspection hardening, and clear alpha labeling. Real-material validation of summaries and questions remains a parallel quality requirement.
+
+## Staging-Launch-A Update
+
+Staging repository preparation is complete and classified as `READY_FOR_MANUAL_DEPLOY` until real Railway credentials, services, and a public frontend URL are available.
+
+- Backend deployment now has a PORT-aware Docker startup script and a non-mutating `GET /api/health`.
+- `DATA_DIR=/data` drives default JSON/upload persistence paths for Railway while local `data/` defaults remain backward compatible.
+- `APP_ENV=staging` disables public registration and enables secure cookies by default.
+- Tester users must be created explicitly with `scripts/create_staging_user.py`; no tester fixture or default user runs during startup.
+- `docs/staging-launch-runbook.md` documents two-service Railway setup, variables, volume mount, smoke checks, restart-persistence checks, backup, and rollback.
+- Local validation passed before manual Railway deployment: backend `1560 passed`, frontend `523 passed`, frontend build/typecheck passed, Docker Compose rebuilt successfully, backend `/api/health` returned `200`, and frontend `/` returned `200`.
+
+Public production remains `NO_GO`; private staging remains `CONDITIONAL_GO` pending manual Railway deployment, smoke testing, and backup verification.

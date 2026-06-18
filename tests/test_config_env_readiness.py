@@ -36,6 +36,25 @@ def test_config_defaults_and_invalid_values_remain_secure_by_default(monkeypatch
     assert config.inspection_requires_auth() is True
 
 
+def test_staging_defaults_disable_registration_and_use_secure_cookie(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "staging")
+    monkeypatch.delenv("ENABLE_PUBLIC_REGISTRATION", raising=False)
+    monkeypatch.delenv("SESSION_COOKIE_SECURE", raising=False)
+    monkeypatch.delenv("INSPECTION_ALLOWED_IN_PRODUCTION", raising=False)
+
+    assert config.get_app_env() == "staging"
+    assert config.public_registration_enabled() is False
+    assert config.session_cookie_secure() is True
+    assert config.inspection_enabled() is False
+    assert config.inspection_requires_auth() is True
+
+    monkeypatch.setenv("ENABLE_PUBLIC_REGISTRATION", "true")
+    monkeypatch.setenv("SESSION_COOKIE_SECURE", "false")
+
+    assert config.public_registration_enabled() is True
+    assert config.session_cookie_secure() is False
+
+
 def test_ocr_config_readiness_defaults_and_bounds_remain_optional(monkeypatch):
     monkeypatch.delenv("ENABLE_OCR", raising=False)
     monkeypatch.delenv("OCR_ENGINE", raising=False)
@@ -76,7 +95,7 @@ def test_readme_and_requirements_reflect_current_product_server_surface():
         "/inspection",
         "/api/dashboard/overview",
         "/api/inspection/runtime",
-        "ocr e desabilitado por padrao",
+        "ocr is optional and disabled by default",
         "tesseract",
         "nao roda no upload",
         "nao chama, encapsula ou reaproveita `/api/inspection/runtime`".lower(),
