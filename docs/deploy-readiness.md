@@ -781,3 +781,10 @@ Do not migrate persistence before staging proves the product flow and storage re
 - New persisted study state includes bounded question attempts, adaptive question state, and weak-topic signals; these must be backed up with the existing JSON store and uploads.
 - The adaptive policy is deterministic and local to the backend. It does not use a scheduler service, fixed 24h/7d/30d SRS cadence, frontend inference, PostgreSQL, LLM generation, or OCR.
 - Deployment remains `NO_GO` for public production. The remaining blockers are transactional persistence, object storage, production auth/session handling, stronger concurrency controls, observability, security review, OCR strategy, and broader pedagogical QA on real corpora.
+
+## Personal-Study-E2E-A Readiness Update
+
+- Block detail now consumes the backend adaptive question queue through the frontend same-origin proxy and refreshes that queue only after confirmed explicit answer submissions.
+- This improves the local/private alpha study loop, but does not change deployment topology: staging must still run one backend replica with persistent `/app/data`, backups, private access, and clear alpha labeling.
+- Queue reads are non-mutating and must not be treated as a scheduler service, scoring engine, permanent mastery model, or production-ready adaptive platform.
+- Compose E2E passed for a fresh textual user: one edital was uploaded/analyzed, three Markdown study materials were prepared, block detail rendered grounded summary/key points plus the adaptive queue, incorrect/correct attempts persisted, progress/review switched to `studied_materials`, backend restart preserved state, and a second user did not see the first user's materials or attempt influence.

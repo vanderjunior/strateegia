@@ -2,6 +2,8 @@ import { getApiConfig } from "@/lib/api/config";
 import { makeApiFailure } from "@/lib/api/errors";
 import type {
   ApiResult,
+  AdaptiveQuestionQueueStatus,
+  BackendAdaptiveQuestionQueue,
   BackendNextStudySession,
   BackendNextReviewBlock,
   BackendStudyBlockItem,
@@ -114,6 +116,12 @@ const QUESTION_STATUSES = new Set<StudyBlockQuestionStatus>([
   "needs_review",
   "not_ready",
   "unsupported"
+]);
+
+const ADAPTIVE_QUEUE_STATUSES = new Set<AdaptiveQuestionQueueStatus>([
+  "ready",
+  "needs_review",
+  "not_ready"
 ]);
 
 const QUESTION_TYPES = new Set<StudyBlockQuestionType>([
@@ -329,6 +337,52 @@ function isStudyBlockQuestionsPayload(value: unknown): value is BackendStudyBloc
     typeof data.warnings_count === "number" &&
     data.source === "user_scope"
   );
+}
+
+function isAdaptiveQuestionQueuePayload(value: unknown): value is BackendAdaptiveQuestionQueue {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const data = value as Partial<BackendAdaptiveQuestionQueue>;
+  return (
+    typeof data.block_id === "string" &&
+    Boolean(data.queue_status && ADAPTIVE_QUEUE_STATUSES.has(data.queue_status)) &&
+    data.mode === "attempt_aware" &&
+    typeof data.items_count === "number" &&
+    Array.isArray(data.items) &&
+    data.items.every(isStudyBlockQuestionItem) &&
+    data.source === "user_scope"
+  );
+}
+
+function normalizeStudyBlockQuestionItem(
+  item: BackendStudyBlockQuestions["items"][number]
+): BackendStudyBlockQuestions["items"][number] {
+  return {
+    question_id: item.question_id,
+    type: item.type,
+    prompt: item.prompt,
+    alternatives: item.alternatives.map((alternative) => ({
+      id: alternative.id,
+      text: alternative.text
+    })),
+    topic_label: item.topic_label,
+    subtopic_label: item.subtopic_label,
+    difficulty: item.difficulty,
+    status: item.status
+  };
+}
+
+function normalizeAdaptiveQuestionQueuePayload(data: BackendAdaptiveQuestionQueue): BackendAdaptiveQuestionQueue {
+  const items = data.items.map(normalizeStudyBlockQuestionItem);
+  return {
+    block_id: data.block_id,
+    queue_status: data.queue_status,
+    mode: "attempt_aware",
+    items_count: items.length,
+    items,
+    source: "user_scope"
+  };
 }
 
 function isStudyBlockAnswerReviewPayload(value: unknown): value is BackendStudyBlockAnswerReview {
@@ -980,6 +1034,98 @@ export async function fetchStudyBlockQuestions(blockId: string): Promise<ApiResu
       return {
         ok: true,
         data,
+        status: response.status,
+        source: "backend"
+      };
+    } catch {
+      return makeApiFailure("backend", "invalid_response", "Não foi possível carregar as questões agora.", response.status);
+    }
+  } catch {
+    return makeApiFailure("offline", "backend_offline", "Não foi possível carregar as questões agora.");
+  }
+}
+
+export async function fetchAdaptiveQuestionQueue(
+  blockId: string,
+  limit = 5
+): Promise<ApiResult<BackendAdaptiveQuestionQueue>> {
+  const { baseUrl, forceMock } = getApiConfig();
+
+  if (forceMock) {
+    return makeApiFailure("mock", "mock_mode", "Modo de demonstração: as questões reais não foram consultadas.");
+  }
+
+  if (!baseUrl) {
+    return makeApiFailure(
+      "unsupported",
+      "missing_base_url",
+      "As questões deste bloco não estão configuradas neste ambiente."
+    );
+  }
+
+  const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit) : 5;
+  if (normalizedLimit < 1 || normalizedLimit > 10) {
+    return makeApiFailure("backend", "validation_error", "Não foi possível carregar as questões agora.", 422);
+  }
+
+  try {
+    const response = await fetch(
+      `/api/study/blocks/${encodeURIComponent(blockId)}/questions/next?limit=${normalizedLimit}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        },
+        credentials: "include",
+        cache: "no-store"
+      }
+    );
+
+    if (response.status === 502) {
+      return makeApiFailure("offline", "backend_offline", "Não foi possível carregar as questões agora.", 502);
+    }
+    if (response.status === 503) {
+      return makeApiFailure(
+        "unsupported",
+        "missing_base_url",
+        "As questões deste bloco não estão configuradas neste ambiente.",
+        503
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      return makeApiFailure("backend", "auth_required", "Entre para ver as questões deste bloco.", response.status);
+    }
+    if (response.status === 404) {
+      return makeApiFailure("backend", "not_found", "Bloco de estudo não encontrado.", response.status);
+    }
+    if (response.status === 422) {
+      return makeApiFailure("backend", "validation_error", "Não foi possível carregar as questões agora.", response.status);
+    }
+    if (!response.ok) {
+      return makeApiFailure(
+        "backend",
+        "http_error",
+        "Não foi possível carregar as questões agora.",
+        response.status
+      );
+    }
+
+    try {
+      const data = (await response.json()) as BackendAdaptiveQuestionQueue;
+      if (!isAdaptiveQuestionQueuePayload(data)) {
+        return makeApiFailure("backend", "invalid_response", "Não foi possível carregar as questões agora.", response.status);
+      }
+      if (data.queue_status === "not_ready") {
+        return makeApiFailure(
+          "backend",
+          "not_ready",
+          "As questões ainda não estão prontas para este bloco.",
+          response.status
+        );
+      }
+      return {
+        ok: true,
+        data: normalizeAdaptiveQuestionQueuePayload(data),
         status: response.status,
         source: "backend"
       };

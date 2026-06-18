@@ -11,14 +11,15 @@ import {
 } from "@/components/workspace/WorkspaceShared";
 import {
   createStudyProgressEvent,
+  fetchAdaptiveQuestionQueue,
   fetchStudyBlockDetail,
-  fetchStudyBlockQuestions,
   reviewStudyBlockQuestionAnswer
 } from "@/lib/api/study";
 import type {
+  BackendAdaptiveQuestionQueue,
   BackendStudyBlockAnswerReview,
   BackendStudyBlockDetail,
-  BackendStudyBlockQuestions,
+  BackendStudyBlockQuestionItem,
   StudyBlockAnswerFormat
 } from "@/lib/api/types";
 
@@ -33,8 +34,8 @@ type BlockDetailState =
 
 type QuestionsState =
   | { status: "loading" }
-  | { status: "ready"; questions: BackendStudyBlockQuestions }
-  | { status: "needs_review"; questions: BackendStudyBlockQuestions }
+  | { status: "ready"; questions: BackendAdaptiveQuestionQueue }
+  | { status: "needs_review"; questions: BackendAdaptiveQuestionQueue }
   | { status: "not_ready"; message: string }
   | { status: "auth_required"; message: string }
   | { status: "not_found"; message: string }
@@ -78,7 +79,7 @@ function sectionStatusLabel(status: BackendStudyBlockDetail["sections"][number][
   return status === "ready" ? "Pronto para estudo" : "Precisa de conferência";
 }
 
-function questionTypeLabel(type: BackendStudyBlockQuestions["items"][number]["type"]): string {
+function questionTypeLabel(type: BackendStudyBlockQuestionItem["type"]): string {
   if (type === "true_false") {
     return "Certo ou errado";
   }
@@ -88,7 +89,7 @@ function questionTypeLabel(type: BackendStudyBlockQuestions["items"][number]["ty
   return "Resposta curta";
 }
 
-function questionDifficultyLabel(difficulty: BackendStudyBlockQuestions["items"][number]["difficulty"]): string {
+function questionDifficultyLabel(difficulty: BackendStudyBlockQuestionItem["difficulty"]): string {
   if (difficulty === "medium") {
     return "Média";
   }
@@ -98,7 +99,7 @@ function questionDifficultyLabel(difficulty: BackendStudyBlockQuestions["items"]
   return "Básica";
 }
 
-function questionItemStatusLabel(status: BackendStudyBlockQuestions["items"][number]["status"]): string {
+function questionItemStatusLabel(status: BackendStudyBlockQuestionItem["status"]): string {
   return status === "candidate" ? "Questão candidata" : "Precisa de conferência";
 }
 
@@ -186,12 +187,22 @@ function reinforcementMessage(review: BackendStudyBlockAnswerReview): string {
 
 function QuestionsCard({
   blockId,
-  state
+  state,
+  refreshQueue
 }: {
   blockId: string;
   state: QuestionsState;
+  refreshQueue: () => Promise<boolean>;
 }) {
   const [reviews, setReviews] = useState<QuestionReviewStateMap>({});
+  const [retainedQuestions, setRetainedQuestions] = useState<Record<string, BackendStudyBlockQuestionItem>>({});
+  const [queueRefreshMessage, setQueueRefreshMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setReviews({});
+    setRetainedQuestions({});
+    setQueueRefreshMessage(null);
+  }, [blockId]);
 
   function updateQuestionReview(questionId: string, nextState: QuestionReviewState) {
     setReviews((current) => ({
@@ -203,7 +214,7 @@ function QuestionsCard({
     }));
   }
 
-  async function handleReviewChoice(item: BackendStudyBlockQuestions["items"][number]) {
+  async function handleReviewChoice(item: BackendStudyBlockQuestionItem) {
     const current = reviews[item.question_id];
     const selectedAlternative = current?.selectedAlternative;
     if (!selectedAlternative) {
@@ -238,6 +249,14 @@ function QuestionsCard({
         message: undefined,
         review: result.data
       });
+      setRetainedQuestions((current) => ({
+        ...current,
+        [item.question_id]: item
+      }));
+      const refreshed = await refreshQueue();
+      setQueueRefreshMessage(
+        refreshed ? null : "A tentativa foi registrada, mas a próxima lista de questões não carregou agora."
+      );
       return;
     }
 
@@ -284,8 +303,22 @@ function QuestionsCard({
               Estas questões precisam de conferência.
             </p>
           ) : null}
-          {state.questions.items.length ? (
-            state.questions.items.map((item, index) => {
+          {queueRefreshMessage ? (
+            <p className="rounded-2xl border border-[rgba(201,169,110,0.16)] bg-[rgba(201,169,110,0.07)] px-4 py-3 text-sm leading-7 text-silver">
+              {queueRefreshMessage}
+            </p>
+          ) : null}
+          {(() => {
+            const retainedItems = Object.values(retainedQuestions).filter(
+              (item) => reviews[item.question_id]?.status === "success"
+            );
+            const retainedIds = new Set(retainedItems.map((item) => item.question_id));
+            const visibleItems = [
+              ...retainedItems,
+              ...state.questions.items.filter((item) => !retainedIds.has(item.question_id))
+            ];
+            return visibleItems.length ? (
+            visibleItems.map((item, index) => {
               const itemStatusLabel = questionItemStatusLabel(item.status);
               const review = reviews[item.question_id];
               const isObjectiveQuestion = item.type === "multiple_choice" || item.type === "true_false";
@@ -415,10 +448,11 @@ function QuestionsCard({
             })
           ) : (
             <Card className="border-[rgba(201,169,110,0.16)] bg-[rgba(255,255,255,0.02)]">
-              <CardTitle className="text-[1.35rem]">As questões ainda não estão prontas para este bloco.</CardTitle>
-              <p className="mt-3 text-sm leading-7 text-silver">Estude o resumo do bloco primeiro.</p>
+              <CardTitle className="text-[1.35rem]">Nenhuma questão de fixação está disponível para este bloco.</CardTitle>
+              <p className="mt-3 text-sm leading-7 text-silver">Continue pelo resumo e pelos pontos principais.</p>
             </Card>
-          )}
+          );
+          })()}
         </div>
       ) : null}
     </section>
@@ -449,13 +483,13 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
       setState(failureState(result.error.code));
     });
 
-    void fetchStudyBlockQuestions(blockId).then((result) => {
+    void fetchAdaptiveQuestionQueue(blockId, 5).then((result) => {
       if (!active) {
         return;
       }
       if (result.ok) {
         setQuestionsState({
-          status: result.data.question_status === "ready" ? "ready" : "needs_review",
+          status: result.data.queue_status === "ready" ? "ready" : "needs_review",
           questions: result.data
         });
         return;
@@ -467,6 +501,18 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
       active = false;
     };
   }, [blockId]);
+
+  async function refreshQuestionQueue(): Promise<boolean> {
+    const result = await fetchAdaptiveQuestionQueue(blockId, 5);
+    if (!result.ok) {
+      return false;
+    }
+    setQuestionsState({
+      status: result.data.queue_status === "ready" ? "ready" : "needs_review",
+      questions: result.data
+    });
+    return true;
+  }
 
   async function handleMarkBlockStudied() {
     if (progressActionState.status === "submitting" || progressActionState.status === "success") {
@@ -696,7 +742,7 @@ export function StudyBlockDetailReadOnlyClient({ blockId }: { blockId: string })
         </div>
       </section>
 
-      <QuestionsCard blockId={blockId} state={questionsState} />
+      <QuestionsCard blockId={blockId} state={questionsState} refreshQueue={refreshQuestionQueue} />
     </div>
   );
 }

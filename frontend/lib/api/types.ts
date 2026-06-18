@@ -581,6 +581,17 @@ export interface BackendStudyBlockQuestions {
   source: "user_scope";
 }
 
+export type AdaptiveQuestionQueueStatus = "ready" | "needs_review" | "not_ready";
+
+export interface BackendAdaptiveQuestionQueue {
+  block_id: string;
+  queue_status: AdaptiveQuestionQueueStatus;
+  mode: "attempt_aware";
+  items_count: number;
+  items: BackendStudyBlockQuestionItem[];
+  source: "user_scope";
+}
+
 export type StudyBlockAnswerFormat = "text" | "choice" | "true_false";
 
 export type StudyBlockAnswerReviewStatus = "reviewed" | "needs_review" | "not_ready" | "unsupported";

@@ -182,3 +182,11 @@ rg -n -i 'pricing|plano gratuito|plano profissional|plano intensivo|assinatura|c
 - Incorrect validated attempts create weak-topic signals that can influence subsequent bounded question ordering, reinforcement copy, and cumulative review metadata.
 - The adaptive policy is intentionally small and deterministic: wrong items become weak, first correct items move to review, repeated correct items are temporarily suppressed, and ungraded items do not affect mastery.
 - Frontend changes are limited to using the existing study block/review surfaces and forwarding optional idempotency keys; there is still no review detail page, percentage, material completion, simulado execution, OCR/LLM behavior, PostgreSQL, provider/signup, public score, or answer-key reveal.
+
+## Personal-Study-E2E-A Frontend Integration
+
+- Block detail now reads `GET /api/study/blocks/[blockId]/questions/next?limit=5` through a same-origin frontend proxy and uses the backend-provided adaptive queue order for fixation questions.
+- The frontend does not derive adaptive priority, bucket, mastery, correctness, score, or answer-key state. It renders only the safe public question fields returned by the proxy.
+- After a confirmed explicit answer submission, block detail refreshes the queue while keeping the submitted feedback visible. Queue refresh failure does not turn a persisted answer attempt into a false failure.
+- Rendering a block or selecting a radio option still creates no attempt, progress event, review event, completion state, score, gabarito, correction, simulado, OCR, LLM, scheduler, PostgreSQL, or provider behavior.
+- Compose E2E validated the connected textual path with a fresh user: textual edital analysis, three prepared Markdown materials, grounded block summary/key points, adaptive queue ordering, persisted incorrect/correct attempts, idempotent retry/conflict behavior, explicit studied-block progress, `review_basis=studied_materials`, restart persistence, and second-user isolation.

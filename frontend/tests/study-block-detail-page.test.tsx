@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const studyBlockDetailMock = vi.hoisted(() => ({
   createStudyProgressEvent: vi.fn(),
   fetchStudyBlockDetail: vi.fn(),
-  fetchStudyBlockQuestions: vi.fn(),
+  fetchAdaptiveQuestionQueue: vi.fn(),
   reviewStudyBlockQuestionAnswer: vi.fn()
 }));
 
 vi.mock("@/lib/api/study", () => ({
   createStudyProgressEvent: studyBlockDetailMock.createStudyProgressEvent,
   fetchStudyBlockDetail: studyBlockDetailMock.fetchStudyBlockDetail,
-  fetchStudyBlockQuestions: studyBlockDetailMock.fetchStudyBlockQuestions,
+  fetchAdaptiveQuestionQueue: studyBlockDetailMock.fetchAdaptiveQuestionQueue,
   reviewStudyBlockQuestionAnswer: studyBlockDetailMock.reviewStudyBlockQuestionAnswer
 }));
 
@@ -53,8 +53,8 @@ function readyDetail(overrides: Record<string, unknown> = {}) {
 function readyQuestions(overrides: Record<string, unknown> = {}) {
   return {
     block_id: "study-block:topic-1:doc-1:0",
-    question_status: "ready",
-    mode: "review_only",
+    queue_status: "ready",
+    mode: "attempt_aware",
     items: [
       {
         question_id: "question:study-block:topic-1:doc-1:0:0",
@@ -73,7 +73,7 @@ function readyQuestions(overrides: Record<string, unknown> = {}) {
         status: "candidate"
       }
     ],
-    warnings_count: 0,
+    items_count: 1,
     source: "user_scope",
     ...overrides
   };
@@ -123,7 +123,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
   beforeEach(() => {
     studyBlockDetailMock.createStudyProgressEvent.mockReset();
     studyBlockDetailMock.fetchStudyBlockDetail.mockReset();
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockReset();
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockReset();
     studyBlockDetailMock.reviewStudyBlockQuestionAnswer.mockReset();
     studyBlockDetailMock.createStudyProgressEvent.mockResolvedValue({
       ok: true,
@@ -131,7 +131,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: progressEventResponse()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: false,
       status: 200,
       source: "backend",
@@ -155,7 +155,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -178,6 +178,10 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Abrir material")).toHaveAttribute("href", "/materials/doc-1");
     expect(screen.getByText("Voltar ao caminho de estudo")).toHaveAttribute("href", "/study");
     expect(screen.getByText("Use este bloco como guia inicial de leitura.")).toBeInTheDocument();
+    expect(studyBlockDetailMock.fetchAdaptiveQuestionQueue).toHaveBeenCalledWith(
+      "study-block:topic-1:doc-1:0",
+      5
+    );
     expect(screen.getByText("Leia o resumo, revise a questão e registre o estudo quando terminar.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marcar bloco como estudado" })).toBeInTheDocument();
     expect(screen.getByText("Registra somente este bloco; não finaliza o material.")).toBeInTheDocument();
@@ -297,7 +301,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -347,12 +351,12 @@ describe("StudyBlockDetailReadOnlyClient", () => {
         ]
       })
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
       data: readyQuestions({
-        question_status: "needs_review",
+        queue_status: "needs_review",
         items: [
           {
             ...readyQuestions().items[0],
@@ -368,7 +372,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
             status: "needs_review"
           }
         ],
-        warnings_count: 1
+        items_count: 1
       })
     });
 
@@ -390,7 +394,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -412,7 +416,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -440,6 +444,51 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     });
   });
 
+  it("refreshes the adaptive queue after a confirmed attempt while keeping feedback visible", async () => {
+    const questionA = readyQuestions().items[0];
+    const questionB = {
+      ...questionA,
+      question_id: "question:next-from-backend",
+      prompt: "Qual questão veio primeiro na fila atualizada?",
+      alternatives: [
+        { id: "A", text: "A questão indicada pelo backend." },
+        { id: "B", text: "Uma questão inventada pelo frontend." }
+      ]
+    };
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        source: "backend",
+        data: readyQuestions({ items: [questionA], items_count: 1 })
+      })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        source: "backend",
+        data: readyQuestions({ items: [questionB, questionA], items_count: 2 })
+      });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    fireEvent.click(await screen.findByRole("radio", { name: "A. Revisar Atos administrativos." }));
+    fireEvent.click(screen.getByRole("button", { name: "Revisar escolha" }));
+
+    expect(await screen.findByText("Feedback")).toBeInTheDocument();
+    expect(screen.getByText("Compare sua escolha com o resumo do bloco.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(studyBlockDetailMock.fetchAdaptiveQuestionQueue.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.getByText("2. Qual questão veio primeiro na fila atualizada?")).toBeInTheDocument();
+    expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).toHaveBeenCalledTimes(1);
+  });
+
   it("submits a true/false selection with true_false answer format", async () => {
     studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
       ok: true,
@@ -447,7 +496,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -494,7 +543,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -550,7 +599,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -580,7 +629,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -625,7 +674,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -662,7 +711,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -699,7 +748,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -736,7 +785,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -759,7 +808,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: true,
       status: 200,
       source: "backend",
@@ -808,7 +857,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: false,
       status: 200,
       source: "backend",
@@ -825,6 +874,53 @@ describe("StudyBlockDetailReadOnlyClient", () => {
     expect(screen.getByText("Estude o resumo do bloco primeiro.")).toBeInTheDocument();
   });
 
+  it("renders an empty adaptive queue without fabricating a placeholder question", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions({ items: [], items_count: 0 })
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="block-1" />);
+
+    expect(await screen.findByText("Questões de fixação")).toBeInTheDocument();
+    expect(screen.getByText("Nenhuma questão de fixação está disponível para este bloco.")).toBeInTheDocument();
+    expect(screen.getByText("Resumo do bloco")).toBeInTheDocument();
+    expect(screen.queryByText("Alternativa incorreta 1")).not.toBeInTheDocument();
+  });
+
+  it("does not create attempts or progress events while rendering the adaptive queue", async () => {
+    studyBlockDetailMock.fetchStudyBlockDetail.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyDetail()
+    });
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
+      ok: true,
+      status: 200,
+      source: "backend",
+      data: readyQuestions()
+    });
+
+    render(<StudyBlockDetailReadOnlyClient blockId="study-block:topic-1:doc-1:0" />);
+
+    expect(await screen.findByText("Questões de fixação")).toBeInTheDocument();
+    expect(studyBlockDetailMock.fetchAdaptiveQuestionQueue).toHaveBeenCalledWith(
+      "study-block:topic-1:doc-1:0",
+      5
+    );
+    expect(studyBlockDetailMock.reviewStudyBlockQuestionAnswer).not.toHaveBeenCalled();
+    expect(studyBlockDetailMock.createStudyProgressEvent).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["auth_required", "Entre para ver as questões deste bloco."],
     ["not_found", "Bloco de estudo não encontrado."],
@@ -837,7 +933,7 @@ describe("StudyBlockDetailReadOnlyClient", () => {
       source: "backend",
       data: readyDetail()
     });
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: false,
       status: code === "not_found" ? 404 : 502,
       source: code === "backend_offline" ? "offline" : "backend",
@@ -920,8 +1016,8 @@ describe("StudyBlockDetailPage", () => {
   beforeEach(() => {
     studyBlockDetailMock.createStudyProgressEvent.mockReset();
     studyBlockDetailMock.fetchStudyBlockDetail.mockReset();
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockReset();
-    studyBlockDetailMock.fetchStudyBlockQuestions.mockResolvedValue({
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockReset();
+    studyBlockDetailMock.fetchAdaptiveQuestionQueue.mockResolvedValue({
       ok: false,
       status: 200,
       source: "backend",

@@ -74,13 +74,13 @@ Personal-Study-MVP-A adds a real bounded textual study core:
 - answer review persists selected-answer attempts and derives correct/incorrect only when validation is supported;
 - exact network retries reuse one idempotency key without duplicating the attempt;
 - bounded owner-scoped attempt history survives repository reload and backend restart.
-- the backend can read a deterministic attempt-aware queue at `/api/study/blocks/{block_id}/questions/next?limit=5`.
+- block detail reads a deterministic attempt-aware queue at `/api/study/blocks/{block_id}/questions/next?limit=5` through the frontend same-origin proxy.
 
 The queue is derived on read from immutable attempts. It prioritizes eligible prior errors, cautiously returns ungraded questions, preserves new current-block questions, suppresses recently correct questions by attempt milestones, and may include one bounded historical item from explicitly studied blocks. It does not use 24h/7d/30d intervals, does not create permanent mastery, and does not mutate state.
 
 Each explicit answer submission requires a unique idempotency key. A network retry must reuse that key; after a confirmed response, a later attempt must use a new one. Attempt records are immutable and stored in the same owner-scoped JSON repository as other alpha state. Keep the backend at one replica and include the data volume in backups.
 
-The current frontend block-detail page may still consume the regular question list until a later UI/E2E phase adopts the queue.
+The current frontend block-detail page consumes the backend queue order for fixation questions. It refreshes that queue only after a confirmed explicit answer submission and keeps the submitted feedback visible while the next queue is loaded.
 
 Current safe path:
 
@@ -91,7 +91,7 @@ Current safe path:
 5. Open `/study`.
 6. Study blocks.
 7. Use fixation questions as validated practice when the backend can derive correctness; otherwise treat them as ungraded prompts.
-8. Optionally inspect the backend queue for the current block through `/api/study/blocks/{block_id}/questions/next`.
+8. Answer fixation questions on block detail; the displayed order comes from the backend adaptive queue.
 9. Mark blocks studied explicitly.
 10. Check progress/review candidate.
 

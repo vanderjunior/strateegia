@@ -4,7 +4,7 @@ This guide evaluates private deployment options for the current Mentorium archit
 
 ## Personal-Study-MVP-A Capability Note
 
-Private staging can now demonstrate grounded textual study behavior: extractive summaries, internally validated objective questions, and immutable owner-scoped selected-answer attempts. Attempts do not yet create weak-topic signals, suppress questions, or drive an adaptive queue. This does not make the app public-production ready. Keep staging private, single-replica, backed by persistent disk, and clearly labeled alpha.
+Private staging can now demonstrate grounded textual study behavior: extractive summaries, internally validated objective questions, immutable owner-scoped selected-answer attempts, and block-detail question ordering from the deterministic attempt-aware backend queue. This does not make the app public-production ready. Keep staging private, single-replica, backed by persistent disk, and clearly labeled alpha.
 
 Do not market staging as official correction, scoring, permanent mastery, OCR-complete, or simulado execution.
 

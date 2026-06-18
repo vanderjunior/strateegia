@@ -6,7 +6,7 @@ It is still not a full exam-preparation system. The new personal-study MVP is de
 
 ## Current Alpha Status
 
-This repository is best described as a local/private alpha. It is suitable for one student to experiment with textual materials using grounded summaries and validated objective questions when evidence is sufficient. Explicit answer review persists immutable, owner-scoped attempts, and the backend can now derive a deterministic attempt-aware question queue. It is not yet safe to rely on Mentorium as the primary preparation environment for a real exam until the adaptive queue is integrated into the main UI, OCR/corpus coverage, question quality, review execution, backup procedures, and production persistence are hardened.
+This repository is best described as a local/private alpha. It is suitable for one student to experiment with textual materials using grounded summaries and validated objective questions when evidence is sufficient. Explicit answer review persists immutable, owner-scoped attempts, and block detail now consumes the deterministic backend attempt-aware question queue. It is not yet safe to rely on Mentorium as the primary preparation environment for a real exam until OCR/corpus coverage, question quality, review execution, backup procedures, and production persistence are hardened.
 
 ## What Works Today
 
@@ -18,7 +18,7 @@ This repository is best described as a local/private alpha. It is suitable for o
 - `/study` with `Continue seus estudos`, `Seu caminho de estudo`, compact `Revisao acumulada`, and compact `Acompanhamento do estudo`.
 - Study block detail with extractive summary rows, key points, deterministic fixation questions, persisted answer review feedback, advisory reinforcement, and explicit `Marcar bloco como estudado`.
 - Immutable selected-answer attempts with server-derived `correct`, `incorrect`, or cautious `ungraded` state, exact-retry idempotency, and bounded owner-scoped history.
-- Backend attempt-aware question queue that prioritizes eligible prior errors, preserves new current-block questions, suppresses recent correct answers by attempt milestones, and includes a bounded studied-block historical sample.
+- Attempt-aware question queue on block detail that prioritizes eligible prior errors, preserves new current-block questions, suppresses recent correct answers by attempt milestones, and includes a bounded studied-block historical sample.
 - Progress events for explicit block study actions and conservative studied-material derivation when every block for a study material is marked studied.
 - Read-only cumulative review candidate based on prepared materials or conservatively derived studied materials.
 - Docker Compose local runtime with a named volume for `/app/data`.
@@ -28,8 +28,7 @@ This repository is best described as a local/private alpha. It is suitable for o
 - No OCR by default. `ocr e desabilitado por padrao`; optional OCR requires Tesseract-compatible runtime validation and does not run during ordinary upload. OCR `nao roda no upload`.
 - No answer-key/gabarito reveal. Correctness remains internal and source-evidence backed only for validated study-block questions.
 - No official correction, score, percentage, ranking, or exam acertos/erros model.
-- No frontend adaptive-question UI yet. The backend queue exists, but block detail still uses the existing question list unless a later UI phase adopts the queue.
-- No weak-topic scheduling, Leitner buckets, permanent mastery state, wall-clock SRS, or full cyclical scheduler.
+- No separate weak-topic scheduler, Leitner bucket UI, permanent mastery state, wall-clock SRS, or full cyclical scheduler.
 - No revised/generated summary after weak answers; reinforcement only points back to source-grounded content.
 - No review detail page and no review-completed state.
 - No public production deployment, PostgreSQL, object storage, provider/signup, payments, or SaaS hardening.
@@ -46,10 +45,10 @@ This repository is best described as a local/private alpha. It is suitable for o
 | Coverage estimation | `PARTIAL` | `GET /api/editais/{id}/coverage` | Lexical/topic-token estimate, not semantic sufficiency proof. |
 | Study path | `USABLE_ALPHA` | `GET /api/study/blocks`, `/study` UI | Ordered blocks, not true cyclical scheduling. |
 | Summaries | `USABLE_ALPHA` | Extractive source sentences in `GET /api/materials/{id}/study/summary` and block detail | Deterministic and bounded; insufficient evidence stays `needs_review`. |
-| Questions | `USABLE_ALPHA` | `GET /api/study/blocks/{id}/questions`, `GET /api/study/blocks/{id}/questions/next` | Deterministic A-E/A-D or C/E items are validated only when source evidence and unambiguous distractors are available; attempt-aware queue is backend-only for now. |
+| Questions | `USABLE_ALPHA` | `GET /api/study/blocks/{id}/questions`, `GET /api/study/blocks/{id}/questions/next` | Deterministic A-E/A-D or C/E items are validated only when source evidence and unambiguous distractors are available; block detail uses the attempt-aware queue order. |
 | Answer review | `USABLE_ALPHA` | `POST /api/study/blocks/{id}/questions/{id}/answer/review` | Persists an explicit attempt and derives correct/incorrect only for validated questions; no official correction or score. |
 | Attempt memory | `USABLE_ALPHA` | Answer review write plus `GET /api/study/blocks/{block_id}/questions/{question_id}/attempts` | Immutable owner-scoped history survives restart; JSON storage remains single-replica oriented. |
-| Adaptive selection | `USABLE_ALPHA` | `GET /api/study/blocks/{block_id}/questions/next?limit=5` | Derived on read from immutable attempts; no wall-clock SRS, permanent mastery, score, or frontend consumption yet. |
+| Adaptive selection | `USABLE_ALPHA` | `GET /api/study/blocks/{block_id}/questions/next?limit=5` | Derived on read from immutable attempts and consumed by block detail; no wall-clock SRS, permanent mastery, score, or full scheduler yet. |
 | Reinforcement | `READ_ONLY` | Answer-review response | Advisory only; does not alter future selection or create a review session. |
 | Progress events | `USABLE_ALPHA` | `POST /api/study/progress/events`, `GET /api/study/progress/summary` | Explicit events only; no automatic completion. |
 | Cumulative review | `READ_ONLY` | `GET /api/study/review/next` | Candidate only; no detail page or completion state. |
@@ -78,10 +77,11 @@ This repository is best described as a local/private alpha. It is suitable for o
 ## Attempt-aware Question Queue
 
 - `GET /api/study/blocks/{block_id}/questions/next?limit=5` returns existing validated grounded questions in backend-derived order.
+- `/study/blocks/[blockId]` reads this queue through a same-origin frontend proxy and preserves backend ordering.
 - Derived states are `new`, `ungraded`, `weak`, `reviewing`, and `temporarily_mastered`; these are not client-controlled and are not exposed as user-facing mastery labels.
 - Cooldowns use later explicit attempts by the same user, not fixed 24h/7d/30d intervals: weak/ungraded after 1 later attempt, reviewing after 3, temporarily mastered after 8 or bounded historical sampling.
 - Queue priority is weak/ungraded, new current-block questions, eligible reviewing questions, and a bounded historical sample from explicitly studied blocks.
-- Queue reads do not create attempts, progress events, review events, scores, or mastery records.
+- Queue reads do not create attempts, progress events, review events, scores, or mastery records. The frontend refreshes the queue only after a confirmed explicit answer submission.
 
 ## Supported File Formats
 
@@ -231,7 +231,7 @@ Heroku-style ephemeral dynos are not a good fit unless data is moved out of the 
 - `limita`: 5 MB upload limit and local disk amplification from uploads plus extracted text/chunks.
 - Heuristic edital parsing can miss topics in noisy mixed formatting.
 - Coverage is lexical/candidate-based and cannot prove every syllabus topic has sufficient source content.
-- The main frontend block-detail flow still renders the regular question list; the attempt-aware queue is available through the backend API for the next UI/E2E phase.
+- The block-detail flow now uses the attempt-aware backend queue, but this is still a bounded alpha selector rather than a complete cyclical study scheduler.
 - Extractive summaries depend on eligible textual source evidence and are not full teacher-authored explanations.
 - Fixation questions expose no gabarito; internal correctness exists only for validated evidence-backed questions.
 - Reinforcement is stateless guidance and does not change future scheduling.
